@@ -67,8 +67,16 @@ git diff --cached --quiet && (
 )
 
 echo    Uploading...
-git push -q origin HEAD || (
-    echo    UPLOAD FAILED - check your internet, or sign in when the browser opens.
+git push -u origin HEAD || (
+    echo.
+    echo    UPLOAD FAILED. The usual reasons, in order:
+    echo      1. You closed the browser sign-in window - run this again.
+    echo      2. The repository does not exist yet on github.com, or the
+    echo         name is spelled differently.
+    echo      3. You ticked "Add a README" when creating the repository.
+    echo         Fix: on github.com delete that repo and create it again
+    echo         with NOTHING ticked, then run this script again.
+    echo      4. No internet.
     popd & set FAILED=1 & goto :eof
 )
 echo    Done - this folder is backed up.
