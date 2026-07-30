@@ -1,0 +1,173 @@
+[section bg_color="rgb(246,248,251)" padding="44px" label="hero"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_text text_align="center"]
+<p><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-code-compare"></i> Compare Tool</span></p>
+<h1 style="color:#0188fe;margin:10px 0 8px;"><i class="fa-solid fa-table-columns" style="margin-right:10px;"></i>Compare AUN Projectors Side-by-Side</h1>
+<p style="color:#556777;max-width:760px;margin:0 auto;font-size:16px;line-height:1.7;">Brightness, resolution, throw distance, smart features, ports and price — pulled straight from each product's specification sheet, up to 3 models at a time. Flip on <strong>"Differences only"</strong> to see what actually changes between them.</p>
+[/ux_text]
+
+[/col]
+
+[/row]
+
+[/section]
+[section padding="30px" label="compare tool"]
+
+[row h_align="center"]
+
+[col span="12"]
+
+<p>[aun_compare_table]</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(249,249,249)" padding="40px" label="how it works"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_html label="how it works header"]
+<h2 style="color:#0f172a;margin-bottom:8px;text-align:center;">How It Works</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="step 1"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-circle-plus"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">1. Add up to 3 projectors</h3>
+  <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Tap the <strong>Compare</strong> button on any product page or in the shop list. Your picks follow you in the floating dock.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="step 2"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-table-list"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">2. Spot the differences</h3>
+  <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Rows that differ are highlighted automatically. Switch on <strong>"Differences only"</strong> to hide everything the models share.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="step 3"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-share-nodes"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">3. Decide &amp; share</h3>
+  <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Hit <strong>Share</strong> to send the exact comparison to family or friends on WhatsApp — the link recreates your table for them.</p>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style data-no-optimize="1" data-no-minify="1">
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Comparing Projectors</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>How many projectors can I compare at once?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Up to three (3) side-by-side. If you add a fourth, the oldest one in your list is replaced automatically.</div></details>
+<details><summary><span>Where do the specifications come from?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">All data is pulled directly from each product's <strong>Specification</strong> tab, so the comparison always matches exactly what you see on the product page — nothing is retyped or edited for this tool.</div></details>
+<details><summary><span>How should I compare projector brightness?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Carefully! Across the whole industry, spec-sheet lumens are the manufacturer's official rating measured at the light source — real on-screen brightness is always lower, for every brand. So treat rated figures as a rough guide, compare them side-by-side here, and then check the real projection photos and room-type guidance on each product page. Full explanation in our honest guide: <a href="/projector-brightness-explained/">Projector Brightness, Explained</a>.</div></details>
+<details><summary><span>Why does "Differences only" hide some rows?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">That toggle hides rows where all selected models have identical values, so you can focus on what actually changes between them.</div></details>
+<details><summary><span>Can I compare accessories like screens, mounts or cables?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">The Compare button appears only on products with a full Specification tab (typically projectors). Accessories don't carry full spec sheets, so they are excluded.</div></details>
+<details><summary><span>Any tips for choosing between two close models?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Start from your room: its lighting, the screen size you want, and how far the projector will sit from the wall. Then weigh native resolution, throw distance, smart OS (Genuine Android TV models have official apps built in) and ports. Still stuck? Our <a href="/projector-finder/">60-Second Smart Finder</a> weighs all of this automatically — or ask a real human on WhatsApp.</div></details>
+</div>
+[/ux_text]
+
+[ux_html label="faq schema"]
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"How many projectors can I compare at once?","acceptedAnswer":{"@type":"Answer","text":"Up to three (3) side-by-side. If you add a fourth, the oldest one in your list is replaced automatically."}},
+    {"@type":"Question","name":"Where do the specifications come from?","acceptedAnswer":{"@type":"Answer","text":"All data is pulled directly from each product's Specification tab, so the comparison always matches exactly what you see on the product page."}},
+    {"@type":"Question","name":"How should I compare projector brightness?","acceptedAnswer":{"@type":"Answer","text":"Across the whole industry, spec-sheet lumens are the manufacturer's official rating measured at the light source — real on-screen brightness is always lower, for every brand. Treat rated figures as a rough guide, compare them side-by-side, then check real projection photos and room-type guidance on each product page."}},
+    {"@type":"Question","name":"Why does Differences only hide some rows?","acceptedAnswer":{"@type":"Answer","text":"That toggle hides rows where all selected models have identical values, so you can focus on what actually changes between them."}},
+    {"@type":"Question","name":"Can I compare accessories like screens, mounts or cables?","acceptedAnswer":{"@type":"Answer","text":"The Compare button appears only on products with a full Specification tab (typically projectors). Accessories don't carry full spec sheets, so they are excluded."}},
+    {"@type":"Question","name":"Any tips for choosing between two close models?","acceptedAnswer":{"@type":"Answer","text":"Start from your room: its lighting, the screen size you want, and how far the projector will sit from the wall. Then weigh native resolution, throw distance, smart OS and ports. AUN Bangladesh's 60-Second Smart Finder weighs all of this automatically."}}
+  ]
+}
+</script>
+[/ux_html]
+
+[/section]
+[section padding="40px" label="explore ecosystem"]
+
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="crosslink finder"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Not sure what to compare?</h3>
+  <p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">Answer 5 quick questions about your room and budget — the Smart Finder shortlists the right models for you.</p>
+  <a href="/projector-finder/" style="color:#0188fe;font-weight:700;font-size:14px;text-decoration:none;">Find My Projector →</a>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="crosslink brightness guide"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(255,188,0,0.14);color:#b45309;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-lightbulb"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Understand the brightness specs</h3>
+  <p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">Rated lumens vs what you actually see on the wall — read this before comparing brightness numbers anywhere.</p>
+  <a href="/projector-brightness-explained/" style="color:#0188fe;font-weight:700;font-size:14px;text-decoration:none;">Brightness, Explained Honestly →</a>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="crosslink shop"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-tags"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Browse the full lineup</h3>
+  <p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">See every current AUN model with prices, real projection photos and 0% EMI options.</p>
+  <a href="/projector-price/" style="color:#0188fe;font-weight:700;font-size:14px;text-decoration:none;">Projector Price in Bangladesh →</a>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]

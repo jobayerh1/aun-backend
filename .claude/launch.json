@@ -1,0 +1,56 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aun-wp",
+      "runtimeExecutable": "C:\\Users\\Jobayer Hossain\\AppData\\Local\\Microsoft\\WinGet\\Packages\\PHP.PHP.8.2_Microsoft.Winget.Source_8wekyb3d8bbwe\\php.exe",
+      "runtimeArgs": [
+        "-c",
+        "C:\\Users\\Jobayer Hossain\\wp-local\\php.ini",
+        "-S",
+        "localhost:8899",
+        "-t",
+        "C:\\Users\\Jobayer Hossain\\wp-local\\site"
+      ],
+      "port": 8899
+    },
+    {
+      "name": "compare-harness",
+      "runtimeExecutable": "C:\\Users\\Jobayer Hossain\\AppData\\Local\\Microsoft\\WinGet\\Packages\\PHP.PHP.8.2_Microsoft.Winget.Source_8wekyb3d8bbwe\\php.exe",
+      "runtimeArgs": [
+        "-S",
+        "localhost:8903",
+        "-t",
+        "C:\\Users\\JOBAYE~1\\AppData\\Local\\Temp\\claude\\C--Users-Jobayer-Hossain-Downloads-Claude-session\\8dde391a-b2e5-4994-8e70-cceb1cdf318b\\scratchpad\\compare-harness"
+      ],
+      "port": 8903
+    },
+    {
+      "name": "wp-bench",
+      "runtimeExecutable": "C:\\Users\\Jobayer Hossain\\AppData\\Local\\Microsoft\\WinGet\\Packages\\PHP.PHP.8.2_Microsoft.Winget.Source_8wekyb3d8bbwe\\php.exe",
+      "runtimeArgs": [
+        "-c",
+        "C:\\Users\\Jobayer Hossain\\wp-local\\php.ini",
+        "C:\\Users\\Jobayer Hossain\\wp-local\\wp-cli.phar",
+        "--path=C:\\Users\\Jobayer Hossain\\wp-local\\site",
+        "server",
+        "--host=127.0.0.1",
+        "--port=8080"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "app-web",
+      "runtimeExecutable": "C:\\Users\\Jobayer Hossain\\AppData\\Local\\Microsoft\\WinGet\\Packages\\PHP.PHP.8.2_Microsoft.Winget.Source_8wekyb3d8bbwe\\php.exe",
+      "runtimeArgs": [
+        "-c",
+        "C:\\Users\\Jobayer Hossain\\wp-local\\php.ini",
+        "-S",
+        "127.0.0.1:5177",
+        "-t",
+        "C:\\dev\\aun-app\\build\\web"
+      ],
+      "port": 5177
+    }
+  ]
+}

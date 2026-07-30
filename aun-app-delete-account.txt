@@ -1,0 +1,138 @@
+PAGE: "Delete your AUN Care account"
+SITE: aun-projector.com.bd
+SUGGESTED SLUG: /delete-account/   → https://aun-projector.com.bd/delete-account/
+THIS IS THE URL YOU PASTE INTO: Play Console → App content → Data safety → "Data deletion"
+                                → URL for users to request data deletion.
+HOW TO ADD: Pages → Add New → title "Delete your AUN Care account" → Text/Code view (or UX
+            Builder → Section → HTML element) → paste everything below the ===== line.
+MUST BE:    publicly reachable, no login, no geo-block. Purge WP Rocket after publishing.
+            Do NOT put this page behind "noindex" — Google's reviewer has to open it.
+
+IMPORTANT — keep this page and the app in sync. The "what is deleted / what we keep" lists
+below are exactly what the code does (AUN_App_Account::delete in the aun-app-api plugin) and
+exactly what the app's own confirmation screen says. If the code changes, change this too.
+
+=====================================================================================
+
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Delete Account Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-user-minus"></i> Delete your AUN Care account</h1>
+<p style="font-size:16px; color:#556777; max-width:800px; margin:0 auto; line-height:1.65;">You can delete your <strong>AUN Care Bangladesh</strong> app account and its personal data at any time — from inside the app, or by asking us. This page explains how, and exactly what is deleted.</p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Two Ways To Delete"]
+
+[ux_text text_align="center"]
+<h2 style="font-size:22px;margin:0 0 6px;color:#0f172a;">Two ways to do it</h2>
+<p style="font-size:14.5px;color:#64748b;margin:0 0 26px;">The first is instant. The second is for people who have already uninstalled the app.</p>
+[/ux_text]
+
+[row]
+
+[col span="6" span__sm="12"]
+<div style="background:#fff;border:2px solid #0188fe;border-radius:16px;padding:26px;height:100%;box-shadow:0 4px 14px rgba(1,136,254,0.10);">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+<div style="width:42px;height:42px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-mobile-screen-button"></i></div>
+<h3 style="font-size:17px;margin:0;color:#0f172a;">1. In the app <span style="font-size:12px;background:#0188fe;color:#fff;padding:3px 9px;border-radius:20px;margin-left:4px;vertical-align:middle;">Instant</span></h3>
+</div>
+<ol style="font-size:14.5px;color:#475569;line-height:2;margin:0;padding-left:20px;">
+<li>Open <strong>AUN Care</strong> and make sure you are signed in.</li>
+<li>Go to the <strong>Settings</strong> tab (bottom right).</li>
+<li>Scroll to the bottom and tap <strong>Delete my account</strong>.</li>
+<li>Read what will be deleted and what we keep, then tap <strong>Delete account</strong>.</li>
+<li>Confirm once more. Your account is deleted immediately and you are signed out.</li>
+</ol>
+</div>
+[/col]
+
+[col span="6" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:26px;height:100%;">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+<div style="width:42px;height:42px;border-radius:12px;background:rgba(124,58,237,0.10);color:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-paper-plane"></i></div>
+<h3 style="font-size:17px;margin:0;color:#0f172a;">2. Ask us to do it</h3>
+</div>
+<p style="font-size:14.5px;color:#475569;line-height:1.7;margin:0 0 14px;">Removed the app already, or can't sign in? Send us a deletion request from any of these, and include <strong>the mobile number your account uses</strong>:</p>
+<a href="mailto:info@aun-projector.com.bd?subject=Delete%20my%20AUN%20Care%20account&amp;body=Please%20delete%20my%20AUN%20Care%20app%20account.%0A%0AMy%20registered%20mobile%20number%3A%20%0A%0AI%20understand%20my%20warranty%20registration%20and%20service%20records%20will%20be%20kept.%0A" style="display:flex;align-items:center;gap:12px;background:#f8fafc;padding:13px 16px;border-radius:8px;border:1px solid #e2e8f0;text-decoration:none;color:#0f172a;font-weight:600;margin-bottom:10px;">
+<i class="fa-solid fa-envelope" style="font-size:17px;color:#0188fe;"></i> Email a deletion request
+</a>
+<a href="https://api.whatsapp.com/send?phone=8801787698268&amp;text=Please%20delete%20my%20AUN%20Care%20app%20account." style="display:flex;align-items:center;gap:12px;background:#f8fafc;padding:13px 16px;border-radius:8px;border:1px solid #e2e8f0;text-decoration:none;color:#166534;font-weight:600;margin-bottom:10px;">
+<i class="fa-brands fa-whatsapp" style="font-size:19px;color:#25D366;"></i> WhatsApp us
+</a>
+<a href="https://support.smartliving.com.bd/" style="display:flex;align-items:center;gap:12px;background:#f8fafc;padding:13px 16px;border-radius:8px;border:1px solid #e2e8f0;text-decoration:none;color:#0f172a;font-weight:600;">
+<i class="fa-solid fa-ticket" style="font-size:17px;color:#0188fe;"></i> Open a support ticket
+</a>
+<p style="font-size:13px;color:#64748b;line-height:1.6;margin:14px 0 0;">We verify that the request really comes from the owner of that number, then delete the account <strong>within 7 working days</strong> and confirm when it is done.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="What Happens"]
+
+[ux_text text_align="center"]
+<h2 style="font-size:22px;margin:0 0 6px;color:#0f172a;">What happens when you delete</h2>
+<p style="font-size:14.5px;color:#64748b;margin:0 0 26px;max-width:720px;margin-left:auto;margin-right:auto;">We delete your account and the personal information in it. A few records stay — they are your own proof of purchase and our business records, and we tell you plainly which ones.</p>
+[/ux_text]
+
+[row]
+
+[col span="6" span__sm="12"]
+<div style="background:#fff;border:1px solid #fecaca;border-radius:16px;padding:24px;height:100%;">
+<div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;">
+<i class="fa-solid fa-trash-can" style="font-size:17px;color:#dc2626;"></i>
+<h3 style="font-size:16px;margin:0;color:#dc2626;">Deleted immediately</h3>
+</div>
+<ul style="font-size:14.5px;color:#475569;line-height:1.9;margin:0;padding-left:20px;">
+<li>Your profile — name, email address and photo</li>
+<li>Your sign-in on <strong>every</strong> device, so all phones are logged out</li>
+<li>Your notifications and your push-notification token, so alerts stop at once</li>
+<li>The list of projectors you added in the app</li>
+<li>Any problem reports and screenshots you sent us from the app</li>
+<li>Your saved preferences inside the app</li>
+</ul>
+</div>
+[/col]
+
+[col span="6" span__sm="12"]
+<div style="background:#fff;border:1px solid #bbf7d0;border-radius:16px;padding:24px;height:100%;">
+<div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;">
+<i class="fa-solid fa-shield-halved" style="font-size:17px;color:#16a34a;"></i>
+<h3 style="font-size:16px;margin:0;color:#16a34a;">Kept — and why</h3>
+</div>
+<ul style="font-size:14.5px;color:#475569;line-height:1.9;margin:0;padding-left:20px;">
+<li><strong>Your warranty registration.</strong> It stays valid — this is your proof of purchase, and deleting it would cost you your warranty.</li>
+<li><strong>Repair and spare-parts requests</strong>, finished or in progress. A projector may be in our service centre right now. These are separated from your account but keep the phone number, so our team can still reach you.</li>
+<li><strong>Our sales record</strong> — your invoice. We are required to keep transaction records.</li>
+<li><strong>Support tickets</strong> you opened, as a record of the conversation.</li>
+</ul>
+</div>
+[/col]
+
+[/row]
+
+[ux_text]
+<div style="max-width:900px;margin:26px auto 0;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #0188fe;border-radius:12px;padding:20px 22px;">
+<h3 style="font-size:16px;margin:0 0 8px;color:#0f172a;"><i class="fa-solid fa-circle-info" style="color:#0188fe;margin-right:7px;"></i>A few things worth knowing</h3>
+<ul style="font-size:14.5px;color:#475569;line-height:1.85;margin:0;padding-left:20px;">
+<li><strong>It cannot be undone.</strong> There is no recovery period — once deleted, your profile and app data are gone.</li>
+<li><strong>You can come back.</strong> Sign in again with the same mobile number whenever you like. You will start with a clean, empty profile, and purchases registered to your number will be found again automatically.</li>
+<li><strong>Your projector is not affected.</strong> Deleting the app account does not cancel your warranty and does not stop any repair already under way.</li>
+<li><strong>Sold your projector?</strong> Deleting your account releases its serial number, so the new owner can add it to their own account.</li>
+<li><strong>Your website account is separate.</strong> If you also have an account on our online store, it and your order history are not deleted by this. Ask us if you want that removed too.</li>
+</ul>
+</div>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="34px" label="Delete Account Footer"]
+
+[ux_text text_align="center"]
+<p style="font-size:14.5px;color:#475569;line-height:1.7;margin:0 0 8px;">The AUN Care Bangladesh app is operated by <strong>Smart Living Bangladesh</strong>.</p>
+<p style="font-size:14px;color:#64748b;margin:0;">See also our <a href="/app-privacy-policy/" style="color:#0188fe;font-weight:600;">app privacy policy</a> · <a href="https://www.smartliving.com.bd/" style="color:#0188fe;">smartliving.com.bd</a></p>
+<p style="font-size:12.5px;color:#94a3b8;margin:18px 0 0;">Last updated: <strong>30 July, 2026</strong></p>
+[/ux_text]
+
+[/section]

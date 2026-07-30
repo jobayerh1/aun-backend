@@ -1,0 +1,330 @@
+/* ====================================
+ * GreenWeb SMS WooCommerce OTP Styles
+ * Inline OTP flow — shown above Place Order button
+ * ====================================
+ * Self-contained: uses !important to block theme inheritance.
+ * No dependency on theme/woocommerce button or input classes.
+ * ====================================
+ */
+
+/* --- Main Container --- */
+.gw-otp-container {
+    position: relative !important;
+    margin: 15px 0 !important;
+    padding: 40px 20px 18px !important;
+    border: 1px solid #d9d9d9 !important;
+    border-radius: 6px !important;
+    background: #fafafa !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    color: #333 !important;
+}
+
+/* --- Alert Messages --- */
+.gw-otp-alert {
+    margin-bottom: 10px !important;
+    padding: 10px 14px !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+}
+
+/* --- Loading Spinner --- */
+.gw-otp-loading {
+    margin-bottom: 10px !important;
+    text-align: center !important;
+    padding: 8px 0 !important;
+    font-size: 14px !important;
+    color: #666 !important;
+}
+
+.gw-otp-loading img {
+    vertical-align: middle !important;
+    max-height: 24px !important;
+}
+
+/* --- Title & Subtitle --- */
+.gw-otp-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    margin: 0 0 4px 0 !important;
+    padding: 0 !important;
+    color: #333 !important;
+    line-height: 1.4 !important;
+    border: none !important;
+    background: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.gw-otp-subtitle {
+    font-size: 13px !important;
+    margin: 0 0 12px 0 !important;
+    padding: 0 !important;
+    color: #666 !important;
+    line-height: 1.4 !important;
+    border: none !important;
+    background: none !important;
+}
+
+/* --- Phone Input --- */
+.gw-otp-phone-input {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 0 10px 0 !important;
+    padding: 10px 14px !important;
+    font-size: 16px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    color: #333 !important;
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    height: auto !important;
+    text-align: left !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.gw-otp-phone-input:focus {
+    border-color: #7a7a7a !important;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1) !important;
+}
+
+/* --- OTP Button (Send / Verify) --- */
+.gw-otp-btn {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 0 8px 0 !important;
+    padding: 12px 20px !important;
+    font-size: 15px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 600 !important;
+    line-height: 1.5 !important;
+    text-align: center !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    text-decoration: none !important;
+    color: #fff !important;
+    background: #333 !important;
+    border: 1px solid #333 !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    outline: none !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    height: auto !important;
+    display: inline-block !important;
+    transition: opacity 0.2s ease, transform 0.1s ease !important;
+    text-shadow: none !important;
+}
+
+.gw-otp-btn:hover {
+    opacity: 0.85 !important;
+    background: #333 !important;
+    border-color: #333 !important;
+    color: #fff !important;
+}
+
+.gw-otp-btn:active {
+    transform: scale(0.98) !important;
+}
+
+.gw-otp-btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* --- OTP Digit Inputs --- */
+.gw-otp-digits-wrap {
+    text-align: center !important;
+    margin: 16px 0 !important;
+}
+
+.gw-otp-digit {
+    width: 56px !important;
+    max-width: 56px !important;
+    min-width: 0 !important;
+    height: 60px !important;
+    min-height: 0 !important;
+    font-size: 28px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    margin: 0 5px !important;
+    padding: 0 !important;
+    border: 2px solid #d0d0d0 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #333 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    -moz-appearance: textfield !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.gw-otp-digit::-webkit-inner-spin-button,
+.gw-otp-digit::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+.gw-otp-digit:focus {
+    border-color: #555 !important;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1) !important;
+}
+
+/* --- Success Message --- */
+.gw-otp-success-msg {
+    display: none;
+    color: #155724 !important;
+    background: #d4edda !important;
+    padding: 10px 14px !important;
+    border-radius: 4px !important;
+    margin: 0 0 10px 0 !important;
+    font-size: 13px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    line-height: 1.4 !important;
+    border: 1px solid #c3e6cb !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+}
+
+/* --- Links (Change / Resend) --- */
+.gw-otp-links {
+    text-align: center !important;
+    font-size: 13px !important;
+    margin: 4px 0 0 0 !important;
+    padding: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.gw-otp-links a {
+    display: inline !important;
+    margin: 0 8px !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    font-size: 13px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    color: #555 !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    transition: color 0.2s ease !important;
+}
+
+.gw-otp-links a:hover {
+    color: #000 !important;
+    text-decoration: underline !important;
+    background: none !important;
+}
+
+.gw-otp-links a + a {
+    border-left: 1px solid #ddd !important;
+    padding-left: 16px !important;
+}
+
+/* --- Close Button (top-right clean circle icon) --- */
+.gw-otp-close-btn {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    font-size: 16px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 400 !important;
+    line-height: 1 !important;
+    color: #aaa !important;
+    background: rgba(0,0,0,0.04) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    box-shadow: none !important;
+    outline: none !important;
+    transition: color 0.2s ease, background 0.2s ease !important;
+    z-index: 1 !important;
+}
+
+.gw-otp-close-btn:hover {
+    color: #555 !important;
+    background: rgba(0,0,0,0.1) !important;
+    text-decoration: none !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+    .gw-otp-container {
+        padding: 36px 14px 14px !important;
+        margin: 10px 0 !important;
+    }
+
+    .gw-otp-close-btn {
+        top: 6px !important;
+        right: 6px !important;
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 14px !important;
+    }
+
+    .gw-otp-digit {
+        width: 48px !important;
+        max-width: 48px !important;
+        height: 52px !important;
+        font-size: 24px !important;
+        margin: 0 4px !important;
+    }
+
+    .gw-otp-phone-input {
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+    }
+
+    .gw-otp-btn {
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+    }
+
+    .gw-otp-title {
+        font-size: 15px !important;
+    }
+
+    .gw-otp-links {
+        font-size: 12px !important;
+    }
+
+    .gw-otp-links a {
+        margin: 0 5px !important;
+    }
+
+    .gw-otp-links a + a {
+        padding-left: 10px !important;
+    }
+}

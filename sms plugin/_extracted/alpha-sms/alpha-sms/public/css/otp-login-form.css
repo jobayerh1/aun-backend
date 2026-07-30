@@ -1,0 +1,39 @@
+/*login page otp styles*/
+#loginform{
+    overflow: hidden !important;
+}
+.float-none {
+    float: none !important;
+}
+
+.float-right {
+    float: right !important;
+}
+
+.d-flex{
+    display: flex !important;
+}
+
+.my-3 {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.mb-3{
+    margin-bottom: 1rem !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+#alpha_sms_otp label > input {
+    font-size: 1.2rem;
+}
+
+#wp-submit {
+    float: none;
+    width: 100%;
+    padding: 6px 12px;
+    margin-top: 1rem;
+}

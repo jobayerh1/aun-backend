@@ -1,0 +1,59 @@
+<div style="background:#f0f7ff;padding:20px 22px;border-radius:12px;border:1px solid #bcd9f8;position:relative;overflow:hidden;font-family:inherit;box-sizing:border-box">
+  <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:#0188fe"></div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="background:#0188fe;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px;line-height:1.6;display:inline-block;white-space:nowrap">1 YEAR WARRANTY</span>
+    <strong style="font-size:15px;color:#0c2a4a;font-weight:700;line-height:1.3">Official manufacturer coverage</strong>
+  </div>
+
+  <ul style="list-style:none;padding:0;margin:0 0 16px">
+    <li style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(1,136,254,.1)">
+      <span style="width:20px;height:20px;min-width:20px;border-radius:50%;background:#0188fe;display:inline-flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-check" style="color:#fff;font-size:9px;line-height:1"></i>
+      </span>
+      <span style="font-size:14px;color:#1e3a52;line-height:1.4">Hardware defects covered for 12 months from purchase date</span>
+    </li>
+    <li style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(1,136,254,.1)">
+      <span style="width:20px;height:20px;min-width:20px;border-radius:50%;background:#0188fe;display:inline-flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-check" style="color:#fff;font-size:9px;line-height:1"></i>
+      </span>
+      <span style="font-size:14px;color:#1e3a52;line-height:1.4">Free parts &amp; labour at our official service center</span>
+    </li>
+    <li style="display:flex;align-items:center;gap:10px;padding:8px 0">
+      <span style="width:20px;height:20px;min-width:20px;border-radius:50%;background:#0188fe;display:inline-flex;align-items:center;justify-content:center">
+        <i class="fa-solid fa-check" style="color:#fff;font-size:9px;line-height:1"></i>
+      </span>
+      <span style="font-size:14px;color:#1e3a52;line-height:1.4">Online-store orders are warranty-registered automatically &mdash; bought from a dealer or shop? <a href="/warranty-register/" style="color:#0188fe;font-weight:600;text-decoration:none">Register your warranty</a> in 2 minutes</span>
+    </li>
+  </ul>
+
+  <div style="background:#fff;border:1px solid #dcebfb;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#0188fe;margin-bottom:10px">How a claim works</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <div style="flex:1 1 160px;display:flex;align-items:flex-start;gap:9px">
+        <span style="width:22px;height:22px;min-width:22px;border-radius:50%;background:#eaf4ff;border:1px solid #bcd9f8;color:#0188fe;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">1</span>
+        <span style="font-size:13px;color:#1e3a52;line-height:1.45">Contact our support team by phone, WhatsApp or email</span>
+      </div>
+      <div style="flex:1 1 160px;display:flex;align-items:flex-start;gap:9px">
+        <span style="width:22px;height:22px;min-width:22px;border-radius:50%;background:#eaf4ff;border:1px solid #bcd9f8;color:#0188fe;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">2</span>
+        <span style="font-size:13px;color:#1e3a52;line-height:1.45">Courier the unit to our service center &mdash; from anywhere in Bangladesh</span>
+      </div>
+      <div style="flex:1 1 160px;display:flex;align-items:flex-start;gap:9px">
+        <span style="width:22px;height:22px;min-width:22px;border-radius:50%;background:#eaf4ff;border:1px solid #bcd9f8;color:#0188fe;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">3</span>
+        <span style="font-size:13px;color:#1e3a52;line-height:1.45">We repair &amp; courier it back &mdash; <a href="/repair-status/" style="color:#0188fe;font-weight:600;text-decoration:none">track your repair live</a></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #bcd9f8;flex-wrap:wrap;gap:10px">
+    <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#4a6a8a;line-height:1.4">
+      <i class="fa-regular fa-file-lines" style="font-size:13px;color:#4a6a8a;line-height:1"></i>
+      <span>Keep your purchase receipt &amp; original box for warranty claims</span>
+    </span>
+    <a href="/warranty-policy" target="_blank" rel="noopener noreferrer"
+       style="display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#0188fe;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:7px;text-decoration:none;line-height:1;white-space:nowrap;box-sizing:border-box">
+      <span style="line-height:1;color:#fff">Warranty policy</span>
+      <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:10px;color:#fff;line-height:1"></i>
+    </a>
+  </div>
+</div>

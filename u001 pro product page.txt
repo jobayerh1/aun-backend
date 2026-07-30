@@ -1,0 +1,439 @@
+[section]
+
+[row style="collapse" v_align="middle"]
+
+[col span__sm="12" padding="0px 0px 0px 0px" margin="0px 0px -28px 0px" align="center" animate="bounceIn"]
+
+[featured_box img="1557" inline_svg="0" img_width="70" pos="center"]
+
+
+[/featured_box]
+
+[/col]
+[col span__sm="12" margin="0px 0px -15px 0px" align="center" animate="bounceIn"]
+
+<h3 style="text-align: center;">See The World Through Larger Screen</h3>
+
+[/col]
+[col span__sm="12" align="center" animate="flipInY"]
+
+[divider align="center" width="100px"]
+
+
+[/col]
+
+[/row]
+
+[/section]
+[ux_banner height="50%" bg="8575" bg_size="original" bg_overlay="rgba(0, 0, 0, 0.2)" bg_pos="45% 55%" hover="zoom"]
+
+[ux_image id="5031" image_size="original" width="10" animate="fadeInLeft" position_x="5" position_y="85"]
+
+[text_box width="70" scale__sm="80" padding="0px 0px 0px 5px" animate="fadeInRight" position_x="15" position_y="85" position_y__sm="95" text_align="left"]
+
+[ux_text text_align="left"]
+
+<h2><b>Unlimited wonders</b></h2>
+<h6><b>Powered by AUN</b></h6>
+[/ux_text]
+
+[/text_box]
+[text_box animate="fadeIn" position_x="50" position_y="50" visibility="hidden"]
+
+[video_button video="https://www.youtube.com/watch?v=bdO43ycpDak"]
+
+
+[/text_box]
+
+[/ux_banner]
+[section label="key stats" bg_color="rgb(9,15,28)" dark="true" padding="48px"]
+
+[row v_align="middle" h_align="center"]
+
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">2050</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Lumens (Rated)</p>
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">300&Prime;</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Max Projection</p>
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">14</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Genuine Android TV</p>
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">5.7&Prime;</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">LCD Panel</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[section]
+
+<p>[aun_head eyebrow="See it live" icon="fa-circle-play" title="Watch It In Action" sub="See how it turns any wall into a big-screen cinema."]</p>
+[ux_html label="watch in action"]
+
+[aun_shorts ids="HAuUMAPcxpg, T9TJqnGH6Bo, 4lSaRE2ZBFM"]
+[/ux_html]
+
+[/section]
+[section label="smart adjustment"]
+
+<p>[aun_head eyebrow="Effortless setup" icon="fa-wand-magic-sparkles" title="Smart Adjustments" sub="Set it once — it focuses, aligns and corrects the image automatically."]</p>
+[ux_html]
+
+[aun_smart_adjustments tof="1"]
+[/ux_html]
+
+[/section]
+[section]
+
+<p>[aun_head eyebrow="Real shots" icon="fa-image" title="Real Projection Photos" sub="Photographed from the actual projector in action — not mockups or manufacturer renders."]</p>
+[ux_gallery ids="7956,7957,7958,5711" style="normal" type="grid" grid="3" col_spacing="small" animate="fadeIn" image_size="thumbnail" image_hover="zoom" text_size="large" text_bg="rgba(255, 255, 255, 0.227)"]
+
+
+[/section]
+[section padding__sm="0px"]
+
+<p>[aun_head eyebrow="Why you'll love it" icon="fa-star" title="Designed to Impress" sub="Every detail engineered for a bigger, sharper, smarter home cinema."]</p>
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Display</p>
+<h3><strong>Full HD Resolution</strong></h3>
+<p><span style="font-size: 140%;">The U001 Pro adopts the powerful 5.7 inch LCD screen. It delivers Full HD with deep, vivid shades and striking clarity, powered by AUN's advanced long-life LED light source.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="230px" bg="8574" bg_size="original" bg_pos="0% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12" animate="fadeInLeft"]
+
+[ux_banner height="350px" height__sm="230px" bg="8573" bg_size="original" bg_pos="2% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12"]
+
+[ux_banner height="300px" height__sm="230px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInRight" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Gaming</p>
+<h3><strong>60Hz LCD Screen</strong></h3>
+<p><span style="font-size: 140%;">Open up new gaming worlds, larger than 100” screen with frame rate upto 60fps. Enjoy gaming or binge-watching with friends.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="cinema core" bg_color="rgb(9,15,28)" dark="true" padding__sm="0px"]
+
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(13,22,42)"]
+
+[text_box width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow" style="color:#4da8ff;">Picture Quality</p>
+<h3><strong>HDR Realistic Video</strong></h3>
+<p><span style="font-size: 140%;">AUN exclusive HDR technology heightens the HDR viewing experience with enhanced tone mapping, vivid darkness for hyper-realistic picture quality.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="230px" bg="8576" bg_size="original" bg_pos="0% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12" animate="fadeInLeft"]
+
+[ux_banner height="350px" height__sm="230px" bg="8577" bg_size="original" bg_pos="0% 100%"]
+
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(13,22,42)"]
+
+[text_box width="100" animate="fadeInRight" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow" style="color:#4da8ff;">TOF Smart Tech</p>
+<h3><strong>Intelligent Screen Adaptation</strong></h3>
+<p><span style="font-size: 140%;">TOF-Powered Auto Focus & Auto Keystone instantly adapt the image for ultra-fast, smooth, and precise screen correction.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+
+[/section]
+[gap]
+
+[section padding__sm="0px"]
+
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Protection</p>
+<h3><strong>Dust Filter</strong></h3>
+<p><span style="font-size: 140%;">This prevent dust from accumulating on the surface of the optical elements inside the projector.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="230px" bg="5038" bg_color="rgb(255,255,255)" bg_pos="0% 100%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12" animate="fadeInLeft"]
+
+[ux_banner height="350px" height__sm="230px" bg="5053" bg_size="original" bg_pos="0% 100%"]
+
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12"]
+
+[ux_banner height="300px" height__sm="230px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInRight" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Audio</p>
+<h3><strong>Built-in Stereo Speaker</strong></h3>
+<p><span style="font-size: 140%;">With built-in 4Ω5W*2 audio system, the compact U001 Pro delivers rich and immersive sound that you can feel. </span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="300px" height__sm="230px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Ports &amp; I/O</p>
+<h3><strong>Rich Interface</strong></h3>
+<p><span style="font-size: 140%;">U001 Pro is designed with multiple connections, offering seamless connectivity across various devices such as tablet, smartphone, laptop, PC for versatility and convenience.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="230px" bg="5125" bg_color="rgb(255,255,255)" bg_pos="0% 100%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="whats inside the box" bg_color="rgb(249, 249, 249)"]
+
+<p>[aun_head eyebrow="In the box" icon="fa-box-open" title="What's Inside the Box" sub="Everything you need to get started, right out of the box."]</p>
+[row style="small" col_bg_radius="5" h_align="center"]
+
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8799" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>Remote Control</h4>
+<p style="color:#666; font-size:14px;">Easy navigation included</p>
+
+[/featured_box]
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8800" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>HDMI Cable</h4>
+<p style="color:#666; font-size:14px;">Seamless connectivity</p>
+
+[/featured_box]
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8797" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>User Manual</h4>
+<p style="color:#666; font-size:14px;">Quick start & troubleshooting</p>
+
+[/featured_box]
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8798" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>Power Cable</h4>
+<p style="color:#666; font-size:14px;">Universal compatibility</p>
+
+[/featured_box]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="faq"]
+
+<p>[aun_head eyebrow="Good to know" icon="fa-circle-question" title="Frequently Asked Questions" sub="Quick answers to what buyers ask us most."]</p>
+[row h_align="center"]
+
+[col span="10" span__sm="12"]
+
+[accordion]
+
+[accordion-item title="Can I use it in a bright room?"]
+
+<p>It shines in dim or dark rooms. In the daytime, just close the curtains for a vivid picture — like any home projector, full direct sunlight will wash out the image.</p>
+
+[/accordion-item]
+[accordion-item title="What does the lumens rating actually mean?"]
+
+<p>The brightness figure on the spec sheet is the manufacturer's official rating, measured at the light source — the convention used across the projector industry by virtually every brand. The brightness you actually see on screen is always lower than the rated figure, for every projector on the market, because light is lost passing through the lens system. That's why we describe every model by room type instead, and show real unedited projection photos on this page — so you judge with your own eyes, not with a number. Want the full story? Read our honest guide: <a href="/projector-brightness-explained/">Projector Brightness, Explained</a>.</p>
+
+[/accordion-item]
+[accordion-item title="How big a screen can I get?"]
+
+<p>From 50&Prime; up to a giant 300&Prime; picture (1.6 – 9.8 m placement) — the further back you place it, the bigger the screen. Use the throw-distance calculator on this page to match it to your room.</p>
+
+[/accordion-item]
+[accordion-item title="Can I watch YouTube or Netflix directly?"]
+
+<p>Yes — it runs Genuine Android TV 14 with official apps like YouTube, Netflix and Prime Video, plus Wi-Fi screen mirroring (AirPlay &amp; Miracast) from your phone, tablet or laptop.</p>
+
+[/accordion-item]
+[accordion-item title="Will dust damage it in Bangladesh?"]
+
+<p>Dust is the biggest enemy of projectors in Bangladesh — and the U001 Pro is built with that in mind. Its removable dust filter blocks most dust before it reaches the optics, so build-up is far slower than in unprotected projectors. Clean the filter regularly, and if you ever wash it, let it dry completely before putting it back.</p>
+
+[/accordion-item]
+[accordion-item title="What about warranty and service?"]
+
+<p>Every unit comes with a 1-year official AUN warranty. If anything goes wrong, contact our support team and send the unit to our service center — we'll repair it and courier it back to you, anywhere in Bangladesh. You can even track your repair status live on our website. Bought from our online store? Your warranty is registered automatically. Bought from an authorized dealer or physical shop? Just register your warranty online to activate it.</p>
+
+[/accordion-item]
+[accordion-item title="Can I pay with EMI, bKash or cash on delivery?"]
+
+<p>Yes — we offer 0% EMI, bKash/Nagad, cards, and cash on delivery across Bangladesh.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="trust/assurance row" bg="linear-gradient(135deg,#0188fe,#00c6ff)" dark="true" padding="40px"]
+
+[row h_align="center"]
+
+[col span="4" align="center"]
+
+<p>  <i class="fa fa-shield-alt" style="font-size:32px; color:#fff;"></i></p>
+<h4 style="color:#fff; margin-bottom:5px;">1 Year Warranty</h4>
+<p style="color:#e6e6e6; font-size:14px;">Peace of mind guaranteed</p>
+
+[/col]
+[col span="4" align="center"]
+
+<p>  <i class="fa fa-truck" style="font-size:32px; color:#fff;"></i></p>
+<h4 style="color:#fff; margin-bottom:5px;">Fast Delivery Nationwide</h4>
+<p style="color:#e6e6e6; font-size:14px;">Quick & reliable shipping</p>
+
+[/col]
+[col span="4" align="center"]
+
+<p>  <i class="fa fa-credit-card" style="font-size:32px; color:#fff;"></i></p>
+<h4 style="color:#fff; margin-bottom:5px;">Easy EMI Options</h4>
+<p style="color:#e6e6e6; font-size:14px;">Flexible payments made simple</p>
+
+[/col]
+
+[/row]
+
+[/section]

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Recurse -File | Where-Object { $_.Extension -in '.php','.log','.txt' } | Sort-Object LastWriteTime -Descending | Select-Object FullName, Length, LastWriteTime)",
+      "PowerShell($c = Get-Content -Raw 'slb-erp-sync.php'; \"open_braces  = \" + \\([regex]::Matches\\($c,'\\\\{'\\)\\).Count; \"close_braces = \" + \\([regex]::Matches\\($c,'\\\\}'\\)\\).Count; \"open_parens  = \" + \\([regex]::Matches\\($c,'\\\\\\('\\)\\).Count; \"close_parens = \" + \\([regex]::Matches\\($c,'\\\\\\)'\\)\\).Count)"
+    ]
+  }
+}

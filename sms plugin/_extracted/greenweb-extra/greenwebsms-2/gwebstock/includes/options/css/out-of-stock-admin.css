@@ -1,0 +1,351 @@
+/*
+#wpcontent {
+  padding-left : 0px;
+}
+
+#wpbody-content .gweb-wrap,
+#wpbody-content .wrap {
+  padding-left: 20px;
+}
+
+#isa-logo-header {
+  padding: 20px 0 8px 30px;
+  border-top: 4px solid green;
+}
+
+.woo-tab-wrapper {
+    margin-left: 20px;
+}
+
+#gweb-stock-notify-form h2 {
+  margin-top: 60px;
+  font-weight: 700;
+}
+
+.sent-alert td {
+   vertical-align: middle;
+   margin: 0;
+}
+
+
+td>input[type=checkbox]{
+  margin: 0;
+  margin-top: -5px;
+}
+*/
+#gweb-stock-notify-form .form-table {
+  margin-left: 20px;
+  margin-right: 10px;
+}
+#gweb-stock-notify-form h2 {
+  font-size: 1.8em;
+  margin-top: 60px;
+}
+
+/* No Result alert*/
+.alert-view-no-results {
+  padding: 200px 0;
+  font-size: 3em;
+  color: #555;
+  line-height: 1.3em;
+}
+/* Action */
+.isa-action-container div {
+  display: inline-block;
+}
+.isa-action-container .action-btn,
+.isa-action-container .email-action-btn  {
+  background-color: darkgray;
+  color: white;
+  border-radius: 3px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+
+/* Sorting icons */
+.isa-th-title div {
+  display: inline-block;
+}
+.sort-by-asc
+{
+    opacity: 0;
+    left: 3px;
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border: solid 5px transparent;
+    margin: 4px 4px 0 4px;
+    background: transparent;
+    border-bottom: solid 7px #F80;
+    border-top-width: 0;
+    cursor: pointer;
+}
+
+.sort-by-desc
+{
+    opacity: 0;
+    left: 3px;
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border: solid 5px transparent;
+    margin: 4px 4px 0 4px;
+    background: transparent;
+    border-top: solid 7px #F80;
+    border-bottom-width: 0;
+    cursor: pointer;
+}
+
+#gweb-backorder-word-descr {
+  background-color: #eaa600;
+  padding: 1px 6px;
+  margin: 0 2px;
+  color: white;
+  font-weight: 600;
+}
+
+.isa-th-title:hover i {
+  opacity: .7;
+}
+
+.sort-select {
+  opacity: 1 !important;
+}
+
+/* Pagination */
+.isa-pagination {
+  margin-top: 20px;
+}
+
+.page-numbers {
+	display: flex;
+	padding: 10px 15px;
+	margin: 0 2px 0 0;
+	border: 1px solid #eee;
+	line-height: 1;
+	text-decoration: none;
+	border-radius: 2px;
+	font-weight: 700;
+  font-size: 1.1em;
+}
+.page-numbers.current,
+a.page-numbers:hover {
+	background: #f9f9f9;
+}
+
+.page-numbers.current {
+  	border: 1px solid #CCCCCC;
+}
+
+#gweb_stock_alert_options_gweb_button_size {
+  display: flex;
+}
+#gweb_stock_alert_options_gweb_button_size input {
+  margin-bottom: 15px;
+}
+
+#gweb_stock_alert_options_gweb_button_size label {
+  text-align: center;
+  display: inline-block;
+  margin-right: 38px;
+  font-weight: 600;
+}
+
+/* Loader img */
+ .isa-action-container .loader {
+   position: absolute;
+   border: 4px solid darkgray;
+   border-radius: 50%;
+   border-top: 4px solid white;
+   width: 10px;
+   height: 10px;
+   -webkit-animation: spin .4s linear infinite; /* Safari */
+   animation: spin .4s linear infinite;
+   opacity: .7;
+   margin-left: 10px;
+   margin-top: 5px;
+ }
+.isa-action-container .hidden-loader {
+    display: none;
+}
+
+/* Loader email */
+.loader-email {
+  display: none;
+   /* position: absolute; */
+   border: 4px solid darkgray;
+   border-radius: 50%;
+   border-top: 4px solid white;
+   width: 10px;
+   height: 10px;
+   -webkit-animation: spin .4s linear infinite; /* Safari */
+   animation: spin .4s linear infinite;
+   opacity: .7;
+   margin-left: 10px;
+   margin-top: -9px;
+ }
+
+ .save-loader  {
+   display: none;
+    /* position: absolute; */
+    border: 4px solid darkgray;
+    border-radius: 50%;
+    border-top: 4px solid white;
+    width: 10px;
+    height: 10px;
+    -webkit-animation: spin .4s linear infinite; /* Safari */
+    animation: spin .4s linear infinite;
+    opacity: .7;
+    margin-left: 10px;
+    margin-top: -9px;
+  }
+.isa-action-container .hidden-loader {
+    display: none;
+}
+
+ /* Safari */
+ @-webkit-keyframes spin {
+   0% { -webkit-transform: rotate(0deg); }
+   100% { -webkit-transform: rotate(360deg); }
+ }
+
+/* Grouping switch */
+
+.switch-container {
+    margin-bottom: 10px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 18px;
+  margin-bottom: 3px
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 1px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(20px);
+  -ms-transform: translateX(20px);
+  transform: translateX(20px);
+}
+
+.wp-picker-container .wp-color-result.button {
+  border-right: 1.5px solid;
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+#email-notification-test {
+  margin: 40px 0;
+}
+
+.send-test-title {
+  margin-top: 40px !important;
+}
+
+/* Error-success message*/
+.isa-error-message {
+  color: #dc3232;
+  font-size: 1.1em;
+  font-weight: 700;
+  display: none;
+}
+.isa-success-message {
+  color: #46b450;
+  font-size: 1.1em;
+  font-weight: 700;
+  display: none;
+}
+
+.isa-action-container .isa-send-alert-btn {
+  background-color: forestgreen;
+}
+
+.isa-action-container .isa-delete-btn,
+.isa-action-container .isa-email-delete-btn {
+  background-color: crimson;
+}
+
+#message {
+  margin-left: 0 !important;
+  margin-top: 35px;
+}
+
+/* Hides WP update notice */
+.update-nag {
+  display: none !important;
+}
+
+#setting-error-settings_updated {
+  display: none;
+}
+
+/* Mobile Style */
+@media screen and (max-width: 786px) {
+
+  .isa-th-title{
+    display: none;
+  }
+  .isa-prod-img {
+    margin: 10px;
+  }
+  .wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.check-column) {
+    width: 100% !important;
+  }
+
+
+}
+
+@media screen and (min-width: 786px) {
+
+  .isa-th-title-mobile{
+    display: none;
+  }
+
+}

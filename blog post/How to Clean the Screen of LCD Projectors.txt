@@ -1,0 +1,205 @@
+[section label="clean-lcd-projector-screen" bg_color="#f9fafb" padding="25px"]
+
+[row v_align="middle"]
+
+[col span="7" span__sm="12"]
+
+[ux_html]
+
+<h1>How to Clean a Projector Screen & Lens (LCD Projectors)</h1>
+<p style="font-size:14px;color:#6b7280;margin-top:-8px;">
+Last updated: March 2026
+</p>
+        <p class="lead">Safe, simple steps for the projection screen and the outer projector lens — plus what NOT to clean (internal LCD/polarizer).</p>
+        <!-- Optional hero image -->
+        <img src="/wp-content/uploads/2025/09/clean-lcd-projector-screen1.webp" alt="How to clean projector screen and lens" width="1200" height="630" loading="lazy" decoding="async" style="max-width:100%;height:auto;border-radius:12px;margin:10px 0 14px;">
+[/ux_html]
+
+[/col]
+[col span="5" span__sm="12"]
+
+<p>[ez-toc]</p>
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+[ux_html]
+
+<p>If you're maintaining a new device or comparing models, you can also review the latest <a href="/projector-price/">projector price in Bangladesh</a> to choose a dust-resistant and high-brightness model suitable for your room.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="what-to-clean">What you can safely clean</h2>
+        <ul>
+          <li><strong>Projection screen surface:</strong> fixed-frame, pull-down, tripod, or portable. Use a soft method to avoid micro-scratches.</li>
+          <li><strong>Outer projector lens glass:</strong> dust and fingerprints on the outside only.</li>
+        </ul>
+
+        <h2 id="what-not-to-clean">What NOT to clean (at home)</h2>
+        <ul>
+          <li><strong>Internal LCD panels / polarizers / prisms:</strong> opening the optical block risks <em>permanent damage</em> and voided warranty.</li>
+          <li><strong>Coated optics inside the projector:</strong> solvents can strip coatings or leave haze. Seek professional service.</li>
+        </ul>
+        <p>Rule: clean the <em>screen</em> and the <em>outer lens</em>. Leave the <em>inside</em> to service centers.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="materials">Materials checklist</h2>
+        <ul>
+          <li><strong>Microfiber cloths</strong> (two or more, clean & lint-free)</li>
+          <li><strong>Bulb blower</strong> (or compressed air used sparingly, upright)</li>
+          <li><strong>Distilled water</strong> in a small spray bottle</li>
+          <li><strong>Mild dish soap</strong> (1–2 drops in 250 ml distilled water) for screens</li>
+          <li><strong>Lens cleaner</strong> labeled safe for <em>multi-coated optics</em> (for the <em>outer</em> lens only)</li>
+          <li><strong>Soft brush</strong> for edges/bezels</li>
+          <li><strong>Gloves (optional)</strong> to avoid fingerprints</li>
+        </ul>
+        <p><em>Avoid harsh chemicals, paper towels, window cleaners, and high-strength alcohol on screens or coated optics.</em></p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="screen-steps">How to clean a projection screen (step-by-step)</h2>
+        <ol>
+          <li><strong>Power down nearby devices</strong> and ensure the screen is cool and stable.</li>
+          <li><strong>Dry dust:</strong> use a clean microfiber or soft brush; wipe in straight, gentle passes.</li>
+          <li><strong>Spot clean:</strong> lightly mist a microfiber with the <em>soap solution</em> (don’t soak the screen). Dab—not rub—on smudges.</li>
+          <li><strong>Wipe & dry:</strong> follow with a second microfiber slightly dampened with <em>distilled water</em>; finish with a dry microfiber.</li>
+          <li><strong>Stubborn marks:</strong> repeat light passes. If the surface is specialty (ALR/ambient-light-rejecting), check the manufacturer’s care guide.</li>
+        </ol>
+
+        <h2 id="lens-steps">How to clean the projector <em>outer</em> lens</h2>
+        <ol>
+          <li><strong>Unplug & cool down</strong> the projector fully.</li>
+          <li><strong>Blow off dust</strong> with a bulb blower (or short bursts of upright compressed air).</li>
+          <li><strong>Lens cleaner:</strong> apply a drop to a microfiber; never drip directly on the lens. Wipe in small circles from center outward.</li>
+          <li><strong>Dry & inspect:</strong> use a fresh, dry microfiber; check under light for streaks.</li>
+        </ol>
+        <p><em>Do not open the projector or touch internal LCD/polarizer assemblies at home.</em></p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="maintenance">Dust & maintenance tips</h2>
+        <ul>
+          <li>Use a <strong>dust cover</strong> when not in use; keep the room clean and ventilated.</li>
+          <li>Place the projector on a stable shelf; avoid fabric surfaces that shed lint.</li>
+          <li>Replace/clean <strong>filters</strong> as per the manual; keep vents clear.</li>
+          <li>If you see <strong>persistent spots/bands/colors</strong> after cleaning, seek service (could be internal dust or panel damage).</li>
+        </ul>
+<p>Modern models like the <a href="/aun-u002-pro-full-hd-dustproof-tof-laser-auto-focus-android-projector-4k-support/">AUN U002 Pro</a> with its fully sealed, dust-proof optical engine need no filter cleaning at all — dust can't reach the picture-critical optics. Compare available models in our updated <a href="/projector-price/">projector price list in Bangladesh</a>.</p>
+<h2>Looking for a Low-Maintenance Projector?</h2>
+<p>Browse the complete <a href="/projector-price/">projector price in Bangladesh</a> and compare dust-proof, Full HD, and Android models suitable for home and office use.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row style="small" v_align="middle"]
+
+[col span="4" align="center"]
+
+[button text="Home Theater Projector" radius="12" expand="true" link="/home-entertainment-projector/"]
+
+
+[/col]
+[col span="4" align="center"]
+
+[button text="Mini Projector" radius="12" expand="true" link="/portable-projector/"]
+
+
+[/col]
+[col span="4" align="center"]
+
+[button text="Office Projector" radius="12" expand="true" link="/professional-projector/"]
+
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+<div class="rank-math-faq">
+<div class="rank-math-list-item">
+<h2>FAQ</h2>
+<h3 class="rank-math-question">Can I use alcohol to clean the screen or lens?</h3>
+<div class="rank-math-answer">
+<p>Use a <strong>lens-safe cleaner</strong> for the <em>outer</em> lens only. For screens, prefer <strong>distilled water + mild soap</strong>. Strong solvents can damage coatings or leave haze.</p>
+</div>
+</div>
+<div class="rank-math-list-item">
+<h3 class="rank-math-question">There’s still a spot on the image after cleaning. What now?</h3>
+<div class="rank-math-answer">
+<p>If gentle cleaning doesn’t fix it, dust may be inside the optical block or the panel is damaged. Seek <strong>professional service</strong>; don’t open the projector at home.</p>
+</div>
+</div>
+<div class="rank-math-list-item">
+<h3 class="rank-math-question">How often should I clean?</h3>
+<div class="rank-math-answer">
+<p>Light dusting every few weeks; deeper screen/lens cleaning only when needed. Use a dust cover and maintain room cleanliness to reduce frequency.</p>
+</div>
+</div>
+</div>
+
+[/col]
+
+[/row]
+[divider]
+
+
+[/section]
+<hr>
+<h2>Helpful Next Reading</h2>
+<ul>
+<li><a href="/tips-for-using-home-projector/"><strong>Tips for Using a Home Projector (Beginner Checklist)</strong></a></li>
+<li><a href="/projector-price/"><strong>Projector Price in Bangladesh</strong></a> — compare models with official warranty.</li>
+</ul>
+[ux_html]
+
+<h2>References</h2>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Projection_screen">Projection screen materials</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/Camera_lens#Coatings">Optical coatings (why gentle cleaners matter)</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/Liquid-crystal_display">LCD basics</a></li>
+        </ul>
+[/ux_html]

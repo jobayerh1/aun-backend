@@ -1,0 +1,184 @@
+[section label="best-screen-size-home-theater" bg_color="#f9fafb" padding="25px"]
+
+[row v_align="middle"]
+
+[col span="7" span__sm="12"]
+
+[ux_html]
+
+<h1>Best Screen Size for Home Theater (Quick Guide)</h1>
+<p style="font-size:14px;color:#6b7280;margin-top:-8px;">
+Last updated: March 2026
+</p>
+        <p class="lead">Pick the right screen size by matching viewing distance and throw. Simple rules, quick math, and tables for 80–120″.</p>
+        <img src="/wp-content/uploads/2025/09/Best-Screen-Size-for-Home-Theater.webp" alt="Best screen size for home theater projector" width="1200" height="630" loading="lazy" decoding="async" style="max-width:100%;height:auto;border-radius:12px;margin:10px 0 14px;">
+[/ux_html]
+
+[/col]
+[col span="5" span__sm="12"]
+
+<p>[ez-toc]</p>
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+[ux_html]
+
+<p>If you're still choosing a model, compare the latest <a href="/projector-price/">projector price in Bangladesh</a> to find a projector with suitable brightness and throw ratio for your room size.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="distance">1) Viewing distance → choose your screen size</h2>
+        <p>For a comfortable “cinema feel,” sit about <strong>1.5× screen width</strong> away.</p>
+        <ul>
+          <li><strong>80″</strong> diagonal ≈ 1.77 m wide → seat ≈ <strong>2.6 m</strong></li>
+          <li><strong>100″</strong> diagonal ≈ 2.21 m wide → seat ≈ <strong>3.3 m</strong></li>
+          <li><strong>120″</strong> diagonal ≈ 2.65 m wide → seat ≈ <strong>4.0 m</strong></li>
+        </ul>
+        <p><em>Tip:</em> If your room is small, pick 80–100″ and improve black-out/lighting; you’ll get better contrast and comfort.</p>
+
+        <h2 id="throw">2) Throw distance → make sure it fits</h2>
+        <p><strong>Quick math:</strong> Screen width × <em>throw ratio</em> ≈ projector distance.</p>
+        <ul>
+          <li>Common throw ratios for home models: <strong>~1.2–1.5</strong></li>
+          <li>Example (100″): screen width 2.21 m × 1.2–1.5 → projector at <strong>2.6–3.3 m</strong></li>
+        </ul>
+        <p>Check the spec sheet for the exact throw ratio of your model to avoid keystone and focus issues — every AUN product page also has a built-in <strong>throw-distance calculator</strong> that does this math for your room automatically.</p>
+<p>You can review throw ratios and specifications from our updated <a href="/projector-price/">projector price list in Bangladesh</a> before deciding your final screen size.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="table">3) Fast table (popular sizes)</h2>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:10px;border-bottom:1px solid #eee">Diagonal</th>
+              <th style="text-align:left;padding:10px;border-bottom:1px solid #eee">Screen width</th>
+              <th style="text-align:left;padding:10px;border-bottom:1px solid #eee">Viewing distance (~1.5×)</th>
+              <th style="text-align:left;padding:10px;border-bottom:1px solid #eee">Throw distance (1.2–1.5)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0"><strong>80″</strong></td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~1.77 m</td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~2.6 m</td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~2.1–2.7 m</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0"><strong>100″</strong></td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~2.21 m</td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~3.3 m</td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~2.6–3.3 m</td>
+            </tr>
+            <tr>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0"><strong>120″</strong></td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~2.65 m</td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~4.0 m</td>
+              <td style="padding:10px;border-bottom:1px solid #f0f0f0">~3.2–4.0 m</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px"><em>Assumes 16:9 screens. For ultra-wide formats, recalc using the actual screen width.</em></p>
+<h2>Choosing the Right Projector for Your Screen Size?</h2>
+<p>Browse the complete <a href="/projector-price/">projector price in Bangladesh</a> and compare Full HD, Android, and high-brightness models suitable for 80″, 100″, and 120″ home theater setups.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row style="small" v_align="middle"]
+
+[col span="4" align="center"]
+
+[button text="Home Theater Projector" radius="12" expand="true" link="/home-entertainment-projector/"]
+
+
+[/col]
+[col span="4" align="center"]
+
+[button text="Mini Projector" radius="12" expand="true" link="/portable-projector/"]
+
+
+[/col]
+[col span="4" align="center"]
+
+[button text="Office Projector" radius="12" expand="true" link="/professional-projector/"]
+
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+<div class="rank-math-faq">
+<div class="rank-math-list-item">
+<h2>FAQ</h2>
+<h3 class="rank-math-question">Is bigger always better?</h3>
+<div class="rank-math-answer">
+<p>No. If you sit too close or the room is bright, very large screens reduce comfort and contrast. Match size to distance and lighting.</p>
+</div>
+</div>
+<div class="rank-math-list-item">
+<h3 class="rank-math-question">What if my room is small?</h3>
+<div class="rank-math-answer">
+<p>Pick 80–100″, control ambient light, and position seating ~1.5× screen width away for a balanced experience.</p>
+</div>
+</div>
+</div>
+
+[/col]
+
+[/row]
+
+[/section]
+<hr>
+<h2>More Home Theater Guides</h2>
+<ul>
+<li><a href="/home-theater-setup-bangladesh/"><strong>Home Theater Setup in Bangladesh (Step-by-Step)</strong></a></li>
+<li><a href="/best-projector-in-bangladesh/"><strong>Best Projector in Bangladesh 2026</strong></a></li>
+<li><a href="/projector-price/"><strong>Projector Price in Bangladesh</strong></a></li>
+</ul>
+[row]
+
+[col]
+
+[ux_html]
+
+<h2>References</h2>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/Throw_ratio">Throw ratio: screen size vs distance</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/Projection_screen">Projection screen basics</a></li>
+        </ul>
+        <p style="margin-top:6px">For full setup (lumens, sound, screens), see our guide: <a href="/home-theater-setup-bangladesh/">Home Theater Setup in Bangladesh — Step-by-Step</a>.</p>
+[/ux_html]
+
+[/col]
+
+[/row]

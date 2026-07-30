@@ -1,0 +1,151 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Finder Hero"]
+
+[ux_text text_align="center"]
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Smart Projector Finder</span>
+<h1 style="margin:16px 0 8px;color:#0188fe;line-height:1.2;"><i class="fa-solid fa-stopwatch"></i> Find Your Perfect Projector in 60 Seconds</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Answer 5 quick questions &mdash; your use case, room lighting, screen size, projector placement, and budget &mdash; and our Smart Engine instantly matches you with the best AUN projector.</p>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" padding__sm="20px" label="Finder Tool"]
+
+[ux_text]
+<div style="max-width:900px;margin:0 auto;">[aun_projector_finder]</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Trust Badges"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Expert Recommended</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Our engine uses real physics and AV industry standards to give you a perfect match.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Official Warranty</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Authentic products with full local 12-month warranty support for total peace of mind.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-headset"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Free Consultation</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Confused about your room setup? <a href="tel:+8809638078888" style="color:#0188fe;font-weight:700;">Call us</a> or message on <a href="https://wa.me/8801787698268" target="_blank" rel="noopener" style="color:#16a34a;font-weight:700;">WhatsApp</a> for free expert advice.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Buying Guide SEO"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How to Choose the Right Projector for Your Space</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#475569;max-width:820px;margin:0 auto 6px;line-height:1.7;">Specs like brightness, contrast ratio, and throw distance can be overwhelming. Whether you're building a premium home theatre, upgrading an office boardroom, or after a portable mini projector, our smart buying-guide tool takes out the guesswork.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.03);height:100%;">
+<h3 style="font-size:17px;color:#0f172a;margin:0 0 10px;">🎬 Home Cinema &amp; Movies</h3>
+<p style="font-size:14.5px;color:#64748b;margin:0;line-height:1.65;">For the ultimate movie night you need accurate colours and high contrast. Our Full HD 1080p and 4K-support AUN models deliver crystal-clear visuals at a fraction of the cost-per-inch of a TV.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.03);height:100%;">
+<h3 style="font-size:17px;color:#0f172a;margin:0 0 10px;">🏢 Office &amp; Classrooms</h3>
+<p style="font-size:14.5px;color:#64748b;margin:0;line-height:1.65;">Presentations need high brightness to beat ambient daylight. We recommend models tuned for crisp text and bright rooms — ideal for a coaching centre or corporate office.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.03);height:100%;">
+<h3 style="font-size:17px;color:#0f172a;margin:0 0 10px;">🎒 Portable &amp; Outdoor</h3>
+<p style="font-size:14.5px;color:#64748b;margin:0;line-height:1.65;">Always on the move? A lightweight portable mini projector is perfect for outdoor movie nights, quick meetings, or casual bedroom viewing — no heavy mounting required.</p>
+</div>
+[/col]
+
+[/row]
+
+[gap height="20px"]
+
+[ux_text text_align="center"]
+<div style="max-width:860px;margin:0 auto;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;padding:28px;">
+<h3 style="font-size:19px;color:#0f172a;margin:0 0 10px;">Why Use the AUN Smart Finder?</h3>
+<p style="font-size:15px;color:#475569;line-height:1.65;margin:0;">As a leading projector brand in Bangladesh, we want you to get exactly what you need without overspending. Use the tool above to instantly filter our range by your lighting conditions, screen size, and budget.</p>
+<div style="margin-top:18px;padding-top:18px;border-top:1px solid #e2e8f0;font-size:15px;font-weight:600;color:#0f172a;">Prefer to browse everything? See the latest <a href="https://aun-projector.com.bd/projector-price/" style="color:#0188fe;">projector price in Bangladesh</a>.</div>
+</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style>
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Choosing a Projector</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>How do I choose the right projector for my room?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Use the Smart Finder above. In 5 quick steps it asks about your <strong>use case, room lighting, screen size, projector placement (throw distance), and budget</strong> &mdash; then recommends the best-matched AUN model and explains exactly why it fits.</div></details>
+<details><summary><span>How much brightness do I need?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Projector brightness is rated in lumens. For a dark room, lower brightness is fine; for a room with daylight or office lighting, you'll want a brighter projector. The Finder factors this in automatically based on your room's lighting.</div></details>
+<details><summary><span>Which projector is best for a bright room?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Bright rooms need higher-brightness models so the image doesn't wash out. Tell the Finder your room is bright and it will recommend suitable high-brightness AUN projectors.</div></details>
+<details><summary><span>What's a good budget projector in Bangladesh?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">AUN offers Full HD and 4K-support Android projectors across a range of budgets. See current options and pricing on our <a href="https://aun-projector.com.bd/projector-price/">projector price page</a>, or let the Finder match one to your budget.</div></details>
+<details><summary><span>Does projector placement (throw distance) matter?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. How far the projector sits from the screen affects the image size and which lens type you need. The Finder asks where it will sit &mdash; very close (under 1.5 m), a normal room (1.5&ndash;4 m), or a large hall (4 m+) &mdash; and recommends a short-throw lens where it's needed.</div></details>
+</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Ecosystem Cross Links"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Explore the AUN After-Sales Ecosystem</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto 6px;">Everything you need before and after your purchase &mdash; all in one place.</p>
+[/ux_text]
+[gap height="16px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<a href="https://aun-projector.com.bd/projector-price/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-store"></i></span><span style="font-size:17px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Shop AUN Projectors</span><span style="font-size:13px; color:#777; display:block;">Browse Full HD &amp; Android TV projectors with prices.</span></a>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<a href="https://aun-projector.com.bd/authorized-dealers/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-store"></i></span><span style="font-size:17px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Find a Dealer</span><span style="font-size:13px; color:#777; display:block;">Buy from authorized dealers across Bangladesh.</span></a>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<a href="https://aun-projector.com.bd/contact-us/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-headset"></i></span><span style="font-size:17px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Contact Support</span><span style="font-size:13px; color:#777; display:block;">Talk to our team &mdash; call +880 9638-078888 or message us.</span></a>
+[/col]
+
+[/row]
+
+[/section]

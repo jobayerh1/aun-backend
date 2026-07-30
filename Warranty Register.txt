@@ -1,0 +1,185 @@
+[section label="Warranty Hero" bg_color="rgb(246, 248, 251)" padding__sm="30px"]
+
+[ux_text text_align="center"]
+
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-shield-halved"></i> Official 12-Month Warranty</span>
+<h1 style="margin:16px 0 8px;color:#0188fe;line-height:1.2;"><i class="fa-solid fa-clipboard-check"></i> Projector Warranty Registration in Bangladesh</h1>
+<p style="font-size:16px; color:#556777; max-width:780px; margin:0 auto;">Activate the official warranty for your <strong>AUN projector</strong> online. AUN Projector Bangladesh (Smart Living) is the country&rsquo;s only projector brand offering fully <strong>automated warranty activation</strong>, instant SMS &amp; email confirmation, and a <a href="https://aun-projector.com.bd/repair-status/" style="color:#0188fe; font-weight:bold;">live repair-tracking system</a>.</p>
+[/ux_text]
+[gap height="20px"]
+
+[row style="large" v_align="equal"]
+
+[col span="6" span__sm="12"]
+
+<h2 style="color:#0f172a; font-weight:bold; margin-bottom:15px; line-height:1.2;">Start Your Warranty</h2>
+<p style="color:#666; font-size:16px; margin-bottom:20px;">Welcome to the Smart Living family. Registering your AUN projector activates your <strong>12-month official warranty</strong> from the invoice date and lets our team support you faster anywhere in Bangladesh.</p>
+<p style="color:#444; font-size:15px; margin-top:10px;"><em>This registration page is for customers who purchased from <a href="https://aun-projector.com.bd/authorized-dealers/" style="color:#0188fe;">authorized dealers</a>, resellers, or physical shops outside our <a href="https://aun-projector.com.bd/projector-price/" style="color:#0188fe;">official online store</a>. (Online-store orders are registered automatically.)</em></p>
+[divider align="left" width="60px" color="rgb(255, 188, 0)"]
+
+<p><!-- CHECKLIST BOX --></p>
+<div style="background:#fff; border-left:4px solid #0188fe; padding:20px; border-radius:4px; box-shadow:0 3px 6px rgba(0,0,0,0.05); margin-bottom:25px;">
+<h3 style="margin-top:0; color:#333; font-size:18px;"><i class="fa fa-clipboard-list"></i> Checklist before you begin</h3>
+<ul style="margin-bottom:0; color:#555; padding-left:18px;">
+<li style="margin-bottom:8px;"><strong>Proof of Purchase:</strong> Have your invoice photo or PDF ready.</li>
+<li style="margin-bottom:8px;"><strong>Date &amp; Shop:</strong> Check the invoice for the exact purchase date and shop name.</li>
+<li><strong>Serial Number:</strong> Locate the 11&ndash;14 digit number on the box.</li>
+</ul>
+</div>
+<p><!-- SERIAL NUMBER HELPER IMAGE --></p>
+[row_inner style="collapse" v_align="middle"]
+
+[col_inner align="center" bg_color="rgb(238, 242, 247)"]
+
+<div style="padding:15px; border-radius:8px; text-align:center;">
+<p style="font-size:13px; font-weight:bold; color:#555; margin-bottom:10px;">❓ Where is the serial number?</p>
+[ux_image id="7876" image_size="medium_large" width="60" lightbox="true" lightbox_image_size="original" lightbox_caption="true" image_hover="zoom" depth="2"]
+
+<p style="font-size:12px; color:#888; margin-top:5px; margin-bottom:0;">Look for a sticker on the top or side of the packaging box.</p>
+</div>
+
+[/col_inner]
+
+[/row_inner]
+<div style="margin-top:30px;">
+<h3 style="margin-bottom:10px; color:#444; font-size:18px;"><i class="fa-solid fa-list-check"></i> Verification Process</h3>
+<ul style="font-size:14px; color:#777; line-height:1.6; margin-left:20px;">
+<li><strong>Instant Approval:</strong> If your serial and shop details match our records, you receive an approval SMS/Email immediately.</li>
+<li><strong>Manual Review:</strong> If details don&rsquo;t match, our team reviews your invoice within <strong>24&ndash;48 hours</strong>.</li>
+</ul>
+</div>
+
+
+[/col]
+[col span="6" span__sm="12" padding="40px" padding__sm="20px" bg_color="rgb(255, 255, 255)" depth="3" depth_hover="4"]
+
+<h2 style="text-align:center; margin-bottom:20px; color:#0f172a;">Registration Form</h2>
+[contact-form-7 id="7813"]
+
+<div style="text-align:center; margin-top:20px; padding-top:15px; border-top:1px dashed #eee;">
+<p style="font-size:12px; color:#999; margin-bottom:0;">Need help? Call us at <a href="tel:+8809638078888" style="color:#0188fe; font-weight:bold;">+880 9638-078888</a> or visit our <a href="https://aun-projector.com.bd/contact-us/" style="color:#0188fe; font-weight:bold;">support page</a>.</p>
+</div>
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Why Register USP"]
+
+[ux_text text_align="center"]
+
+<h2 style="color:#0f172a; margin-bottom:8px;">Why AUN Projector Bangladesh Is Different</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#777; max-width:720px; margin:0 auto 10px;">We are the only projector seller in Bangladesh running a fully automated after-sales system &mdash; from warranty activation to live repair tracking.</p>
+[/ux_text]
+[gap height="15px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+
+<div style="font-size:34px; color:#0188fe;"><i class="fa-solid fa-bolt"></i></div>
+<h3 style="font-size:16px; margin:8px 0 4px;">Instant Approval</h3>
+<p style="font-size:13px; color:#777;">Matched serials are approved automatically &mdash; no waiting.</p>
+
+[/col]
+[col span="3" span__sm="6" align="center"]
+
+<div style="font-size:34px; color:#0188fe;"><i class="fa-solid fa-comment-sms"></i></div>
+<h3 style="font-size:16px; margin:8px 0 4px;">SMS &amp; Email Confirmation</h3>
+<p style="font-size:13px; color:#777;">You&rsquo;re notified the moment your warranty is active.</p>
+
+[/col]
+[col span="3" span__sm="6" align="center"]
+
+[ux_html label="repair tracking"]
+
+<a href="https://aun-projector.com.bd/repair-status/" style="text-decoration:none; color:inherit; display:block;"><span style="font-size:34px; color:#0188fe; display:block;"><i class="fa-solid fa-screwdriver-wrench"></i></span><span style="font-size:16px; font-weight:700; display:block; margin:8px 0 4px;">Live Repair Tracking</span><span style="font-size:13px; color:#777; display:block;">Track any repair status online, anytime. &rarr;</span></a>
+[/ux_html]
+
+[/col]
+[col span="3" span__sm="6" align="center"]
+
+<div style="font-size:34px; color:#0188fe;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:16px; margin:8px 0 4px;">12-Month Official Warranty</h3>
+<p style="font-size:13px; color:#777;">Genuine AUN coverage from your invoice date.</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="FAQ" bg_color="rgb(246, 248, 251)" padding="40px"]
+
+<style>
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; AUN Projector Warranty</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>How do I register my AUN projector warranty in Bangladesh?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Fill in this online form with your serial number, purchase date, dealer/shop name, and an invoice photo or PDF. Our system verifies the details and activates your 12-month warranty automatically. You&rsquo;ll get an SMS and email confirmation.</div></details>
+<details><summary><span>How long is the AUN projector warranty?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Every AUN projector comes with a 12-month official warranty, valid from the invoice (purchase) date. Registering ensures the start date is recorded correctly. See our full <a href="https://aun-projector.com.bd/warranty-policy/">warranty policy</a> for details.</div></details>
+<details><summary><span>I bought my projector from a local shop, can I still register?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. This page is specifically for customers who purchased from dealers, resellers, or physical shops anywhere in Bangladesh. Just upload your invoice and we&rsquo;ll verify it. Looking to buy a new one? Browse our <a href="https://aun-projector.com.bd/projector-price/">official projector store</a>.</div></details>
+<details><summary><span>Where is the serial number on my projector?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">The 11&ndash;14 digit serial number is printed on a sticker on the top or side of the packaging box.</div></details>
+<details><summary><span>How will I know my warranty is approved?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If your serial and shop details match our records, approval is instant and you receive an SMS and email right away. If a manual review is needed, our team confirms within 24&ndash;48 hours.</div></details>
+<details><summary><span>Can I track a projector repair?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. AUN Projector Bangladesh offers a <a href="https://aun-projector.com.bd/repair-status/">live repair-status tracker</a> so you can check the progress of any service request online at any time.</div></details>
+</div>
+
+[/section]
+[section label="Explore More Cross Links" padding="35px"]
+
+[ux_text text_align="center"]
+
+<h2 style="color:#0f172a; margin-bottom:8px;">Explore the AUN After-Sales Ecosystem</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#777; max-width:680px; margin:0 auto 20px;">Everything you need before and after your purchase &mdash; all in one place.</p>
+[/ux_text]
+[row]
+
+[col span="3" span__sm="6" align="center"]
+
+[ux_html label="Spare Parts"]
+
+<a href="https://aun-projector.com.bd/spare-parts/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-microchip"></i></span><span style="font-size:16px; color:#0188fe; font-weight:700; display:block; margin:10px 0 6px;">Spare Parts</span><span style="font-size:13px; color:#777; display:block;">Request a genuine part without sending your projector in.</span></a>
+[/ux_html]
+
+[/col]
+[col span="3" span__sm="6" align="center"]
+
+[ux_html label="Send Projector"]
+
+<a href="https://aun-projector.com.bd/send-projector/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-truck-ramp-box"></i></span><span style="font-size:16px; color:#0188fe; font-weight:700; display:block; margin:10px 0 6px;">Send for Service</span><span style="font-size:13px; color:#777; display:block;">How to courier your projector to us for repair.</span></a>
+[/ux_html]
+
+[/col]
+[col span="3" span__sm="6" align="center"]
+
+[ux_html label="Repair"]
+
+<a href="https://aun-projector.com.bd/repair-status/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-screwdriver-wrench"></i></span><span style="font-size:16px; color:#0188fe; font-weight:700; display:block; margin:10px 0 6px;">Track Your Repair</span><span style="font-size:13px; color:#777; display:block;">Check the live status of any service request online.</span></a>
+[/ux_html]
+
+[/col]
+[col span="3" span__sm="6" align="center"]
+
+[ux_html label="Contact"]
+
+<a href="https://aun-projector.com.bd/contact-us/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-headset"></i></span><span style="font-size:16px; color:#0188fe; font-weight:700; display:block; margin:10px 0 6px;">Contact Support</span><span style="font-size:13px; color:#777; display:block;">Call +880 9638-078888 or message us.</span></a>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]

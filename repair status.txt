@@ -1,0 +1,158 @@
+[section bg_color="rgb(246, 248, 251)" padding="50px" padding__sm="30px" label="Repair Hero"]
+
+[ux_text text_align="center"]
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,0.15);"></span> Live Repair Tracking</span>
+<h1 style="margin:16px 0 8px;color:#0188fe;line-height:1.2;"><i class="fa-solid fa-screwdriver-wrench"></i> Projector Repair Status Tracking in Bangladesh</h1>
+<p style="max-width:720px;margin:0 auto;color:#556777;font-size:16px;">Track your AUN projector repair in real time using your <strong>Job Sheet number</strong> or <strong>mobile number</strong>. Status, estimated cost, and the full repair log are pulled live from our service-centre system.</p>
+[/ux_text]
+[gap height="24px"]
+
+[ux_text]
+<div style="max-width:560px;margin:0 auto;">[slb_repair_tracker]</div>
+[/ux_text]
+[gap height="14px"]
+
+[ux_text text_align="center"]
+<p style="color:#64748b;font-size:14px;margin:0;">Haven&rsquo;t sent your projector in yet? <a href="https://aun-projector.com.bd/send-projector/" style="color:#0188fe;font-weight:700;">See how to send it to us &rarr;</a></p>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="How It Works"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How Repair Tracking Works</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:660px;margin:0 auto;">Simple 3-step tracking for every AUN projector repair job.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-box"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">1. Submit Your Device</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">We receive your projector and create a Job Sheet in our service system.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">2. Repair &amp; Updates</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Our technicians update the status at each stage &mdash; diagnosis, parts, and repair.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">3. Ready for Delivery</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Once complete, you&rsquo;ll see the final status and delivery readiness here.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Why Track"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Transparent, Real-Time Tracking</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:700px;margin:0 auto;">AUN Projector Bangladesh is the only projector brand in the country with a live, automated repair-tracking system connected directly to our service centre.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-rotate"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Real-Time Updates</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Your status changes the moment our technicians log progress &mdash; no guessing.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-circle-check"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Free Under Warranty</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Covered repairs are free within your 1-year warranty. Out of warranty? You&rsquo;ll see the cost up front.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-clipboard-list"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Full Repair Log</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Follow every step, from inspection to ready-for-delivery.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Secure &amp; Private</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Limited details only, fetched through a secure server proxy.</p>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style>
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Projector Repair</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>How do I check my AUN projector repair status?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Enter your Job Sheet number (e.g. 2025/0001) or the mobile number you gave during submission, then press &ldquo;Check Repair Status.&rdquo; The latest status is pulled live from our service centre.</div></details>
+<details><summary><span>Can I track my repair using my mobile number?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. Choose &ldquo;Mobile Number&rdquo; and enter the same number you provided when you handed in your projector for service.</div></details>
+<details><summary><span>How long does a projector repair take?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Service typically takes 2&ndash;3 working days when parts are in stock. If parts must be imported, it can take 45+ days. You can follow the exact stage here at any time.</div></details>
+<details><summary><span>Will I be charged for my repair?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If your AUN projector is within its 1-year warranty and the fault is covered, the repair is free. For out-of-warranty repairs &mdash; or damage not covered by warranty &mdash; you&rsquo;ll see the estimated cost up front before we proceed. See our <a href="https://aun-projector.com.bd/warranty-policy/">warranty policy</a> for what&rsquo;s covered.</div></details>
+<details><summary><span>My repair status is not showing &mdash; what should I do?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Double-check your Job Sheet number or mobile number and try again after a few minutes. If it still doesn&rsquo;t appear, <a href="https://aun-projector.com.bd/contact-us/">contact our support team</a>.</div></details>
+<details><summary><span>Is my repair information secure?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. We show only limited details, data is fetched through a secure server proxy, and full information is reserved for the job owner.</div></details>
+</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Ecosystem Cross Links"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Explore the AUN After-Sales Ecosystem</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto 6px;">Everything you need before and after your purchase &mdash; all in one place.</p>
+[/ux_text]
+[gap height="16px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/send-projector/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-truck-ramp-box"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Send Your Projector</span><span style="font-size:13px; color:#777; display:block;">How to courier your projector in for service.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/warranty-register/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-clipboard-check"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Register Your Warranty</span><span style="font-size:13px; color:#777; display:block;">Activate your 12-month AUN projector warranty online.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/projector-price/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-store"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Shop AUN Projectors</span><span style="font-size:13px; color:#777; display:block;">Full HD &amp; Android TV projectors with official warranty.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/contact-us/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-headset"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Contact Support</span><span style="font-size:13px; color:#777; display:block;">Talk to our team &mdash; call +880 9638-078888 or message us.</span></a>
+[/col]
+
+[/row]
+
+[/section]

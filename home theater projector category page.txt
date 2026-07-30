@@ -1,0 +1,126 @@
+<!-- ════════════════════════════════════════════════════════════════
+     CATEGORY PAGE: Home Theater Projector
+     Top description: unchanged except nothing needed (no ANSI present).
+     Bottom content: redesigned — icon benefit cards, model-picker with
+     internal links, card-styled FAQ (mobile-friendly, inline styles
+     only — <style> tags can be stripped from term descriptions),
+     de-ANSI'd lumens answer, FAQPage JSON-LD added (raw rank-math-faq
+     markup in a term description emits no schema by itself).
+     ════════════════════════════════════════════════════════════════ -->
+
+<!-- ── TOP DESCRIPTION (unchanged) ── -->
+
+<h1>Home Theater Projectors in Bangladesh</h1>
+
+<p>Enjoy a true big-screen cinema experience at home with our range of <strong>Full HD 1080p home theater projectors</strong>. Prices start from <strong>BDT 9,990</strong> and many models support <strong>4K input</strong> for enhanced video compatibility when watching movies, sports, or gaming.</p>
+
+<p>If you want to compare all available models and budgets, see the complete <a href="/projector-price/"><strong>projector price in Bangladesh</strong></a> list covering portable, home theater, and professional projectors.</p>
+
+<!-- ── BOTTOM CONTENT (redesigned) ── -->
+
+<h2>Why choose a home theater projector?</h2>
+
+<p>Compared with traditional TVs, a home theater projector can create a much larger screen experience at a lower cost. Many Bangladeshi users now prefer projectors for watching movies, sports matches, and streaming content on 80–120 inch screens at home.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;">
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-expand"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">True Big-Screen Cinema</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">100″+ movies, cricket &amp; football nights — a size no TV can match at this price.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-couch"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Fits Any Room</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Living room, bedroom or rooftop night — set up in minutes, no wall mounting needed.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-tags"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Lower Cost Per Inch</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">A 100″ projector picture costs a fraction of what a big-screen TV would.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-wifi"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Smart Android Streaming</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">YouTube, Netflix &amp; screen mirroring built in — no extra box required on smart models.</p>
+  </div>
+</div>
+
+<h2>Which home theater projector should you choose?</h2>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;">
+  <div style="flex:1;min-width:240px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <p style="font-size:12px;font-weight:800;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;"><i class="fa-solid fa-wallet" style="margin-right:6px;"></i>Budget bedrooms &amp; small rooms</p>
+    <p style="font-size:14px;color:#475569;margin:0 0 10px;line-height:1.65;">Full HD cinema for dim or dark rooms from around ৳10–13k. The <a href="/aun-a005-short-throw-full-hd-home-cinema-android-projector/"><strong>A005</strong></a> is the small-room specialist (short-throw — 100″ from just 2.4 m), while the <a href="/aun-a004-pro-full-hd-home-cinema-android-projector/"><strong>A004 Pro</strong></a> is a simple Full HD pick that pairs perfectly with a TV stick.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <p style="font-size:12px;font-weight:800;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;"><i class="fa-solid fa-tv" style="margin-right:6px;"></i>First proper home cinema</p>
+    <p style="font-size:14px;color:#475569;margin:0 0 10px;line-height:1.65;">The <a href="/aun-a45-pro-full-hd-genuine-android-tv-home-cinema-projector/"><strong>A45 Pro</strong></a> brings <strong>Genuine Android TV</strong> with official Netflix &amp; YouTube apps built in — the easiest all-in-one starter cinema.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <p style="font-size:12px;font-weight:800;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;"><i class="fa-solid fa-gem" style="margin-right:6px;"></i>Premium picture &amp; brighter rooms</p>
+    <p style="font-size:14px;color:#475569;margin:0 0 10px;line-height:1.65;">The <a href="/aun-u002-pro-full-hd-dustproof-tof-laser-auto-focus-android-projector-4k-support/"><strong>U002 Pro</strong></a> adds a fully sealed dust-proof engine and smooth MEMC motion; the <a href="/aun-u001-pro-full-hd-genuine-android-tv-professional-projector-4k-support/"><strong>U001 Pro</strong></a> is our brightest projector with screens up to 300″.</p>
+  </div>
+</div>
+
+<p style="background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:12px 16px;font-size:14px;color:#0c2a4a;line-height:1.7;">Still deciding? Answer 5 quick questions in our <a href="/projector-finder/"><strong>60-Second Smart Finder</strong></a>, put two models side-by-side with the <a href="/projector-compare/"><strong>Compare tool</strong></a>, or learn how to read brightness specs in our honest guide: <a href="/projector-brightness-explained/"><strong>Projector Brightness, Explained</strong></a>.</p>
+
+<div class="rank-math-faq">
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What is the starting home theater projector price in Bangladesh?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Entry home theater projector price in Bangladesh starts from around <strong>BDT 9,990</strong>, depending on brightness, optical engine, and smart features.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Do you have 4K projectors?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">We currently do <strong>not sell native 4K projectors</strong>. Many models are <strong>4K supported</strong> (they can receive 4K input and downscale), but their native resolution is <strong>720p or 1080p</strong>. For most home setups, 1080p delivers excellent quality on 80–120″ screens.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">How many lumens do I need for a home theater?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Start from your room, not the spec sheet. In a dark room, any of our Full HD home cinema models delivers a vivid 100″ picture. For living rooms with some ambient light, choose a higher-brightness model like the <strong>U002 Pro</strong> or <strong>U001 Pro</strong>, close the curtains in the daytime, or add an ALR screen. One honest tip: spec-sheet lumens across the whole industry are manufacturer light-source ratings, so real on-screen brightness is always lower — for every brand equally. Full explanation in our <a href="/projector-brightness-explained/">projector brightness guide</a>.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What screen size and distance should I plan for?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Most home theater users choose <strong>80–120″</strong>. As a quick rule of thumb, throw distance is roughly <strong>1.2–1.5×</strong> the image width (varies by model). Check each product's throw ratio — or use the throw-distance calculator on the product pages — to match your room.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Do these projectors have Android and Netflix/YouTube?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Yes — most models include <strong>Android/Smart OS</strong> for apps like YouTube. For Netflix, our <strong>Genuine Android TV</strong> models (A45 Pro, U001 Pro) run the official certified apps out of the box; on standard Android models Netflix support can vary by app policy, so some setups work best with <strong>casting</strong> or an external streaming stick.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Is there official warranty and delivery across Bangladesh?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Yes — our projectors include <strong>official warranty</strong> with <strong>fast delivery across Bangladesh</strong> (same-day available inside Dhaka). See each product page for exact warranty terms and coverage.</p>
+    </div>
+  </div>
+
+</div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is the starting home theater projector price in Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"Entry home theater projector price in Bangladesh starts from around BDT 9,990, depending on brightness, optical engine, and smart features."}},
+    {"@type":"Question","name":"Do you have 4K projectors?","acceptedAnswer":{"@type":"Answer","text":"We currently do not sell native 4K projectors. Many models are 4K supported (they can receive 4K input and downscale), but their native resolution is 720p or 1080p. For most home setups, 1080p delivers excellent quality on 80–120 inch screens."}},
+    {"@type":"Question","name":"How many lumens do I need for a home theater?","acceptedAnswer":{"@type":"Answer","text":"Start from your room, not the spec sheet. In a dark room, any Full HD home cinema model delivers a vivid 100-inch picture. For living rooms with ambient light, choose a higher-brightness model like the U002 Pro or U001 Pro, close the curtains in the daytime, or add an ALR screen. Spec-sheet lumens across the industry are manufacturer light-source ratings, so real on-screen brightness is always lower for every brand equally."}},
+    {"@type":"Question","name":"What screen size and distance should I plan for?","acceptedAnswer":{"@type":"Answer","text":"Most home theater users choose 80–120 inches. As a rule of thumb, throw distance is roughly 1.2–1.5 times the image width, varying by model. Check each product's throw ratio to match your room."}},
+    {"@type":"Question","name":"Do these projectors have Android and Netflix/YouTube?","acceptedAnswer":{"@type":"Answer","text":"Most models include Android/Smart OS for apps like YouTube. Genuine Android TV models (A45 Pro, U001 Pro) run official certified Netflix and YouTube apps out of the box; on standard Android models Netflix support can vary, so some setups work best with casting or an external streaming stick."}},
+    {"@type":"Question","name":"Is there official warranty and delivery across Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"Yes — AUN projectors include official warranty with fast delivery across Bangladesh, including same-day delivery inside Dhaka. See each product page for exact warranty terms and coverage."}}
+  ]
+}
+</script>

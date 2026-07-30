@@ -1,0 +1,339 @@
+[section bg_color="rgb(246,248,251)" padding="44px" label="hero"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_text text_align="center"]
+<p><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-sun"></i> Honest Buying Guide</span></p>
+<h1 style="color:#0188fe;margin:10px 0 8px;"><i class="fa-solid fa-lightbulb" style="margin-right:10px;"></i>Projector Brightness, Explained Honestly</h1>
+<p style="color:#556777;max-width:760px;margin:0 auto;font-size:16px;line-height:1.7;">The lumens number on a spec sheet and the picture you see on your wall are <strong>two different things — for every projector brand in the world</strong>. Five minutes here and you'll read brightness claims like a professional reviewer.</p>
+[/ux_text]
+
+[/col]
+
+[/row]
+
+[/section]
+[section padding="40px" label="two numbers"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12"]
+
+[ux_html label="bn summary + funnel"]
+<div style="max-width:860px;margin:0 auto 28px;background:#f0f7ff;border:1px solid #bcd9f8;border-radius:14px;padding:20px 24px;">
+<p style="margin:0;font-size:15px;color:#0c2a4a;line-height:1.8;"><strong>সংক্ষেপে:</strong> স্পেক শিটের লুমেন্স সংখ্যাটি মাপা হয় প্রজেক্টরের আলোর উৎসে (LED/ল্যাম্পে) — এটাই সারা বিশ্বের প্রজেক্টর ইন্ডাস্ট্রির নিয়ম। কিন্তু লেন্স ও অপটিক্স পার হয়ে দেয়ালে যে আলো পৌঁছায়, তা <strong>সব ব্র্যান্ডের ক্ষেত্রেই</strong> রেটেড সংখ্যার চেয়ে অনেক কম। তাই সংখ্যা নয় — আপনার ঘরের আলো, পর্দার সাইজ আর বাস্তব ছবির প্রমাণ দেখে প্রজেক্টর বাছাই করুন। নিচে বিস্তারিত পড়ুন।</p>
+</div>
+
+<h2 style="color:#0f172a;margin-bottom:8px;text-align:center;">One Projector, Two Very Different Numbers</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#475569;max-width:820px;margin:0 auto 26px;line-height:1.7;text-align:center;">Almost every projector brand — global names and budget brands alike — prints the brightness of the <strong>light source</strong> on the spec sheet. But light has a journey to make before it reaches your wall, and it pays a toll at every step:</p>
+
+<div style="display:flex;align-items:stretch;justify-content:center;gap:10px;flex-wrap:wrap;max-width:900px;margin:0 auto;">
+  <div style="flex:1;min-width:220px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-bolt"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">1. The Light Source</h3>
+    <p style="font-size:14px;color:#64748b;margin:0 0 10px;line-height:1.6;">The raw brightness of the LED or lamp itself.</p>
+    <p style="font-size:12.5px;font-weight:700;color:#0166c8;margin:0;background:rgba(1,136,254,0.08);border-radius:8px;padding:7px 10px;">Spec-sheet "rated lumens" are measured HERE</p>
+  </div>
+  <div style="display:flex;align-items:center;color:#94a3b8;font-size:22px;"><i class="fa-solid fa-arrow-right-long"></i></div>
+  <div style="flex:1;min-width:220px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(255,188,0,0.14);color:#b45309;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-magnifying-glass"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">2. The Lens &amp; Optics</h3>
+    <p style="font-size:14px;color:#64748b;margin:0 0 10px;line-height:1.6;">Light passes through the LCD panel, filters and lens system.</p>
+    <p style="font-size:12.5px;font-weight:700;color:#b45309;margin:0;background:rgba(255,188,0,0.10);border-radius:8px;padding:7px 10px;">A large share of the light is lost here — on EVERY projector</p>
+  </div>
+  <div style="display:flex;align-items:center;color:#94a3b8;font-size:22px;"><i class="fa-solid fa-arrow-right-long"></i></div>
+  <div style="flex:1;min-width:220px;background:rgb(9,15,28);border:1px solid rgb(9,15,28);border-radius:14px;padding:22px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.10);text-align:center;">
+    <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-tv"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">3. Your Screen</h3>
+    <p style="font-size:14px;color:#7da2c9;margin:0 0 10px;line-height:1.6;">The brightness you actually watch every day.</p>
+    <p style="font-size:12.5px;font-weight:700;color:#4da8ff;margin:0;background:rgba(77,168,255,0.10);border-radius:8px;padding:7px 10px;">Always well below the rated figure — often around half or less</p>
+  </div>
+</div>
+
+<p style="color:#475569;max-width:820px;margin:26px auto 0;line-height:1.7;text-align:center;">This is not a trick by any one company — it is <strong>how the whole industry quotes brightness</strong>, the same way a car's top speed is measured on a test track, not in Dhaka traffic. The mistake is comparing a spec-sheet number with what you expect to see on the wall.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(249,249,249)" padding="40px" label="how pros measure"]
+
+[row h_align="center" v_align="middle"]
+
+[col span="6" span__sm="12"]
+
+[ux_html label="ansi explainer text"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How Professionals Measure Real Brightness</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 0 14px;opacity:.85;"></div>
+<p style="color:#475569;line-height:1.75;font-size:15px;">Professional reviewers and test labs don't measure the lamp — they measure <strong>the screen</strong>. The international standard (known as <strong>ANSI&nbsp;/&nbsp;ISO&nbsp;21118</strong>) works like this:</p>
+<ul style="color:#475569;line-height:1.9;font-size:15px;padding-left:20px;">
+<li>Project a pure white image in a dark room.</li>
+<li>Measure the light at <strong>9 points</strong> across the screen with a lux meter.</li>
+<li>Average the 9 readings and multiply by the screen area.</li>
+</ul>
+<p style="color:#475569;line-height:1.75;font-size:15px;">The result — often called <em>ANSI lumens</em> — is real, on-screen brightness. It is <strong>always dramatically lower</strong> than the light-source rating on the box, for premium brands and budget brands alike. That's why a projector reviewed at a few hundred ANSI lumens can carry a spec sheet claiming several thousand.</p>
+<p style="color:#0c2a4a;line-height:1.7;font-size:15px;background:#f0f7ff;border:1px solid #bcd9f8;border-radius:10px;padding:14px 16px;"><i class="fa-solid fa-circle-info" style="color:#0188fe;margin-right:8px;"></i><strong>Rule of thumb:</strong> when you see a big lumens claim anywhere online, mentally cut it in half (or more) to estimate real on-screen brightness. Apply that rule to every brand equally — then compare.</p>
+[/ux_html]
+
+[/col]
+[col span="6" span__sm="12" align="center"]
+
+[ux_html label="9-point grid diagram"]
+<svg viewBox="0 0 360 250" xmlns="http://www.w3.org/2000/svg" style="max-width:360px;width:100%;height:auto;" role="img" aria-label="Diagram of the 9-point ANSI brightness measurement grid on a projection screen">
+  <rect x="20" y="14" width="320" height="186" rx="10" fill="#0f172a"/>
+  <rect x="32" y="26" width="296" height="162" rx="6" fill="#ffffff"/>
+  <line x1="130.6" y1="26" x2="130.6" y2="188" stroke="#e2e8f0" stroke-width="1.5"/>
+  <line x1="229.3" y1="26" x2="229.3" y2="188" stroke="#e2e8f0" stroke-width="1.5"/>
+  <line x1="32" y1="80" x2="328" y2="80" stroke="#e2e8f0" stroke-width="1.5"/>
+  <line x1="32" y1="134" x2="328" y2="134" stroke="#e2e8f0" stroke-width="1.5"/>
+  <g fill="#0188fe">
+    <circle cx="81.3" cy="53" r="9"/><circle cx="180" cy="53" r="9"/><circle cx="278.6" cy="53" r="9"/>
+    <circle cx="81.3" cy="107" r="9"/><circle cx="180" cy="107" r="9"/><circle cx="278.6" cy="107" r="9"/>
+    <circle cx="81.3" cy="161" r="9"/><circle cx="180" cy="161" r="9"/><circle cx="278.6" cy="161" r="9"/>
+  </g>
+  <text x="180" y="228" text-anchor="middle" font-size="13" font-weight="700" fill="#475569" font-family="inherit">9 lux readings &#215; screen area = real screen brightness</text>
+</svg>
+<p style="font-size:13px;color:#94a3b8;margin-top:8px;">The ANSI / ISO 21118 nine-point measurement grid</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section padding="40px" label="what matters"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12"]
+
+[ux_html label="room table"]
+<h2 style="color:#0f172a;margin-bottom:8px;text-align:center;">Forget the Number War — Match the Projector to Your Room</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#475569;max-width:820px;margin:0 auto 24px;line-height:1.7;text-align:center;">Since every brand's spec number is a light-source rating, comparing numbers tells you very little. What actually decides your picture quality is <strong>your room</strong>:</p>
+
+<div style="overflow-x:auto;">
+<table style="width:100%;max-width:860px;margin:0 auto;border-collapse:collapse;font-size:14.5px;line-height:1.7;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
+<tbody>
+<tr>
+<td style="background:#eef4ff;font-weight:bold;padding:12px 14px;color:#0c2a4a;width:34%;"><i class="fa-solid fa-moon" style="color:#0188fe;margin-right:8px;"></i>Pitch-black room<br><span style="font-weight:400;font-size:13px;color:#64748b;">Lights off, curtains closed</span></td>
+<td style="padding:12px 14px;color:#475569;">Any good home projector looks stunning — deep colours, giant 100&Prime;+ screens. Brightness is the least of your worries here.</td>
+</tr>
+<tr>
+<td style="background:#eef4ff;font-weight:bold;padding:12px 14px;color:#0c2a4a;"><i class="fa-solid fa-lightbulb" style="color:#0188fe;margin-right:8px;"></i>Dim room<br><span style="font-weight:400;font-size:13px;color:#64748b;">Some ambient light, evening viewing</span></td>
+<td style="padding:12px 14px;color:#475569;">Most home projectors do well. Keep the screen away from windows and prefer a mid-to-high-brightness model for larger screens.</td>
+</tr>
+<tr>
+<td style="background:#eef4ff;font-weight:bold;padding:12px 14px;color:#0c2a4a;"><i class="fa-solid fa-sun" style="color:#0188fe;margin-right:8px;"></i>Daylight / office lights<br><span style="font-weight:400;font-size:13px;color:#64748b;">Windows open, classes &amp; meetings</span></td>
+<td style="padding:12px 14px;color:#475569;">The hardest test for <em>any</em> projector at <em>any</em> price. Choose the brightest suitable model, keep the image size moderate, close curtains where possible — an ALR (ambient-light-rejecting) screen helps a lot.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div style="text-align:center;margin-top:26px;">
+<p style="color:#475569;font-size:15px;margin:0 0 12px;">Answer 5 quick questions about your room and our engine matches the right AUN model to your lighting — no spec-sheet decoding needed.</p>
+<a href="/projector-finder/" style="display:inline-block;background:#0188fe;color:#fff;padding:13px 26px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;"><i class="fa-solid fa-wand-magic-sparkles" style="margin-right:8px;"></i>Use the 60-Second Smart Finder</a>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(9,15,28)" dark="true" padding="44px" label="proof over promises"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_html label="proof intro"]
+<h2 style="color:#fff;margin-bottom:8px;text-align:center;">Our Answer to the Number War: Proof, Not Promises</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#7da2c9;max-width:780px;margin:0 auto 6px;line-height:1.7;text-align:center;">Numbers can be argued about. A photograph cannot. Instead of selling you a figure, we show you exactly what our projectors do in real Bangladeshi rooms — and you judge with your own eyes.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="proof card 1"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-image"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Real Projection Photos</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Unedited photos on every product page, shot from the actual unit — never manufacturer renders or studio mockups.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="proof card 2"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-circle-play"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Real Video Demos</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Hands-on videos of every model in action — focus speed, picture quality, real rooms, real lighting.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="proof card 3"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-brands fa-whatsapp"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Honest Human Advice</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Tell us your room on WhatsApp and we'll tell you plainly which model fits — including when a cheaper one is enough.</p>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[gap height="14px"]
+
+[ux_html label="factory test intro"]
+<h3 style="color:#fff;margin:0 0 8px;text-align:center;font-size:22px;">Watch a Real Factory Brightness Test</h3>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#7da2c9;max-width:780px;margin:0 auto 6px;line-height:1.7;text-align:center;">This is the exact 9-point lux-meter method you read about above — performed on real AUN units at the factory, and published here <strong>unedited</strong>. We are, as far as we know, the only projector seller in Bangladesh that shows you the actual measurement instead of asking you to trust a number. Watch the meter yourself.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_html label="factory test videos"]
+
+[aun_shorts ids="yyAdzy_4GrA, g6KVAaetCp4, _H1u4-LERf4" title="" icon="false"]
+[/ux_html]
+
+[ux_text text_align="center"]
+<p style="color:#7da2c9;font-size:13px;margin-top:4px;"><i class="fa-solid fa-gauge-high" style="color:#4da8ff;margin-right:6px;"></i>Left to right: U001 Pro &middot; U002 Pro &middot; A004 Pro &mdash; factory 9-point lux-meter tests, unedited</p>
+[/ux_text]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="10" span__sm="12"]
+
+[gap height="10px"]
+
+[ux_gallery ids="7946,7947,7948,7949" style="normal" type="grid" grid="10" col_spacing="small" image_size="thumbnail" image_hover="zoom"]
+
+[ux_text text_align="center"]
+<p style="color:#7da2c9;font-size:13px;margin-top:8px;">Photographed from actual AUN projectors in action — not mockups or manufacturer renders.</p>
+[/ux_text]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style data-no-optimize="1" data-no-minify="1">
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Projector Brightness</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>Why does my projector look dimmer than the number on the box?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Because the box number is measured at the light source, before the light passes through the panel, filters and lens — and that is true for virtually every projector brand in the world. Real on-screen brightness is always well below the rated figure. Your projector isn't faulty; the industry's numbering convention is just generous.</div></details>
+<details><summary><span>What are ANSI lumens?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">ANSI lumens (standardised today as ISO&nbsp;21118) measure brightness <strong>on the screen</strong>: a white image is measured at 9 points with a lux meter, averaged, and multiplied by the screen area. It's the method professional reviewers use, and it always produces a much lower — but far more realistic — figure than the light-source rating printed on spec sheets.</div></details>
+<details><summary><span>Are the brightness figures on AUN spec sheets real?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">The figures we publish are the manufacturer's official light-source ratings — the same convention nearly every projector brand uses, which is why we label them <strong>"Manufacturer Rated"</strong>. On-screen brightness is lower than the rated figure for every projector on the market, including ours. That's exactly why we never sell on numbers alone: every product page tells you honestly which rooms the model suits ("shines in dim or dark rooms — close the curtains in daytime") and shows real, unedited projection photos so you can judge with your own eyes before you buy.</div></details>
+<details><summary><span>A marketplace listing claims 8,000 or 12,000 lumens for a cheap projector. Should I believe it?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Be careful. Unbranded marketplace projectors often print numbers with no measurement standard behind them at all — a "12,000 lumen" no-name unit can look dimmer on the wall than a properly engineered projector rated far lower. Apply the same rule to every listing: ignore the number, look for real projection photos, real video demos, a real warranty, and a seller who will answer for the product after the sale.</div></details>
+<details><summary><span>Can any home projector beat full daylight?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Honestly — no. Direct sunlight washes out every home projector at every price, ours included. For daytime viewing: close the curtains, keep the image size moderate, and consider an ALR (ambient-light-rejecting) screen, which visibly improves contrast in lit rooms.</div></details>
+<details><summary><span>So how do I actually choose the right brightness?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Start from your room, not the spec sheet: how much light it has, how big you want the picture, and how far the projector sits from the wall. Our <a href="/projector-finder/">60-Second Smart Finder</a> asks exactly these questions and recommends the best-matched AUN model — or message us on WhatsApp and a real person will advise you honestly.</div></details>
+</div>
+[/ux_text]
+
+[ux_html label="faq schema"]
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"Why does my projector look dimmer than the number on the box?","acceptedAnswer":{"@type":"Answer","text":"The box number is measured at the light source, before the light passes through the panel, filters and lens — true for virtually every projector brand. Real on-screen brightness is always well below the rated figure. The projector isn't faulty; the industry's numbering convention is generous."}},
+    {"@type":"Question","name":"What are ANSI lumens?","acceptedAnswer":{"@type":"Answer","text":"ANSI lumens (standardised today as ISO 21118) measure brightness on the screen: a white image is measured at 9 points with a lux meter, averaged, and multiplied by the screen area. It is the method professional reviewers use, and it always produces a much lower but more realistic figure than the light-source rating on spec sheets."}},
+    {"@type":"Question","name":"Are the brightness figures on AUN spec sheets real?","acceptedAnswer":{"@type":"Answer","text":"The published figures are the manufacturer's official light-source ratings — the same convention nearly every projector brand uses — which is why AUN Bangladesh labels them 'Manufacturer Rated'. On-screen brightness is lower than the rated figure for every projector on the market. That is why every AUN product page also states which rooms each model suits and shows real, unedited projection photos."}},
+    {"@type":"Question","name":"Should I believe an 8,000 or 12,000 lumen claim on a cheap marketplace projector?","acceptedAnswer":{"@type":"Answer","text":"Be careful. Unbranded marketplace projectors often print numbers with no measurement standard behind them. Ignore the number and look for real projection photos, real video demos, a real warranty, and a seller who answers for the product after the sale."}},
+    {"@type":"Question","name":"Can any home projector beat full daylight?","acceptedAnswer":{"@type":"Answer","text":"No. Direct sunlight washes out every home projector at every price. For daytime viewing: close the curtains, keep the image size moderate, and consider an ALR (ambient-light-rejecting) screen."}},
+    {"@type":"Question","name":"How do I choose the right projector brightness?","acceptedAnswer":{"@type":"Answer","text":"Start from your room, not the spec sheet: how much light it has, how big you want the picture, and how far the projector sits from the wall. AUN Bangladesh's 60-Second Smart Finder asks these questions and recommends the best-matched model."}}
+  ]
+}
+</script>
+[/ux_html]
+
+[/section]
+[section padding="40px" label="explore ecosystem"]
+
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="crosslink shop"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-tags"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Browse All Projectors</h3>
+  <p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">See the current AUN lineup with honest room-by-room guidance on every page.</p>
+  <a href="/projector-price/" style="color:#0188fe;font-weight:700;font-size:14px;text-decoration:none;">Projector Price in Bangladesh →</a>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="crosslink finder"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Smart Projector Finder</h3>
+  <p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">5 questions about your room — get the right model matched to your lighting and budget.</p>
+  <a href="/projector-finder/" style="color:#0188fe;font-weight:700;font-size:14px;text-decoration:none;">Find My Projector →</a>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="crosslink contact"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(37,211,102,0.12);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-brands fa-whatsapp"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Ask a Human</h3>
+  <p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">Tell us your room and budget on WhatsApp — we'll recommend honestly, even if it's the cheaper model.</p>
+  <a href="https://wa.me/8801787698268" target="_blank" rel="noopener" style="color:#16a34a;font-weight:700;font-size:14px;text-decoration:none;">Chat on WhatsApp →</a>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]

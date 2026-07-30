@@ -1,0 +1,171 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Shipping Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-truck-fast"></i> Shipping &amp; Delivery Policy</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">We deliver across Bangladesh with reliable service and transparent charges. Please read our shipping policy for delivery areas, charges, and timelines.</p>
+<p style="margin-top:18px;"><a href="https://aun-projector.com.bd/projector-price/" style="display:inline-flex; align-items:center; gap:8px; background:#0188fe; color:#fff; padding:11px 20px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;"><i class="fa-solid fa-store"></i> Shop AUN Projectors</a></p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Shipping Highlights"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-truck"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Delivery Methods</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Delivered by our in-house team or trusted courier partners.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-money-bill-wave"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Charges</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">BDT 70&ndash;135 inside Dhaka, BDT 130&ndash;245 outside Dhaka. <small>(Varies by product)</small></p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-clock"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Timeline</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Inside Dhaka: up to 2 working days. Outside Dhaka: up to 4 working days.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Shipping Policy (English)"]
+[accordion]
+
+[accordion-item title="1. Delivery Methods"]
+
+<p>We process deliveries through:</p>
+<ul>
+<li>Our in-house delivery team</li>
+<li>Reputed courier services</li>
+</ul>
+
+[/accordion-item]
+[accordion-item title="2. Delivery Charges"]
+
+<p>Within Dhaka city: <strong>BDT 70–135</strong><br />
+Outside Dhaka city: <strong>BDT 130–245</strong><br />
+<em>Note: Charges vary depending on product type and weight.</em></p>
+
+[/accordion-item]
+[accordion-item title="3. Estimated Delivery Time"]
+
+<ul>
+<li>Inside Dhaka: up to 2 working days</li>
+<li>Outside Dhaka: up to 4 working days</li>
+</ul>
+<p><em>Note: Orders placed after 6 PM are counted as next business day. Business days are Saturday–Thursday, excluding public holidays. Delays may occur due to stock unavailability or courier issues.</em></p>
+
+[/accordion-item]
+[accordion-item title="4. International Shipping"]
+
+<p>Currently, AUN Projector Bangladesh does not ship products outside Bangladesh.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#f9f9f9"]
+
+[title style="bold-left" text="শিপিং নীতি (বাংলা)"]
+[accordion]
+
+[accordion-item title="১. ডেলিভারি পদ্ধতি"]
+
+<p>আমরা ডেলিভারি সম্পন্ন করি:</p>
+<ul>
+<li>আমাদের নিজস্ব ডেলিভারি টিমের মাধ্যমে</li>
+<li>বিশ্বস্ত কুরিয়ার সার্ভিসের মাধ্যমে</li>
+</ul>
+
+[/accordion-item]
+[accordion-item title="২. ডেলিভারি চার্জ"]
+
+<p>ঢাকার মধ্যে: <strong>৭০–১৩৫ টাকা</strong><br />
+ঢাকার বাইরে: <strong>১৩০–২৪৫ টাকা</strong><br />
+<em>নোট: পণ্যের ধরণ ও ওজন অনুযায়ী চার্জ পরিবর্তিত হতে পারে।</em></p>
+
+[/accordion-item]
+[accordion-item title="৩. আনুমানিক সময়সীমা"]
+
+<ul>
+<li>ঢাকার মধ্যে: সর্বোচ্চ ২ কর্মদিবস</li>
+<li>ঢাকার বাইরে: সর্বোচ্চ ৪ কর্মদিবস</li>
+</ul>
+<p><em>নোট: সন্ধ্যা ৬টার পর অর্ডার করলে তা পরবর্তী কর্মদিবস হিসেবে গণ্য হবে। কর্মদিবস: শনিবার–বৃহস্পতিবার, সরকারি ছুটির দিন বাদে। পণ্য অনুপলব্ধতা বা কুরিয়ার সমস্যার কারণে বিলম্ব হতে পারে।</em></p>
+
+[/accordion-item]
+[accordion-item title="৪. আন্তর্জাতিক শিপিং"]
+
+<p>AUN Projector Bangladesh বর্তমানে বাংলাদেশ ছাড়া অন্য কোথাও পণ্য প্রেরণ করে না।</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Delivery Process"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Delivery Process</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto;">From placing your order to receiving your projector, here&rsquo;s how our delivery process works.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-cart-shopping"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 1: Order Placed</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Customer places order via our website.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-circle-check"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 2: Processing</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Order confirmed &amp; prepared for dispatch.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 3: Dispatched</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Shipped through in-house team or courier.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-box-open"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 4: Delivered</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Product safely delivered to customer.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="18px" label="Last Updated"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>1 July, 2025</strong> &nbsp;|&nbsp; সর্বশেষ হালনাগাদ: <strong>১ জুলাই, ২০২৫</strong></p>
+[/ux_text]
+
+[/section]

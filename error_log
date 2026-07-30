@@ -1,0 +1,91 @@
+[19-Jul-2026 12:22:58 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489
+[19-Jul-2026 12:23:01 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489
+[19-Jul-2026 12:23:05 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489
+[19-Jul-2026 12:25:04 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489
+[19-Jul-2026 13:21:56 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489
+[19-Jul-2026 13:21:58 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489
+[19-Jul-2026 13:22:01 UTC] PHP Fatal error:  Uncaught InconsistentModelException: Unable to prepare query: Unknown column 'A1.isactive' in 'WHERE' SELECT A1.* FROM `ostkq_help_topic` A1 WHERE A1.`isactive` = 1 AND A1.`ispublic` = 1 ORDER BY A1.`topic` ASC in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php:3489
+Stack trace:
+#0 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(3535): MySqlExecutor->execute()
+#1 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2010): MySqlExecutor->getArray()
+#2 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2054): ModelInstanceManager->{closure}()
+#3 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2033): CallbackSimpleIterator->next()
+#4 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(2042): CallbackSimpleIterator->rewind()
+#5 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1713): CallbackSimpleIterator->valid()
+#6 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1723): CachedResultSet->fillTo()
+#7 /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php(1739): CachedResultSet->asArray()
+#8 /home/bdsmwccr/support.smartliving.com.bd/aun-app-bridge/api.php(213): CachedResultSet->getIterator()
+#9 {main}
+  thrown in /home/bdsmwccr/support.smartliving.com.bd/include/class.orm.php on line 3489

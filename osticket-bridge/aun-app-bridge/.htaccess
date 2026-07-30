@@ -1,0 +1,12 @@
+# Only api.php is web-callable; the config file is never served.
+<Files "bridge-config.php">
+	Require all denied
+</Files>
+<Files "bridge-config.sample.php">
+	Require all denied
+</Files>
+# cPanel writes PHP fatals to ./error_log — it contains server paths and must
+# never be downloadable.
+<Files "error_log">
+	Require all denied
+</Files>

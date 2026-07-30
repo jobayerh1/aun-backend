@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form class="wpfdAddonparams" method="POST"
+      action="admin.php?page=wpfdAddon-onedrive&amp;task=onedrive.saveOneDriveParams">
+    <label>One Drive configuration</label>
+    <input
+            type="heading3"
+            label="Onedrive Personal"
+            value=""
+            class="ju-heading"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="onedriveKey"
+            type="text2full"
+            label="OneDrive Client ID"
+            value=""
+            class="ju-input ju-large-text"
+            help="Insert your OneDrive Application Id here. You can find this Id in the OneDrive dev center"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="onedriveSecret"
+            type="text2full"
+            label="OneDrive Client Secret"
+            value=""
+            class="ju-input ju-large-text"
+            help="Insert your OneDrive Secret here. You can find this secret in the OneDrive dev center"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+    <input
+            type="containerstart"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level google-drive-sync-settings"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+    <input type="radio2" name="onedriveSyncMethod" label="Sync Method" class="ju-input"
+           help="The OneDrive synchronization method. Default is AJAX, advanced user only."
+           namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option type="radio" class="ju-radiobox" name="onedriveSyncMethod" value="sync_page_curl">Use Curl</option>
+        <option type="radio" class="ju-radiobox" name="onedriveSyncMethod" value="sync_page_curl_ajax">Use Ajax</option>
+        <option type="radio" class="ju-radiobox" name="onedriveSyncMethod" value="setup_on_server">Crontab url</option>
+    </input>
+
+    <input type="select2" name="onedriveSyncTime" label="Sync periodicity" class="ju-input ju-large-text"
+           default="30"
+           help="Automatic OneDrive content synchronization delay. Default is 30 minutes."
+           namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option value="never">Never</option>
+        <option value="5">5 Mins</option>
+        <option value="15">15 Mins</option>
+        <option value="30">30 Mins</option>
+        <option value="60">1 Hour</option>
+        <option value="300">5 Hour</option>
+        <option value="600">10 Hour</option>
+        <option value="1440">24 Hour</option>
+        <option value="2880">48 Hour</option>
+    </input>
+    <input
+            type="containerend"
+            label="Container section end"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="last_log"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <input
+            name="onedriveConnectedBy"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <button
+            type="submit"
+            value="Save OneDrive settings"
+            class="ju-button orange-button ju-button-inline onedrive-submit"
+            id="submitOneDrive"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+</form>

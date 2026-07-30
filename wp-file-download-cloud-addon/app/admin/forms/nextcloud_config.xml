@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form class="wpfdAddonparams" method="POST" action="admin.php?page=wpfdAddon-nextcloud&amp;task=nextcloud.saveNextcloudParams">
+    <label>Nextcloud configuration</label>
+    <input
+        type="heading3"
+        label="Nextcloud"
+        value=""
+        class="ju-heading"
+        namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+        type="Importantnote"
+        note="The plugin folders and files mapping with Nextcloud files is automatic. Please do not rename the original files or folders from the Nextcloud server (file titles in the plugin are editable, though), or you may experience missing files or folders on the website frontend."
+        namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+    />
+    <input
+        name="nextcloudURL"
+        type="text2full"
+        label="Nextcloud URL"
+        value=""
+        class="ju-input ju-large-text"
+        help="Insert your NextCloud URL here"
+        namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+        name="nextcloudUsername"
+        type="text2full"
+        label="Username"
+        value=""
+        class="ju-input ju-large-text"
+        help="Insert your NextCloud username here"
+        namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+        name="nextcloudPassword"
+        type="password"
+        label="Password"
+        value=""
+        class="ju-input ju-large-text"
+        help="Insert your NextCloud password here"
+        namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+    />
+    <input
+        name="nextcloudRootFolder"
+        type="text2full"
+        label="Root folder name"
+        value=""
+        class="ju-input ju-large-text"
+        help="Insert your root folder name here"
+        namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="containerstart"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level google-drive-sync-settings"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input type="radio2" name="nextcloudSyncMethod" label="Sync Method" class="ju-input"
+           help="The Nextcloud synchronization method. Default is AJAX, advanced user only."
+           namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option type="radio" class="ju-radiobox" name="nextcloudSyncMethod" value="sync_page_curl">Use Curl</option>
+        <option type="radio" class="ju-radiobox" name="nextcloudSyncMethod" value="sync_page_curl_ajax">Use Ajax</option>
+        <option type="radio" class="ju-radiobox" name="nextcloudSyncMethod" value="setup_on_server">Crontab url</option>
+    </input>
+
+    <input type="select2" name="nextcloudSyncTime" label="Sync periodicity" class="ju-input ju-large-text"
+           default="30"
+           help="Automatic Nextcloud content synchronization delay. Default is 30 minutes."
+           namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option value="never">Never</option>
+        <option value="5">5 Mins</option>
+        <option value="15">15 Mins</option>
+        <option value="30">30 Mins</option>
+        <option value="60">1 Hour</option>
+        <option value="300">5 Hour</option>
+        <option value="600">10 Hour</option>
+        <option value="1440">24 Hour</option>
+        <option value="2880">48 Hour</option>
+    </input>
+    <input
+            type="containerend"
+            label="Container section end"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+        name="last_log"
+        type="hidden"
+        namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+        default=""/>
+    <input
+        name="nextcloudConnectedBy"
+        type="hidden"
+        namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+        default=""/>
+    <button
+        type="submit"
+        value="Save Nextcloud settings"
+        class="ju-button orange-button ju-button-inline nextcloud-submit"
+        id="submitNextcloud"
+        namespace="Joomunited\WP_File_Download\Admin\Fields\"/>
+</form>

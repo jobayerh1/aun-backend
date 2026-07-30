@@ -1,0 +1,106 @@
+<!-- ════════════════════════════════════════════════════════════════
+     CATEGORY PAGE: Mini / Portable Projector
+     Only live model: A32 Pro (৳7,590, 720p, Android 13, 0.58 kg,
+     dark-room). A32 HD and all other minis DISCONTINUED — removed.
+     Changes: starting price 6,590 → 7,590, "720p or 1080p" → 720p,
+     ANSI FAQ de-numbered, redesigned bottom (single-model spotlight +
+     cross-sell to A005/A45 Pro), FAQPage JSON-LD added.
+     ════════════════════════════════════════════════════════════════ -->
+
+<!-- ── TOP DESCRIPTION ── -->
+
+<h1>Mini Portable Projectors in Bangladesh</h1>
+
+<p>Enjoy big-screen entertainment anywhere with our <strong>mini portable projectors</strong>. Prices start from <strong>BDT 7,590</strong>, making them perfect for movies, travel, rooftop gatherings, or small rooms. These compact projectors offer <strong>HD 720p resolution</strong>, Android smart features for streaming, and palm-sized lightweight designs that are easy to carry.</p>
+
+<p>If you want to compare all projector models and budgets, see the complete <a href="/projector-price/"><strong>projector price in Bangladesh</strong></a> list including portable, home theater, and professional projectors.</p>
+
+<!-- ── BOTTOM CONTENT ── -->
+
+<h2>Why choose a mini projector?</h2>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;">
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-feather"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Truly Pocketable</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">At 0.58 kg — barely bigger than your palm — it goes in any bag to a friend's house or the village home.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-moon"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Dark-Room Cinema</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Lights off, and a bare wall becomes a 100″ movie screen — honest advice: minis are made for dark rooms.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-wifi"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Streaming Built In</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Android 13 with YouTube &amp; Netflix apps, plus AirPlay/Miracast mirroring from your phone.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-plug-circle-bolt"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Plug In Anywhere</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Runs on any socket (AC 100–240 V) and projects from as little as 0.5 m — rooftop nights made easy.</p>
+  </div>
+</div>
+
+<h2>Meet the AUN A32 Pro — our portable pick</h2>
+
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin:18px 0 8px;">
+  <p style="font-size:12px;font-weight:800;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;"><i class="fa-solid fa-star" style="margin-right:6px;"></i>Best for: Portable dark-room movie nights — ৳7,590</p>
+  <p style="font-size:14px;color:#475569;margin:0 0 10px;line-height:1.65;">The <a href="/aun-a32-pro-hd-portable-android-projector/"><strong>A32 Pro</strong></a> is the lightest projector we sell: HD 720p picture from 17″ up to 100″, Android 13 with built-in streaming apps, two-way Bluetooth, and a 30,000-hour LED. Turn the lights off, and any wall becomes a cinema — for less than the price of a mid-range phone.</p>
+  <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.65;"><i class="fa-solid fa-circle-info" style="color:#0188fe;margin-right:6px;"></i>Want sharper Full HD in a still-compact body? Step up to the <a href="/aun-a005-short-throw-full-hd-home-cinema-android-projector/"><strong>A005</strong></a> (1080p short-throw, great for small rooms) or the <a href="/aun-a45-pro-full-hd-genuine-android-tv-home-cinema-projector/"><strong>A45 Pro</strong></a> (1080p with Genuine Android TV).</p>
+</div>
+
+<p style="background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:12px 16px;font-size:14px;color:#0c2a4a;line-height:1.7;">Not sure a mini is right for you? Answer 5 quick questions in our <a href="/projector-finder/"><strong>60-Second Smart Finder</strong></a>, compare models side-by-side with the <a href="/projector-compare/"><strong>Compare tool</strong></a>, or learn how to read brightness specs in our honest guide: <a href="/projector-brightness-explained/"><strong>Projector Brightness, Explained</strong></a>.</p>
+
+<div class="rank-math-faq">
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What is the mini projector price in BD?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">The mini projector price in Bangladesh starts at <strong>BDT 7,590</strong> for the AUN A32 Pro — a palm-sized HD Android projector with streaming apps built in.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Are these portable projectors native 4K?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">No — our portable model is <strong>native 720p (HD)</strong>, which suits its palm-sized design and casual big-screen viewing. If you want sharper Full HD 1080p, see our <a href="/home-entertainment-projector/">home theater projectors</a> starting from BDT 9,990.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">How bright should a mini/portable projector be?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Honest answer: minis are dark-room projectors — turn the lights off and you get a clear, enjoyable picture; for outdoor use, wait until after sunset. If you need daytime or lights-on viewing, choose a higher-brightness model like the <strong>A45 Pro</strong> or <strong>U002 Pro</strong> instead. And when comparing brands, remember that spec-sheet lumens across the industry are manufacturer light-source ratings — real on-screen brightness is always lower, for every brand equally. Full explanation in our <a href="/projector-brightness-explained/">projector brightness guide</a>.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Do portable projectors run Android and Netflix?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Yes — the A32 Pro runs <strong>Android 13</strong> with YouTube, Netflix and other apps built in, plus Wi-Fi screen mirroring (AirPlay &amp; Miracast) from your phone, tablet or laptop.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Is there warranty and delivery across Bangladesh?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Yes — official 1-year warranty with <strong>fast delivery across Bangladesh</strong> (same-day available inside Dhaka). See each product page for exact terms.</p>
+    </div>
+  </div>
+
+</div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is the mini projector price in BD?","acceptedAnswer":{"@type":"Answer","text":"The mini projector price in Bangladesh starts at BDT 7,590 for the AUN A32 Pro — a palm-sized HD Android projector with streaming apps built in."}},
+    {"@type":"Question","name":"Are these portable projectors native 4K?","acceptedAnswer":{"@type":"Answer","text":"No — the portable model is native 720p (HD), which suits its palm-sized design and casual big-screen viewing. For sharper Full HD 1080p, AUN's home theater projectors start from BDT 9,990."}},
+    {"@type":"Question","name":"How bright should a mini/portable projector be?","acceptedAnswer":{"@type":"Answer","text":"Minis are dark-room projectors — turn the lights off for a clear, enjoyable picture; outdoors, use after sunset. For daytime or lights-on viewing, choose a higher-brightness model like the A45 Pro or U002 Pro. Spec-sheet lumens across the industry are manufacturer light-source ratings, so real on-screen brightness is always lower for every brand equally."}},
+    {"@type":"Question","name":"Do portable projectors run Android and Netflix?","acceptedAnswer":{"@type":"Answer","text":"Yes — the A32 Pro runs Android 13 with YouTube, Netflix and other apps built in, plus Wi-Fi screen mirroring (AirPlay and Miracast) from phones, tablets and laptops."}},
+    {"@type":"Question","name":"Is there warranty and delivery across Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"Yes — official 1-year warranty with fast delivery across Bangladesh, including same-day delivery inside Dhaka. See each product page for exact terms."}}
+  ]
+}
+</script>

@@ -1,0 +1,48 @@
+/* === AUN Logos Marquee (Classic v3.1.0) === */
+/* Minimal, stable: inertia only (no zoom/bounce/dimming) */
+.logos-marquee {
+  --gap: 1rem;   /* space between logos */
+  --speed: 35s;  /* time to move one half-track */
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+.logos-marquee__track {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap);
+  width: max-content;
+  will-change: transform;
+  cursor: grab;
+  transform: translateX(0); /* JS updates this */
+}
+.logos-marquee.grabbing .logos-marquee__track,
+.logos-marquee.dragging .logos-marquee__track { cursor: grabbing; }
+
+/* Normalize Flatsome logo spacing */
+.logos-marquee .logo { margin: 0 !important; }
+.logos-marquee .logo a { padding: 0 !important; }
+.logos-marquee .logo img { display: block; transform: none !important; transition: none !important; }
+
+/* Prevent native drag (no ghost, no unavailable cursor) */
+.logos-marquee a, .logos-marquee img { -webkit-user-drag: none; user-drag: none; }
+
+/* Logo sizing */
+.logos-marquee .logo,
+.logos-marquee img {
+  height: 60px;
+  max-height: 60px;
+  width: auto;
+}
+@media (max-width: 480px) {
+  .logos-marquee .logo,
+  .logos-marquee img { height: 42px; max-height: 42px; }
+}
+
+/* Reduced motion users: no auto-scroll */
+@media (prefers-reduced-motion: reduce) {
+  .logos-marquee__track { transform: translateX(0) !important; }
+}

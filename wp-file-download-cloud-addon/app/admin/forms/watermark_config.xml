@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form class="wpfdparams" method="POST" action="admin.php?page=wpfdAddon-cloud&amp;task=config.saveWatermarkConfig">
+    <input
+            type="heading3"
+            label="Watermark"
+            value=""
+            class="ju-heading"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="containerstart"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="leftpanelstart"
+            label="Left section start"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_enabled"
+            type="switcher"
+            label="Product watermark"
+            value="0"
+            class="ju-input"
+            required="true"
+            tooltip="Apply watermark on images assigned to product"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+    </input>
+
+    <input
+            name="wm_path"
+            type="watermarkpath"
+            label="Select watermark image"
+            value=""
+            class="ju-input wm_path"
+            tooltip="Using your watermark file"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+    />
+    <input
+            name="wm_opacity"
+            type="typeint"
+            label="Opacity (%)"
+            value="100"
+            class="ju-input"
+            tooltip="Set opacity for the watermark image"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_position"
+            type="select2"
+            label="Watermark position"
+            value="top_left"
+            class="ju-input"
+            tooltip="Select watermark position"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option value="top_left">Top Left</option>
+        <option value="top_center">Top Center</option>
+        <option value="top_right">Top Right</option>
+        <option value="center_left">Center Left</option>
+        <option value="center_center">Center Center</option>
+        <option value="center_right">Center Right</option>
+        <option value="bottom_left">Bottom Left</option>
+        <option value="bottom_center">Bottom Center</option>
+        <option value="bottom_right">Bottom Right</option>
+    </input>
+    <input
+            name="wm_size"
+            type="typeint"
+            label="Watermark size (%)"
+            value="100"
+            class="ju-input"
+            tooltip="Setup the watermark size base on the source image size."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_margin_unit"
+            type="select2"
+            label="Watermark unit"
+            value="%"
+            class="ju-input"
+            tooltip="Setup the watermark size base on the source image size."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option value="px">Pixcel (px)</option>
+        <option value="%">Percent (%)</option>
+    </input>
+    <input
+            type="containerend"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="rightpanelstart"
+            label="Right section start"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_margin_top"
+            type="typeint"
+            label="Margin Top"
+            value="0"
+            class="ju-input"
+            tooltip="Spacing from image top border to watermark."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_margin_right"
+            type="typeint"
+            label="Margin Right"
+            value="0"
+            class="ju-input"
+            tooltip="Spacing from image right border to watermark."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_margin_bottom"
+            type="typeint"
+            label="Margin Bottom"
+            value="0"
+            class="ju-input"
+            tooltip="Spacing from image bottom border to watermark."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_margin_left"
+            type="typeint"
+            label="Margin Left"
+            value="0"
+            class="ju-input"
+            tooltip="Spacing from image left border to watermark."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="wm_apply_on"
+            type="radio2"
+            label="Apply watermark for"
+            value="product"
+            class="ju-input"
+            tooltip="Apply the watermark to either all the file download image preview or only to the files that are attached with a WooCommerce product."
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option type="radio" class="ju-radiobox" name="wm_apply_on" value="all">All plugin files</option>
+        <option type="radio" class="ju-radiobox" name="wm_apply_on" value="product">Only WooCommerce files</option>
+    </input>
+    <input
+            name="wm_remove_on_bought"
+            type="switcher"
+            label="Remove when bought"
+            value="1"
+            class="ju-input"
+            tooltip="Remove watermark for pucharsed file."
+    />
+    <input
+            type="containerend"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="containerend"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <button
+            type="submit"
+            value="Save Changes"
+            class="ju-button orange-button ju-button-inline "
+    />
+    <button
+            type="button"
+            value="Regenerate watermark"
+            id="wpfd_regenerate_watermark"
+            class="ju-button orange-outline-button ju-button-inline"
+    />
+    <input type="regeneratemodal" namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"/>
+
+</form>

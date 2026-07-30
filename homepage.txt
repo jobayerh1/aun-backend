@@ -1,0 +1,362 @@
+[aun_worldcup_hero]
+[ux_slider label="Main Slider" arrows="false" nav_style="simple" bullet_style="dashes" pause_hover="false" visibility="hide-for-small"]
+
+[ux_banner label="Banner 1" height="100%" slide_effect="zoom-in" bg="6742" bg_size="original" bg_color="rgba(0, 0, 0, 0)" bg_pos="58% 51%"]
+
+[text_box width="100" width__sm="90" width__md="90" animate="fadeInUp" position_x="0" position_x__sm="5" position_x__md="5" position_y="25" position_y__sm="35" text_depth="3"]
+
+[ux_text font_size="1.5" font_size__sm="0.9" line_height="1" text_align="left"]
+
+<strong><span style="font-family: 'Inter', sans-serif;" data-animate="fadeInUp">GET LOST</span></strong>
+[/ux_text]
+[ux_text font_size="1.8" font_size__sm="0.75" line_height="0.75" text_align="left"]
+
+<h2 style="font-family: 'Inter', sans-serif; letter-spacing: -1px;" data-animate="fadeInUp">in the world
+of cinema</h2>
+[/ux_text]
+[ux_text font_size="1.5" font_size__sm="0.85" line_height="1.2" line_height__sm="1.2" text_align="right" text_color="rgb(255,255,255)"]
+
+<p style="font-family: 'Inter', sans-serif;">Get lost in the world of cinema
+with stunning visuals, vibrant
+colors, and an immersive big-
+screen experience at home!</p>
+[/ux_text]
+[ux_text text_align="right"]
+
+<p><a class="button primary" style="border-radius: 12px; display: inline-flex; align-items: center;" href="#AUN_Pick" data-animate="fadeInUp">Begin<i class="icon-angle-down" style="margin-left:8px;"></i></a></p>
+[/ux_text]
+
+[/text_box]
+
+[/ux_banner]
+[ux_banner label="Banner 2" height="100%" slide_effect="zoom-in" bg="6743" bg_size="original" bg_color="rgba(0, 0, 0, 0)" bg_pos="50% 50%"]
+
+[text_box width="100" width__sm="90" width__md="90" animate="fadeInDown" position_x="0" position_x__sm="5" position_x__md="5" position_y="50" position_y__sm="35" text_depth="3"]
+
+[ux_text font_size="1.5" font_size__sm="0.9" line_height="1" text_align="left"]
+
+<strong><span style="font-family: 'Inter', sans-serif;" data-animate="fadeInDown">One Projector</span></strong>
+[/ux_text]
+[ux_text font_size="1.7" font_size__sm="0.75" line_height="0.75" text_align="left"]
+
+<h2 style="font-family: 'Inter', sans-serif; letter-spacing: -1px;" data-animate="fadeInDown">lifetime of
+entertainment</h2>
+[/ux_text]
+[ux_text font_size="1.5" font_size__sm="0.85" line_height="1.2" text_align="right"]
+
+<p style="font-family: 'Inter', sans-serif;">Explore our diverse projector
+lineup—perfect for home, office,
+and entertainment. Experience
+innovation, clarity, and
+performance in every model!</p>
+[/ux_text]
+[ux_text text_align="right"]
+
+<p><a class="button primary" style="border-radius: 12px; display: inline-flex; align-items: center;" href="/projector-price/" data-animate="fadeInDown">Browse Products<i class="icon-angle-right" style="margin-left:8px;"></i></a></p>
+[/ux_text]
+
+[/text_box]
+
+[/ux_banner]
+
+[/ux_slider]
+[row label="Mobile Slider" style="collapse" width="full-width" visibility="show-for-medium"]
+
+[col span__sm="12" padding="0px"]
+
+[ux_banner label="Banner 1" height="100%" bg="7444" bg_size="original" bg_color="rgba(0, 0, 0, 0)" bg_pos="58% 51%" class="skip-lazy"]
+
+[text_box width="100" width__sm="90" animate="none" position_x="0" position_x__sm="5" position_y="25" position_y__sm="35" text_depth="3"]
+
+[ux_text font_size="1.5" font_size__sm="0.9" line_height="0.75" text_align="left"]
+
+<p><strong><span style="font-family: 'Inter', sans-serif;">GET LOST</span></strong></p>
+[/ux_text]
+[ux_text font_size="1.8" font_size__sm="0.75" line_height="0.75" text_align="left"]
+
+<h2 style="font-family: 'Inter', sans-serif; letter-spacing: -1px;">in the world<br />
+of cinema</h2>
+[/ux_text]
+[ux_text font_size="1.5" font_size__sm="0.85" line_height="1.2" line_height__sm="1.2" text_align="right" text_color="rgb(255,255,255)"]
+
+<p style="font-family: 'Inter', sans-serif;">Get lost in the world of cinema
+with stunning visuals, vibrant
+colors, and an immersive big-
+screen experience at home!</p>
+[/ux_text]
+[ux_text text_align="right"]
+
+<p><a class="button primary" style="border-radius: 12px; display: inline-flex; align-items: center;" href="#AUN_Pick">Begin<i class="icon-angle-down" style="margin-left:8px;"></i></a></p>
+[/ux_text]
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[gap]
+
+[scroll_to title="AUN_Pick" link="AUN_Pick" bullet="false"]
+
+[section label="aun picks" padding="25px"]
+
+<h2 style="text-align: center;" data-animate="fadeIn"><i class="fa fa-check-circle" aria-hidden="true"></i> AUN PICKS</h2>
+<p style="text-align: center;" data-animate="fadeIn" data-line-height="xs">Use AUN to open the surprise door of home cinema and experience superior audiovisual magic.</p>
+<p style="text-align: center;" data-animate="fadeIn" data-line-height="xs">AUN provides the best projector price in Bangladesh.</p>
+[row style="large"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_image id="6557" image_size="medium" height="100%" margin="0px 0px -15px 0px" image_hover="zoom" animate="fadeInUp" link="/professional-projector/"]
+
+<h4 data-animate="fadeIn"><a href="/professional-projector/">Office Projector</a></h4>
+<p data-animate="fadeIn">Bright, reliable projectors for offices, classrooms, and business presentations.</p>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_image id="8204" image_size="medium" height="100%" margin="0px 0px -15px 0px" image_hover="zoom" animate="fadeInUp" link="/home-entertainment-projector/"]
+
+<h4 data-animate="fadeIn"><a href="/home-entertainment-projector/">Home Theater Projector</a></h4>
+<p data-animate="fadeIn">Perfect for movie nights, gaming, and streaming on a big screen at home.</p>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_image id="6555" image_size="medium" height="100%" margin="0px 0px -15px 0px" image_hover="zoom" animate="fadeInUp" link="/portable-projector/"]
+
+<h4 data-animate="fadeIn"><a href="/portable-projector/">Mini Projector</a></h4>
+<p data-animate="fadeIn">Compact, lightweight projectors for travel, rooftops, and outdoor movie nights.</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[gap]
+
+<p>[rev_slider alias="AUN-Projector-Evolution" slidertitle="AUN Projector Evolution"][/rev_slider]</p>
+[gap]
+
+[section label="watch the projector in action" bg_color="rgb(245, 245, 245)" padding="20px"]
+
+[ux_text text_align="center"]
+
+<h2 class="uppercase" data-animate="fadeIn"><i class="fa-solid fa-circle-play"></i> Watch the Projector in Action</h2>
+[/ux_text]
+[gap height="10px"]
+
+[ux_html]
+
+[aun_shorts ids="8557, 8538, 8541, 8539, 8540" title="" icon="false" audio="false"]
+[/ux_html]
+
+[/section]
+[section label="Highlight"]
+
+[row style="small" width="full-width" v_align="equal" h_align="center" padding="10px 10px 10px 10px"]
+
+[col span="4" span__sm="7" divider="0" align="center" bg_radius="10" animate="fadeInLeft"]
+
+[featured_box img="8599" pos="center" title="Real Projection Photos"]
+
+<p>No renders, no studio tricks. Every product page shows photos &amp; videos from real units in real Bangladeshi rooms — what you see is what you get.</p>
+
+[/featured_box]
+
+[/col]
+[col span="4" span__sm="7" align="center" bg_radius="10" animate="fadeInUp"]
+
+[featured_box img="8600" pos="center" title="1-Year Parts & Service Warranty"]
+
+<p>Authorized AUN Bangladesh warranty with real technicians & spare parts. Not “seller promise” — actual after-sales support.</p>
+
+[/featured_box]
+
+[/col]
+[col span="4" span__sm="7" align="center" bg_radius="10" animate="fadeInRight"]
+
+[featured_box img="8598" pos="center" title="Local Support, Fast Delivery"]
+
+<p>Real humans on WhatsApp & phone when you need help. Dhaka same-day delivery. Nationwide next-day shipping.</p>
+
+[/featured_box]
+
+[/col]
+
+[/row]
+
+[/section]
+[gap]
+
+[section label="Trust Section" bg_color="rgb(245, 245, 245)" padding="40px 20px"]
+
+[row style="small" h_align="center"]
+
+[col span__sm="12" align="center"]
+
+<h2 data-animate="fadeIn" class="uppercase" style="margin-bottom: 10px;">Trusted by Industry Leaders & Customers</h2>
+<p data-animate="fadeIn">We are proud to serve top organizations and projector lovers across Bangladesh since 2019</p>
+<p>[cusrev_trustbadge type="VSL" color="#FFFFFF"]</p>
+
+[/col]
+
+[/row]
+[gap height="20px"]
+
+[row style="small"]
+
+[col span__sm="12" align="center"]
+
+<div class="logos-marquee" aria-label="Trusted by top organizations">
+<div class="logos-marquee__track">
+    <!-- Your logo shortcodes – first set --></p>
+[logo img="1270" title="ACI Godrej Agrovet Pvt. Ltd." hover="color" link="http://www.aci-bd.com/our-companies/aci-godrej-agrovet-pvt.-ltd.html" target="_blank"]
+
+</p>
+[logo img="1247" title="British American Tobacco Bangladesh" hover="color" height="60px" link="http://www.batbangladesh.com/" target="_blank"]
+
+</p>
+[logo img="3550" title="Computer Village" hover="color" height="40px" link="https://www.computervillage.com.bd//" target="_blank"]
+
+</p>
+[logo img="6779" title="Friendship" hover="color" link="https://friendship.ngo/" target="_blank"]
+
+</p>
+[logo img="7283" title="Kumudini Welfare Trust" hover="color" height="40px" link="https://www.kumudini.org.bd/" target="_blank"]
+
+</p>
+[logo img="3019" title="Labaid Group" hover="color" height="40px" link="http://labaidgroup.com/" target="_blank"]
+
+</p>
+[logo img="7253" title="Nestlé Bangladesh" hover="color" link="https://www.nestle.com.bd/" target="_blank"]
+
+</p>
+[logo img="4716" title="Northern University" hover="color" link="https://nub.ac.bd/" target="_blank"]
+
+</p>
+[logo img="6767" title="Pan Pacific Sonargaon" hover="color" link="https://www.panpacific.com/en/hotels-and-resorts/pp-dhaka.html" target="_blank"]
+
+</p>
+[logo img="587" title="Sylhet Engineering College" hover="color" link="https://www.sec.ac.bd/" target="_blank"]
+
+</p>
+[logo img="7296" title="ZNRF University of Management Sciences" hover="color" height="40px" link="https://zums.edu.bd/" target="_blank"]
+
+</p>
+<p>    <!-- Duplicate the exact same set again, back-to-back --></p>
+[logo img="1270" title="ACI Godrej Agrovet Pvt. Ltd." hover="color" link="http://www.aci-bd.com/our-companies/aci-godrej-agrovet-pvt.-ltd.html" target="_blank"]
+
+</p>
+[logo img="1247" title="British American Tobacco Bangladesh" hover="color" height="60px" link="http://www.batbangladesh.com/" target="_blank"]
+
+</p>
+[logo img="3550" title="Computer Village" hover="color" height="40px" link="https://www.computervillage.com.bd/" target="_blank"]
+
+</p>
+[logo img="6779" title="Friendship" hover="color" link="https://friendship.ngo/" target="_blank"]
+
+</p>
+[logo img="7283" title="Kumudini Welfare Trust" hover="color" height="40px" link="https://www.kumudini.org.bd/" target="_blank"]
+
+</p>
+[logo img="3019" title="Labaid Group" hover="color" height="40px" link="http://labaidgroup.com/" target="_blank"]
+
+</p>
+[logo img="7253" title="Nestlé Bangladesh" hover="color" link="https://www.nestle.com.bd/" target="_blank"]
+
+</p>
+[logo img="4716" title="Northern University" hover="color" link="https://nub.ac.bd/" target="_blank"]
+
+</p>
+[logo img="6767" title="Pan Pacific Sonargaon" hover="color" link="https://www.panpacific.com/en/hotels-and-resorts/pp-dhaka.html" target="_blank"]
+
+</p>
+[logo img="587" title="Sylhet Engineering College" hover="color" link="https://www.sec.ac.bd/" target="_blank"]
+
+</p>
+[logo img="7296" title="ZNRF University of Management Sciences" hover="color" height="40px" link="https://zums.edu.bd/" target="_blank"]
+
+</div>
+</div>
+
+[/col]
+
+[/row]
+[gap height="40px"]
+
+[row label="Testimonials Slider"]
+
+[col span__sm="12" align="center" animate="fadeInRight"]
+
+<p>[cusrev_reviews_slider count="10" slides_to_show="3" show_products="true" product_links="true" sort_by="date" sort="DESC" categories="22"  products="current" color_ex_brdr="#ebebeb" color_brdr="#ebebeb" color_ex_bcrd="" color_bcrd="#fbfbfb" color_pr_bcrd="#f4f4f4" color_stars="#FFBC00" shop_reviews="false" count_shop_reviews="1" inactive_products="false" autoplay="true" avatars="standard" max_chars="100" min_chars="0" show_dots="true"]</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[gap]
+
+[ux_banner label="EMI Offer" height="260px" bg_color="#0188fe" class="emi-gradient-banner"]
+
+[text_box width="50" animate="fadeInLeft" position_x="5" position_y="50" text_align="left"]
+
+<h2 class="uppercase">ENJOY 0% EMI</h2>
+<p>
+Shop today and pay later with leading banks across Bangladesh.<br />
+Flexible plans, zero extra cost.</p>
+[button text="See EMI Options" color="white" style="font-weight:600;" size="medium" radius="12" link="/online-emi/"]
+
+
+[/text_box]
+[ux_image id="6558" width="30" margin="0px" animate="fadeInRight" link="/online-emi/" position_x="90" position_y="50"]
+
+
+[/ux_banner]
+[gap]
+
+[section label="blog" bg_color="#fafafa" padding="40px"]
+
+[title style="center" text="<i class='fa fa-video-camera'></i> Projector Tips & Tutorials"]
+
+[blog_posts style="push" columns="3" columns__md="1" animate="fadeInLeft" auto_slide="3000" posts="10" orderby="name" show_date="false" excerpt="false" excerpt_length="20" show_category="label" comments="false" image_hover="zoom" text_hover="bounce"]
+
+
+[/section]
+[section label="seo-card" bg_color="#ffffff" padding="40px"]
+
+[row h_align="center"]
+
+[col padding="25px" align="center" bg_color="#ffffff" bg_radius="12"]
+
+[ux_text text_align="center"]
+
+<h1>Projector Shop in Bangladesh – AUN Projector BD</h1>
+<p>Welcome to AUN Projector BD — your trusted <strong>projector shop in Bangladesh</strong> for <strong>Android projectors</strong>, <strong>Full HD (1080p)</strong>, and <strong>4K</strong>. Enjoy official warranty, fast delivery across Bangladesh, and expert support for home theater, gaming, classroom, and office presentations.</p>
+<p>Shop confidently—our <strong>Projector Shop in Bangladesh</strong> offers expert support, warranty, and quick nationwide delivery.</p>
+[/ux_text]
+[ux_text text_align="center"]
+
+<h2>Why Choose Our Projector Shop in Bangladesh</h2>
+<p>Choose AUN Projector BD — a <strong>Projector Shop in Bangladesh</strong> trusted for expert guidance, fair pricing, and fast service.</p>
+<h3>Projector Shop in Bangladesh: Warranty &amp; Delivery</h3>
+<p>Official warranty and quick nationwide delivery from our <strong>Projector Shop in Bangladesh</strong>.</p>
+[/ux_text]
+[ux_html]
+
+<img src="/wp-content/uploads/2025/09/projector-shop-bd-badge.webp"
+       alt="Projector Shop in Bangladesh"
+       width="56" height="56" loading="lazy" decoding="async"
+       style="display:block;margin:8px auto 12px;" />
+[/ux_html]
+[button text="View All Projectors" size="small" radius="12" link="/projector-price/"]
+
+
+[/col]
+
+[/row]
+
+[/section]

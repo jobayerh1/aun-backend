@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form class="wpfdparams" method="POST" action="admin.php?page=wpfdAddon-cloud&amp;task=config.saveWooCommerceConfig">
+    <input
+            type="heading3"
+            label="WooCommerce"
+            value=""
+            class="ju-heading"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="containerstart"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            type="leftpanelstart"
+            label="Left section start"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="woo_add_to_cart_background"
+            type="text2"
+            label="Add to cart button background"
+            value="#888888"
+            class="ju-input wp-color-field minicolors minicolors-input"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+            data-default-color="#888888"
+    />
+    <input
+            type="containerend"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <button
+            type="submit"
+            value="Save"
+            class="ju-button orange-button"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+</form>

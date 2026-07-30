@@ -1,0 +1,94 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Contact Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-envelope"></i> Contact Us</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Have questions about our projectors or services? Get in touch by filling the form below or using our quick contact options.</p>
+[/ux_text]
+
+[/section]
+[section bg_color="#ffffff" padding="40px"]
+
+[row v_align="equal" h_align="center"]
+
+[col span="6" padding="30px" bg_color="#ffffff" bg_radius="12" class="box-shadow"]
+
+<h3 style="color:#0f172a;"><i class="fa-solid fa-pen-to-square" style="color:#0188fe;margin-right:8px;"></i>Send Us a Message</h3>
+<p style="color:#64748b;">Please complete the form below and our team will get back to you shortly.</p>
+[contact-form-7 id="282"]
+
+
+[/col]
+[col span="6" padding="20px 0px 0px 0px" bg_radius="12" class="box-shadow"]
+
+[ux_html]
+
+<a class="button primary"
+   href="https://www.google.com/maps/dir//AUN+Projector+Bangladesh,+108+Golartek+Rd,+Dhaka+1216,+Bangladesh"
+   target="_blank" rel="noopener" title="Get directions to AUN Projector Bangladesh"
+   style="display:inline-flex;align-items:center;gap:.5rem;padding:.55rem .9rem;line-height:1;white-space:nowrap;border-radius:10px;">
+  <i class="fa-solid fa-route" aria-hidden="true" style="font-size:1em;"></i>
+  <span>Get Directions</span>
+</a>
+<br>
+
+<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d228.17294048741763!2d90.34269347981986!3d23.791308349278363!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c1d990bb0fd9%3A0x6d4cc557e1ee01ac!2sAUN%20Projector%20Bangladesh!5e0!3m2!1sen!2sbd!4v1761543848800!5m2!1sen!2sbd"
+        width="100%" height="500" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"></iframe>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff" padding="30px"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+<div style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-wrap: wrap; text-align: left;">
+    
+    <!-- Left Side: Instant Contact -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #f8fafc; border-right: 1px solid #e2e8f0;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Talk to a Human</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Get instant answers via chat or phone.</p>
+        
+        <a href="https://api.whatsapp.com/send?phone=8801787698268" onmouseover="this.style.background='#dcfce7'; this.style.borderColor='#86efac';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #166534; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-whatsapp" style="font-size:20px; color:#25D366;"></i> WhatsApp Chat
+        </a>
+        
+        <a href="http://m.me/aunprojectorbd" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #1e40af; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-facebook-messenger" style="font-size:20px; color:#0084FF;"></i> Messenger
+        </a>
+        
+        <a href="tel:+8809638078888" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #334155; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-phone" style="font-size:18px; color:#475569;"></i> +880 9638-078888
+        </a>
+    </div>
+
+    <!-- Right Side: Warranty & Support -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #ffffff;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Warranty & Support</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Track repairs or open a formal ticket.</p>
+
+        <a href="https://aun-projector.com.bd/repair-status/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-screwdriver-wrench" style="font-size:18px; color:#0188fe;"></i> Check Repair Status
+        </a>
+
+        <a href="https://support.smartliving.com.bd/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-ticket" style="font-size:18px; color:#0188fe;"></i> Open Support Ticket
+        </a>
+
+        <a href="mailto:info@aun-projector.com.bd" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-envelope" style="font-size:18px; color:#0188fe;"></i> Email Us
+        </a>
+    </div>
+    
+</div>
+
+[/col]
+
+[/row]
+
+[/section]

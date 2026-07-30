@@ -1,0 +1,262 @@
+[section label="Policy Hero" bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px"]
+
+[ux_text text_align="center"]
+
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-shield-halved"></i> AUN Projector Warranty Policy (Bangladesh)</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Our warranty policy is built on transparency and fairness. Please read it to understand exactly what your 12-month AUN projector warranty covers &mdash; and how to claim it.</p>
+<p style="margin-top:18px;"><a href="https://aun-projector.com.bd/repair-status/" style="display:inline-flex; align-items:center; gap:8px; background:#0188fe; color:#fff; padding:11px 20px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;"><i class="fa-solid fa-screwdriver-wrench"></i> Track Repair Status</a></p>
+[/ux_text]
+
+[/section]
+[section label="Policy Highlights" bg_color="rgb(255, 255, 255)" padding="40px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Repair or Parts Replacement</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Products under warranty are serviced by repairing defects or replacing defective parts.</p>
+</div>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-clock"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Flexible Timeline</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Service may take 2&ndash;3 working days if parts are in stock, 45+ days if imported.</p>
+</div>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-ban"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Exclusions Apply</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Damage caused by misuse, lack of maintenance, fire, water, or self-tampering are not covered.</p>
+</div>
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Warranty Regulations (English)"]
+
+[accordion]
+
+[accordion-item title="1. Warranty Coverage"]
+
+<p>The warranty applies only to products where “Warranty” is clearly mentioned in the invoice at the time of purchase. Products without a warranty mention are not eligible.</p>
+
+[/accordion-item]
+[accordion-item title="2. Nature of Service"]
+
+<p>Warranty service includes the repair or replacement of defective parts. If a specific part (such as an LCD screen, motherboard, power board, or lamp) is confirmed defective, it will be replaced with a functional part. In such cases, the warranty applies only to the defective component, not the entire product. Replacement is subject to availability of parts. Need a specific part? You can <a href="https://aun-projector.com.bd/spare-parts/" style="color:#0188fe; font-weight:bold;">request a spare part online</a>.</p>
+
+[/accordion-item]
+[accordion-item title="3. Repair Timeline"]
+
+<p>Repair time depends on the availability of spare parts and the nature of the fault. If the required parts are in stock, repairs are usually completed within 2–3 working days. However, if spare parts need to be imported, the process may take 45 days or more.</p>
+<p>Customers can check their <a href="https://aun-projector.com.bd/repair-status/" style="color:#0188fe; font-weight:bold;">repair progress</a> online anytime using their ticket or invoice number.</p>
+
+
+[/accordion-item]
+[accordion-item title="4. Multiple Claims"]
+
+<p>There is no fixed limit on the number of warranty claims during the warranty period. Customers may avail service as long as the warranty is valid.</p>
+
+[/accordion-item]
+[accordion-item title="5. Data & Software Responsibility"]
+
+<p>We are not responsible for the loss of data, software, or configuration during warranty service. Customers should back up their data before submitting the product.</p>
+
+[/accordion-item]
+[accordion-item title="6. User Maintenance"]
+
+<p>Projectors require regular user maintenance to ensure proper airflow and cooling. Customers are required to clean the dust filter and ventilation areas periodically as described in the user manual and on the product label.</p>
+<p>Failure to maintain proper airflow may cause internal overheating and component damage.</p>
+
+[/accordion-item]
+[accordion-item title="7. Exclusions"]
+
+<p>Warranty will not be valid under the following circumstances:</p>
+<ul>
+<li>Damage caused by water, fire, electric shock, accident, or misuse</li>
+<li>Opening or repairing the product by unauthorized persons</li>
+<li>Physical damage (scratches, dents, broken parts)</li>
+<li>Use of non-recommended accessories causing damage</li>
+<li>Damage caused by overheating due to blocked ventilation, clogged dust filters, or lack of regular maintenance</li>
+</ul>
+
+[/accordion-item]
+[accordion-item title="8. Accessories"]
+
+<p>Accessories such as remote controls, cables, adapters, or incomplete products are not covered by warranty.</p>
+
+[/accordion-item]
+[accordion-item title="9. Non-Warranty Services"]
+
+<p>Services outside warranty coverage will be provided at a cost agreed upon between the company and the customer.</p>
+<p>Non-warranty repairs can also be tracked online via the same repair status portal once a ticket is created.</p>
+
+[/accordion-item]
+[accordion-item title="10. How to Claim Warranty & Service Center Address"]
+
+<p>If your projector requires service, please contact our support team to create a repair ticket. You can drop off the projector or send it via courier to our official service center &mdash; <a href="https://aun-projector.com.bd/send-projector/" style="color:#0188fe; font-weight:bold;">see how to courier it in &rarr;</a> <strong>Customers are responsible for courier charges when sending the product.</strong></p>
+<p style="background: #f1f5f9; padding: 15px; border-left: 4px solid #0188fe; border-radius: 4px;">
+<strong>AUN Projector Bangladesh (Service Center)</strong><br />
+108 Golartek, Mirpur<br />
+Dhaka 1216, Bangladesh</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#f9f9f9"]
+
+[title style="bold-left" text="ওয়ারেন্টি নীতি (বাংলা)"]
+
+[accordion]
+
+[accordion-item title="১. ওয়ারেন্টি আওতা"]
+
+<p>শুধুমাত্র সেই পণ্যসমূহ যেগুলোর ইনভয়েসে “ওয়ারেন্টি” উল্লেখ থাকবে, সেগুলোই ওয়ারেন্টির আওতায় থাকবে। ইনভয়েসে ওয়ারেন্টি উল্লেখ না থাকলে কোন পণ্য ওয়ারেন্টির আওতায় থাকবে না।</p>
+
+[/accordion-item]
+[accordion-item title="২. সেবার ধরন"]
+
+<p>ওয়ারেন্টি সার্ভিসের আওতায় ত্রুটিপূর্ণ অংশ মেরামত বা প্রতিস্থাপন করা হবে। যেমন, যদি LCD স্ক্রিন, মাদারবোর্ড, পাওয়ার বোর্ড বা ল্যাম্প ত্রুটিপূর্ণ হয়, তবে সেটি পরিবর্তন করা হবে। এ ক্ষেত্রে ওয়ারেন্টি শুধুমাত্র ত্রুটিপূর্ণ অংশের জন্য প্রযোজ্য হবে, সম্পূর্ণ পণ্যের জন্য নয়। প্রতিস্থাপন যন্ত্রাংশের প্রাপ্যতার উপর নির্ভরশীল। নির্দিষ্ট পার্টস প্রয়োজন হলে <a href="https://aun-projector.com.bd/spare-parts/" style="color:#0188fe; font-weight:bold;">অনলাইনে স্পেয়ার পার্টস রিকোয়েস্ট</a> করতে পারেন।</p>
+
+[/accordion-item]
+[accordion-item title="৩. সময়কাল"]
+
+<p>মেরামতের সময়কাল যন্ত্রাংশের প্রাপ্যতা এবং ত্রুটির ধরন অনুযায়ী নির্ভর করে। প্রয়োজনীয় যন্ত্রাংশ স্টকে থাকলে সাধারণত ২–৩ কর্মদিবসের মধ্যে মেরামত সম্পন্ন হয়। তবে যন্ত্রাংশ আমদানি করতে হলে ৪৫ দিন বা তারও বেশি সময় লাগতে পারে।</p>
+<p>গ্রাহকরা তাদের প্রজেক্টর রিপেয়ারের <a href="https://aun-projector.com.bd/repair-status/" style="color:#0188fe; font-weight:bold;">লাইভ স্ট্যাটাস</a> অনলাইনে দেখতে পারবেন টিকিট বা ইনভয়েস নম্বর ব্যবহার করে।</p>
+
+
+[/accordion-item]
+[accordion-item title="৪. একাধিক দাবি"]
+
+<p>ওয়ারেন্টি সময়সীমার মধ্যে একাধিকবার ওয়ারেন্টি সার্ভিস গ্রহণ করা যাবে।</p>
+
+[/accordion-item]
+[accordion-item title="৫. ডেটা ও সফটওয়্যার দায়িত্ব"]
+
+<p>মেরামতের সময় কোন ডেটা/সফটওয়্যার হারিয়ে গেলে আমরা দায়বদ্ধ থাকব না। গ্রাহককে আগে থেকেই ডেটা ব্যাকআপ রাখতে হবে।</p>
+
+[/accordion-item]
+[accordion-item title="৬. ব্যবহারকারী রক্ষণাবেক্ষণ"]
+
+<p>প্রজেক্টরের সঠিক কার্যকারিতা বজায় রাখতে নিয়মিত ধুলো ফিল্টার ও এয়ার ভেন্ট পরিষ্কার করা গ্রাহকের দায়িত্ব। এটি ব্যবহার নির্দেশিকা ও পণ্যের গায়ে উল্লেখ করা থাকে।</p>
+<p>রক্ষণাবেক্ষণের অভাবে এয়ারফ্লো বাধাগ্রস্ত হলে অভ্যন্তরীণ তাপমাত্রা বৃদ্ধি পেয়ে যন্ত্রাংশ ক্ষতিগ্রস্ত হতে পারে।</p>
+
+[/accordion-item]
+[accordion-item title="৭. ওয়ারেন্টি বহির্ভূত শর্তাবলী"]
+
+<p>নিম্নলিখিত কারণে ক্ষতি হলে ওয়ারেন্টি বাতিল হবে:</p>
+<ul>
+<li>পানি, আগুন, বৈদ্যুতিক শক, দুর্ঘটনা বা ভুল ব্যবহারে ক্ষতি</li>
+<li>অননুমোদিত ব্যক্তি দ্বারা পণ্য খোলা বা মেরামত করা</li>
+<li>বাহ্যিক ক্ষতি (স্ক্র্যাচ, ভাঙা অংশ, ডেন্ট ইত্যাদি)</li>
+<li>ভুল এক্সেসরিজ ব্যবহারে ক্ষতি</li>
+<li>ধুলো জমে ফিল্টার বন্ধ হওয়া, এয়ারফ্লো বাধাগ্রস্ত হওয়া বা নিয়মিত পরিষ্কার না করার ফলে অতিরিক্ত তাপে সৃষ্ট ক্ষতি</li>
+</ul>
+
+[/accordion-item]
+[accordion-item title="৮. এক্সেসরিজ"]
+
+<p>রিমোট, কেবল, অ্যাডাপ্টার ইত্যাদি আনুষঙ্গিক জিনিস ওয়ারেন্টির আওতায় নয়।</p>
+
+[/accordion-item]
+[accordion-item title="৯. নন-ওয়ারেন্টি সার্ভিস"]
+
+<p>যে সেবাগুলো ওয়ারেন্টির আওতায় নয়, সেগুলোর জন্য গ্রাহকের সাথে সমঝোতার ভিত্তিতে চার্জ ধার্য হবে।</p>
+<p>নন-ওয়ারেন্টি রিপেয়ার সার্ভিসের স্ট্যাটাসও টিকিট তৈরি হওয়ার পর একই পোর্টালের মাধ্যমে দেখা যাবে।</p>
+
+[/accordion-item]
+[accordion-item title="১০. ওয়ারেন্টি ক্লেইম করার নিয়ম ও সার্ভিস সেন্টারের ঠিকানা"]
+
+<p>আপনার প্রজেক্টরে কোনো সমস্যা দেখা দিলে সাপোর্ট টিমের সাথে যোগাযোগ করে একটি রিপেয়ার টিকিট তৈরি করুন। আপনি সরাসরি বা কুরিয়ারের মাধ্যমে আমাদের সার্ভিস সেন্টারে প্রজেক্টরটি পাঠাতে পারেন &mdash; <a href="https://aun-projector.com.bd/send-projector/" style="color:#0188fe; font-weight:bold;">কীভাবে কুরিয়ারে পাঠাবেন দেখুন &rarr;</a> <strong>পণ্য পাঠানোর কুরিয়ার চার্জ গ্রাহককে বহন করতে হবে।</strong></p>
+<p style="background: #f1f5f9; padding: 15px; border-left: 4px solid #0188fe; border-radius: 4px;">
+<strong>AUN Projector Bangladesh (সার্ভিস সেন্টার)</strong><br />
+১০৮ গোলারটেক, মিরপুর<br />
+ঢাকা ১২১৬, বাংলাদেশ</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#ffffff" padding="30px"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+<div style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-wrap: wrap; text-align: left;">
+    
+    <!-- Left Side: Instant Contact -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #f8fafc; border-right: 1px solid #e2e8f0;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Talk to a Human</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Get instant answers via chat or phone.</p>
+        
+        <a href="https://api.whatsapp.com/send?phone=8801787698268" onmouseover="this.style.background='#dcfce7'; this.style.borderColor='#86efac';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #166534; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-whatsapp" style="font-size:20px; color:#25D366;"></i> WhatsApp Chat
+        </a>
+        
+        <a href="http://m.me/aunprojectorbd" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #1e40af; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-facebook-messenger" style="font-size:20px; color:#0084FF;"></i> Messenger
+        </a>
+        
+        <a href="tel:+8809638078888" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #334155; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-phone" style="font-size:18px; color:#475569;"></i> +880 9638-078888
+        </a>
+    </div>
+
+    <!-- Right Side: Warranty & Support -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #ffffff;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Warranty & Support</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Track repairs or open a formal ticket.</p>
+
+        <a href="https://aun-projector.com.bd/repair-status/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-screwdriver-wrench" style="font-size:18px; color:#0188fe;"></i> Check Repair Status
+        </a>
+
+        <a href="https://aun-projector.com.bd/send-projector/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-truck" style="font-size:18px; color:#0188fe;"></i> Send Projector for Service
+        </a>
+
+        <a href="https://aun-projector.com.bd/spare-parts/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-microchip" style="font-size:18px; color:#0188fe;"></i> Request a Spare Part
+        </a>
+
+        <a href="https://support.smartliving.com.bd/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-ticket" style="font-size:18px; color:#0188fe;"></i> Open Support Ticket
+        </a>
+
+        <a href="mailto:info@aun-projector.com.bd" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-envelope" style="font-size:18px; color:#0188fe;"></i> Email Us
+        </a>
+    </div>
+    
+</div>
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Last Updated" bg_color="rgb(246, 248, 251)" padding="18px"]
+
+[ux_text text_align="center"]
+
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>3 May, 2026</strong> &nbsp;|&nbsp; সর্বশেষ হালনাগাদ: <strong>৩ মে, ২০২৬</strong></p>
+[/ux_text]
+
+[/section]

@@ -1,0 +1,3 @@
+[aun_head eyebrow="Learn in minutes" icon="fa-circle-play" title="Projector Tutorials" sub="Short step-by-step videos — setup, daily use and care."]
+
+[aun_tutorials ids="nO70wP9bmDU:Factory Reset, KJwFhuis4GA:Screen Mirroring, fHMe1qsGmp4:Change Language, lVeh4ruP84E:Projector Placement Guide, ig0QKrWZ3zM:Connecting with HDMI, lP8PoR_G4Lg:Focus Adjustment, 4rute8VQxvo:Connect Flash Drive, rs9IzcLf0RM:Maintenance & Cleaning Tips"]

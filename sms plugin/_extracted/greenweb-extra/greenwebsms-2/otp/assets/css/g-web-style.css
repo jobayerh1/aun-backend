@@ -1,0 +1,417 @@
+.g-web-verified-success, .g-web-verify-notice {
+    z-index: 99999999;
+    position: fixed;
+    top: 0;
+    padding: 20px;
+    left: 0;
+    right: 0;
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+
+/* Remove spinner on number inputs */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+input[type=number] {
+  -moz-appearance: textfield !important;
+}
+
+.g-web-verified-success span:last-of-type a {
+    text-decoration: underline;
+    color: #3c763d;
+    margin-left: 6px;
+}
+
+.g-web-notice-error{
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+.g-web-notice-success{
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+
+.g-web-notice{
+    display: none;
+}
+
+.g-web-notice-cont {
+    display: none;
+}
+
+.g-web-notice-error , .g-web-notice-success{
+    padding: 7px 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    display: block;
+    margin: 10px 0;
+}
+
+/* =========================================
+   OTP Form — Modern Box-Style Digit Inputs
+   ========================================= */
+
+button.g-web-otp-verify-btn {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 24px auto 0 !important;
+    display: table !important;
+    padding: 12px 20px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    background: #333 !important;
+    color: #fff !important;
+    border: 1px solid #333 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+button.g-web-otp-verify-btn:hover {
+    opacity: 0.85 !important;
+}
+
+button.g-web-otp-verify-btn:active {
+    opacity: 0.7 !important;
+}
+
+.g-web-otp-input-cont {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 20px auto !important;
+    flex-wrap: wrap !important;
+}
+
+form.g-web-otp-form {
+    text-align: center;
+    display: none;
+}
+
+.g-web-otp-sent-txt {
+    margin-bottom: 22px;
+    font-size: 20px;
+}
+
+span.g-web-otp-no-change {
+    color: #0d81fe;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+/* --- OTP Digit Inputs (Box Style) --- */
+.g-web-otp-input-cont input.g-web-otp-input {
+    width: 56px !important;
+    height: 60px !important;
+    max-width: 56px !important;
+    min-width: 44px !important;
+    text-align: center !important;
+    font-size: 26px !important;
+    font-weight: 600 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    border: 2px solid #d9d9d9 !important;
+    border-radius: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    outline: none !important;
+    background: #fff !important;
+    color: #333 !important;
+    box-shadow: none !important;
+    display: inline-block !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    -moz-appearance: textfield !important;
+    box-sizing: border-box !important;
+}
+
+.g-web-otp-input-cont input.g-web-otp-input:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+    background: #fff !important;
+}
+
+.g-web-otp-input-cont input.g-web-otp-input:disabled,
+.g-web-otp-input-cont input.g-web-otp-input[readonly] {
+    background: #f5f5f5 !important;
+    cursor: not-allowed !important;
+}
+
+/* --- OTP Notice Container (hidden when empty) --- */
+.g-web-otp-notice-cont {
+    display: none;
+}
+
+form.g-web-otp-form .g-web-notice {
+    display: table;
+    margin: 0 auto;
+}
+
+/* --- Resend Link --- */
+a.g-web-otp-resend-link {
+    color: #0d81fe !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+a.g-web-otp-resend-link:hover {
+    text-decoration: underline !important;
+}
+
+.g-web-otp-resend {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+a.g-web-otp-resend-link.g-web-disabled {
+    pointer-events: none !important;
+    opacity: 0.5 !important;
+}
+
+span.g-web-otp-resend-timer {
+    color: #666;
+    margin-left: 4px;
+}
+
+/* --- Phone Input (Registration/Login) --- */
+span.g-web-reg-phone-change {
+    position: relative;
+    display: none;
+    float: right;
+    top: -22px;
+    right: 10px;
+    color: black;
+    z-index: 10;
+    cursor: pointer;
+    font-size: 13px;
+    height: 0;
+    line-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.g-web-reg-has-cc {
+    display: flex;
+}
+
+.g-web-reg-has-cc select.g-web-reg-phone-cc-select, .g-web-reg-has-cc input.g-web-reg-phone-cc-text  {
+    max-width: 100px;
+    margin-right: 10px;
+}
+
+.g-web-regphin {
+    position: relative;
+    width: 100%;
+}
+
+input#g-web-reg-phone {
+    width: 100%;
+}
+
+span.g-web-low-back {
+    color: #4a90e2;
+    text-decoration: underline;
+    text-align: center;
+    display: block;
+    cursor: pointer;
+}
+
+button.g-web-login-otp-btn {
+    margin-top: 13px;
+}
+.g-web-processing{
+    pointer-events: none;
+}
+.g-el-container .g-web-notice{
+    margin-top: -15px;
+    width: calc(100% - 20px);
+}
+
+span.g-web-or {
+    display: none;
+    margin: 20px 10px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: bold;
+    border: 1px solid #333;
+    font-size: 14px;
+}
+
+.g-aff-cont-phone span.g-web-reg-phone-change {
+    position: absolute;
+    top: 50%;
+}
+
+/* Account Selector (multiple accounts found) */
+.g-web-account-selector {
+    padding: 4px 0;
+}
+
+.g-web-account-selector h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.g-web-account-selector .g-web-account-subtitle {
+    margin: 0 0 14px 0;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.g-web-account-list {
+    max-height: 260px;
+    overflow-y: auto;
+    margin: 0 -2px;
+}
+
+.g-web-account-item {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #fff;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+}
+
+.g-web-account-item:hover {
+    background: #f5f5ff;
+    border-color: #c0c0e0;
+}
+
+.g-web-account-item:active,
+.g-web-account-item:focus {
+    background: #e8e8ff;
+    border-color: #667eea;
+    outline: none;
+}
+
+.g-web-account-item.g-web-account-selected {
+    background: #e8e8ff;
+    border-color: #667eea;
+    pointer-events: none;
+}
+
+.g-web-account-item-email {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.3;
+    word-break: break-all;
+}
+
+.g-web-account-item-meta {
+    font-size: 12px;
+    color: #666;
+    margin-top: 3px;
+    line-height: 1.4;
+}
+
+/* Responsive: mobile-friendly tap targets */
+@media (max-width: 480px) {
+    .g-web-otp-input-cont {
+        gap: 6px !important;
+    }
+
+    .g-web-otp-input-cont input.g-web-otp-input {
+        width: 48px !important;
+        height: 52px !important;
+        max-width: 48px !important;
+        min-width: 40px !important;
+        font-size: 22px !important;
+    }
+
+    button.g-web-otp-verify-btn {
+        padding: 14px 16px !important;
+        font-size: 15px !important;
+    }
+
+    .g-web-account-selector h3 {
+        font-size: 15px;
+    }
+
+    .g-web-account-item {
+        padding: 16px 14px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+    }
+
+    .g-web-account-item-email {
+        font-size: 15px;
+    }
+
+    .g-web-account-item-meta {
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .g-web-account-list {
+        max-height: 300px;
+    }
+}
+
+/* Scrollbar styling for the account list */
+.g-web-account-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.g-web-account-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.g-web-account-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.g-web-account-list::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+/* Loading spinner for AJAX operations */
+.g-web-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 10px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+
+.g-web-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid #e0e0e0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: g-web-spin 0.6s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes g-web-spin {
+    to { transform: rotate(360deg); }
+}

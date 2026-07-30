@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form class="wpfdAddongooleteamdriveparams" method="POST" action="admin.php?page=wpfdAddon-cloud&amp;task=cloudteamdrive.saveCloudTeamDriveParams">
+    <label>Google Drive configuration</label>
+    <input
+            type="heading3"
+            label="Google Team Drive"
+            value=""
+            class="ju-heading"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="googleTeamDriveClientId"
+            type="text2full"
+            label="Client ID"
+            value=""
+            class="ju-input ju-large-text"
+            help="The Client ID for Web application available in your google Developers Console. Click on documentation link below for more info"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+    <input
+            name="googleTeamDriveClientSecret"
+            type="text2full"
+            label="Client Secret"
+            value=""
+            class="ju-input ju-large-text"
+            help="The Client secret for Web application available in your google Developers Console. Click on documentation link below for more info"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+    <input
+            type="containerstart"
+            label="Container section"
+            value=""
+            class="inputbox input-block-level google-drive-sync-settings"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+    <input type="radio2" name="googleTeamDriveSyncMethod" label="Sync Method" class="ju-input"
+           help="The Google Team Drive synchronization method. Default is AJAX, advanced user only."
+           namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option type="radio" class="ju-radiobox" name="googleTeamDriveSyncMethod" value="sync_page_curl">Use Curl</option>
+        <option type="radio" class="ju-radiobox" name="googleTeamDriveSyncMethod" value="sync_page_curl_ajax">Use Ajax</option>
+        <option type="radio" class="ju-radiobox" name="googleTeamDriveSyncMethod" value="setup_on_server">Crontab url</option>
+    </input>
+
+    <input type="select2" name="googleTeamDriveSyncTime" label="Sync periodicity" class="ju-input ju-large-text"
+           default="30"
+           help="Automatic Google Team Drive content synchronization delay. Default is 30 minutes."
+           namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    >
+        <option value="never">Never</option>
+        <option value="5">5 Mins</option>
+        <option value="15">15 Mins</option>
+        <option value="30">30 Mins</option>
+        <option value="60">1 Hour</option>
+        <option value="300">5 Hour</option>
+        <option value="600">10 Hour</option>
+        <option value="1440">24 Hour</option>
+        <option value="2880">48 Hour</option>
+    </input>
+
+    <input
+            type="containerend"
+            label="Container section end"
+            value=""
+            class="inputbox input-block-level"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+
+    <input
+            name="google_team_drive_last_log"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <input
+            name="googleTeamDriveConnectedBy"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <input
+            name="googleTeamDriveCredentials"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <input
+            name="googleTeamDriveBaseFolder"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <input
+            name="selectedGoogleTeamDriveBaseFolder"
+            type="hidden"
+            namespace="Joomunited\WP_File_Download_Cloud_Addon\Admin\Fields\"
+            default=""/>
+    <button
+            type="submit"
+            value="Save Google Team Drive settings"
+            class="ju-button orange-button ju-button-inline google-team-drive-submit"
+            namespace="Joomunited\WP_File_Download\Admin\Fields\"
+    />
+</form>

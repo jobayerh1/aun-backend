@@ -1,0 +1,238 @@
+/**
+ * AUN Alpha SMS OTP Login — front-end styles.
+ * Accent colour matches the AUN brand blue (#0188fe).
+ */
+
+.aun-otp-wrap {
+	margin-top: 6px;
+}
+
+.aun-otp-phone,
+.aun-otp-code {
+	text-align: left;
+}
+
+.aun-otp-code {
+	text-align: center;
+}
+
+/* Phone field */
+.aun-otp-phone .aun-otp-label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 600;
+}
+
+.aun-otp-phone-input {
+	width: 100%;
+}
+
+/* Buttons inherit the theme .button; we just space them */
+.aun-otp-send,
+.aun-otp-verify {
+	margin-top: 12px;
+	width: 100%;
+}
+
+.aun-otp-toggle {
+	margin-top: 14px;
+}
+
+.aun-otp-toggle .button {
+	width: 100%;
+	margin-top: 8px;
+}
+
+/* The primary action gets the brand blue; the toggle stays secondary.
+   Scoped under .aun-otp-wrap so these reliably beat the theme's .button
+   styles regardless of stylesheet load order (same single-class specificity). */
+.aun-otp-wrap .aun-otp-send,
+.aun-otp-wrap .aun-otp-verify,
+.aun-otp-wrap .aun-otp-to-otp {
+	background: #0188fe;
+	border-color: #0188fe;
+	color: #fff;
+}
+
+.aun-otp-wrap .aun-otp-send:hover,
+.aun-otp-wrap .aun-otp-verify:hover,
+.aun-otp-wrap .aun-otp-to-otp:hover {
+	background: #0070d6;
+	border-color: #0070d6;
+	color: #fff;
+}
+
+.aun-otp-wrap .aun-otp-to-pwd {
+	background: #f1f3f5;
+	border-color: #dfe3e8;
+	color: #333;
+}
+
+.aun-otp-wrap .aun-otp-to-pwd:hover {
+	background: #e6e9ec;
+	border-color: #cfd5db;
+	color: #111;
+}
+
+/* "Sent to ..." line + Change link */
+.aun-otp-sent {
+	margin-bottom: 16px;
+	font-size: 15px;
+}
+
+.aun-otp-change {
+	color: #0188fe;
+	cursor: pointer;
+	margin-left: 6px;
+	text-decoration: none;
+}
+
+.aun-otp-change:hover {
+	text-decoration: underline;
+}
+
+/* Digit inputs (box style) */
+.aun-otp-digits {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+	margin: 18px 0;
+	flex-wrap: nowrap;
+}
+
+.aun-otp-digits input.aun-otp-digit {
+	flex: 0 1 46px;
+	width: 46px;
+	height: 54px;
+	min-width: 34px;
+	text-align: center;
+	font-size: 22px;
+	font-weight: 600;
+	border: 2px solid #d9d9d9;
+	border-radius: 8px;
+	margin: 0;
+	padding: 0;
+	background: #fff;
+	color: #222;
+	box-shadow: none;
+	box-sizing: border-box;
+	-moz-appearance: textfield;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aun-otp-digits input.aun-otp-digit:focus {
+	border-color: #0188fe;
+	box-shadow: 0 0 0 3px rgba(1, 136, 254, 0.18);
+	outline: none;
+}
+
+.aun-otp-digits input.aun-otp-digit::-webkit-outer-spin-button,
+.aun-otp-digits input.aun-otp-digit::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+/* Resend row */
+.aun-otp-resend-row {
+	margin-top: 12px;
+	font-size: 14px;
+}
+
+.aun-otp-resend {
+	color: #0188fe;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.aun-otp-resend:hover {
+	text-decoration: underline;
+}
+
+.aun-otp-resend.aun-otp-disabled {
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+.aun-otp-timer {
+	color: #666;
+	margin-left: 4px;
+}
+
+/* Notices */
+.aun-otp-notice {
+	padding: 8px 14px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	margin: 10px 0;
+	font-size: 14px;
+	text-align: left;
+}
+
+.aun-otp-notice-error {
+	color: #a4262c;
+	background: #fde7e9;
+	border-color: #f3c0c4;
+}
+
+.aun-otp-notice-success {
+	color: #1a7f37;
+	background: #e6f4ea;
+	border-color: #b7dfc3;
+}
+
+/* Account picker (multiple accounts share a phone) */
+.aun-otp-accounts h4 {
+	margin: 0 0 12px;
+	font-size: 16px;
+}
+
+.aun-otp-wrap .aun-otp-account {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 12px 14px;
+	margin-bottom: 8px;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	background: #fff;
+	color: #222;
+	cursor: pointer;
+	height: auto;
+	line-height: 1.3;
+}
+
+.aun-otp-wrap .aun-otp-account:hover {
+	background: #f0f7ff;
+	border-color: #0188fe;
+	color: #222;
+}
+
+.aun-otp-account-email {
+	display: block;
+	font-weight: 600;
+	font-size: 14px;
+	word-break: break-all;
+}
+
+.aun-otp-account-meta {
+	display: block;
+	font-size: 12px;
+	color: #666;
+	margin-top: 3px;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+	.aun-otp-digits {
+		gap: 6px;
+	}
+
+	.aun-otp-digits input.aun-otp-digit {
+		flex-basis: 40px;
+		width: 40px;
+		height: 48px;
+		min-width: 32px;
+		font-size: 19px;
+	}
+}

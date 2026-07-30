@@ -1,0 +1,45 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  NEVER COMMIT — credentials and keys.
+#  A private repo is not a safe place for these: anyone who ever gets read
+#  access (a collaborator, a compromised account) gets working credentials,
+#  and git keeps them in history forever even after you delete the file.
+# ═══════════════════════════════════════════════════════════════════════════
+*firebase-adminsdk*.json
+service-account*.json
+*.pem
+*.jks
+*.keystore
+*.p12
+key.properties
+bridge-config.php
+.env
+.env.*
+wp-config.php
+# ⚠️ Caught by the pre-commit scan: the ERP's Laravel environment file is named
+# plain "env" with no dot, so a .env rule does not catch it. It holds the LIVE
+# database and mail passwords.
+env
+**/env
+# Rank Math export — carries a live Google Maps API key and the Search Console
+# verification token.
+rank-math-settings*.json
+*-settings-20*.json
+
+# ── Customer / business data — personal information, never in a code repo ───
+*.csv
+inFlow_*
+*orders*.json
+*customers*.json
+
+# ── Big binaries: GitHub rejects files over 100 MB, and these are rebuilt ───
+*.apk
+*.aab
+*.zip
+*.log
+
+# ── Junk ───────────────────────────────────────────────────────────────────
+node_modules/
+.DS_Store
+Thumbs.db
+*.swp
+~$*

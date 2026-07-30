@@ -1,0 +1,122 @@
+Step 1 — Create the migration file
+
+cPanel → File Manager → go to your ERP root folder (where artisan file exists).
+
+Create:
+database/migrations/2026_02_15_000001_create_maintenance_sms_schedules_table.php
+
+Paste this:
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateMaintenanceSmsSchedulesTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('maintenance_sms_schedules', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->unsignedInteger('transaction_id')->index();
+            $table->unsignedInteger('contact_id')->index();
+            $table->string('mobile', 30);
+            $table->unsignedSmallInteger('day_offset'); // 60/90/120
+            $table->dateTime('scheduled_at');
+            $table->string('status', 20)->default('scheduled'); // scheduled|failed|cancelled
+            $table->text('api_response')->nullable();
+            $table->timestamps();
+
+            $table->unique(['transaction_id', 'day_offset'], 'txn_day_unique');
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('maintenance_sms_schedules');
+    }
+}
+
+✅ Method 2 (if Terminal not available): One-time cron job
+
+cPanel → Cron Jobs
+
+Add a cron that runs once (you can remove after success):
+
+Command (example):
+
+php /home/USERNAME/portal.smartliving.com.bd/artisan migrate --force
+
+
+Then remove the cron after it runs.
+
+If you don’t know the exact path: in File Manager, right click artisan → it usually shows full path.
+
+Part B — Your MAINT_SMS field setup
+
+You already did it correctly ✅
+
+Just make sure:
+
+You are writing MAINT_SMS into Custom Field 1
+
+You only enable it for models that should receive maintenance SMS
+
+
+
+
+/portal.smartliving.com.bd/public/maintenance-sms-cron.php;
+/portal.smartliving.com.bd/app/Services/MaintenanceSmsService.php
+
+this 2 new file added there
+
+/portal.smartliving.com.bd/app/Http/Controllers/TransactionPaymentController.php
+
+we have added this 2 line inside this file:
+// ✅ CUSTOM: schedule maintenance SMS only if now paid try { if ($payment_status === 'paid') { app(\App\Services\MaintenanceSmsService::class)->handleTransactionIfPaid($transaction_id); } } catch (\Throwable $e) { \Log::error('Maintenance SMS scheduling failed', [ 'transaction_id' => $transaction_id, 'error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), ]); } 
+
+and 
+
+//update payment status $payment_status = $this->transactionUtil->updatePaymentStatus($payment->transaction_id); $transaction->payment_status = $payment_status; try { if ($payment_status === 'paid') { app(\App\Services\MaintenanceSmsService::class)->handleTransactionIfPaid($payment->transaction_id); } } catch (\Throwable $e) { \Log::error('Maintenance SMS scheduling failed', [ 'transaction_id' => $payment->transaction_id, 'error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine(), ]);
+
+/portal.smartliving.com.bd/app/Http/Controllers/SellPosController.php
+
+inside this file there are 4 lines similar to this:
+
+//Update payment status
+$payment_status = $this->transactionUtil->updatePaymentStatus($transaction->id, $transaction->final_total);
+$transaction->payment_status = $payment_status;
+
+
+we have replaced this line to this: 
+
+//Update payment status
+$old_payment_status = $transaction->payment_status; // capture before update
+
+$payment_status = $this->transactionUtil->updatePaymentStatus($transaction->id, $transaction->final_total);
+$transaction->payment_status = $payment_status;
+
+// ✅ CUSTOM: schedule maintenance SMS only if status changed to paid
+try {
+    if ($old_payment_status !== 'paid' && $payment_status === 'paid') {
+        app(\App\Services\MaintenanceSmsService::class)->handleTransactionIfPaid($transaction->id);
+    }
+} catch (\Throwable $e) {
+    \Log::error('Maintenance SMS scheduling failed', [
+        'transaction_id' => $transaction->id,
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ]);
+}
+
+
+also we added a cron job in cpanel which will run once a day according to my choice: /opt/alt/php83/usr/bin/php -q /home/bdsmwccr/portal.smartliving.com.bd/public/maintenance-sms-cron.php >/dev/null 2>&1 
+
+added alpha sms code api code in .env file
+
+7th May 2026: live sync changed to database. some changes made in the code
+
+
+

@@ -1,0 +1,247 @@
+[section bg_color="rgb(246, 248, 251)" padding="50px" padding__sm="30px" label="Send Projector Hero"]
+
+[ux_text text_align="center"]
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-box-open"></i> Send It In For Service</span>
+<h1 style="margin:16px 0 8px;color:#0188fe;line-height:1.2;"><i class="fa-solid fa-truck-ramp-box"></i> Send Your Projector to AUN for Repair &amp; Service</h1>
+<p style="max-width:730px;margin:0 auto;color:#556777;font-size:16px;">Projector not working right? Our <strong>projector repair service</strong> is simple: courier it to our Dhaka service centre with Pathao in 3 easy steps (no account needed). We receive it, open a repair job, and you track the repair live online.</p>
+[/ux_text]
+[gap height="10px"]
+
+[ux_text text_align="center"]
+<p style="color:#64748b;font-size:14px;margin:0;">Already sent it in? <a href="https://aun-projector.com.bd/repair-status/" style="color:#0188fe;font-weight:700;">Track your repair here &rarr;</a></p>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Which Do You Need"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">First &mdash; Do You Even Need to Send It?</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto;">Save yourself a trip &mdash; you don&rsquo;t always have to send the whole projector.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="6" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 0 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+<h3 style="font-size:17px;margin:0 0 6px;color:#0f172a;">Send the whole projector</h3>
+<p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">Best when it won&rsquo;t turn on, the image has a fault you can&rsquo;t pin down, or you&rsquo;d rather we diagnose and fix it. <strong>This is the page for you</strong> &mdash; follow the steps below.</p>
+<span style="display:inline-flex;align-items:center;gap:8px;color:#0188fe;font-weight:700;font-size:14px;"><i class="fa-solid fa-arrow-down"></i> Continue below</span>
+</div>
+[/col]
+
+[col span="6" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 0 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-microchip"></i></div>
+<h3 style="font-size:17px;margin:0 0 6px;color:#0f172a;">I know the faulty part</h3>
+<p style="font-size:14px;color:#64748b;margin:0 0 12px;line-height:1.6;">If you can identify the part &mdash; LCD, lens, board, LED, power board or remote &mdash; request just the part and keep your projector with you. Faster and cheaper.</p>
+<a href="https://aun-projector.com.bd/spare-parts/" style="display:inline-flex;align-items:center;gap:8px;color:#0188fe;font-weight:700;font-size:14px;text-decoration:none;">Request a spare part instead <i class="fa-solid fa-arrow-right"></i></a>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="44px" label="Send To Address"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Send It To This Address</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto;">On Pathao&rsquo;s <strong>Delivery details</strong> step, enter <u>us</u> as the receiver &mdash; exactly as shown. City, Zone and Area are dropdowns, so pick these exact options.</p>
+[/ux_text]
+[gap height="18px"]
+
+[ux_text]
+<div style="max-width:580px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:8px 26px 24px;box-shadow:0 6px 20px rgba(15,23,42,0.06);">
+<div style="display:flex;align-items:center;gap:10px;padding:18px 0 8px;"><span style="width:40px;height:40px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-location-dot"></i></span><span style="font-weight:800;color:#0f172a;font-size:16px;">Receiver = AUN Projector Service Centre</span></div>
+
+<div style="display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #f1f5f9;"><span style="color:#64748b;font-size:13px;">Receiver Name</span><span style="color:#0f172a;font-weight:700;font-size:15px;text-align:right;">AUN</span></div>
+<div style="display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #f1f5f9;"><span style="color:#64748b;font-size:13px;">Receiver Phone</span><span style="color:#0f172a;font-weight:700;font-size:15px;text-align:right;">01787698268</span></div>
+<div style="display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #f1f5f9;"><span style="color:#64748b;font-size:13px;">Delivery Address</span><span style="color:#0f172a;font-weight:700;font-size:15px;text-align:right;">108 Golartek, Mazar Road, Mirpur, Dhaka</span></div>
+<div style="display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #f1f5f9;"><span style="color:#64748b;font-size:13px;">City <span style="background:#eef2f7;color:#64748b;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.3px;">dropdown</span></span><span style="color:#0f172a;font-weight:700;font-size:15px;text-align:right;">Dhaka</span></div>
+<div style="display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #f1f5f9;"><span style="color:#64748b;font-size:13px;">Zone <span style="background:#eef2f7;color:#64748b;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.3px;">dropdown</span></span><span style="color:#0f172a;font-weight:700;font-size:15px;text-align:right;">Mazar road</span></div>
+<div style="display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;"><span style="color:#64748b;font-size:13px;">Area <span style="background:#eef2f7;color:#64748b;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.3px;">dropdown</span></span><span style="color:#0f172a;font-weight:700;font-size:15px;text-align:right;">Mirpur Buddhijibi Koborsthan</span></div>
+
+<button type="button" onclick="aunCopyAddr(this)" style="margin-top:18px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #0188fe;color:#0166c8;font-weight:700;font-size:14px;padding:11px 16px;border-radius:10px;cursor:pointer;"><i class="fa-regular fa-copy"></i> Copy receiver details</button>
+</div>
+[/ux_text]
+[gap height="22px"]
+
+[ux_text text_align="center"]
+<a href="https://courier.pathao.com/order" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:10px;background:#0188fe;color:#fff;font-weight:800;font-size:16px;padding:15px 30px;border-radius:12px;text-decoration:none;box-shadow:0 8px 20px rgba(1,136,254,0.28);"><i class="fa-solid fa-truck-fast"></i> Open Pathao Courier &rarr;</a>
+<div style="margin-top:12px;"><a href="https://wa.me/8801787698268?text=Hi%20AUN%2C%20I%20want%20to%20send%20my%20projector%20in%20for%20service.%20Model%3A%20___%20Problem%3A%20___" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;font-weight:700;font-size:14px;padding:11px 22px;border-radius:10px;text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> Prefer we help? Message us on WhatsApp</a></div>
+<p style="color:#94a3b8;font-size:13px;margin:14px auto 0;max-width:560px;">Pathao&rsquo;s &ldquo;Send Parcel&rdquo; is open to everyone &mdash; no account or login needed. The delivery charge is paid by you (the sender) and shown before you confirm.</p>
+[/ux_text]
+
+<script data-no-optimize="1" data-no-minify="1">
+function aunCopyAddr(btn){var t="Receiver Name: AUN\nReceiver Phone: 01787698268\nDelivery Address: 108 Golartek, Mazar Road, Mirpur, Dhaka\nCity: Dhaka\nZone: Mazar road\nArea: Mirpur Buddhijibi Koborsthan";function done(){var o=btn.innerHTML;btn.innerHTML='<i class="fa-solid fa-check"></i> Copied!';setTimeout(function(){btn.innerHTML=o;},1800);}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){window.prompt('Copy these details:',t);});}else{window.prompt('Copy these details:',t);}}
+</script>
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="How To Send"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How to Send It &mdash; 3 Steps on Pathao</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:660px;margin:0 auto;">About two minutes from start to confirm.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:40px;height:40px;margin:0 0 12px;border-radius:50%;background:#0188fe;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;">1</div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Pickup details (yours)</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Enter <strong>your</strong> Sender Name, Sender Phone and Pickup Direction (your full address) &mdash; this is where the rider collects it. Order before 4 PM for same-day pickup.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:40px;height:40px;margin:0 0 12px;border-radius:50%;background:#0188fe;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;">2</div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Delivery details (ours)</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Enter <strong>AUN</strong> as the receiver using the card above &mdash; Receiver Phone <strong>01787698268</strong>, and the City / Zone / Area dropdowns set to <strong>Dhaka &rsaquo; Mazar road &rsaquo; Mirpur Buddhijibi Koborsthan</strong>.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:40px;height:40px;margin:0 0 12px;border-radius:50%;background:#0188fe;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;">3</div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Parcel overview</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Parcel Type <strong>Parcel</strong>, pick the weight band for your packed projector, and enter its <strong>value in BDT</strong>. Tick the policy box and press <strong>Create order</strong>.</p>
+</div>
+[/col]
+
+[/row]
+
+[gap height="20px"]
+
+[ux_text]
+<div style="max-width:760px;margin:0 auto;background:rgba(255,188,0,0.08);border:1px solid rgba(255,188,0,0.45);border-radius:12px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;">
+<span style="color:#d99000;font-size:20px;flex-shrink:0;"><i class="fa-solid fa-shield-halved"></i></span>
+<div>
+<strong style="color:#0f172a;font-size:15px;">Always declare your projector&rsquo;s real value</strong>
+<p style="color:#7a6a3a;font-size:14px;margin:6px 0 0;line-height:1.6;">In Step 3, the <strong>Parcel Value (BDT)</strong> is what Pathao refunds you if the parcel is lost in transit. Don&rsquo;t leave it at 0 &mdash; enter the actual worth of your projector so it&rsquo;s properly covered.</p>
+</div>
+</div>
+[/ux_text]
+
+[gap height="12px"]
+[ux_text text_align="center"]
+<p style="color:#64748b;font-size:13.5px;max-width:680px;margin:0 auto;"><i class="fa-solid fa-tag" style="color:#0188fe;"></i> Pathao delivery charge (paid by you): <strong>Inside Dhaka ৳80</strong> up to 1kg (+৳15/extra kg) &middot; <strong>Outside Dhaka ৳130</strong> up to 1kg (+৳25/extra kg). Most projectors fall in the 1&ndash;2 kg band once boxed.</p>
+[/ux_text]
+
+[gap height="10px"]
+[ux_text text_align="center"]
+<p style="color:#64748b;font-size:14px;max-width:680px;margin:0 auto;"><i class="fa-solid fa-circle-info" style="color:#0188fe;"></i> Before you send, <a href="https://wa.me/8801787698268" target="_blank" rel="noopener noreferrer" style="color:#0188fe;font-weight:700;">message us on WhatsApp</a> with your model and the problem, so we know your projector is on the way and can get to it faster.</p>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Pack It Safely"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Pack It Safely</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:700px;margin:0 auto;">A projector has delicate optics inside. Two minutes of packing prevents transit damage.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-box"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Use a sturdy box</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Original box and foam if you kept them &mdash; otherwise a strong carton with thick padding.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Wrap &amp; cushion</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Bubble-wrap the projector and fill every gap so nothing moves when shaken.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-plug"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Add the adapter</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Include the power adapter (and remote if the fault is remote-related). Keep other accessories at home.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-note-sticky"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Put a note inside</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">A slip with your <strong>name, phone and the problem</strong> &mdash; plus your order number if you have it.</p>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style data-no-optimize="1" data-no-minify="1">
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Sending It In</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>How do I send my projector to you?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Tap <strong>Open Pathao Courier</strong> above to go to Pathao&rsquo;s &ldquo;Send Parcel&rdquo; page. <strong>Step 1</strong> &mdash; enter your own name, phone and pickup address. <strong>Step 2</strong> &mdash; enter us as the receiver (use the <em>Copy receiver details</em> button). <strong>Step 3</strong> &mdash; choose the weight, enter your projector&rsquo;s value, and create the order. A rider collects it from your door. No Pathao account is needed.</div></details>
+<details><summary><span>What exactly do I enter in the delivery (receiver) step?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Receiver Name: <strong>AUN</strong> &middot; Receiver Phone: <strong>01787698268</strong> &middot; Delivery Address: <strong>108 Golartek, Mazar Road, Mirpur, Dhaka</strong>. Then set the dropdowns &mdash; City: <strong>Dhaka</strong>, Zone: <strong>Mazar road</strong>, Area: <strong>Mirpur Buddhijibi Koborsthan</strong>. The <em>Copy receiver details</em> button copies all of this for you.</div></details>
+<details><summary><span>Who pays for the courier?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">You (the sender) pay the Pathao delivery charge &mdash; Inside Dhaka ৳80 up to 1kg, Outside Dhaka ৳130 up to 1kg, with a small per-kg addition above that. Pathao shows the exact amount before you confirm.</div></details>
+<details><summary><span>What should I put as the Parcel Value?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Enter your projector&rsquo;s actual value in BDT. This is the amount Pathao refunds if the parcel is lost in transit, so don&rsquo;t leave it at 0 &mdash; declaring the real value keeps your projector properly covered on the way to us.</div></details>
+<details><summary><span>How should I pack it?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Use the original box if you kept it; otherwise a strong carton with thick padding. Bubble-wrap the projector, fill the gaps so nothing shifts, and include the power adapter. Pop a slip inside with your name, phone, and a short description of the problem.</div></details>
+<details><summary><span>What happens after you receive it?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">We inspect your projector and open a repair Job Sheet in our service system. From then on you can follow every stage &mdash; diagnosis, parts, repair, ready &mdash; on our <a href="https://aun-projector.com.bd/repair-status/">Repair Status</a> page using your Job Sheet number or mobile number.</div></details>
+<details><summary><span>Is the repair free?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If your AUN projector is within its 1-year warranty and the fault is covered, the repair is free. For out-of-warranty repairs &mdash; or damage not covered &mdash; we&rsquo;ll show you the estimated cost up front before we proceed. See our <a href="https://aun-projector.com.bd/warranty-policy/">warranty policy</a> for what&rsquo;s covered. (Courier charges are separate.)</div></details>
+<details><summary><span>Should I send the whole projector, or just request the part?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If you can identify the faulty part yourself, it&rsquo;s faster and cheaper to <a href="https://aun-projector.com.bd/spare-parts/">request just that part</a> and keep your projector. If you&rsquo;re not sure what&rsquo;s wrong, or it won&rsquo;t power on, send the whole unit and let us diagnose it.</div></details>
+</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Ecosystem Cross Links"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Explore the AUN After-Sales Ecosystem</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto 6px;">Everything you need before and after your purchase &mdash; all in one place.</p>
+[/ux_text]
+[gap height="16px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/repair-status/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-screwdriver-wrench"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Repair Status</span><span style="font-size:13px; color:#777; display:block;">Sent your projector in? Track the repair live.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/spare-parts/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-microchip"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Request a Spare Part</span><span style="font-size:13px; color:#777; display:block;">Know the part? Get it without sending the unit.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/projector-price/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-store"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Shop Projectors</span><span style="font-size:13px; color:#777; display:block;">Full HD &amp; Android TV projectors with warranty.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/contact-us/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-headset"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Contact Support</span><span style="font-size:13px; color:#777; display:block;">Call +880 9638-078888 or message us on WhatsApp.</span></a>
+[/col]
+
+[/row]
+
+[/section]

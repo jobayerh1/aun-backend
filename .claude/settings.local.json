@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.youtube.com)",
+      "PowerShell($base = \"C:\\\\Users\\\\Jobayer Hossain\\\\Downloads\\\\Claude session\"; $zip = Join-Path $base \"aun-tutorial-video.zip\"; if \\(Test-Path $zip\\) { Remove-Item $zip -Force }; Compress-Archive -Path \\(Join-Path $base \"aun-tutorial-video\"\\) -DestinationPath $zip; Get-Item $zip | Select-Object Name, Length)",
+      "PowerShell(winget search php --source winget)",
+      "Bash(\"/c/Users/Jobayer Hossain/AppData/Local/Microsoft/WinGet/Packages/PHP.PHP.8.2_Microsoft.Winget.Source_8wekyb3d8bbwe/php.exe\" -S 127.0.0.1:8765 -t .)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8765/preview_settings.html)",
+      "Bash(taskkill //IM php.exe //F)",
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:aun-projector.com.bd)",
+      "WebSearch",
+      "PowerShell(notepad \"C:\\\\Users\\\\Jobayer Hossain\\\\Downloads\\\\Claude session\\\\white-alr-screen-seo-launch-package.md\")",
+      "Bash(mkdir -p _extracted/greenweb-main _extracted/greenweb-extra _extracted/alpha-sms)",
+      "Bash(unzip -o -q greenweb-wp-plugin.zip -d _extracted/greenweb-main)",
+      "Bash(unzip -o -q greenweb-sms-extra.zip -d _extracted/greenweb-extra)",
+      "Bash(unzip -o -q alpha-sms.zip -d _extracted/alpha-sms)",
+      "Bash(rm -f \"/c/Users/Jobayer Hossain/Downloads/Claude session/aun-app-build.log\" \"/c/Users/JOBAYE~1/AppData/Local/Temp/claude/C--Users-Jobayer-Hossain-Downloads-Claude-session/fb5d4b01-407b-4ad2-846a-9ff5a1dce276/scratchpad/apk-build-done.txt\")",
+      "Bash(JAVA_HOME='C:\\\\dev\\\\jdk-21.0.11+10' PUB_CACHE='C:\\\\dev\\\\pub-cache' cmd //c 'C:\\\\dev\\\\flutter\\\\bin\\\\flutter.bat build apk --release 2>&1')",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(touch \"/c/Users/JOBAYE~1/AppData/Local/Temp/claude/C--Users-Jobayer-Hossain-Downloads-Claude-session/fb5d4b01-407b-4ad2-846a-9ff5a1dce276/scratchpad/apk-build-done.txt\")",
+      "Bash(rm -f \"/c/Users/JOBAYE~1/AppData/Local/Temp/claude/C--Users-Jobayer-Hossain-Downloads-Claude-session/fb5d4b01-407b-4ad2-846a-9ff5a1dce276/scratchpad/debug-col.php\"; php -l \"/c/Users/Jobayer Hossain/Downloads/Claude session/aun-app-api/aun-app-api.php\" 2>&1 | tail -1)",
+      "Bash(cp \"C:/Users/JOBAYE~1/AppData/Local/Temp/claude/C--Users-Jobayer-Hossain-Downloads-Claude-session/fb6bbad2-f4c7-43fc-ae97-4eb57c7d8c9d/scratchpad/projector-states-preview.html\" \"C:/Users/Jobayer Hossain/Downloads/Claude session/projector-states-preview.html\" && echo copied)",
+      "Bash(grep -n \"exclaim\\(\" \"C:/Users/JOBAYE~1/AppData/Local/Temp/claude/C--Users-Jobayer-Hossain-Downloads-Claude-session/fb6bbad2-f4c7-43fc-ae97-4eb57c7d8c9d/scratchpad/projector-states-preview.html\" | head; echo \"--- \\(no exclaim calls = good\\) ---\"; cp \"C:/Users/JOBAYE~1/AppData/Local/Temp/claude/C--Users-Jobayer-Hossain-Downloads-Claude-session/fb6bbad2-f4c7-43fc-ae97-4eb57c7d8c9d/scratchpad/projector-states-preview.html\" \"C:/Users/Jobayer Hossain/Downloads/Claude session/projector-states-preview.html\" && echo copied)"
+    ]
+  }
+}

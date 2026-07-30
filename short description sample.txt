@@ -1,0 +1,7 @@
+<ul>
+ 	<li>Native Resolution: Full HD 1920 x 1080 pixels, 4K Support</li>
+ 	<li>Brightness: 2050 Lumens (Official Rating)</li>
+ 	<li>Operating System: Genuine Android TV 14</li>
+ 	<li>Memory: 2GB RAM / 32GB ROM</li>
+ 	<li>Ports: HDMI x1, USB x2, AV, Audio out 3.5mm</li>
+</ul>

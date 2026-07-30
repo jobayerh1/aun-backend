@@ -1,0 +1,116 @@
+[section bg_color="rgb(246,248,251)" padding="46px" border="0px 0px 1px 0px" border_color="rgb(226,232,240)"]
+[row]
+[col span="10" span__sm="12" align="center"]
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-circle-question"></i> Help Center · সহায়তা কেন্দ্র</span>
+<h1 style="color:#0188fe;margin:14px 0 10px;font-weight:800;"><i class="fa-solid fa-headset"></i> কীভাবে সাহায্য করতে পারি?</h1>
+<p style="color:#556777;font-size:17px;max-width:600px;margin:0 auto;line-height:1.7;">আপনার প্রজেক্টর নিয়ে যেকোনো সমস্যার দ্রুত সমাধান — মডেল সিলেক্ট করুন, সমস্যা খুঁজুন, ভিডিও দেখুন। সমাধান না হলে এক ক্লিকে WhatsApp করুন।</p>
+[/col]
+[/row]
+[/section]
+
+[section padding="34px"]
+[row][col span="12" align="center"]
+[aun_head eyebrow="3 easy steps" icon="fa-wand-magic-sparkles" title="How to Use This Page" sub="তিনটি সহজ ধাপে আপনার সমাধান"]
+[/col][/row]
+[row]
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-mobile-screen-button"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">১. মডেল সিলেক্ট করুন</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">তালিকা থেকে আপনার প্রজেক্টরের মডেলটি বেছে নিন — ভিডিওগুলো তখন আপনার মডেল অনুযায়ী দেখাবে।</p>
+</div>
+[/col]
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-magnifying-glass"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">২. সমস্যা খুঁজুন</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">সার্চ বক্সে লিখুন (যেমন: baka, focus, netflix, গরম) অথবা ক্যাটাগরি বাটনে চাপুন।</p>
+</div>
+[/col]
+[col span="4" span__sm="12"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-circle-play"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">৩. ভিডিও দেখুন</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">ধাপে ধাপে টিউটোরিয়াল ভিডিও দেখুন। সমাধান না হলে সরাসরি WhatsApp করুন।</p>
+</div>
+[/col]
+[/row]
+[/section]
+
+[section padding="6px"]
+[row][col span="12"]
+[aun_head eyebrow="Self-service" icon="fa-circle-question" title="Find Your Answer" sub="আপনার সমস্যা লিখে খুঁজুন বা মডেল অনুযায়ী দেখুন"]
+[aun_help_center]
+[/col][/row]
+[/section]
+
+[section padding="34px" bg_color="rgb(246,248,251)"]
+[row][col span="12" align="center"]
+[aun_head eyebrow="More support" icon="fa-compass" title="Explore AUN After-Sales" sub="আরও সাপোর্ট ও সেবা এক জায়গায়"]
+[/col][/row]
+[row]
+[col span="4" span__sm="6"]
+<a href="https://aun-projector.com.bd/knowledge-base/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-book-open"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Knowledge Base</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">আরও গাইড, টিপস ও বায়িং গাইড</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="https://aun-projector.com.bd/spare-parts/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-microchip"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Spare Parts</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">যন্ত্রাংশ রিকোয়েস্ট করুন</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="https://aun-projector.com.bd/send-projector/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-truck-ramp-box"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Send for Service</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">প্রজেক্টর সার্ভিসে পাঠান</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="https://aun-projector.com.bd/repair-status/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Repair Status</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">রিপেয়ার স্ট্যাটাস ট্র্যাক করুন</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="https://aun-projector.com.bd/warranty-register/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Warranty Register</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">ওয়ারেন্টি রেজিস্ট্রেশন করুন</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="https://aun-projector.com.bd/track-order/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Track Order</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">আপনার অর্ডার ট্র্যাক করুন</p>
+</div>
+</a>
+[/col]
+[/row]
+[/section]
+
+[section bg="linear-gradient(135deg,#0188fe,#00c6ff)" dark="true" padding="44px"]
+[row][col span="12" align="center"]
+<h2 style="color:#fff;margin:0 0 8px;font-weight:800;">এখনও সমাধান পাননি?</h2>
+<p style="color:rgba(255,255,255,0.92);font-size:16px;margin:0 auto 20px;max-width:520px;">আমাদের সাপোর্ট টিম আপনাকে সরাসরি সাহায্য করতে প্রস্তুত। নিচের বাটনে চাপুন।</p>
+<a href="https://wa.me/8801787698268" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;padding:13px 24px;border-radius:11px;font-weight:800;text-decoration:none;margin:5px;"><i class="fa-brands fa-whatsapp"></i> WhatsApp করুন</a>
+<a href="tel:+8809638078888" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#0188fe;padding:13px 24px;border-radius:11px;font-weight:800;text-decoration:none;margin:5px;"><i class="fa-solid fa-phone"></i> কল করুন: 09638-078888</a>
+[/col][/row]
+[/section]

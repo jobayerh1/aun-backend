@@ -1,0 +1,185 @@
+#in-stock-form, .in-stock-form {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+
+.isa-form-hidden {
+  display: none !important;
+}
+
+.product .notify-btn {
+    padding: 12px 15px;
+    font-weight: 700;
+    width: 100%;
+    text-align: center;
+    background-color: #007600;
+    color: white;
+    position: relative;
+    text-decoration: none;
+    outline: none;
+}
+
+.notify-btninstock-hidden {
+  display: none;
+}
+
+.instock-notification {
+  font-size: .8em;
+  font-style: italic;
+  cursor: default;
+  position: relative;
+}
+
+.cancel-instock:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+.product .notify-btn:hover {
+  color: white;
+}
+
+.instock-input-section {
+  display: flex;
+  width: 100%;
+	margin-top: 10px;
+}
+
+.instock-input-section input, .instock-submit {
+  margin: 0 !important;
+  box-shadow: none !important;
+  padding: 9px !important;
+  line-height: 1em !important;
+  height: 38px !important;
+  font-size: .85em !important;
+}
+
+.instock-submit {
+  border: none;
+  cursor: pointer;
+}
+.instock-input-section .in-stock-email {
+  background-color: #FAFAFA;
+}
+
+.instock-email {
+  outline: none !important;
+  width: 65%;
+}
+
+.instock-submit {
+  width: 35%;
+  font-size: .9em;
+}
+
+.product .instock-hidden {
+  display: none;
+}
+
+/* Checkbox */
+/* .isa-submit-checkbox {
+  outline: none !important;
+  -webkit-appearance: none;
+  background-color: #fafafa !important;
+  border: 1px solid #cacece !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0px -15px 10px -12px rgba(0,0,0,0.05) !important;
+  padding: 9px !important;
+  border-radius: 3px !important;
+  display: inline-block !important;
+  position: relative !important;
+}
+
+.instock-input-section .isa-submit-checkbox:checked {
+	background-color: #e9ecee;
+	border: 1px solid #adb8c0;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0px -15px 10px -12px rgba(0,0,0,0.05), inset 15px 10px -12px rgba(255,255,255,0.1);
+	color: #99a1a7;
+} */
+
+.isa-submit-checkbox {
+  outline: none !important;
+  width: 14px;
+  height: 14px;
+}
+
+
+/* Consent Checkbox */
+.isa-consent-block {
+  margin-top: 3px;
+  display: inline-block;
+  padding-right: 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.isa-consent-block input {
+  vertical-align: middle;
+}
+
+.isa-consent-block span {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+ /* Mobile Style */
+ @media screen and (max-width: 600px) {
+
+   #in-stock-form {
+     margin: 15px auto;
+     width: 100% !important;
+   }
+   .instock-input-section{
+     flex-wrap: wrap;
+   }
+   .instock-email {
+     width: 100%;
+   }
+   .instock-submit {
+     width: 100%;
+   }
+ }
+
+
+/* Loader img */
+ .gweb-loader {
+   display: none;
+   border: 5px solid #007600 !important;
+   border-radius: 50%;
+   border-top: 5px solid white !important;
+   width: 20px;
+   height: 20px;
+   -webkit-animation: spin .4s linear infinite !important; /* Safari */
+   animation: spin .4s linear infinite !important;
+   opacity: .7;
+
+   position: absolute;
+   top: 30%;
+   right: 16px;
+ }
+
+ .gweb-loader-cancel {
+   top: 52%;
+   right: 32%;
+ }
+
+ /* Safari */
+ @-webkit-keyframes spin {
+   0% { -webkit-transform: rotate(0deg); }
+   100% { -webkit-transform: rotate(360deg); }
+ }
+
+ @keyframes spin {
+   0% { transform: rotate(0deg); }
+   100% { transform: rotate(360deg); }
+ }
+
+ /* honeypot field */
+ .its-all-about-honey {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 0;
+    width: 0;
+    z-index: -1;
+ }

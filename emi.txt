@@ -1,0 +1,324 @@
+[ux_banner label="EMI Hero" height="300px" height__sm="99.99%" bg_color="#0188fe" class="emi-gradient-banner"]
+
+[text_box animate="fadeInLeft" position_x="5" position_y="50" text_align="left"]
+
+<h1 class="uppercase" style="font-size:28px;line-height:1.25;margin-bottom:10px;">Shop Now, Pay Later with 0% EMI on Projectors</h1>
+<p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">Enjoy flexible installment plans with leading banks across Bangladesh.<br />0% EMI available up to 6 months.</p>
+
+[button text="Browse Projectors" color="white" style="font-weight:600;" size="medium" radius="12" link="/projector-price/"]
+
+
+[/text_box]
+[ux_image id="6558" image_size="original" width="20" animate="fadeInRight" position_x="95" position_y="50"]
+
+
+[/ux_banner]
+[section label="EMI Highlights" bg_color="#ffffff"]
+
+[row style="small" h_align="center"]
+
+[col span="4" span__sm="12" align="center" animate="fadeInUp"]
+
+[featured_box title="0% EMI up to 6 months"]
+
+<p>Available for eligible purchases above BDT 5,000.</p>
+
+[/featured_box]
+
+[/col]
+[col span="4" span__sm="12" align="center" animate="fadeInUp"]
+
+[featured_box title="Credit Card Holders Only"]
+
+<p>Supported by 34 leading banks across Bangladesh.</p>
+
+[/featured_box]
+
+[/col]
+[col span="4" span__sm="12" align="center" animate="fadeInUp"]
+
+[featured_box title="Flexible Tenure Plans"]
+
+<p>Choose from 3 or 6 month EMI options.</p>
+
+
+[/featured_box]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="HOW TO AVAIL EMI" bg_color="#ffffff"]
+
+[title style="center" text="HOW TO AVAIL EMI"]
+
+[ux_slider style="focus" slide_width="400px" arrows="false" nav_color="dark" bullet_style="simple" auto_slide="false"]
+
+[row]
+
+[col span__sm="12"]
+
+[ux_image_box img="7404"]
+
+[ux_text font_size="1"]
+
+<h4>Step 1</h4>
+<p>Enter Card Details</p>
+[/ux_text]
+
+[/ux_image_box]
+
+[/col]
+
+[/row]
+[row]
+
+[col span__sm="12"]
+
+[ux_image_box img="7402"]
+
+[ux_text font_size="1"]
+
+<h4>Step 2</h4>
+<p>Click on 'AVAIL EMI'</p>
+[/ux_text]
+
+[/ux_image_box]
+
+[/col]
+
+[/row]
+[row]
+
+[col span__sm="12"]
+
+[ux_image_box img="7403"]
+
+[ux_text font_size="1"]
+
+<h4>Step 3</h4>
+<p>Choose preferred tenure</p>
+[/ux_text]
+
+[/ux_image_box]
+
+[/col]
+
+[/row]
+[row]
+
+[col span__sm="12"]
+
+[ux_image_box img="7401"]
+
+[ux_text font_size="1"]
+
+<h4>Step 4</h4>
+<p>Click on 'Pay'</p>
+[/ux_text]
+
+[/ux_image_box]
+
+[/col]
+
+[/row]
+[row]
+
+[col span__sm="12"]
+
+[ux_image_box img="7400"]
+
+[ux_text font_size="1"]
+
+<h4>Step 5</h4>
+<p>Enter OTP sent by bank</p>
+[/ux_text]
+
+[/ux_image_box]
+
+[/col]
+
+[/row]
+[row]
+
+[col span__sm="12"]
+
+[ux_image_box img="7399"]
+
+[ux_text font_size="1"]
+
+<h4>Step 6</h4>
+<p>Payment Successful</p>
+[/ux_text]
+
+[/ux_image_box]
+
+[/col]
+
+[/row]
+
+[/ux_slider]
+
+[/section]
+[section label="Bank Logos" bg_color="rgb(246,248,251)"]
+
+[title style="center" text="Our Partner Banks"]
+
+[ux_slider label="bank-logos" hide_nav="true" nav_pos="outside" nav_size="normal" nav_style="simple" nav_color="dark" bullets="false" timer="2000"]
+
+[logo img="6889" title="AB Bank PLC" hover="color"]
+
+[logo img="6888" title="Al-Arafah Islami Bank PLC" hover="color"]
+
+[logo img="6887" title="Bank Asia PLC" hover="color"]
+
+[logo img="6890" title="Citizens Bank PLC" hover="color"]
+
+[logo img="6885" title="Community Bank Bangladesh PLC" hover="color"]
+
+[logo img="6884" title="Dhaka Bank PLC" hover="color"]
+
+[logo img="6883" title="Dutch Bangla Bank PLC" hover="color"]
+
+[logo img="6882" title="Eastern Bank PLC" hover="color"]
+
+[logo img="6881" title="EXIM Bank PLC" hover="color"]
+
+[logo img="6880" title="Islami Bank Bangladesh PLC" hover="color"]
+
+[logo img="6879" title="Jamuna Bank PLC" hover="color"]
+
+[logo img="6878" title="LankaBangla Finance PLC" hover="color"]
+
+[logo img="6876" title="Mercantile Bank PLC" hover="color"]
+
+[logo img="6877" title="Meghna Bank PLC" hover="color"]
+
+[logo img="6874" title="Modhumoti Bank PLC" hover="color"]
+
+[logo img="6875" title="Midland Bank PLC" hover="color"]
+
+[logo img="6873" title="Mutual Trust PLC" hover="color"]
+
+[logo img="6872" title="NCC Bank PLC" hover="color"]
+
+[logo img="6871" title="NRB Bank PLC" hover="color"]
+
+[logo img="6870" title="NRBCC Bank PLC" hover="color"]
+
+[logo img="6869" title="One Bank PLC" hover="color"]
+
+[logo img="6868" title="Premier Bank PLC" hover="color"]
+
+[logo img="6867" title="Prime Bank PLC" hover="color"]
+
+[logo img="6866" title="Pubali Bank PLC" hover="color"]
+
+[logo img="6865" title="SBAC Bank PLC" hover="color"]
+
+[logo img="6864" title="Shahjalal Islami Bank PLC" hover="color"]
+
+[logo img="6894" title="Shimanto Bank PLC" hover="color"]
+
+[logo img="6895" title="Southeast Bank PLC" hover="color"]
+
+[logo img="6862" title="Standard Bank PLC" hover="color"]
+
+[logo img="6861" title="Standard Chartered Bank" hover="color"]
+
+[logo img="6860" title="Trust Bank PLC" hover="color"]
+
+[logo img="6859" title="The City Bank PLC" hover="color"]
+
+[logo img="6858" title="United Commercial Bank PLC" hover="color"]
+
+
+[/ux_slider]
+<p style="text-align:center; font-size:14px; margin-top:10px; font-weight:600;">
+Now partnered with 34 leading banks in Bangladesh for EMI facilities.</p>
+
+[/section]
+[section label="How It Works" bg_color="#ffffff"]
+
+[title style="center" text="How EMI Works"]
+
+[row style="small" h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[featured_box title="1. Buy a Projector"]
+
+<p>Place your order using your eligible credit card.</p>
+
+[/featured_box]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[featured_box title="2. Bank Processes EMI"]
+
+<p>Bank converts your transaction into EMI within 5–7 working days.</p>
+
+[/featured_box]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[featured_box title="3. Pay in Installments"]
+
+<p>Monthly payments deducted automatically, credit limit restores as you pay.</p>
+
+[/featured_box]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="EMI Note" bg_color="#ffffff" padding="16px"]
+
+[ux_text]
+<div style="max-width:900px;margin:0 auto;background:#fff7d6;border-left:4px solid #f9b500;padding:14px 18px;border-radius:8px;color:#7a5200;line-height:1.5;">
+⚠️ <strong>Note:</strong> 0% EMI (3 &amp; 6 months) cannot be combined with coupons. If you use a coupon, the EMI option will be disabled.
+</div>
+[/ux_text]
+
+[/section]
+[section label="EMI FAQ" bg_color="rgb(246,248,251)"]
+
+[title style="center" text="FAQs & Notes"]
+
+[accordion]
+
+[accordion-item title="What is the minimum purchase amount for EMI?"]
+
+<p>EMI is available for purchases above BDT 5,000.</p>
+
+[/accordion-item]
+[accordion-item title="What is the maximum tenure available?"]
+
+<p>We offer 0% EMI for up to 6 months.</p>
+
+
+[/accordion-item]
+[accordion-item title="How does the EMI reflect on my credit card?"]
+
+<p>The bank will block your full purchase amount initially, then release it gradually as you pay your monthly installments.</p>
+<p><em>For example, if you have made a 3-month EMI purchase of BDT 20,000 and your credit limit is BDT 1,00,000 then your bank will block your credit limit by BDT 20,000 and thus your available credit limit after the purchase will only be BDT 80,000. As and when you pay your EMI every month, your credit limit will be released accordingly.</em></p>
+
+[/accordion-item]
+[accordion-item title="Which banks are supported?"]
+
+<p>34 leading banks in Bangladesh, including DBBL, City Bank, EBL, Standard Chartered, Trust Bank, and more.</p>
+
+[/accordion-item]
+[accordion-item title="Who should I contact if my EMI is not reflected?"]
+
+<p>Please contact your card issuing bank if your EMI conversion doesn’t appear within 7 working days.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]

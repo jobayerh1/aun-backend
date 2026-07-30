@@ -1,0 +1,282 @@
+/* =====================================
+   "Login with mobile" — Modern Button
+   ===================================== */
+.greenwebsms-login-mobile {
+    padding: 0 !important;
+    margin: 0 0 12px 0 !important;
+}
+
+.greenwebsms-login-mobile a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    background: #fff;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    cursor: pointer;
+}
+
+.greenwebsms-login-mobile a svg {
+    color: #2271b1;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.greenwebsms-login-mobile a:hover {
+    border-color: #2271b1;
+    background: #f0f6fc;
+    color: #1d2327;
+    box-shadow: 0 2px 6px rgba(34,113,177,0.12);
+}
+
+.greenwebsms-login-mobile a:hover svg {
+    color: #135e96;
+}
+
+.greenwebsms-login-mobile a:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 3px rgba(34,113,177,0.15);
+}
+
+/* Button loading spinner */
+.greenwebsms-login-mobile a.gweb-login-loading {
+    pointer-events: none;
+    opacity: 0.7;
+    position: relative;
+}
+
+.greenwebsms-login-mobile a.gweb-login-loading svg {
+    display: none;
+}
+
+.greenwebsms-login-mobile a.gweb-login-loading::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid #2271b1;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: gweb-spin 0.6s linear infinite;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+
+/* =====================================
+   Modal — Overlay & Box
+   ===================================== */
+.gweb-login-overlay {
+    display: none;
+    position: fixed;
+    z-index: 999999;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.gweb-login-box {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 90%;
+    max-width: 400px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.gweb-login-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    z-index: 10;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.05);
+    color: #666;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.gweb-login-close:hover {
+    background: rgba(0,0,0,0.1);
+    color: #1d2327;
+}
+
+
+/* =====================================
+   Modal — Inner Content
+   ===================================== */
+.gweb-login-body {
+    padding: 28px 28px 32px;
+}
+
+#wps-login-sms {
+    text-align: center;
+    width: 100%;
+}
+
+#wps-login-sms a {
+    text-decoration: none;
+}
+
+#wps-login-sms .login-mobile-step {
+    width: 90%;
+    margin: 30px auto;
+}
+
+#wps-login-sms .input {
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04) inset;
+    padding: 8px 12px;
+    margin-top: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#wps-login-sms .input:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 2px rgba(34,113,177,0.12), 0 1px 2px rgba(0,0,0,0.04) inset;
+    outline: none;
+}
+
+#wps-login-sms .button {
+    display: block;
+    width: 100%;
+    padding: 9px 16px;
+    margin-top: 12px;
+    border: 1px solid #2271b1;
+    border-radius: 6px;
+    background: #2271b1;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, box-shadow 0.15s ease;
+    position: relative;
+}
+
+#wps-login-sms .button:hover {
+    background: #135e96;
+}
+
+#wps-login-sms .button:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+/* Modal button loading spinner */
+#wps-login-sms .button.gweb-btn-loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+#wps-login-sms .button.gweb-btn-loading span {
+    visibility: hidden;
+}
+
+#wps-login-sms .button.gweb-btn-loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: gweb-spin 0.6s linear infinite;
+}
+
+#wps-login-sms .loading_login {
+    color: #2271b1;
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: none;
+    position: relative;
+    padding-left: 24px;
+}
+
+#wps-login-sms .loading_login::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    border: 2px solid #2271b1;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: gweb-spin 0.6s linear infinite;
+}
+
+#wps-login-sms .alert-box {
+    color: #000;
+    font-family: Geneva, Arial, sans-serif;
+    font-size: 11px;
+    padding: 10px 10px 10px 36px;
+    margin: 10px;
+    border-radius: 6px;
+}
+
+#wps-login-sms .alert-box span {
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+#wps-login-sms .error {
+    background: #ffecec;
+    border: 1px solid #f5aca6;
+}
+
+#wps-login-sms .success {
+    background: #e9ffd9;
+    border: 1px solid #a6ca8a;
+}
+
+#wps-login-sms #powerby {
+    color: #b8b8b8;
+    font-size: 10px;
+    padding-top: 10px;
+}
+
+#wps-login-sms #powerby a {
+    color: #2271b1;
+    text-decoration: none;
+}
+
+#wps-login-sms #powerby a:hover {
+    text-decoration: underline;
+}
+
+
+/* =====================================
+   Animations
+   ===================================== */
+@keyframes gweb-spin {
+    to { transform: rotate(360deg); }
+}

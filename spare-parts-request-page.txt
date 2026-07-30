@@ -1,0 +1,161 @@
+[section bg_color="rgb(246, 248, 251)" padding="50px" padding__sm="30px" label="Spare Parts Hero"]
+
+[ux_text text_align="center"]
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-microchip"></i> Genuine AUN Spare Parts</span>
+<h1 style="margin:16px 0 8px;color:#0188fe;line-height:1.2;"><i class="fa-solid fa-screwdriver-wrench"></i> Projector Spare Parts in Bangladesh</h1>
+<p style="max-width:730px;margin:0 auto;color:#556777;font-size:16px;">Need a part for your AUN projector &mdash; LCD screen, heat insulation glass, fresnel lens, motherboard, LED, power board or remote? Find your purchase below, then choose what you need: order the exact part without sending your projector in &mdash; or, if you&rsquo;re not sure what&rsquo;s wrong, send it to us for service.</p>
+[/ux_text]
+[gap height="24px"]
+
+[ux_text]
+<div style="max-width:700px;margin:0 auto;">[aun_spare_parts]</div>
+[/ux_text]
+[gap height="14px"]
+
+[ux_text text_align="center"]
+<p style="color:#64748b;font-size:14px;margin:0;">Already requested a part? <a href="https://aun-projector.com.bd/spare-parts-status/" style="color:#0188fe;font-weight:700;">Track your request here &rarr;</a></p>
+<p style="color:#64748b;font-size:14px;margin:8px 0 0;">Just need help setting up or using your projector? <a href="https://aun-projector.com.bd/help/" style="color:#0188fe;font-weight:700;">Visit the Help Center &rarr;</a></p>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="How It Works"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How to Request a Spare Part</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:660px;margin:0 auto;">Three simple steps &mdash; no need to ship your projector.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-magnifying-glass"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">1. Find Your Purchase</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Enter your phone number, order number, or device serial. We confirm your model, purchase date and warranty automatically.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-camera"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">2. Pick the Part &amp; Add a Photo</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Choose what you need and attach the photo we ask for &mdash; the LCD serial or the board &mdash; so we send the exact match.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">3. Approve &amp; Track</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Out of warranty? We send a price to <strong>approve</strong> first &mdash; no surprises. Then track every part by your SP- number, with SMS updates as it moves.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Why AUN Parts"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Why Order Parts From AUN</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:700px;margin:0 auto;">The only projector brand in Bangladesh with genuine after-sales parts support and live tracking.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-certificate"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Genuine Factory Parts</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Matched to your exact model and serial, so they fit and perform right.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-box-open"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">No Need to Ship Your Projector</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Keep using your unit &mdash; just request the part and fit it, or visit us.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Warranty Checked Instantly</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">In-warranty parts are covered; out-of-warranty prices are quoted up front.</p>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="font-size:30px;color:#0188fe;"><i class="fa-solid fa-bell"></i></div>
+<h3 style="font-size:15px;margin:8px 0 4px;color:#0f172a;">Track + SMS Updates</h3>
+<p style="font-size:13px;color:#64748b;margin:0;">Follow each part&rsquo;s status online and get a text as it progresses.</p>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style data-no-optimize="1" data-no-minify="1">
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Spare Parts</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>Which spare parts can I request?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">LCD screen, heat insulation glass, fresnel lens, motherboard, LED, power board and remote control. Choose what you need on the form above &mdash; we may ask for a quick photo so we match the exact part.</div></details>
+<details><summary><span>Do I have to send my projector to you?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">No. For most parts you just request the part and we ship it &mdash; no need to send the projector. If you&rsquo;d rather we diagnose and fit it, you can also <a href="https://aun-projector.com.bd/send-projector/">send your projector in for service</a> instead.</div></details>
+<details><summary><span>Why do you need a photo of the serial or board?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Projector parts vary by batch. The LCD serial, board model number, or a photo of the power board lets us send a part that actually fits &mdash; for example, a heat insulation glass must match your LCD or the picture washes out.</div></details>
+<details><summary><span>I lost my invoice number &mdash; can I still request a part?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. Search by your phone number or your device serial number instead &mdash; we&rsquo;ll find your purchase in our records.</div></details>
+<details><summary><span>Are spare parts free under warranty?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If your AUN projector is within its 1-year warranty and the part is covered, it&rsquo;s free. If it&rsquo;s out of warranty (or the damage isn&rsquo;t covered), it&rsquo;s a paid part &mdash; see the next question for how pricing works. Our full <a href="https://aun-projector.com.bd/warranty-policy/">warranty policy</a> explains what&rsquo;s covered.</div></details>
+<details><summary><span>How does pricing and approval work for paid parts?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">After you submit your request, we check the part and send you a price quote. You&rsquo;ll see it on the <a href="https://aun-projector.com.bd/spare-parts-status/">tracking page</a> &mdash; each part with its price and a total &mdash; and you simply tap <strong>Approve</strong> to confirm or <strong>Decline</strong>. We only order the part from the factory <em>after</em> you approve, so there are no surprises. Payment instructions are shown right with the quote.</div></details>
+<details><summary><span>How long does it take to get a part?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If it&rsquo;s in stock, we dispatch quickly. If it has to come from the factory, it usually takes 3&ndash;4 weeks. You can follow each part&rsquo;s exact status on the <a href="https://aun-projector.com.bd/spare-parts-status/">tracking page</a>.</div></details>
+<details><summary><span>How do I track my request, and what if I lose the number?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">The moment you submit, we text you your reference number (like SP-2026-0001) with a direct link &mdash; so you won&rsquo;t lose it. You can also track any time by entering your <strong>phone number</strong> on the <a href="https://aun-projector.com.bd/spare-parts-status/">Spare Parts Status</a> page, even without the number.</div></details>
+</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Ecosystem Cross Links"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Explore the AUN After-Sales Ecosystem</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto 6px;">Everything you need before and after your purchase &mdash; all in one place.</p>
+[/ux_text]
+[gap height="16px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/spare-parts-status/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-magnifying-glass-location"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Track Spare Parts</span><span style="font-size:13px; color:#777; display:block;">Follow each part of your request by SP- number.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/send-projector/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-truck-ramp-box"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Send Your Projector</span><span style="font-size:13px; color:#777; display:block;">Need a repair? How to courier it in to us.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/projector-price/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-store"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Shop Projectors</span><span style="font-size:13px; color:#777; display:block;">Full HD &amp; Android TV projectors with warranty.</span></a>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<a href="https://aun-projector.com.bd/contact-us/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-headset"></i></span><span style="font-size:16px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Contact Support</span><span style="font-size:13px; color:#777; display:block;">Call +880 9638-078888 or message us on WhatsApp.</span></a>
+[/col]
+
+[/row]
+
+[/section]

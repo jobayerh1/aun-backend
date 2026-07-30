@@ -1,0 +1,326 @@
+<link rel="stylesheet" media="screen" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<script>
+window.addEventListener("DOMContentLoaded", (event) => {
+let menu = document.querySelector('.menugweb');
+let toggle = document.querySelector('.togglegweb');
+let gwebsetcontent = document.querySelector('.greenwebsms-pro-settings-wrap');
+
+toggle.addEventListener('click', () => {
+  menu.classList.toggle('active');
+	gwebsetcontent.classList.toggle('active');
+});
+
+var dropdown = document.getElementsByClassName("dropdown-btn");
+var i;
+
+for (i = 0; i < dropdown.length; i++) {
+  dropdown[i].addEventListener("click", function() {
+
+    this.classList.toggle("active");
+    var dropdownContent = this.nextElementSibling;
+    if (dropdownContent.style.display === "block") {
+      dropdownContent.style.display = "none";
+    } else {
+      dropdownContent.style.display = "block";
+    }
+  });
+}
+});
+</script>
+
+<style>
+.cardgweb {
+  position: absolute;
+	max-width: 225px;
+	margin:35px 5px 0 2px;
+
+    top: 100px;
+   display:inline-flex;
+	}
+@media screen and (max-width: 450px) {
+.menugweb {
+  width: 67px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 10px 0 50px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: 0.5s;
+	margin-left: -30px;
+}
+}
+@media screen and (min-width: 451px) {
+.menugweb {
+  width: 67px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 10px 0 50px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: 0.5s;
+}
+}
+
+.menugweb.active {
+  width: 225px;
+
+}
+
+.togglegweb {
+  position: absolute;
+  top: -20px;
+  right: -15px;
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  z-index: 1;
+  background-color: #000000;
+  border: 4px solid #666666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.line-1gweb,
+.line-2gweb {
+  height: 2px;
+  width: 15px;
+  background-color: #ffffff;
+  transition: 0.5s ease;
+}
+
+.line-1gweb {
+  transform: rotate(-35deg) translate(5px, 8px);
+}
+
+.line-2gweb {
+  transform: rotate(35deg) translate(-8px, 0px);
+}
+
+.menugweb.active .line-1gweb {
+  transform: rotate(-45deg) translate(5px, 6px);
+}
+
+.menugweb.active .line-2gweb {
+  transform: rotate(45deg) translate(-5px, 6px);
+}
+
+.ulgweb {
+  position: relative;
+  width: 100%;
+}
+
+.ligweb {
+  position: relative;
+  list-style: none;
+  height: 35px;
+  width: 100%;
+  padding-left: 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+
+}
+.menugweb a {
+
+    text-decoration: none;
+    color:#3c434a;
+
+}
+.ligweb:hover {
+  background-color: #dddddd;
+}
+
+.spangweb {
+  margin-left: 15px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.menugweb.active .spangweb {
+  visibility: visible;
+  opacity: 1;
+}
+
+.dropdown-btn {
+
+  white-space: nowrap;
+   position: relative;
+  list-style: none;
+  height: 35px;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+	margin-left: 0px;
+}
+
+.dropdown-btn:hover {
+background-color: #dddddd;
+}
+
+.dropdown-container {
+  display: none;
+
+  background:#efe9a6;
+}
+	.activedrop {
+		background-color: #5397eb;
+    border-radius: 5px;
+    color: white;
+		 position: relative;
+  list-style: none;
+  height: 35px;
+  width: 100%;
+  padding-left: 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+	}
+
+.fa-caret-down {
+  float: right;
+  padding-right: 8px;
+}
+	.greenwebsms-pro-settings-wrap{
+		width:79%;
+		float:right;
+	}
+	.greenwebsms-pro-settings-wrap.active{
+		width:93%;
+		float:right;
+	}
+
+	background:linear-gradient(to right, #c6ffdd, #fbd786, #f7797d);
+	}
+
+</style>
+
+ <div class="cardgweb">
+
+  <div class="menugweb active">
+    <div class="togglegweb">
+      <div class="line-1gweb"></div>
+      <div class="line-2gweb"></div>
+    </div>
+      <ul class="ulgweb">
+		  <li class="">
+			  <span class="spangweb"><img src="https://bdbulksms.net/images/bdbulksmslogo.gif" style="width:85%;"></img></span>
+        </li>
+
+		   <a href="https://otp.li/phelp" target="_blank"> <li class="ligweb">
+          <i class="fa-solid fa-person-chalkboard fa-2xl" style="color: #fd5c17;margin-right:-12px;"></i>
+          <span class="spangweb">Setup Tutorial</span>
+        </li></a>
+
+       <a href="admin.php?page=greenweb-sms-settings&tab=gateway"> <li class="ligweb  ">
+          <i class="fa-solid fa-comment-sms fa-2xl" style="color: #fd5c17;margin-right:-8px;"></i>
+          <span class="spangweb <?php if ($current_tab=="gateway") {echo "activedrop";}?>">Gateway Setup</span>
+        </li></a>
+
+    <button class="dropdown-btn "><i class="fa-brands fa-wordpress fa-2xl" style="color: #fd5c17;margin-right:-8px;"></i> <span class="spangweb">Wordpress Menu</span>
+    <i class="fa fa-caret-down"></i>
+  </button>
+  <div class="dropdown-container" <?php if (($current_tab=="newsletter") OR ($current_tab=="wp") OR ($current_tab=="general") OR ($current_tab=="notifications")) { echo "style='display:block'";}?>>
+
+ <a href="admin.php?page=greenweb-sms-settings&tab=general"> <li class="ligweb">
+          <i class="fa-solid fa-sliders fa-xl" style="color: #fd5c17;margin-left:10px;"></i>
+			<span class="spangweb  <?php if ($current_tab=="general") {echo "activedrop";}?>">Basic Setup</span>
+        </li></a>
+	  <a href="admin.php?page=greenweb-sms-settings&tab=newsletter"> <li class="ligweb">
+		  <i class="fa-solid fa-square-rss fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		  <span class="spangweb <?php if ($current_tab=="newsletter") {echo "activedrop";}?>">SMS Newsletter</span></li></a>
+    <a href="admin.php?page=greenweb-sms-settings&tab=notifications"><li class="ligweb"> <i class="fa-solid fa-bell fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		<span class="spangweb  <?php if ($current_tab=="notifications") {echo "activedrop";}?>">Blog Notifications</span></li></a>
+   <a href="admin.php?page=greenweb-sms-extra&tab=wp"> <li class="ligweb"><i class="fa-solid fa-key fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+	   <span class="spangweb   <?php if ($current_tab=="wp") {echo "activedrop";}?>">OTP for Wordpress User</span></li></a>
+  </div>
+
+		  <button class="dropdown-btn"><i class="fa-solid fa-cart-arrow-down fa-2xl" style="color: #fd5c17;margin-right:-10px;"></i><span class="spangweb">WooCommerce Menu</span>
+    <i class="fa fa-caret-down"></i>
+  </button>
+  <div class="dropdown-container" <?php if (($current_tab=="wc") OR ($current_tab=="greenwebwccotp") OR ($_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]=="g-web") OR ($current_tab=="gwebabandonedcart") OR ($current_tab=="gwebreview") OR ($current_tab=="gwebwcstock")) { echo "style='display:block'";}?>>
+	 <a href="admin.php?page=greenweb-sms-extra&tab=wc"> <li class="ligweb"><i class="fa-solid fa-money-bill fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		 <span class="spangweb  <?php if ($current_tab=="wc") {echo "activedrop";}?>">Order Notification</span></li></a>
+   <a href="admin.php?page=greenweb-sms-extra&tab=greenwebwccotp"> <li class="ligweb"><i class="fa-solid fa-shop-lock fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+	   <span class="spangweb   <?php if ($current_tab=="greenwebwccotp") {echo "activedrop";}?>">Checkout Page OTP</span></li></a>
+	     <a href="admin.php?page=g-web"><li class="ligweb"><i class="fa-solid fa-user-lock fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+			 <span class="spangweb  <?php if ($_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]=="g-web") {echo "activedrop";}?>">Login & Registration OTP</span></li></a>
+
+	  <a href="admin.php?page=greenweb-sms-extra&tab=gwebabandonedcart"> <li class="ligweb"><i class="fa-solid fa-cart-shopping fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		  <span class="spangweb   <?php if ($current_tab=="gwebabandonedcart") {echo "activedrop";}?>">Abandoned Cart Notifications</span></li></a>
+
+	  <a href="admin.php?page=greenweb-sms-extra&tab=gwebwcstock"> <li class="ligweb"><i class="fa-solid fa-boxes-stacked fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		  <span class="spangweb   <?php if ($current_tab=="gwebwcstock") {echo "activedrop";}?>">Product Stock Notification</span></li></a>
+
+   <a href="admin.php?page=greenweb-sms-extra&tab=gwebreview"> <li class="ligweb"><i class="fa-solid fa-comments fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+	   <span class="spangweb   <?php if ($current_tab=="gwebreview") {echo "activedrop";}?>">Product Review (Via SMS)</span></li></a>
+  </div>
+
+		  <button class="dropdown-btn"><i class="fa-solid fa-cubes fa-2xl" style="color: #fd5c17;margin-right:-10px;"></i> <span class="spangweb">Product Back in Stock SMS</span>
+    <i class="fa fa-caret-down"></i>
+  </button>
+  <div class="dropdown-container" <?php if (($current_tab=="pending") OR ($current_tab=="sent") OR ($current_tab=="settings")) { echo "style='display:block'";}?>>
+	 <a href="admin.php?page=gweb-stock-notify&tab=pending&groupby=mobile"> <li class="ligweb">
+		 <i class="fa-solid fa-circle-exclamation fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		 <span class="spangweb  <?php if ($current_tab=="pending") {echo "activedrop";}?>">Pending SMS Alert</span></li></a>
+    <a href="admin.php?page=gweb-stock-notify&tab=sent&groupby=mobile"><li class="ligweb">
+		<i class="fa-solid fa-check fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		<span class="spangweb  <?php if ($current_tab=="sent") {echo "activedrop";}?>">BIS Sent Alert</span></li></a>
+   <a href="admin.php?page=gweb-stock-notify&tab=settings&groupby=mobile"> <li class="ligweb">
+	   <i class="fa-solid fa-square-rss fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+	   <span class="spangweb   <?php if ($current_tab=="settings") {echo "activedrop";}?>">Manage Back in Stock SMS</span></li></a>
+  </div>
+
+   	  <button class="dropdown-btn"><i class="fa-solid fa-user-secret fa-2xl" style="color: #fd5c17;margin-right:-10px;"></i> <span class="spangweb">Fraud Customer Manager</span>
+    <i class="fa fa-caret-down"></i>
+  </button>	  <div class="dropdown-container" <?php if (($current_tab=="gwebfraud") OR (isset($_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]) AND $_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]=="gweb-fake-order") OR (isset($_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]) AND $_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]=="gweb-fake-order-history") OR ($current_tab=="gwebfakeblocker")) { echo "style='display:block'";}?>>
+
+	 <a href="admin.php?page=greenweb-sms-extra&tab=gwebfraud"> <li class="ligweb">
+		 <i class="fa-brands fa-wordpress fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		 <span class="spangweb  <?php if ($current_tab=="gwebfraud") {echo "activedrop";}?>">Setup Courier Stats</span></li></a>
+
+	 <?php
+	 $pro_settings = get_option( _greenweb_xd("\xd6\xc2\xb0\x8b\x95\x86\xf8\xcb\xac\xa4\x95\x9b\xcd\xd3\xb6"), array() );
+	 $fake_enabled = ! empty( $pro_settings[_greenweb_xd("\xc6\xc5\xa6\xb6\xba\x90\xc6\xd3\xac\x8f\x83\x9e\xcc\xd7\xae\xb3\xd3\xed\xa6\xba\x84\x94\xcb\xdd")] );
+	 ?>
+	 <a href="admin.php?page=<?php echo $fake_enabled ? _greenweb_xd("\xc6\xc5\xa6\xb6\xc8\x90\xc6\xd3\xac\xfd\x8e\x80\xc7\xd1\xb7") : _greenweb_xd("\xc6\xc0\xa6\xb1\x8b\x81\xc2\xda\xe4\xa3\x8c\x81\x8e\xd1\xbd\xa2\xd3\xd3\xe5\xa0\x84\x94\x9a\xdf\xbe\xb5\x83\x94\xc2\xdf\xa0\xb4\xcd\xdd\xa0\xbf\x80\x84"); ?>"> <li class="ligweb">
+		 <i class="fa-solid fa-shield-halved fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		 <span class="spangweb  <?php if ((isset($_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]) AND $_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]==_greenweb_xd("\xc6\xc5\xa6\xb6\xc8\x90\xc6\xd3\xac\xfd\x8e\x80\xc7\xd1\xb7")) OR $current_tab==_greenweb_xd("\xc6\xc5\xa6\xb6\x83\x97\xcc\xdd\xab\xbc\x8e\x91\xc8\xd1\xb7")) {echo "activedrop";}?>">Fake Order Blocker</span></li></a>
+
+	 <a href="admin.php?page=<?php echo $fake_enabled ? _greenweb_xd("\xc6\xc5\xa6\xb6\xc8\x90\xc6\xd3\xac\xfd\x8e\x80\xc7\xd1\xb7\xfb\xc9\xdb\xb0\xa0\x8a\x84\xde") : _greenweb_xd("\xc6\xc0\xa6\xb1\x8b\x81\xc2\xda\xe4\xa3\x8c\x81\x8e\xd1\xbd\xa2\xd3\xd3\xe5\xa0\x84\x94\x9a\xdf\xbe\xb5\x83\x94\xc2\xdf\xa0\xb4\xcd\xdd\xa0\xbf\x80\x84"); ?>"> <li class="ligweb">
+		 <i class="fa-solid fa-ban fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		 <span class="spangweb  <?php if (isset($_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]) AND $_GET[_greenweb_xd("\xd1\xd3\xa4\xb1")]==_greenweb_xd("\xc6\xc5\xa6\xb6\xc8\x90\xc6\xd3\xac\xfd\x8e\x80\xc7\xd1\xb7\xfb\xc9\xdb\xb0\xa0\x8a\x84\xde")) {echo "activedrop";}?>">Blocked Order History</span></li></a>
+  </div>
+
+    <button class="dropdown-btn"><i class="fa-brands fa-wpforms fa-2xl" style="color: #fd5c17;margin-right:-5px;"></i> <span class="spangweb">Integrate with Form
+    <i class="fa fa-caret-down"></i>
+  </button>
+  <div class="dropdown-container" <?php if (($current_tab=="gwebcf7form") OR ($current_tab=="qf") OR ($current_tab=="gf")) { echo "style='display:block'";}?>>
+	 <a href="admin.php?page=greenweb-sms-settings&tab=gwebcf7form"> <li class="ligweb"><i class="fa-solid fa-table fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		 <span class="spangweb  <?php if ($current_tab=="gwebcf7form") {echo "activedrop";}?>">Contact From 7</span></li></a>
+    <a href="admin.php?page=greenweb-sms-extra&tab=qf"><li class="ligweb"><i class="fa-solid fa-square-rss fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+		<span class="spangweb  <?php if ($current_tab=="qf") {echo "activedrop";}?>">Qu Forms</span></li></a>
+   <a href="admin.php?page=greenweb-sms-extra&tab=gf"> <li class="ligweb"><i class="fa-solid fa-square-rss fa-xl" style="color: #8c217e;margin-left:10px;"></i>
+	   <span class="spangweb   <?php if ($current_tab=="gf") {echo "activedrop";}?>">GForms</span></li></a>
+  </div>
+
+		  <a href="admin.php?page=greenweb-sms-extra&tab=as" > <li class="ligweb ">
+          <i class="fa-solid fa-headset fa-2xl" style="color: #fd5c17;margin-right:-9px;"></i>
+          <span class="spangweb <?php if ($current_tab=="as") {echo "activedrop";}?>">Awesome Support</span>
+        </li></a>
+
+		  <a href="admin.php?page=greenweb-sms-extra&tab=job"> <li class="ligweb ">
+           <i class="fa-solid fa-user-tie fa-2xl" style="color: #fd5c17;margin-right:-7px;"></i>
+          <span class="spangweb <?php if ($current_tab=="job") {echo "activedrop";}?>">WP Job Manager</span>
+        </li></a>
+
+		  <a href="admin.php?page=greenweb-sms-extra&tab=gwebpageotp"> <li class="ligweb ">
+           <i class="fa-solid fa-shield-halved fa-2xl" style="color: #fd5c17;margin-right:-7px;"></i>
+          <span class="spangweb <?php if ($current_tab=="gwebpageotp") {echo "activedrop";}?>">Protect Page/Post By OTP</span>
+        </li></a>
+
+      </ul>
+  </div>
+</div>

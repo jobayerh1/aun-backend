@@ -1,0 +1,160 @@
+[section bg_color="rgb(246, 248, 251)" padding="50px" padding__sm="30px" label="Track Order Hero"]
+
+[ux_text text_align="center"]
+<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(1,136,254,0.08);border:1px solid rgba(1,136,254,0.20);font-weight:800;font-size:12px;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,0.15);"></span> Live Order Tracking</span>
+<h1 style="margin:16px 0 8px;color:#0188fe;line-height:1.2;"><i class="fa-solid fa-magnifying-glass-location"></i> Track Your Order</h1>
+<p style="max-width:720px;margin:0 auto;color:#556777;font-size:16px;">Enter your Order ID or phone number to check the latest status of your AUN projector delivery.</p>
+[/ux_text]
+[gap height="24px"]
+
+[ux_text]
+<div style="max-width:600px;margin:0 auto;">[aun_live_tracking]</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="How Order Tracking Works"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How Order Tracking Works</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:660px;margin:0 auto;">Check your AUN projector delivery in three simple steps.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-keyboard"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">1. Enter Your Details</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Type your Order ID or the phone number you used when ordering.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-location-crosshairs"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">2. See Live Status</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">View the current stage of your delivery, updated in real time.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-box-open"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">3. Receive Your Order</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Your AUN projector is delivered safely to your address.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="FAQ"]
+
+[ux_text]
+<style>
+.aun-faq{max-width:820px;margin:0 auto}
+.aun-faq details{background:#fff;border:1px solid #e2e8f0;border-left:3px solid transparent;border-radius:10px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.aun-faq details[open]{border-left-color:#ffbc00;box-shadow:0 6px 18px rgba(1,136,254,0.08)}
+.aun-faq summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:700;color:#1e293b;outline:none}
+.aun-faq summary::-webkit-details-marker{display:none}
+.aun-faq summary:hover{background:#f8fafc}
+.aun-faq summary .aun-chev{color:#0188fe;font-size:13px;transition:transform .25s ease;flex-shrink:0}
+.aun-faq details[open] summary .aun-chev{transform:rotate(180deg)}
+.aun-faq .aun-faq-a{padding:2px 22px 20px;color:#555;line-height:1.65;font-size:14.5px;animation:aunFaqFade .25s ease}
+.aun-faq .aun-faq-a a{color:#0188fe}
+@keyframes aunFaqFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Order Tracking</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>How do I track my AUN projector order?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Enter your Order ID or the phone number you used when placing the order, then submit to see your latest delivery status above.</div></details>
+<details><summary><span>I don&rsquo;t have my Order ID &mdash; can I still track?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Yes. You can track using the phone number you provided during checkout. If you still can&rsquo;t find your order, <a href="https://aun-projector.com.bd/contact-us/">contact our support team</a>.</div></details>
+<details><summary><span>How long does delivery take?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Inside Dhaka: up to 2 working days. Outside Dhaka: up to 4 working days. See our <a href="https://aun-projector.com.bd/shipping-policy/">shipping policy</a> for full details and charges.</div></details>
+<details><summary><span>My order status hasn&rsquo;t updated &mdash; what should I do?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Status updates can take a little time after dispatch. Please check again after a few hours. If it still hasn&rsquo;t changed, contact us with your Order ID and we&rsquo;ll check it for you.</div></details>
+<details><summary><span>Can I change my delivery address after ordering?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">If your order hasn&rsquo;t been dispatched yet, we may be able to update the address. Call us as soon as possible at <a href="tel:+8809638078888">+880 9638-078888</a>.</div></details>
+</div>
+[/ux_text]
+
+[/section]
+
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Ecosystem Cross Links"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Explore the AUN After-Sales Ecosystem</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto 6px;">Everything you need before and after your purchase &mdash; all in one place.</p>
+[/ux_text]
+[gap height="16px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<a href="https://aun-projector.com.bd/projector-price/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-store"></i></span><span style="font-size:17px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Shop AUN Projectors</span><span style="font-size:13px; color:#777; display:block;">Full HD &amp; Android TV projectors with official warranty.</span></a>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<a href="https://aun-projector.com.bd/repair-status/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-screwdriver-wrench"></i></span><span style="font-size:17px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Track Your Repair</span><span style="font-size:13px; color:#777; display:block;">Check the live status of any service or repair request.</span></a>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<a href="https://aun-projector.com.bd/contact-us/" style="text-decoration:none; display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);"><span style="font-size:30px; color:#0188fe; display:block;"><i class="fa-solid fa-headset"></i></span><span style="font-size:17px; color:#0f172a; font-weight:700; display:block; margin:10px 0 6px;">Contact Support</span><span style="font-size:13px; color:#777; display:block;">Talk to our team &mdash; call +880 9638-078888 or message us.</span></a>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff" padding="30px"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+<div style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-wrap: wrap; text-align: left;">
+    
+    <!-- Left Side: Instant Contact -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #f8fafc; border-right: 1px solid #e2e8f0;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Talk to a Human</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Get instant answers via chat or phone.</p>
+        
+        <a href="https://api.whatsapp.com/send?phone=8801787698268" onmouseover="this.style.background='#dcfce7'; this.style.borderColor='#86efac';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #166534; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-whatsapp" style="font-size:20px; color:#25D366;"></i> WhatsApp Chat
+        </a>
+        
+        <a href="http://m.me/aunprojectorbd" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #1e40af; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-facebook-messenger" style="font-size:20px; color:#0084FF;"></i> Messenger
+        </a>
+        
+        <a href="tel:+8809638078888" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #334155; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-phone" style="font-size:18px; color:#475569;"></i> +880 9638-078888
+        </a>
+    </div>
+
+    <!-- Right Side: Warranty & Support -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #ffffff;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Warranty & Support</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Track repairs or open a formal ticket.</p>
+
+        <a href="https://aun-projector.com.bd/repair-status/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-screwdriver-wrench" style="font-size:18px; color:#0188fe;"></i> Check Repair Status
+        </a>
+
+        <a href="https://support.smartliving.com.bd/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-ticket" style="font-size:18px; color:#0188fe;"></i> Open Support Ticket
+        </a>
+
+        <a href="mailto:info@aun-projector.com.bd" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-envelope" style="font-size:18px; color:#0188fe;"></i> Email Us
+        </a>
+    </div>
+    
+</div>
+
+[/col]
+
+[/row]
+
+[/section]

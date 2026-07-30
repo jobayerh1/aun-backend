@@ -1,0 +1,163 @@
+<!-- ════════════════════════════════════════════════════════════════
+     CATEGORY PAGE: Projector Price in Bangladesh (money page, ranks #4-5)
+     FULL REDESIGN (v2) — visual layer only. SEO skeleton preserved
+     exactly: H1/H2/H3 texts, anchor ids (#aun-price-list, #which-aun,
+     #under-7k, #under-15k, #bright-rooms, #android-vs-tv, #throw,
+     #ports), real <table> markup (featured snippets), FAQ questions
+     verbatim, all internal links. Inline styles only (term descriptions
+     can strip <style> tags). FAQPage JSON-LD added.
+     ⚠️ FILL BEFORE PUBLISHING: one «???» rated figure (A005 Pro).
+     DISCONTINUED (July 2026): AKEY9S, A32 HD — not mentioned anywhere;
+     starting price is ৳7,590 (A32 Pro).
+     ════════════════════════════════════════════════════════════════ -->
+
+<!-- ── TOP DESCRIPTION ── -->
+
+<h1>Projector Price in Bangladesh 2026</h1>
+
+<p>The latest projector price in Bangladesh starts from ৳7,590 and goes up to ৳32,900+ depending on resolution, rated brightness, and Android features. Explore the updated AUN projector price list below and choose the best model for home, office, or classroom use.</p>
+
+<p><strong>Shop by type:</strong></p>
+<p><a href="/home-entertainment-projector/" class="button primary is-outline is-small lowercase"><i class="fa-solid fa-film"></i>&nbsp; Home Theater Projector</a> <a href="/portable-projector/" class="button primary is-outline is-small lowercase"><i class="fa-solid fa-feather"></i>&nbsp; Mini Projector</a> <a href="/professional-projector/" class="button primary is-outline is-small lowercase"><i class="fa-solid fa-briefcase"></i>&nbsp; Office Projector</a></p>
+
+<!-- ── BOTTOM CONTENT ── -->
+
+<h2 id="aun-price-list">AUN Projector Price List in Bangladesh — Updated 2026</h2>
+
+<div class="aun-trust-banner" style="background:#f0f9ff;padding:14px 16px;border-left:3px solid #0188fe;border-radius:8px;margin-bottom:12px;font-size:14.5px;color:#0c2a4a;line-height:1.65;">
+  <i class="fa-solid fa-users" style="color:#0188fe;margin-right:7px;"></i><strong>Trusted by 5,600+ customers across Bangladesh since 2019.</strong> See real customer setups, reviews and projector tips on our <a href="https://www.facebook.com/aunprojectorbd/" target="_blank" rel="noopener">Facebook page</a>.
+</div>
+<div style="background:#fffbeb;padding:12px 16px;border-left:3px solid #ffbc00;border-radius:8px;margin-bottom:16px;font-size:14px;color:#78500f;line-height:1.65;">
+  <i class="fa-solid fa-triangle-exclamation" style="color:#d99a06;margin-right:7px;"></i>Prices may be adjusted in upcoming batches due to global component cost changes. Current prices are still valid.
+</div>
+
+<div style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 2px 6px rgba(15,23,42,0.04);margin:0 0 14px;background:#fff;">
+<table class="aun-price-table" style="width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.6;min-width:600px;margin:0;">
+  <thead>
+    <tr>
+      <th style="background:#eef4ff;color:#0c2a4a;padding:12px 14px;text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;">Model</th>
+      <th style="background:#eef4ff;color:#0c2a4a;padding:12px 14px;text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;">Res</th>
+      <th style="background:#eef4ff;color:#0c2a4a;padding:12px 14px;text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;">Brightness (Rated)</th>
+      <th style="background:#eef4ff;color:#0c2a4a;padding:12px 14px;text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;">Price (৳)</th>
+      <th style="background:#eef4ff;color:#0c2a4a;padding:12px 14px;text-align:left;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;">Best For</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-a32-pro-hd-portable-android-projector/" style="color:#0188fe;font-weight:700;">AUN A32 Pro</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">720p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">460</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">7,590</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">Portable Dark-Room Streaming</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-a005-short-throw-full-hd-home-cinema-android-projector/" style="color:#0188fe;font-weight:700;">AUN A005</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1080p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">760</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">9,990</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">Small Rooms (Short-Throw)</td></tr>
+    <tr><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-a005-pro-short-throw-full-hd-home-cinema-android-projector/" style="color:#0188fe;font-weight:700;">AUN A005 Pro</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1080p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">«???»</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">11,900</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">Compact Rooms (Pro Experience)</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-a004-pro-full-hd-home-cinema-android-projector/" style="color:#0188fe;font-weight:700;">AUN A004 Pro</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1080p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">730</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">12,900</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">Bedroom Home Theater</td></tr>
+    <tr><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-a45-pro-full-hd-genuine-android-tv-home-cinema-projector/" style="color:#0188fe;font-weight:700;">AUN A45 Pro</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1080p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">870</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">13,500</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">First Home Cinema (Android TV)</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-u002-pro-full-hd-dustproof-tof-laser-auto-focus-android-projector-4k-support/" style="color:#0188fe;font-weight:700;">AUN U002 Pro</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1080p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1380</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">26,900</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">Classrooms &amp; Offices</td></tr>
+    <tr><td style="padding:11px 14px;border-top:1px solid #f1f5f9;"><a href="/aun-u001-pro-full-hd-genuine-android-tv-professional-projector-4k-support/" style="color:#0188fe;font-weight:700;">AUN U001 Pro</a></td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">1080p</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;">2050</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;font-weight:700;color:#0f172a;">32,900</td><td style="padding:11px 14px;border-top:1px solid #f1f5f9;color:#64748b;">Premium Cinema Experience</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p style="font-size:13px;color:#64748b;line-height:1.7;margin:0 0 6px;"><i class="fa-solid fa-circle-info" style="color:#0188fe;margin-right:6px;"></i><em>Brightness figures are the manufacturers' official light-source ratings — the industry convention used by virtually every projector brand. Real on-screen brightness is always lower, for every brand equally. New to projector specs? Read our honest guide: <a href="/projector-brightness-explained/">Projector Brightness, Explained</a>.</em></p>
+
+<p style="font-size:13px;color:#64748b;line-height:1.7;margin:0 0 14px;"><em>Note: Prices are updated regularly. Visit individual product pages for latest offers and availability.</em></p>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:0 0 8px;">
+  <div style="flex:1;min-width:200px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;">
+    <i class="fa-solid fa-credit-card" style="color:#0188fe;font-size:18px;margin-top:2px;"></i>
+    <p style="margin:0;font-size:13.5px;color:#475569;line-height:1.6;"><strong style="color:#0f172a;">Easy payment</strong><br>bKash, Nagad, cards, COD &amp; 0% EMI</p>
+  </div>
+  <div style="flex:1;min-width:200px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;">
+    <i class="fa-solid fa-truck-fast" style="color:#0188fe;font-size:18px;margin-top:2px;"></i>
+    <p style="margin:0;font-size:13.5px;color:#475569;line-height:1.6;"><strong style="color:#0f172a;">Same-day delivery in Dhaka</strong><br>Secure 2–3 day courier across the rest of Bangladesh</p>
+  </div>
+  <div style="flex:1;min-width:200px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;">
+    <i class="fa-solid fa-shield-halved" style="color:#0188fe;font-size:18px;margin-top:2px;"></i>
+    <p style="margin:0;font-size:13.5px;color:#475569;line-height:1.6;"><strong style="color:#0f172a;">Official warranty</strong><br>Our dedicated local service center handles all claims — fast, hassle-free support</p>
+  </div>
+</div>
+
+<h2 id="which-aun">Which AUN projector is right for you?</h2>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 12px;">
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <h3 id="under-7k" style="font-size:15px;margin:0 0 8px;color:#0166c8;text-transform:uppercase;letter-spacing:.4px;"><i class="fa-solid fa-wallet" style="margin-right:6px;"></i>Best under ৳8,000</h3>
+    <p style="font-size:14px;color:#475569;margin:0;line-height:1.65;"><strong>A32 Pro</strong> if you want ultra-affordable big-screen movies. HD 720p is fine for casual use, and Android 13 with Wi-Fi streaming is built in. It's a dark-room projector — lights off for the best picture.</p>
+  </div>
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <h3 id="under-15k" style="font-size:15px;margin:0 0 8px;color:#0166c8;text-transform:uppercase;letter-spacing:.4px;"><i class="fa-solid fa-money-bill-wave" style="margin-right:6px;"></i>Best under ৳15,000</h3>
+    <p style="font-size:14px;color:#475569;margin:0;line-height:1.65;"><strong>A45 Pro</strong> (1080p) delivers a sharper, cinema-like picture for living rooms and bedrooms — with Genuine Android TV and official apps built in. Great value for first-time buyers who want Full HD.</p>
+  </div>
+</div>
+
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin:0 0 12px;">
+  <h3 id="bright-rooms" style="font-size:15px;margin:0 0 8px;color:#0166c8;text-transform:uppercase;letter-spacing:.4px;"><i class="fa-solid fa-sun" style="margin-right:6px;"></i>For bright rooms &amp; classrooms</h3>
+  <p style="font-size:14px;color:#475569;margin:0 0 10px;line-height:1.65;">Honest advice first: no home projector loves direct daylight — at any price, from any brand. But our brightest models handle ambient light far better than entry models. Close the curtains where you can, and consider an ALR screen for lit rooms:</p>
+  <ul style="font-size:14px;color:#475569;line-height:1.7;margin:0;padding-left:20px;">
+    <li><strong>U002 Pro:</strong> strong in ambient light, with a dust-proof sealed engine plus more RAM/storage for smoother apps.</li>
+    <li><strong>U001 Pro:</strong> our brightest projector, with genuine <strong>Android TV</strong> for Netflix/YouTube out of the box.</li>
+  </ul>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:0 0 12px;">
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <h3 id="android-vs-tv" style="font-size:15px;margin:0 0 8px;color:#0166c8;text-transform:uppercase;letter-spacing:.4px;"><i class="fa-solid fa-tv" style="margin-right:6px;"></i>Android TV vs Android OS</h3>
+    <p style="font-size:14px;color:#475569;margin:0;line-height:1.65;"><strong>Android TV (U001 Pro/A45 Pro)</strong> has Play Store for TV, certified casting and better app support. <strong>Standard Android</strong> (A32 Pro/A005/A005 Pro/A004 Pro/U002 Pro) is flexible and affordable; use built-in apps or plug in a Fire TV/Chromecast.</p>
+  </div>
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <h3 id="throw" style="font-size:15px;margin:0 0 8px;color:#0166c8;text-transform:uppercase;letter-spacing:.4px;"><i class="fa-solid fa-ruler-horizontal" style="margin-right:6px;"></i>Screen size &amp; throw distance cheatsheet</h3>
+    <ul style="font-size:14px;color:#475569;line-height:1.7;margin:0;padding-left:20px;">
+      <li><strong>80–100″ screen:</strong> plan ~2.5–3.0 m from screen (varies by model).</li>
+      <li>Keep projector centerline level with screen middle; use keystone sparingly for best sharpness.</li>
+    </ul>
+  </div>
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <h3 id="ports" style="font-size:15px;margin:0 0 8px;color:#0166c8;text-transform:uppercase;letter-spacing:.4px;"><i class="fa-solid fa-plug" style="margin-right:6px;"></i>Ports &amp; connectivity</h3>
+    <p style="font-size:14px;color:#475569;margin:0;line-height:1.65;">All AUN models include HDMI and 3.5mm audio. For set-top boxes/PS5/PC, use HDMI. For Bluetooth speakers, pair within device settings (on Android models).</p>
+  </div>
+</div>
+
+<p style="background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:12px 16px;font-size:14px;color:#0c2a4a;line-height:1.7;">Still deciding? Answer 5 quick questions in our <a href="/projector-finder/"><strong>60-Second Smart Finder</strong></a>, put any two models side-by-side with the <a href="/projector-compare/"><strong>Compare tool</strong></a>, or learn how to read brightness specs in our honest guide: <a href="/projector-brightness-explained/"><strong>Projector Brightness, Explained</strong></a>.</p>
+
+<div class="rank-math-faq">
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What is the latest projector price list in BD for 2026?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">AUN projector prices in Bangladesh for 2026 start at approximately BDT 7,590 for portable HD models and can go up to BDT 32,900 or more for high-brightness, professional Full HD Android models. Prices vary based on resolution, rated brightness, smart features, and build quality.</p></div>
+  </div>
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">How many lumens do I need for a room in Bangladesh?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">Start from your room, not the number. Across the whole industry, spec-sheet lumens are manufacturer ratings measured at the light source, so real on-screen brightness is always lower — for every brand equally. In practice: for a dark room, any AUN home model gives a vivid picture. For a living room or classroom with ambient light, choose our brightest models (U002 Pro or U001 Pro) and close the curtains in the daytime. Full explanation in our <a href="/projector-brightness-explained/">projector brightness guide</a>.</p></div>
+  </div>
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Is a 720p projector good enough, or should I buy 1080p?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">A native 720p (HD) projector offers good quality for casual movie watching and is very budget-friendly. However, a native 1080p (Full HD) projector provides significantly sharper and more detailed images, making it the recommended choice for serious movie enthusiasts, gamers, and professional presentations with fine text or data.</p></div>
+  </div>
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What's the difference between an Android projector and a regular one?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">A regular projector requires an external source like a laptop, or streaming stick (e.g., Chromecast) to display content. An Android projector has a built-in operating system (like a smart TV) that allows you to connect to Wi-Fi and install apps like YouTube, Netflix, and others directly onto the device for an all-in-one entertainment experience.</p></div>
+  </div>
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Which projector brand is best in Bangladesh?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">While many brands like Epson, BenQ, and Xiaomi are available, AUN specializes in offering feature-rich smart projectors at highly competitive price points in Bangladesh. AUN focuses on providing the best value with features like native Full HD resolution and the latest Android OS, backed by an official local warranty — plus real projection photos and videos on every product page, so you can judge performance with your own eyes before buying.</p></div>
+  </div>
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Can I use a projector in a bright room?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">Yes, with realistic expectations — direct sunlight washes out every home projector at every price. For a bright room, pick one of our highest-brightness models (U002 Pro or U001 Pro), control ambient light by closing curtains or blinds, and keep the image size moderate. Using an ALR (Ambient Light Rejecting) screen can also dramatically improve contrast and image quality in well-lit environments.</p></div>
+  </div>
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Do AUN projectors come with an official warranty in Bangladesh?</h3>
+    <div class="rank-math-answer"><p style="margin:0;color:#555;line-height:1.65;">Absolutely. All projectors purchased from AUN Projector Bangladesh come with an official warranty and dedicated customer support. This ensures peace of mind and reliable service. Please see individual product pages for specific warranty terms and duration.</p></div>
+  </div>
+</div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is the latest projector price list in BD for 2026?","acceptedAnswer":{"@type":"Answer","text":"AUN projector prices in Bangladesh for 2026 start at approximately BDT 7,590 for portable HD models and can go up to BDT 32,900 or more for high-brightness, professional Full HD Android models. Prices vary based on resolution, rated brightness, smart features, and build quality."}},
+    {"@type":"Question","name":"How many lumens do I need for a room in Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"Start from your room, not the number. Across the industry, spec-sheet lumens are manufacturer ratings measured at the light source, so real on-screen brightness is always lower — for every brand equally. For a dark room, any AUN home model gives a vivid picture. For a living room or classroom with ambient light, choose the brightest models (U002 Pro or U001 Pro) and close the curtains in the daytime."}},
+    {"@type":"Question","name":"Is a 720p projector good enough, or should I buy 1080p?","acceptedAnswer":{"@type":"Answer","text":"A native 720p (HD) projector offers good quality for casual movie watching and is very budget-friendly. However, a native 1080p (Full HD) projector provides significantly sharper and more detailed images, making it the recommended choice for serious movie enthusiasts, gamers, and professional presentations with fine text or data."}},
+    {"@type":"Question","name":"What's the difference between an Android projector and a regular one?","acceptedAnswer":{"@type":"Answer","text":"A regular projector requires an external source like a laptop or streaming stick to display content. An Android projector has a built-in operating system (like a smart TV) that allows you to connect to Wi-Fi and install apps like YouTube and Netflix directly onto the device for an all-in-one entertainment experience."}},
+    {"@type":"Question","name":"Which projector brand is best in Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"While many brands like Epson, BenQ, and Xiaomi are available, AUN specializes in feature-rich smart projectors at highly competitive prices in Bangladesh, with native Full HD resolution, the latest Android OS, an official local warranty, and real projection photos and videos on every product page so buyers can judge performance with their own eyes."}},
+    {"@type":"Question","name":"Can I use a projector in a bright room?","acceptedAnswer":{"@type":"Answer","text":"Yes, with realistic expectations — direct sunlight washes out every home projector at every price. For a bright room, pick one of the highest-brightness models (U002 Pro or U001 Pro), control ambient light by closing curtains or blinds, and keep the image size moderate. An ALR (Ambient Light Rejecting) screen can also dramatically improve contrast in well-lit environments."}},
+    {"@type":"Question","name":"Do AUN projectors come with an official warranty in Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"Absolutely. All projectors purchased from AUN Projector Bangladesh come with an official warranty and dedicated customer support. See individual product pages for specific warranty terms and duration."}}
+  ]
+}
+</script>

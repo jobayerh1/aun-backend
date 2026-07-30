@@ -1,0 +1,158 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Privacy Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-user-shield"></i> Privacy Policy</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Your privacy matters to us. This policy explains how we collect, use, and protect your personal information when you use our website and services.</p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Privacy Highlights"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-database"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Data We Collect</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">We collect information such as name, email, address, and payment details to process your orders.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-cookie-bite"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Cookies</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">We use cookies to improve your browsing experience and remember login details.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-lock"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Your Rights</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">You can request access, correction, or deletion of your personal data anytime.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Privacy Policy"]
+[accordion]
+
+[accordion-item title="1. Who We Are"]
+
+<p>aun-projector.com.bd offers online shopping in Bangladesh for AUN brand projectors and accessories. Corporate office: House 108, Golartek, Mazar Road, Mirpur, Dhaka – 1216.</p>
+
+[/accordion-item]
+[accordion-item title="2. What Personal Data We Collect & Why"]
+
+<p>Our eCommerce website may collect various type of required information if you want to place an order for the desired product you want to buy from us using the website. When you purchase something from our online store through the website, we collect the personal information you give us such as your name, address and email address. We will receive, store and process your data for preparing your purchase order on our eCommerce site and will save it for any possible future allegation. We usually collect personal information such as your title, name, email address, postal address, delivery address (if different), telephone number, mobile number, payment procedure and another similar kind of information. When you browse our store, we also automatically receive your computer’s internet protocol (IP) address in order to provide us with information that helps us learn about your browser and operating system. With your permission, we may send you emails about our store, new products, and other updates.</p>
+
+[/accordion-item]
+[accordion-item title="3. Comments & Media"]
+
+<p>When visitors leave comments on the site we collect the data shown in the comments form, and also the visitor’s IP address and browser user agent string to help spam detection.</p>
+<p>An anonymized string created from your email address (also called a hash) may be provided to the Gravatar service to see if you are using it. The Gravatar service privacy policy is available here: https://automattic.com/privacy/. After approval of your comment, your profile picture is visible to the public in the context of your comment.</p>
+<p>If you upload images to the website, you should avoid uploading images with embedded location data (EXIF GPS) included. Visitors to the website can download and extract any location data from images on the website.</p>
+
+[/accordion-item]
+[accordion-item title="4. Cookies"]
+
+<p>If you leave a comment on our site you may opt-in to saving your name, email address and website in cookies. These are for your convenience so that you do not have to fill in your details again when you leave another comment. These cookies will last for one year.</p>
+<p>If you have an account and you log in to this site, we will set a temporary cookie to determine if your browser accepts cookies. This cookie contains no personal data and is discarded when you close your browser.</p>
+<p>When you log in, we will also set up several cookies to save your login information and your screen display choices. Login cookies last for two days, and screen options cookies last for a year. If you select “Remember Me”, your login will persist for two weeks. If you log out of your account, the login cookies will be removed.</p>
+<p>If you edit or publish an article, an additional cookie will be saved in your browser. This cookie includes no personal data and simply indicates the post ID of the article you just edited. It expires after 1 day.</p>
+
+[/accordion-item]
+[accordion-item title="5. Embedded Content & Analytics"]
+
+<p>Articles on this site may include embedded content (e.g. videos, images, articles, etc.). Embedded content from other websites behaves in the exact same way as if the visitor has visited the other website.</p>
+<p>These websites may collect data about you, use cookies, embed additional third-party tracking, and monitor your interaction with that embedded content, including tracking your interaction with the embedded content if you have an account and are logged in to that website.</p>
+
+[/accordion-item]
+[accordion-item title="6. Data Sharing"]
+
+<p>If you leave a comment, the comment and its metadata are retained indefinitely. This is so we can recognize and approve any follow-up comments automatically instead of holding them in a moderation queue.</p>
+<p>For users that register on our website (if any), we also store the personal information they provide in their user profile. All users can see, edit, or delete their personal information at any time (except they cannot change their username). Website administrators can also see and edit that information.</p>
+
+[/accordion-item]
+[accordion-item title="7. Data Retention"]
+
+<p>If you have an account on this site, or have left comments, you can request to receive an exported file of the personal data we hold about you, including any data you have provided to us. You can also request that we erase any personal data we hold about you. This does not include any data we are obliged to keep for administrative, legal, or security purposes.</p>
+
+[/accordion-item]
+[accordion-item title="8. User Rights"]
+
+<p>If you change your mind, you may withdraw your consent for us to contact you, for the continued collection, use or disclosure of your information and if you would like to access, correct, amend or delete any personal information we have about you, register a complaint</p>
+
+[/accordion-item]
+[accordion-item title="9. Right to Withdraw & Contact"]
+
+<p>If you wish to withdraw consent or request data changes, contact us at <strong>info@aun-projector.com.bd</strong>.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#ffffff" padding="30px"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+<div style="background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-wrap: wrap; text-align: left;">
+    
+    <!-- Left Side: Instant Contact -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #f8fafc; border-right: 1px solid #e2e8f0;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Talk to a Human</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Get instant answers via chat or phone.</p>
+        
+        <a href="https://api.whatsapp.com/send?phone=8801787698268" onmouseover="this.style.background='#dcfce7'; this.style.borderColor='#86efac';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #166534; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-whatsapp" style="font-size:20px; color:#25D366;"></i> WhatsApp Chat
+        </a>
+        
+        <a href="http://m.me/aunprojectorbd" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #1e40af; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-brands fa-facebook-messenger" style="font-size:20px; color:#0084FF;"></i> Messenger
+        </a>
+        
+        <a href="tel:+8809638078888" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #334155; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-phone" style="font-size:18px; color:#475569;"></i> +880 9638-078888
+        </a>
+    </div>
+
+    <!-- Right Side: Warranty & Support -->
+    <div style="flex: 1; min-width: 280px; padding: 35px; background: #ffffff;">
+        <h3 style="margin-top:0; font-size:20px; font-weight:800; color:#0f172a; margin-bottom: 8px;">Warranty & Support</h3>
+        <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Track repairs or open a formal ticket.</p>
+
+        <a href="https://aun-projector.com.bd/repair-status/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-screwdriver-wrench" style="font-size:18px; color:#0188fe;"></i> Check Repair Status
+        </a>
+
+        <a href="https://support.smartliving.com.bd/" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; margin-bottom: 12px; transition: all 0.2s;">
+            <i class="fa-solid fa-ticket" style="font-size:18px; color:#0188fe;"></i> Open Support Ticket
+        </a>
+
+        <a href="mailto:info@aun-projector.com.bd" onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';" onmouseout="this.style.background='#fff'; this.style.borderColor='#e2e8f0';" style="display: flex; align-items: center; gap: 12px; background: #fff; padding: 14px 18px; border-radius: 8px; border: 1px solid #e2e8f0; text-decoration: none; color: #0f172a; font-weight: 600; transition: all 0.2s;">
+            <i class="fa-solid fa-envelope" style="font-size:18px; color:#0188fe;"></i> Email Us
+        </a>
+    </div>
+    
+</div>
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="18px" label="Last Updated"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>1 July, 2025</strong></p>
+[/ux_text]
+
+[/section]

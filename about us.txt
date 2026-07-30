@@ -1,0 +1,297 @@
+[page_header height="300px" type="onpage" align="center" parallax_text="3" title="About AUN Projector Bangladesh" title_size="larger" title_case="uppercase" bg="1850" bg_pos="100% 100%" parallax="5"]
+
+[section label="Hero – BD First" bg_color="rgb(255,255,255)" padding="60px"]
+
+[row v_align="equal" h_align="center"]
+
+[col span__sm="12" span__md="11" align="center"]
+
+[ux_html]
+
+<h2>Official AUN Projector Seller in Bangladesh</h2>
+
+<div style="margin:12px 0 18px;padding:18px 20px;border:1px solid #e2e8f0;border-left:4px solid #0188fe;border-radius:12px;background:#f8fafc;color:#222;line-height:1.65;text-align:left;">
+
+<p style="margin:0 0 14px;">Serving Bangladesh since <strong>April 1, 2019</strong>, <strong>AUN Projector Bangladesh</strong> is a projector retailer and distributor — trusted by <strong>5,600+ customers</strong>, operated by <strong>Smart Living Bangladesh</strong>. We specialize in AUN smart projectors including HD, Full HD, Android, and Android TV models with <strong>official local warranty</strong>, fast nationwide delivery, and real after-sales service support from our Dhaka service point.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:6px 24px;">
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-store" style="color:#0188fe;width:20px;"></i> <strong>Brand / Store:</strong> AUN Projector Bangladesh</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-building" style="color:#0188fe;width:20px;"></i> <strong>Legal Entity:</strong> Smart Living Bangladesh</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-location-dot" style="color:#0188fe;width:20px;"></i> <strong>Location:</strong> 108 Golartek, Mirpur, Dhaka-1216</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-phone" style="color:#0188fe;width:20px;"></i> <strong>Phone:</strong> +880 9638-078888</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-envelope" style="color:#0188fe;width:20px;"></i> <strong>Email:</strong> info@aun-projector.com.bd</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-tags" style="color:#0188fe;width:20px;"></i> <strong>Price Range:</strong> BDT 7,590 – 32,900+</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-shield-halved" style="color:#0188fe;width:20px;"></i> <strong>Service:</strong> Official warranty + local repair support</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-truck-fast" style="color:#0188fe;width:20px;"></i> <strong>Delivery:</strong> Same-day in Dhaka, nationwide courier</p>
+</div>
+
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:14px;">
+<strong>Official Links:</strong>
+<a href="https://www.facebook.com/aunprojectorbd/" target="_blank" rel="nofollow noopener">Facebook</a> · <a href="https://www.youtube.com/@aunprojectorbd/" target="_blank" rel="nofollow noopener">YouTube</a> · <a href="https://www.instagram.com/aunprojectorbd/" target="_blank" rel="nofollow noopener">Instagram</a> · <a href="https://www.tiktok.com/@aunprojectorbd/" target="_blank" rel="nofollow noopener">TikTok</a>
+&nbsp;&nbsp;|&nbsp;&nbsp; <strong>Quick Links:</strong>
+<a href="/projector-price/">Projector Price in Bangladesh</a> · <a href="/home-entertainment-projector/">Home Theater</a> · <a href="/portable-projector/">Portable</a> · <a href="/professional-projector/">Office</a>
+</div>
+
+</div>
+[/ux_html]
+[gap height="10px"]
+
+[row_inner]
+
+[col_inner span="4" span__sm="12" align="center"]
+
+[ux_html]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+<div style="font-size:40px;font-weight:800;color:#0188fe;line-height:1;"><span class="js-countup-year" data-since="2019-04-01" data-duration="2000">0</span>+</div>
+<div style="margin-top:8px;color:#64748b;font-size:14px;font-weight:600;">Years operating in Bangladesh</div>
+</div>
+[/ux_html]
+
+[/col_inner]
+[col_inner span="4" span__sm="12" align="center"]
+
+[ux_html]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+<div style="font-size:40px;font-weight:800;color:#0188fe;line-height:1;"><span class="js-countup" data-base-count="5600" data-base-date="2026-07-06" data-step="5" data-steps-per-month="8" data-duration="1200">0</span></div>
+<div style="margin-top:8px;color:#64748b;font-size:14px;font-weight:600;">AUN units sold in Bangladesh</div>
+</div>
+[/ux_html]
+
+[/col_inner]
+[col_inner span="4" span__sm="12" align="center"]
+
+[ux_html]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+<div style="font-size:40px;font-weight:800;color:#0188fe;line-height:1;"><span class="js-countup-rating" data-start="0" data-target="4.95" data-decimals="2" data-anim-decimals="2" data-duration="1800">0.00</span>/5</div>
+<div style="margin-top:8px;color:#64748b;font-size:14px;font-weight:600;">Customer rating</div>
+</div>
+[/ux_html]
+
+[/col_inner]
+
+[/row_inner]
+[gap]
+
+[button text="See Projector Price in Bangladesh" style="primary" size="small" icon="icon-angle-right" link="/projector-price/"]
+
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Proof Not Promises" bg_color="rgb(9,15,28)" dark="true" padding="60px"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_html label="proof intro"]
+<h2 style="color:#fff;margin-bottom:8px;text-align:center;">How we do business: proof, not promises</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#7da2c9;max-width:780px;margin:0 auto 6px;line-height:1.7;text-align:center;">The projector industry loves big numbers. We took a different path: publish the manufacturer's official specs <strong>clearly labelled</strong>, then show you exactly what the projector really does — and let you judge with your own eyes before you spend a taka.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="proof card 1"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-image"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Real Projection Photos</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Every product page shows unedited photos from the actual unit in real Bangladeshi rooms — never manufacturer renders.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="proof card 2"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-gauge-high"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Factory Test Videos</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">We publish unedited 9-point lux-meter brightness tests from the factory — watch the meter yourself, don't just trust a spec sheet.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="proof card 3"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-house"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Honest Room Guidance</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Every model tells you plainly which rooms it suits — including when a cheaper model is enough, or when you should buy a brighter one.</p>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_text text_align="center"]
+<p style="color:#7da2c9;font-size:14px;margin-top:10px;">Want to understand projector brightness numbers like a professional? Read our honest guide: <a href="/projector-brightness-explained/" style="color:#4da8ff;"><strong>Projector Brightness, Explained</strong></a>.</p>
+[/ux_text]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Why Buy From Us – BD" bg_color="rgb(246,248,251)" padding="60px"]
+
+[row h_align="center"]
+
+[col span__sm="12" span__md="11" align="center"]
+
+[ux_html label="why buy header"]
+<h2 style="text-align:center;margin-bottom:8px;">Why buy from AUN Projector Bangladesh</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 18px;opacity:.85;"></div>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;text-align:left;">
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Real after-sales service</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Warranty handling, diagnostics, and genuine parts from our Dhaka service center. Our customers regularly praise our support — rare at this price point.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-user-check"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Local expertise</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">We recommend the right brightness, resolution, and throw distance for BD homes, classrooms, and offices — and our <a href="/projector-finder/">Smart Finder</a> does it in 60 seconds.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-truck-fast"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Fast delivery</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Same-day delivery available inside Dhaka; secure 2–3 day courier nationwide, with cash on delivery if you prefer.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-handshake"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Transparent guidance</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">If a model is discontinued, we say so and suggest the closest current alternative — no quiet substitutions, no pressure.</p>
+  </div>
+</div>
+[/ux_html]
+[gap]
+
+<p><i class="fa-solid fa-mobile-screen-button"></i> Mobile wallets (bKash, Nagad, Rocket, upay)&nbsp;&nbsp;&nbsp;&nbsp; <i class="fa-solid fa-credit-card"></i> All credit/debit cards &nbsp;&nbsp;&nbsp;&nbsp;<i class="fa-solid fa-building-columns"></i> Bank transfer &nbsp;&nbsp;&nbsp;&nbsp;<i class="fa-solid fa-truck"></i> Cash on Delivery</p>
+<p><em>In short: We accept all major payment methods in Bangladesh — mobile wallets, all cards, bank transfer & COD, plus 0% EMI on eligible purchases.</em></p>
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Location + Map" padding="60px"]
+
+[row v_align="middle" h_align="center"]
+
+[col span="5" span__sm="12"]
+
+<h2>Visit our office</h2>
+<p><strong>AUN Projector Bangladesh</strong><br />108 Golartek Rd, Dhaka 1216, Bangladesh</p>
+<p>
+        <a class="button primary small"
+           href="https://www.google.com/maps/dir//AUN+Projector+Bangladesh,+108+Golartek+Rd,+Dhaka+1216,+Bangladesh"
+           target="_blank" rel="noopener" title="Get directions to AUN Projector Bangladesh"
+           style="display:inline-flex;align-items:center;gap:.5rem;line-height:1;border-radius:999px;">
+          <i class="fa-solid fa-route" aria-hidden="true"></i> Get Directions
+        </a>
+      </p>
+<h3>Hours & Phone</h3>
+<p style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;line-height:1.4">
+  <span><i class="fa-solid fa-clock"></i> Saturday—Thursday: 10:00 AM–6:00 PM <em>(closed Friday & public holidays)</em></span> <span><i class="fa-solid fa-phone"></i> <a href="tel:+8809638078888">+880 9638-078888</a></span></p>
+
+[/col]
+[col span="7" span__sm="12"]
+
+<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d228.17294048741763!2d90.34269347981986!3d23.791308349278363!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c1d990bb0fd9%3A0x6d4cc557e1ee01ac!2sAUN%20Projector%20Bangladesh!5e0!3m2!1sen!2sbd!4v1761543848800!5m2!1sen!2sbd" width="100%" height="380" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Our Promise (BD)" bg_color="rgb(246,248,251)" padding="60px"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" span__md="11" align="center"]
+
+[ux_text text_align="center"]
+
+<h2>Our promise to Bangladeshi customers</h2>
+<p>We help you choose the right AUN projector for your room size and lighting, get it set up correctly, and support you after purchase. If a model becomes unavailable, we provide a clear nearest-spec replacement.</p>
+[/ux_text]
+[button text="Browse AUN Projectors" style="outline" radius="rounded" icon="icon-angle-right" link="/projector-price/"]
+
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="After-Sales Ecosystem" bg_color="rgb(255,255,255)" padding="50px"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_html label="ecosystem header"]
+<h2 style="text-align:center;margin-bottom:8px;">After-sales tools no other projector brand in BD offers</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 18px;opacity:.85;"></div>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;text-align:center;">
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+    <h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Live Repair Tracking</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0 0 10px;line-height:1.6;">Sent your projector for service? Track its repair status online, step by step.</p>
+    <a href="/repair-status/" style="color:#0188fe;font-weight:700;font-size:13.5px;text-decoration:none;">Track a Repair →</a>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-file-shield"></i></div>
+    <h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Online Warranty Registration</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0 0 10px;line-height:1.6;">Bought from a dealer or shop? Activate your official warranty online in one minute.</p>
+    <a href="/warranty-register/" style="color:#0188fe;font-weight:700;font-size:13.5px;text-decoration:none;">Register Warranty →</a>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(37,211,102,0.12);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-brands fa-whatsapp"></i></div>
+    <h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Real Humans on WhatsApp</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0 0 10px;line-height:1.6;">Questions before or after buying? Message us — a real person answers, honestly.</p>
+    <a href="https://wa.me/8801787698268" target="_blank" rel="noopener" style="color:#16a34a;font-weight:700;font-size:13.5px;text-decoration:none;">Chat on WhatsApp →</a>
+  </div>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Brand Story (Global)" bg_color="rgb(246,248,251)" padding="60px"]
+
+[row]
+
+[col span="4" span__sm="12"]
+
+[ux_image id="2576"]
+
+
+[/col]
+[col span="8" span__sm="12" span__md="11" align="center"]
+
+<h2>About AUN (Global)</h2>
+<p>AUN was established in 2014 and today sells smart projectors in more than 100 countries across Europe, the Americas, and Asia. The name says it all — <strong>AUN = All You Need</strong>: a private cinema for sharing good times with friends and family, without the premium-brand price tag.</p>
+<p>Since 2019, <strong>AUN Projector Bangladesh</strong> (Smart Living Bangladesh) has been the official seller for the Bangladeshi market — importing genuine units, backing every one with a local warranty, and building the after-sales service that a projector actually needs in this climate.</p>
+
+[/col]
+
+[/row]
+
+[/section]

@@ -1,0 +1,122 @@
+<!-- ════════════════════════════════════════════════════════════════
+     CATEGORY PAGE: Office & Business Projector
+     Models in this category: U002 Pro (৳26,900) and U001 Pro (৳32,900).
+     AKEY9S is DISCONTINUED — removed from all copy and prices.
+     Changes: starting price 22,900 → 26,900, all ANSI figures removed
+     (Manufacturer-Rated scale / qualitative advice instead), redesigned
+     bottom content matching the Home Theater category (inline styles
+     only), FAQPage JSON-LD added.
+     ════════════════════════════════════════════════════════════════ -->
+
+<!-- ── TOP DESCRIPTION ── -->
+
+<h1>Office &amp; Business Projectors in Bangladesh</h1>
+
+<p>Deliver clear presentations in meeting rooms, classrooms, and conference spaces with our <strong>office and business projectors</strong>. Prices start from <strong>BDT 26,900</strong> with <strong>Full HD 1080p resolution</strong> — these are our highest-brightness models, built for presentations with the lights on.</p>
+
+<p>These professional projectors support laptops and streaming devices via <strong>HDMI</strong>, wireless casting on select models, and simple setup with keystone correction.</p>
+
+<p>If you want to compare all projector models and budgets, see the complete <a href="/projector-price/"><strong>projector price in Bangladesh</strong></a> list including portable, home theater, and professional projectors.</p>
+
+<!-- ── BOTTOM CONTENT ── -->
+
+<h2>Why choose an AUN office projector?</h2>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;">
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-file-lines"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Crisp Text &amp; Charts</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Native 1080p keeps spreadsheets, slides and fine text sharp — even on 120″+ screens.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-sun"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Built for Lit Rooms</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Our brightest models — made for meeting rooms and classrooms where lights stay on.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-plug"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Plug &amp; Present</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">HDMI for any laptop, wireless casting from phones, auto keystone for instant setup.</p>
+  </div>
+  <div style="flex:1;min-width:210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+    <div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-shield-halved"></i></div>
+    <h3 style="font-size:15px;margin:0 0 5px;color:#0f172a;">Business-Grade Support</h3>
+    <p style="font-size:13.5px;color:#64748b;margin:0;line-height:1.6;">Official 1-year warranty, local service center in Dhaka, and live repair tracking.</p>
+  </div>
+</div>
+
+<h2>Which office projector should you choose?</h2>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;">
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <p style="font-size:12px;font-weight:800;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;"><i class="fa-solid fa-chalkboard-user" style="margin-right:6px;"></i>Classrooms &amp; coaching centres — ৳26,900</p>
+    <p style="font-size:14px;color:#475569;margin:0;line-height:1.65;">The <a href="/aun-u002-pro-full-hd-dustproof-tof-laser-auto-focus-android-projector-4k-support/"><strong>U002 Pro</strong></a> pairs high brightness with a <strong>fully sealed dust-proof optical engine</strong> — no dust spots, no filter cleaning, maintenance-free by design. With 2× HDMI plus LAN, it's built for rooms that run all day in Bangladesh's dusty conditions.</p>
+  </div>
+  <div style="flex:1;min-width:260px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;">
+    <p style="font-size:12px;font-weight:800;color:#0166c8;text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px;"><i class="fa-solid fa-building" style="margin-right:6px;"></i>Boardrooms &amp; large halls — ৳32,900</p>
+    <p style="font-size:14px;color:#475569;margin:0;line-height:1.65;">The <a href="/aun-u001-pro-full-hd-genuine-android-tv-professional-projector-4k-support/"><strong>U001 Pro</strong></a> is <strong>our brightest projector</strong> with projection up to <strong>300″</strong> — the pick for conference halls, seminars and training floors. Genuine Android TV means presentations and video content run without a laptop.</p>
+  </div>
+</div>
+
+<p style="background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:12px 16px;font-size:14px;color:#0c2a4a;line-height:1.7;">Not sure which fits your room? Answer 5 quick questions in our <a href="/projector-finder/"><strong>60-Second Smart Finder</strong></a>, see both models side-by-side in the <a href="/projector-compare/"><strong>Compare tool</strong></a>, or learn how to read brightness specs in our honest guide: <a href="/projector-brightness-explained/"><strong>Projector Brightness, Explained</strong></a>.</p>
+
+<div class="rank-math-faq">
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What is the office projector price in BD?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Our professional (office/business) projectors start from <strong>BDT 26,900</strong> for the U002 Pro and go up to <strong>BDT 32,900</strong> for the U001 Pro — our brightest model — depending on brightness and features.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Are these projectors 4K?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">They are <strong>not native 4K</strong>. Our office models are <strong>native 1080p</strong>, with <strong>4K support</strong> (they accept 4K input and downscale for display) — more than sharp enough for slides, spreadsheets and video in any meeting room.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">How much brightness do I need for meetings and classrooms?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Both models in this category are our highest-brightness projectors, chosen specifically for rooms where the lights stay on. For small to medium rooms with dimmed lights they handle slides, text and charts comfortably; in very bright rooms, dim the lights or close the blinds for best clarity, or use a higher-gain / ALR screen. A tip when comparing brands: spec-sheet lumens across the industry are manufacturer light-source ratings, so real on-screen brightness is always lower — for every brand equally. See our <a href="/projector-brightness-explained/">projector brightness guide</a>.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Which resolution is ideal for presentations—720p or 1080p?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;"><strong>1080p</strong> is ideal for presentations because it keeps text, spreadsheets, and charts sharp on large screens. Both of our office models are native 1080p.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">What about connectivity—HDMI, wireless casting, and audio?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Our office projectors include <strong>HDMI</strong> for laptops (2× HDMI plus LAN on the U002 Pro) and <strong>wireless casting</strong> (AirPlay &amp; Miracast) from phones and tablets. Both have built-in stereo speakers; external speakers or a soundbar are recommended for larger rooms — the 3.5&nbsp;mm audio out and Bluetooth make that easy.</p>
+    </div>
+  </div>
+
+  <div class="rank-math-list-item" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+    <h3 class="rank-math-question" style="font-size:16px;margin:0 0 8px;color:#0f172a;">Do you provide warranty and fast delivery across Bangladesh?</h3>
+    <div class="rank-math-answer">
+      <p style="margin:0;color:#555;line-height:1.65;">Yes—every office projector comes with an <strong>official warranty</strong> and <strong>fast delivery across Bangladesh</strong> (same-day available inside Dhaka). Corporate and institutional buyers can contact us for bulk quotes. See individual product pages for exact terms and coverage.</p>
+    </div>
+  </div>
+
+</div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is the office projector price in BD?","acceptedAnswer":{"@type":"Answer","text":"Professional office and business projectors from AUN Bangladesh start from BDT 26,900 for the U002 Pro and go up to BDT 32,900 for the U001 Pro, the brightest model, depending on brightness and features."}},
+    {"@type":"Question","name":"Are these projectors 4K?","acceptedAnswer":{"@type":"Answer","text":"They are not native 4K. The office models are native 1080p with 4K support (they accept 4K input and downscale for display) — sharp enough for slides, spreadsheets and video in any meeting room."}},
+    {"@type":"Question","name":"How much brightness do I need for meetings and classrooms?","acceptedAnswer":{"@type":"Answer","text":"Both models in this category are AUN's highest-brightness projectors, chosen for rooms where lights stay on. For small to medium rooms with dimmed lights they handle slides and charts comfortably; in very bright rooms, dim the lights or use an ALR screen. Spec-sheet lumens across the industry are manufacturer light-source ratings, so real on-screen brightness is always lower for every brand equally."}},
+    {"@type":"Question","name":"Which resolution is ideal for presentations—720p or 1080p?","acceptedAnswer":{"@type":"Answer","text":"1080p is ideal for presentations because it keeps text, spreadsheets, and charts sharp on large screens. Both AUN office models are native 1080p."}},
+    {"@type":"Question","name":"What about connectivity—HDMI, wireless casting, and audio?","acceptedAnswer":{"@type":"Answer","text":"AUN office projectors include HDMI for laptops (2× HDMI plus LAN on the U002 Pro) and wireless casting via AirPlay and Miracast. Both have built-in stereo speakers; external speakers are recommended for larger rooms via 3.5 mm audio out or Bluetooth."}},
+    {"@type":"Question","name":"Do you provide warranty and fast delivery across Bangladesh?","acceptedAnswer":{"@type":"Answer","text":"Yes — every office projector comes with an official warranty and fast delivery across Bangladesh, including same-day delivery inside Dhaka. Corporate and institutional buyers can contact AUN Bangladesh for bulk quotes."}}
+  ]
+}
+</script>

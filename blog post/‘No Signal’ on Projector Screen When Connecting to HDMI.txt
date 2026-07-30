@@ -1,0 +1,237 @@
+[section label="no-signal-hdmi" bg_color="#f9fafb" padding="25px"]
+
+[row v_align="middle"]
+
+[col span="7" span__sm="12"]
+
+[ux_html]
+
+<h1>Fix “No Signal” on Projector (HDMI)</h1>
+<p style="font-size:14px;color:#6b7280;margin-top:-8px;">
+Last updated: March 2026
+</p>
+        <p class="lead">Solve HDMI “No Signal” fast: correct input, cable/adapter checks, HDCP/EDID handshakes, and resolution/refresh mismatches — with quick steps for laptops, TV sticks, and game consoles.</p>
+        <img src="/wp-content/uploads/2025/09/Projector-no-signal.webp" alt="Fix Projector No Signal on HDMI" width="960" height="540" loading="lazy" decoding="async" style="max-width:100%;height:auto;border-radius:12px;margin:12px 0 18px;">
+[/ux_html]
+
+[/col]
+[col span="5" span__sm="12"]
+
+<p>[ez-toc]</p>
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+<p>If you're comparing models or checking the latest <a href="/projector-price/">projector price in Bangladesh</a>, make sure your HDMI setup is configured correctly to get the best display performance.</p>
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="symptoms">Common symptoms</h2>
+        <ul>
+          <li>Projector shows <strong>“No Signal”</strong>, brand logo, or screensaver after HDMI is connected.</li>
+          <li>Signal appears briefly when cable is wiggled → likely <strong>loose/damaged cable or port</strong>.</li>
+          <li>Source works on TV but not on projector → often <strong>EDID/HDCP or resolution</strong> mismatch.</li>
+        </ul>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="quick">Quick 60-second fixes</h2>
+        <ol>
+          <li><strong>Set the projector input:</strong> press <em>Input/Source</em> until you reach <em>HDMI 1/2</em> (exact port you used).</li>
+          <li><strong>Power cycle (handshake reset):</strong> unplug projector &amp; source for 20–30s → plug HDMI → power on projector → then the source.</li>
+          <li><strong>Try another HDMI cable/port:</strong> use a short, known-good cable; avoid through-the-wall extenders initially.</li>
+          <li><strong>Lower the source output:</strong> set <em>1080p @ 60 Hz</em> (avoid 4K/HDR for first test).</li>
+        </ol>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+[ux_image id="2384" image_size="original" height="56.25%"]
+
+[ux_html]
+
+<h2 id="steps">Full troubleshooting (step-by-step)</h2>
+        <h3>1) Cable & port sanity checks</h3>
+        <ul>
+          <li>Inspect cable ends; reseat firmly until you feel a click. Try a different port on the projector (HDMI 1 ↔ HDMI 2).</li>
+          <li>If using <strong>adapters</strong> (USB-C→HDMI, DP→HDMI, HDMI→VGA), test without the adapter if possible. Use <strong>active</strong> adapters for DP/USB-C.</li>
+        </ul>
+
+        <h3>2) Resolution & refresh match</h3>
+        <ul>
+          <li>Projector-friendly baseline: <strong>1920×1080 @ 60 Hz</strong>. Turn <strong>HDR</strong> off for first test.</li>
+          <li>For older/portable projectors, also try <strong>1280×720 @ 60 Hz</strong>.</li>
+        </ul>
+
+        <h3>3) HDCP/EDID handshake</h3>
+        <ul>
+          <li>Power order matters: <em>connect HDMI → projector ON → source ON</em>.</li>
+          <li>Remove splitters/AVRs first. If needed later, use quality splitters that pass <strong>HDCP</strong> and correct <strong>EDID</strong>.</li>
+        </ul>
+
+        <h3>4) Source settings (audio/video)</h3>
+        <ul>
+          <li>Ensure the source is set to mirror/extend to the projector (not “PC screen only”).</li>
+          <li>Turn off fixed VRR/120 Hz modes during testing; some projectors accept 60 Hz only.</li>
+        </ul>
+
+        <h3>5) Still no joy?</h3>
+        <ul>
+          <li>Test the same source + cable on a TV. If it works there but not on the projector, it’s likely <strong>handshake or format</strong> related.</li>
+          <li>Try another source (phone/TV stick/laptop) on the projector to isolate which device is at fault.</li>
+          <li>If the signal only appears when you push the plug, suspect a <strong>worn HDMI port</strong> — contact service.</li>
+        </ul>
+<p>If your device still doesn’t display correctly, you may want to compare brightness and resolution options from our updated <a href="/projector-price/">projector price list in Bangladesh</a> to ensure compatibility with your source device.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+[ux_html]
+
+<h2 id="devices">Device-specific quick tips</h2>
+
+        <h3>Windows laptop (HDMI/USB-C)</h3>
+        <ul>
+          <li>Press <strong>Win + P</strong> → choose <em>Duplicate</em> or <em>Second screen only</em>.</li>
+          <li>Settings → System → Display → <em>Multiple displays</em> → Detect. Set <strong>Resolution = 1920×1080</strong>, <strong>Refresh = 60 Hz</strong>.</li>
+          <li>USB-C? Use a <strong>USB-C→HDMI adapter with DP Alt-Mode</strong>.</li>
+        </ul>
+
+        <h3>Mac</h3>
+        <ul>
+          <li>System Settings → Displays → hold <strong>Option</strong> to show <em>Detect Displays</em>.</li>
+          <li>Set <strong>1080p 60 Hz</strong>; disable HDR initially.</li>
+          <li>USB-C/Thunderbolt to HDMI: use a reputable active adapter/cable.</li>
+        </ul>
+
+        <h3>TV sticks (Chromecast/Fire TV) & Android boxes</h3>
+        <ul>
+          <li>Use the included power adapter (not TV USB power). Weak power = handshake failures.</li>
+          <li>Display settings → choose <strong>1080p 60 Hz</strong>. Turn off “Match content frame rate” while testing.</li>
+        </ul>
+
+        <h3>Game consoles</h3>
+        <ul>
+          <li>Set video mode to <strong>1080p</strong>; disable 120 Hz/VRR/HDR for initial test.</li>
+          <li>Try another HDMI port on the projector, then another cable.</li>
+        </ul>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row v_align="middle"]
+
+[col span="4" align="center"]
+
+[button text="Home Theater Projector" radius="12" expand="true" link="/home-entertainment-projector/"]
+
+
+[/col]
+[col span="4" align="center"]
+
+[button text="Mini Projector" radius="12" expand="true" link="/portable-projector/"]
+
+
+[/col]
+[col span="4" align="center"]
+
+[button text="Office Projector" radius="12" expand="true" link="/professional-projector/"]
+
+
+[/col]
+
+[/row]
+[divider]
+
+[row]
+
+[col]
+
+<div class="rank-math-faq">
+<div class="rank-math-list-item">
+<h2>FAQ</h2>
+<h3 class="rank-math-question">My HDMI works on TV but not on the projector — why?</h3>
+<div class="rank-math-answer">
+<p>Likely an <strong>EDID/HDCP</strong> or <strong>resolution</strong> mismatch. Power cycle (projector → source), set the source to <strong>1080p 60 Hz</strong>, and remove splitters/AVRs during testing.</p>
+</div>
+</div>
+<div class="rank-math-list-item">
+<h3 class="rank-math-question">Can a bad cable cause “No Signal”?</h3>
+<div class="rank-math-answer">
+<p>Yes. Use a short, quality HDMI cable first. If wiggling the plug affects the image, replace the cable or have the port checked.</p>
+</div>
+</div>
+<div class="rank-math-list-item">
+<h3 class="rank-math-question">Should I open the projector to fix the HDMI port?</h3>
+<div class="rank-math-answer">
+<p>No — this risks damage and warranty void. Get professional service for port repairs.</p>
+</div>
+</div>
+</div>
+
+[/col]
+
+[/row]
+[row]
+
+[col]
+
+<h2>Looking for a New Projector?</h2>
+<p>Explore the latest <a href="/projector-price/">projector price in Bangladesh</a> and compare Full HD, Android, and high-brightness models suitable for home, classroom, and office use.</p>
+
+[/col]
+
+[/row]
+[divider]
+
+
+[/section]
+<hr>
+<h2>Related Guides</h2>
+<ul>
+<li><a href="/tips-for-using-home-projector/"><strong>Tips for Using a Home Projector (Beginner Checklist)</strong></a></li>
+<li><a href="/projector-price/"><strong>Projector Price in Bangladesh</strong></a> — browse current AUN models.</li>
+</ul>
+[ux_html]
+
+<h2>References</h2>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/HDMI">HDMI basics</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/High-bandwidth_Digital_Content_Protection">HDCP (handshake & content protection)</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/Extended_Display_Identification_Data">EDID (how displays tell sources what they support)</a></li>
+          </ul>
+[/ux_html]

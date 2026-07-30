@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AUN Care — page transition: current vs Material 3 Expressive</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#fff; --ink:#0d1520; --muted:#5b6b7f; --line:#e3e9f0;
+    --brand:#0188fe; --brand-deep:#0166bf; --good:#16a34a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0c0f14; --card:#161c24; --ink:#e9eef5; --muted:#94a4b8; --line:#243040; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Hind Siliguri",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 24px;max-width:70ch}
+  .row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+  .col{flex:1 1 300px;max-width:340px}
+  .label{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;margin:0 0 10px}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+       padding:3px 8px;border-radius:20px}
+  .tag.old{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
+  .tag.new{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+
+  /* phone */
+  .phone{position:relative;width:100%;aspect-ratio:9/19;border-radius:30px;overflow:hidden;
+         background:#05070b;border:8px solid #05070b;
+         box-shadow:0 20px 50px rgba(0,0,0,.30)}
+  .screen{position:absolute;inset:0;overflow:hidden;background:var(--bg);border-radius:22px}
+  .page{position:absolute;inset:0;background:var(--bg);will-change:transform,opacity;
+        transform-origin:50% 50%;overflow:hidden}
+  .page.detail{background:var(--card)}
+  .appbar{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;
+          font-weight:800;font-size:13px;background:var(--card);border-bottom:1px solid var(--line)}
+  .beam{height:88px;background:linear-gradient(160deg,var(--brand) 0%,#01bafe 100%);opacity:.16}
+  .pad{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+  .tile{height:56px;border-radius:14px;background:var(--card);border:1px solid var(--line);
+        display:flex;align-items:center;gap:10px;padding:0 12px}
+  .dot{width:34px;height:34px;border-radius:11px;flex:0 0 auto;
+       background:linear-gradient(135deg,var(--brand),#01bafe)}
+  .ln{height:8px;border-radius:6px;background:var(--line)}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:54px;background:var(--card);
+       border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-around}
+  .navdot{width:20px;height:20px;border-radius:6px;background:var(--line)}
+  .navdot.on{background:var(--brand)}
+
+  .ctrls{display:flex;gap:10px;justify-content:center;margin:26px 0 8px;flex-wrap:wrap}
+  button{font:inherit;font-weight:700;font-size:13px;border:0;cursor:pointer;
+         padding:11px 20px;border-radius:24px;background:var(--brand);color:#fff}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  button:active{transform:scale(.97)}
+  .hint{text-align:center;color:var(--muted);font-size:12.5px;margin-top:4px}
+
+  .notes{margin-top:34px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .note h3{margin:0 0 6px;font-size:13px;font-weight:800}
+  .note p{margin:0;font-size:12.5px;line-height:1.6;color:var(--muted)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+       background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand);
+       padding:1px 5px;border-radius:5px}
+  canvas{width:100%;height:150px;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Page transition — what you have now vs Material 3 Expressive</h1>
+  <p class="sub">Same tap (“Book a repair”), same 300&nbsp;ms, real spring maths on both sides —
+     the new one is driven by the exact <code>SpringCurve</code> now in the app. Watch the page
+     you’re leaving: on the right it recedes and rounds its corners, which is the same shape
+     Android draws when you start a back-swipe.</p>
+
+  <div class="row">
+    <div class="col">
+      <div class="label"><span class="tag old">current</span> vertical rise · easeOutBack</div>
+      <div class="phone"><div class="screen" id="scrA"></div></div>
+    </div>
+    <div class="col">
+      <div class="label"><span class="tag new">proposed</span> M3 Expressive · spring physics</div>
+      <div class="phone"><div class="screen" id="scrB"></div></div>
+    </div>
+  </div>
+
+  <div class="ctrls">
+    <button id="play">▶ Play both</button>
+    <button class="ghost" id="back">← Play back</button>
+    <button class="ghost" id="loop">Loop: off</button>
+    <button class="ghost" id="slow">Speed: 1×</button>
+  </div>
+  <p class="hint">Tip: run it at 0.25× to see the difference clearly.</p>
+
+  <div class="notes">
+    <div class="note">
+      <h3>Spatial spring — things that move</h3>
+      <p><code>stiffness 380 · damping 0.82</code>. Position and scale ride this. It overshoots
+         about 1% and settles, which is what gives motion weight instead of a mechanical glide.</p>
+      <canvas id="cvSpatial"></canvas>
+    </div>
+    <div class="note">
+      <h3>Effects spring — colour &amp; opacity</h3>
+      <p><code>stiffness 3800 · damping 1.0</code>. Critically damped, so a fade can never
+         wobble — an opacity bounce reads as a rendering bug, and opacity has no inertia to
+         justify one. This split is the core of the M3 Expressive motion system.</p>
+      <canvas id="cvEffects"></canvas>
+    </div>
+    <div class="note">
+      <h3>Why it matches the system</h3>
+      <p>The covered page scales to 92%, drifts 24&nbsp;px, dims 25% and rounds to 28&nbsp;px —
+         Android’s predictive-back preview. Tap-navigation and back-gesture finally produce the
+         same shape, so the app stops looking like it has two animation systems.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── spring maths, mirroring lib/src/ui/motion.dart ───────────────────────────
+function spring(stiffness, zeta){
+  const w0 = Math.sqrt(stiffness);
+  const wd = w0 * Math.sqrt(Math.max(1e-6, 1 - zeta*zeta));
+  const settle = Math.min(3, 7.5/(zeta*w0));   // long enough to actually settle
+  const raw = t => {
+    const x = t*settle;
+    if (zeta < 1) return 1 - Math.exp(-zeta*w0*x)*(Math.cos(wd*x) + (zeta*w0/wd)*Math.sin(wd*x));
+    return 1 - Math.exp(-w0*x)*(1 + w0*x);
+  };
+  // Land exactly on 1 at t=1 (Dart's Curve.transform does this by contract).
+  // Snap only at the endpoint — scaling the whole curve would flatten the
+  // overshoot that this preview exists to show.
+  const at = t => (t >= 1 ? 1 : raw(t));
+  return {at, settle};
+}
+const SPATIAL = spring(380, 0.82);
+const EFFECTS = spring(3800, 1.0);
+const easeOutBack = t => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); };
+
+// ── screens ──────────────────────────────────────────────────────────────────
+const homeHTML = `
+  <div class="page base">
+    <div class="beam"></div>
+    <div class="pad" style="margin-top:-70px">
+      <div class="ln" style="width:58%;height:11px"></div>
+      <div class="ln" style="width:38%"></div>
+      <div class="tile" style="margin-top:6px"><div class="dot"></div>
+        <div style="flex:1"><div class="ln" style="width:60%"></div>
+        <div class="ln" style="width:40%;margin-top:6px"></div></div></div>
+      <div class="tile"><div class="dot"></div>
+        <div style="flex:1"><div class="ln" style="width:52%"></div>
+        <div class="ln" style="width:34%;margin-top:6px"></div></div></div>
+      <div class="tile"><div class="dot"></div>
+        <div style="flex:1"><div class="ln" style="width:66%"></div>
+        <div class="ln" style="width:30%;margin-top:6px"></div></div></div>
+    </div>
+    <div class="nav"><div class="navdot on"></div><div class="navdot"></div>
+      <div class="navdot"></div><div class="navdot"></div></div>
+  </div>`;
+const detailHTML = `
+  <div class="page detail" style="opacity:0">
+    <div class="appbar">← Book a repair</div>
+    <div class="pad">
+      <div class="ln" style="width:44%;height:10px"></div>
+      <div class="tile" style="height:50px"></div>
+      <div class="ln" style="width:36%;height:10px;margin-top:8px"></div>
+      <div class="tile" style="height:76px"></div>
+      <div class="tile" style="height:44px;background:linear-gradient(135deg,var(--brand),#01bafe);border:0"></div>
+    </div>
+  </div>`;
+
+function build(el){ el.innerHTML = homeHTML + detailHTML;
+  return {base: el.querySelector('.base'), detail: el.querySelector('.detail')}; }
+const A = build(document.getElementById('scrA'));
+const B = build(document.getElementById('scrB'));
+
+// ── the two transitions ──────────────────────────────────────────────────────
+function applyOld(p, t){                       // current: rise + scale + fade
+  const s = easeOutBack(t);
+  p.detail.style.opacity   = t;
+  p.detail.style.transform = `translateY(${26*(1-s)}px) scale(${0.97 + 0.03*s})`;
+  p.base.style.opacity     = 1 - 0.12*t;
+  p.base.style.transform   = `scale(${1 - 0.02*t})`;
+  p.base.style.borderRadius = '0px';
+}
+function applyNew(p, t){                       // M3 Expressive
+  const sp = SPATIAL.at(t), fade = EFFECTS.at(t);
+  p.detail.style.opacity   = fade;
+  p.detail.style.transform = `translateX(${28*(1-sp)}%)`;
+  p.base.style.opacity     = 1 - 0.25*sp;
+  p.base.style.transform   = `translateX(${-24*sp}px) scale(${1 - 0.08*sp})`;
+  p.base.style.borderRadius = `${28*sp}px`;
+}
+
+// ── driver ───────────────────────────────────────────────────────────────────
+let raf = null, looping = false, rate = 1;
+function run(reverse){
+  cancelAnimationFrame(raf);
+  const dur = 300 / rate, t0 = performance.now();
+  (function frame(now){
+    let t = Math.min(1, (now - t0)/dur);
+    const v = reverse ? 1 - t : t;
+    applyOld(A, v); applyNew(B, v);
+    if (t < 1) raf = requestAnimationFrame(frame);
+    else if (looping) setTimeout(() => run(!reverse), 420);
+  })(t0);
+}
+document.getElementById('play').onclick = () => run(false);
+document.getElementById('back').onclick = () => run(true);
+document.getElementById('loop').onclick = e => {
+  looping = !looping; e.target.textContent = 'Loop: ' + (looping ? 'on' : 'off');
+  if (looping) run(false);
+};
+document.getElementById('slow').onclick = e => {
+  rate = rate === 1 ? 0.5 : rate === 0.5 ? 0.25 : 1;
+  e.target.textContent = 'Speed: ' + rate + '×';
+};
+applyOld(A, 0); applyNew(B, 0);
+
+// ── curve graphs ─────────────────────────────────────────────────────────────
+function graph(id, sp, colour){
+  const c = document.getElementById(id), r = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = 150;
+  c.width = w*r; c.height = h*r; const x = c.getContext('2d'); x.scale(r,r);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const top = 22, bot = h - 16, unit = y => bot - y*(bot-top);
+  x.strokeStyle = css('--line'); x.lineWidth = 1;                       // y = 1
+  x.beginPath(); x.moveTo(0, unit(1)); x.lineTo(w, unit(1)); x.stroke();
+  x.strokeStyle = colour; x.lineWidth = 2.5; x.beginPath();
+  for (let i = 0; i <= w; i++){
+    const y = unit(sp.at(i/w));
+    i ? x.lineTo(i, y) : x.moveTo(i, y);
+  }
+  x.stroke();
+}
+function drawAll(){ graph('cvSpatial', SPATIAL, '#0188fe'); graph('cvEffects', EFFECTS, '#16a34a'); }
+drawAll(); addEventListener('resize', drawAll);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+</script>
+</body>
+</html>
