@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.40.0+44**, **plugin 1.36.0 (DB v13)**.
+Current versions: **app 1.41.0+45**, **plugin 1.36.0 (DB v13)**.
 
 Also: **osTicket bridge** (deploys to support.smartliving.com.bd, osTicket v1.18.4) lives at
 `<workdir>\osticket-bridge\aun-app-bridge\` (api.php + bridge-config.sample.php + .htaccess).
@@ -1587,3 +1587,43 @@ AOT release compile OK. Camera **confirmed working on the user's phone**.
     smartliving.com.bd: one authoritative page, linked from both sites.
   - Tests: analyze clean, 55 tests, AOT OK. ⚠️ **APP-ONLY — rebuild the APK.** Plugin stays 1.36.0;
     the bridge upload from v1.44 is still required if not done yet.
+- **v1.46.0** — (2026-07-31, app 1.41.0+45, plugin unchanged) — APP-ONLY: the welcome card + 3 fixes
+  - **NEW `ProjectorMood.welcome`.** The first onboarding card was the only one that looked static
+    (it had a breathing halo, just too quiet next to the orbiting cards). It now uses **the app's own
+    projector buddy** — the same character every empty/error state uses — powering on. ⭐ The user
+    had to correct me twice here: I first drew a *new* projector, then a rear-view one, when the
+    right answer was always "use the character we already have". If an illustration is needed
+    anywhere, check `projector_animations.dart` FIRST.
+    The power-on runs in the order a real projector does it, driven by a SEPARATE one-shot
+    controller (`_intro`, 1700 ms) so it plays once and then hands over to the 5 s loop — re-running
+    a greeting every 5 s would be a nag:
+      1. **POWER** (0–0.16) the green LED catches with a bright flick, then **stays on** (a steady
+         LED reads "powered and fine"; the slow pulse the other moods use reads "waiting/trouble"),
+         with a soft halo behind it.
+      2. **LAMP** (0.14–0.52) the beam strikes — narrow and unsteady, widening and steadying, with a
+         damped ripple, because real lamps catch and waver rather than fading up. Dust motes ride the
+         cone (16 of them, each making a WHOLE number of trips per loop — the standing rule).
+      3. **PICTURE** (0.46–0.92) the projector's **real boot screen** forms, with the same bloom pass
+         every "forming" thing in the app gets.
+    Sustain: LED steady, beam breathing, dust drifting, and the eye **excited** — wider (9.2 vs 8.5),
+    a happy double-blink 3× per loop, a bigger catchlight plus a second sparkle, pupil darting up at
+    the picture; the body gains a second faster bounce.
+  - **The boot screen is a real asset** — `assets/img/aun-boot-logo.webp` (46 KB, user-downscaled),
+    the actual image their projectors boot to. First asset the painter has ever used: decoded once in
+    `initState` (welcome only) at `targetWidth: 720`, disposed with the state, and the painter falls
+    back to a plain "AUN" wordmark if it hasn't decoded yet or is missing. ⚠️ Drawn with **contain**
+    fit (`min(sw/iw, sh/ih)`), so a 16:9 image inside the 4:3 screen letterboxes exactly as it really
+    would and can NEVER stretch or overflow at any device size; the whole scene already scales
+    uniformly from the 200-unit viewbox. Measured at a 220 pt art size: the AUN wordmark lands at
+    ~23.6 px (legible), the taglines at 5.2/2.4 px (texture, not words) — the user was shown this
+    trade-off in the preview and chose the full image.
+  - Reduced motion → `intro: 1`, i.e. the finished scene, no power-on.
+  - Also in this build (fixed earlier, shipping now): **Settings profile name** (the editor seeded
+    its fields once from a possibly-empty profile and latched — now keyed on the profile's content,
+    never while mid-edit), **"See all" sizing** (12.5 px hand-rolled button vs the theme's ~14 px —
+    both now go through `SectionHeader`), and **video titles** (admin title on cards/rails/lists via
+    `displayTitle`, the real YouTube title inside the player via the new `playerTitle`).
+  - Tests: analyze clean, **56** widget tests (`projector_art_test` loops `ProjectorMood.values`, so
+    the new mood is covered automatically), AOT OK, asset confirmed in the bundle.
+  - ⚠️ **APP-ONLY — rebuild the APK.** Plugin stays 1.36.0. Previews kept for reference:
+    `aun-welcome-animation-preview.html`.

@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AUN Care — welcome card: the same projector buddy</title>
+<style>
+  :root{ --bg:#f6f8fb; --card:#fff; --ink:#0d1520; --muted:#5b6b7f; --line:#e3e9f0; --brand:#0188fe; }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0c0f14; --card:#161c24; --ink:#e9eef5; --muted:#94a4b8; --line:#243040; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Hind Siliguri",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 18px 56px}
+  h1{font-size:21px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 24px;max-width:78ch}
+  .sub b{color:var(--ink)}
+
+  .row{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .phone{width:300px;border-radius:30px;border:8px solid #05070b;background:var(--card);
+         box-shadow:0 20px 46px rgba(0,0,0,.28);overflow:hidden;flex:0 0 auto}
+  .screenwrap{padding:10px 0 22px}
+  .copy{padding:6px 26px 0;text-align:center}
+  .copy h2{font-size:20px;font-weight:800;margin:2px 0 8px;letter-spacing:-.01em}
+  .copy p{font-size:13.5px;line-height:1.6;color:var(--muted);margin:0}
+  .dots{display:flex;gap:6px;justify-content:center;margin:18px 0 0}
+  .dot{width:7px;height:7px;border-radius:99px;background:var(--line)}
+  .dot.on{width:20px;background:var(--brand)}
+
+  .fam{flex:1 1 340px;min-width:300px;background:var(--card);border:1px solid var(--line);
+       border-radius:16px;padding:16px 18px}
+  .fam h3{margin:0 0 4px;font-size:14px;font-weight:800}
+  .fam p{margin:0 0 12px;font-size:12.5px;line-height:1.6;color:var(--muted)}
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .cell{text-align:center}
+  .cell canvas{width:100%;height:auto;aspect-ratio:1}
+  .cell span{display:block;font-size:10.5px;color:var(--muted);margin-top:-4px}
+  .cell.new span{color:var(--brand);font-weight:800}
+
+  .ctrls{display:flex;gap:10px;justify-content:center;margin:26px 0 6px;flex-wrap:wrap}
+  button{font:inherit;font-weight:700;font-size:13px;border:0;cursor:pointer;
+         padding:10px 18px;border-radius:22px;background:var(--brand);color:#fff}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .hint{text-align:center;color:var(--muted);font-size:12.5px;margin-top:4px}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:color-mix(in srgb,var(--brand) 12%,transparent);
+       color:var(--brand);padding:1px 5px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Welcome card — the projector buddy you already have</h1>
+  <p class="sub">Understood: not a new drawing. This is the <b>same character</b> from
+     <code>projector_animations.dart</code> — same body, same bobbing, same blinking lens-eye, same
+     beam onto the same screen. All that's new is <b>one more mood</b>, <code>ProjectorMood.welcome</code>,
+     where the thing it projects is your logo. The geometry below is ported straight from the real
+     painter, so this is what will actually render.</p>
+
+  <div class="row">
+    <div class="phone">
+      <div class="screenwrap">
+        <canvas id="hero" width="260" height="230"></canvas>
+        <div class="copy">
+          <h2>Welcome to AUN Care</h2>
+          <p>Everything for your projector — warranty, updates and help, in one place.</p>
+        </div>
+        <div class="dots">
+          <div class="dot on"></div><div class="dot"></div><div class="dot"></div>
+          <div class="dot"></div><div class="dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fam">
+      <h3>It joins the family</h3>
+      <p>The new one on the left, next to three you already ship. Same buddy, same rules — only the
+         projected content and the eye's mood change.</p>
+      <div class="strip">
+        <div class="cell new"><canvas id="m0" width="150" height="150"></canvas><span>welcome ← new</span></div>
+        <div class="cell"><canvas id="m1" width="150" height="150"></canvas><span>offline</span></div>
+        <div class="cell"><canvas id="m2" width="150" height="150"></canvas><span>serverDown</span></div>
+        <div class="cell"><canvas id="m3" width="150" height="150"></canvas><span>empty</span></div>
+      </div>
+      <h3 style="margin-top:16px">Powering on, in order</h3>
+      <p style="margin:0 0 10px"><b>1 · Power.</b> The green LED catches with a bright flick, then
+         settles and <b>stays on</b> — no slow pulse, that's what the waiting moods do.</p>
+      <p style="margin:0 0 10px"><b>2 · Lamp.</b> The beam strikes: narrow and slightly unsteady at
+         first, then it widens and steadies, the way a real lamp comes up. Dust starts riding the
+         light.</p>
+      <p style="margin:0 0 10px"><b>3 · Picture.</b> The logo forms on the screen — fades up, settles
+         from slightly small, one soft bloom passes over it.</p>
+      <p style="margin:0"><b>Then it holds.</b> LED steady, beam breathing, dust drifting, and the eye
+         <b>excited</b> — wider than the calm moods, a happy double-blink three times a loop, a big
+         catchlight plus a second sparkle, and the pupil keeps darting up to admire what it just put
+         on the wall. The body gets a second, faster bounce so it reads as pleased with itself. Loops
+         every 12s with no restart.</p>
+    </div>
+  </div>
+
+  <div class="ctrls">
+    <button id="toggle">Showing: boot screen — switch to brand logo</button>
+    <button class="ghost" id="replay">↻ Replay the power-on</button>
+    <button class="ghost" id="slow">Speed: 1×</button>
+    <button class="ghost" id="pause">Pause</button>
+  </div>
+  <p class="hint">Everything here is the existing painter's geometry — screen at 44,14→156,96, lens at (100, 150+bob), the same beam path.</p>
+</div>
+
+<script>
+/* ═══ a faithful port of _ProjectorScenePainter (projector_animations.dart) ═══
+   Same 200-unit viewbox, same screen rect, same lens/bob, same beam path, same
+   body/feet/LED/eye. Only _drawScreenContent gains a "welcome" case.          */
+const VB = 200;
+const dark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+const PRIMARY = '#0188fe';
+const screenBg = () => dark() ? '#0E1726' : '#13233B';
+const bodyCol  = () => dark() ? '#33415A' : '#54627A';
+const bodyTopC = () => dark() ? '#3E4E6B' : '#64748F';
+
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const easeOutBack = t => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); };
+
+const LOGO = new Image(); let logoReady = false;
+LOGO.onload = () => logoReady = true;
+LOGO.src = 'aun-logo-preview.png';
+
+/* Dust motes riding the beam. `trips` is a WHOLE number of journeys per loop —
+   anything else and a particle teleports at the loop point. */
+const DUST = [];
+for (let i = 0; i < 16; i++) {
+  DUST.push({
+    off: i / 16 + Math.random() * 0.04,
+    trips: 1 + (i % 2),
+    lane: Math.random() * 2 - 1,
+    r: 0.7 + Math.random() * 1.1,
+    wob: (Math.random() - 0.5) * 7,
+  });
+}
+
+function rrect(ctx, l, t, r, b, rad) {
+  ctx.beginPath();
+  ctx.moveTo(l + rad, t);
+  ctx.arcTo(r, t, r, b, rad); ctx.arcTo(r, b, l, b, rad);
+  ctx.arcTo(l, b, l, t, rad); ctx.arcTo(l, t, r, t, rad);
+  ctx.closePath();
+}
+
+function paintScene(ctx, size, mood, t, intro) {
+  const s = size / VB;
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.scale(s, s);
+  const phase = t * 2 * Math.PI;
+
+  // ── screen on the wall ──
+  ctx.save();
+  ctx.shadowColor = `rgba(0,0,0,${dark() ? .35 : .18})`;
+  ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+  rrect(ctx, 44, 14, 156, 96, 14);
+  ctx.fillStyle = screenBg(); ctx.fill();
+  ctx.restore();
+  rrect(ctx, 44, 14, 156, 96, 14);
+  ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 1.4; ctx.stroke();
+
+  // ── bob + jitter, exactly as the painter does ──
+  const bobAmp = (mood === 'empty' || mood === 'welcome') ? 4 : 2.6;
+  // welcome gets a second, faster bounce on top — reads as pleased with itself
+  const bob = Math.sin(phase) * bobAmp +
+              (mood === 'welcome' ? 0.9 * Math.sin(phase * 2) : 0);
+  const px = mood === 'offline' ? Math.sin(phase * 22) * 1.2 : 0;
+  const lens = { x: 100, y: 150 + bob };
+
+  ctx.save(); ctx.translate(px, 0); drawBeam(ctx, lens, phase, mood, intro, t); ctx.restore();
+  drawScreenContent(ctx, mood, phase, intro);
+  ctx.save(); ctx.translate(px, 0); drawProjector(ctx, lens, phase, mood, intro); ctx.restore();
+  ctx.restore();
+}
+
+/* ═══ the welcome power-on sequence ═══
+   Three beats, in the order a real projector does them:
+     1. POWER   — the green LED comes on (a bright flick, then steady)
+     2. LAMP    — the beam warms up: a narrow, unsteady glow that widens and
+                  settles, the way a lamp actually strikes
+     3. PICTURE — the logo forms on the screen
+   After that everything holds: the LED STAYS on, the beam breathes, dust keeps
+   drifting, and the eye is excited. */
+const T_POWER = [0.00, 0.16];   // LED on
+const T_LAMP  = [0.14, 0.52];   // beam warms up
+const T_PIC   = [0.46, 0.92];   // logo forms
+const stage = (intro, [a, b]) => { const k = clamp01((intro - a) / (b - a)); return k * k * (3 - 2 * k); };
+
+function drawBeam(ctx, lens, phase, mood, intro, t) {
+  let alpha;
+  if (mood === 'offline') {
+    const flick = Math.sin(phase * 7) * Math.sin(phase * 2);
+    alpha = 0.14 + 0.12 * (0.5 + 0.5 * flick);
+    if (flick < -0.85) alpha *= 0.35;
+  } else if (mood === 'serverDown') {
+    alpha = 0.10 + 0.03 * Math.sin(phase * 2);
+  } else {
+    alpha = 0.16 + 0.07 * (0.5 + 0.5 * Math.sin(phase * 2));
+  }
+
+  let spread = 1;
+  if (mood === 'welcome') {
+    const lamp = stage(intro, T_LAMP);
+    // a lamp doesn't fade up smoothly — it strikes, wavers, then steadies
+    const strike = lamp < 1 ? 1 + 0.35 * Math.sin(lamp * Math.PI * 5) * (1 - lamp) : 1;
+    alpha *= lamp * strike;
+    spread = 0.28 + 0.72 * lamp;     // narrow at first, opens as it warms
+    if (lamp <= 0.001) return;
+  }
+
+  // the cone, narrowed toward the lens while the lamp is still coming up
+  const lx = lens.x, ly = lens.y - 6;
+  const leftX  = lx + (52 - lx) * spread;
+  const rightX = lx + (148 - lx) * spread;
+  const topY   = ly + (96 - ly) * (0.35 + 0.65 * spread);
+
+  const g = ctx.createLinearGradient(0, 152, 0, 90);
+  g.addColorStop(0, `rgba(1,136,254,${alpha * 1.15})`);
+  g.addColorStop(1, `rgba(1,136,254,${alpha * 0.15})`);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(lx - 6, ly);
+  ctx.lineTo(leftX, topY); ctx.lineTo(rightX, topY);
+  ctx.lineTo(lx + 6, ly);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── dust drifting up the beam ──
+  if (mood === 'welcome') {
+    ctx.save();
+    ctx.clip();                                  // stays inside the light
+    const vis = stage(intro, T_LAMP);
+    DUST.forEach((d, i) => {
+      const k = (d.off + t * d.trips) % 1;       // 0 at the lens → 1 at the screen
+      const y = ly + (topY - ly) * k;
+      const halfAt = 6 + ((rightX - leftX) / 2 - 6) * k;
+      const x = lx + d.lane * halfAt * 0.86 + Math.sin(t * 2 * Math.PI + i) * d.wob * k;
+      ctx.globalAlpha = 0.5 * Math.sin(k * Math.PI) * vis;
+      ctx.fillStyle = '#dcefff';
+      ctx.beginPath(); ctx.arc(x, y, d.r, 0, 7); ctx.fill();
+    });
+    ctx.restore();
+  }
+}
+
+let SHOW_BOOT = true;   // toggled by the button — boot screen vs brand logo
+
+function drawScreenContent(ctx, mood, phase, intro) {
+  const cx = 100, cy = 55 + 2;
+  if (mood === 'welcome') {
+    return SHOW_BOOT ? drawBoot(ctx, phase, intro)
+                     : drawLogo(ctx, cx, cy, phase, intro);
+  }
+  if (mood === 'offline')    return drawWifi(ctx, cx, 55 + 12, phase);
+  if (mood === 'serverDown') return drawGear(ctx, cx, cy, phase);
+  if (mood === 'empty')      return drawPlus(ctx, cx, cy, phase);
+}
+
+/* ── the REAL boot screen, drawn to scale ───────────────────────────────────
+   A stand-in recreation of your projector's boot image at its TRUE relative
+   proportions, so you can judge honestly how it reads at this size — including
+   which parts survive and which turn to mush. Fitted with contain (never
+   stretched), letterboxed inside the screen exactly as a 16:9 picture on a
+   4:3 screen really would be.                                                */
+function drawBoot(ctx, phase, intro) {
+  const form = stage(intro, T_PIC);
+  if (form <= 0.01) return;
+
+  // the screen's inner area
+  const SL = 44, ST = 14, SR = 156, SB = 96;
+  const sw = SR - SL, sh = SB - ST;
+  // CONTAIN: fit 16:9 inside, keep ratio, centre it — this is the bit that
+  // guarantees it can never stretch or overflow on any device.
+  const AR = 16 / 9;
+  let iw = sw, ih = sw / AR;
+  if (ih > sh) { ih = sh; iw = sh * AR; }
+  const ix = SL + (sw - iw) / 2, iy = ST + (sh - ih) / 2;
+
+  const float = -1.2 * Math.sin(phase) * form;
+  ctx.save();
+  ctx.globalAlpha = form;
+  ctx.translate(0, float);
+
+  // clip to the fitted picture area
+  ctx.beginPath(); ctx.rect(ix, iy, iw, ih); ctx.clip();
+
+  // sky → horizon → ground
+  const g = ctx.createLinearGradient(0, iy, 0, iy + ih);
+  g.addColorStop(0.00, '#101c3a');
+  g.addColorStop(0.45, '#1b3566');
+  g.addColorStop(0.62, '#4a6ea0');
+  g.addColorStop(0.67, '#c98a3e');
+  g.addColorStop(0.72, '#2b3446');
+  g.addColorStop(1.00, '#1a2130');
+  ctx.fillStyle = g; ctx.fillRect(ix, iy, iw, ih);
+
+  // star trails — concentric arcs, as in the real image
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.30)'; ctx.lineWidth = 0.35;
+  const cxs = ix + iw * 0.42, cys = iy - ih * 0.15;
+  for (let i = 0; i < 14; i++) {
+    const r = ih * (0.18 + i * 0.075);
+    ctx.beginPath();
+    ctx.arc(cxs, cys, r, Math.PI * 0.08, Math.PI * 0.92);
+    ctx.globalAlpha = form * (0.10 + 0.16 * ((i * 7) % 5) / 5);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // warm horizon glow
+  const hg = ctx.createRadialGradient(ix + iw * .5, iy + ih * .68, 0, ix + iw * .5, iy + ih * .68, iw * .34);
+  hg.addColorStop(0, `rgba(255,196,110,${.45 * form})`);
+  hg.addColorStop(1, 'rgba(255,196,110,0)');
+  ctx.fillStyle = hg; ctx.fillRect(ix, iy + ih * .45, iw, ih * .35);
+
+  // taglines — at their TRUE relative size. This is the honest part: at this
+  // scale they become texture, not words.
+  ctx.fillStyle = `rgba(255,255,255,${.92 * form})`;
+  ctx.textAlign = 'center';
+  ctx.font = `700 ${(ih * 0.075).toFixed(2)}px system-ui`;
+  ctx.fillText('To Watch | To Explore', ix + iw * .5, iy + ih * .17);
+  ctx.font = `500 ${(ih * 0.035).toFixed(2)}px system-ui`;
+  ctx.fillText("Let`s go pro", ix + iw * .5, iy + ih * .24);
+
+  // the AUN wordmark — the part that stays legible
+  ctx.font = `900 ${(ih * 0.34).toFixed(2)}px system-ui`;
+  const wm = ctx.createLinearGradient(0, iy + ih * .30, 0, iy + ih * .64);
+  wm.addColorStop(0, `rgba(255,255,255,${.98 * form})`);
+  wm.addColorStop(1, `rgba(255,255,255,${.35 * form})`);
+  ctx.fillStyle = wm;
+  ctx.fillText('AUN', ix + iw * .5, iy + ih * .60);
+
+  // the figure at the horizon
+  ctx.fillStyle = `rgba(18,24,34,${.95 * form})`;
+  const fx = ix + iw * .5, fy = iy + ih * .70, fh = ih * .20;
+  ctx.beginPath(); ctx.ellipse(fx, fy - fh * .82, fh * .09, fh * .11, 0, 0, 7); ctx.fill();
+  ctx.fillRect(fx - fh * .11, fy - fh * .70, fh * .22, fh * .42);
+  ctx.fillRect(fx - fh * .09, fy - fh * .30, fh * .07, fh * .32);
+  ctx.fillRect(fx + fh * .02, fy - fh * .30, fh * .07, fh * .32);
+
+  ctx.restore();
+
+  // the bloom pass, same as the logo version
+  const bloom = Math.sin(form * Math.PI);
+  if (bloom > 0.01) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const bg = ctx.createRadialGradient(100, 55, 0, 100, 55, 46);
+    bg.addColorStop(0, `rgba(255,255,255,${0.22 * bloom})`);
+    bg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(100, 55, 46, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ── the logo, forming once the lamp is up ── */
+function drawLogo(ctx, cx, cy, phase, intro) {
+  const form = stage(intro, T_PIC);
+  if (form <= 0.01) return;
+  const bloom = Math.sin(form * Math.PI);
+  const float = -1.6 * Math.sin(phase) * form;
+  const sc = (0.84 + 0.16 * easeOutBack(form));
+
+  ctx.save();
+  ctx.globalAlpha = form;
+  ctx.translate(cx, cy + float);
+  ctx.scale(sc, sc);
+  if (logoReady) ctx.drawImage(LOGO, -34, -34, 68, 68);
+  else {
+    ctx.fillStyle = '#fff'; ctx.font = '900 26px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('AUN', 0, 9);
+  }
+  ctx.restore();
+
+  if (bloom > 0.01) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const bg = ctx.createRadialGradient(cx, cy + float, 0, cx, cy + float, 44);
+    bg.addColorStop(0, `rgba(255,255,255,${0.26 * bloom})`);
+    bg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.arc(cx, cy + float, 44, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ── three existing moods, for the family strip ── */
+function drawWifi(ctx, cx, cy, phase) {
+  ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const lit = Math.sin(phase * 2 - i * 0.7) > 0.1;
+    ctx.globalAlpha = lit ? 0.92 : 0.22;
+    ctx.lineWidth = 3.4;
+    ctx.beginPath(); ctx.arc(cx, cy + 6, 9 + i * 9, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke();
+  }
+  ctx.globalAlpha = .92;
+  ctx.beginPath(); ctx.arc(cx, cy + 6, 2.6, 0, 7); ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fill();
+  ctx.strokeStyle = '#F6A609'; ctx.lineWidth = 3.2;
+  ctx.beginPath(); ctx.moveTo(cx - 20, cy - 18); ctx.lineTo(cx + 20, cy + 14); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function drawGear(ctx, cx, cy, phase) {
+  const teeth = 8, R = 20;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(phase);
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.beginPath();
+  for (let i = 0; i < teeth * 2; i++) {
+    const a = (i / (teeth * 2)) * Math.PI * 2, r = i % 2 ? R * 0.74 : R;
+    i ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, 7.5, 0, 7); ctx.fillStyle = screenBg(); ctx.fill();
+  ctx.restore();
+}
+function drawPlus(ctx, cx, cy, phase) {
+  const p = 1 + 0.08 * Math.sin(phase * 2);
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(p, p);
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  rrect(ctx, -4, -19, 4, 19, 3); ctx.fill();
+  rrect(ctx, -19, -4, 19, 4, 3); ctx.fill();
+  ctx.restore();
+}
+
+function drawProjector(ctx, lens, phase, mood, intro) {
+  const bodyTop = lens.y + 4;
+
+  // ground shadow
+  ctx.save();
+  ctx.globalAlpha = dark() ? .30 : .14;
+  ctx.filter = 'blur(6px)';
+  ctx.beginPath(); ctx.ellipse(100, bodyTop + 42, 54, 8, 0, 0, 7);
+  ctx.fillStyle = '#000'; ctx.fill();
+  ctx.restore();
+
+  // body
+  const g = ctx.createLinearGradient(0, bodyTop, 0, bodyTop + 34);
+  g.addColorStop(0, bodyTopC()); g.addColorStop(1, bodyCol());
+  rrect(ctx, 54, bodyTop, 146, bodyTop + 34, 12);
+  ctx.fillStyle = g; ctx.fill();
+
+  // feet
+  ctx.fillStyle = bodyCol();
+  rrect(ctx, 60, bodyTop + 33, 72, bodyTop + 39, 2); ctx.fill();
+  rrect(ctx, 128, bodyTop + 33, 140, bodyTop + 39, 2); ctx.fill();
+
+  // control dots
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath(); ctx.arc(116 + i * 8, bodyTop + 12, 2.1, 0, 7);
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fill();
+  }
+
+  // ── status LED ──
+  const led = mood === 'serverDown' ? '248,113,113'
+            : mood === 'offline'    ? '246,166,9'
+            : '52,211,153';
+  let ledA;
+  if (mood === 'welcome') {
+    // BEAT 1: power. A bright flick as it catches, then it STAYS on — only a
+    // whisper of breathing, never the slow pulse the waiting moods use.
+    const pow = stage(intro, T_POWER);
+    const flick = pow < 1 ? 1 + 0.9 * Math.sin(pow * Math.PI * 3) * (1 - pow) : 1;
+    ledA = pow * flick * (0.92 + 0.08 * Math.sin(phase * 2));
+    // a soft halo, so "the power is on" reads at a glance
+    if (ledA > 0.02) {
+      const gl = ctx.createRadialGradient(66, bodyTop + 12, 0, 66, bodyTop + 12, 9);
+      gl.addColorStop(0, `rgba(${led},${0.55 * Math.min(1, ledA)})`);
+      gl.addColorStop(1, `rgba(${led},0)`);
+      ctx.fillStyle = gl;
+      ctx.beginPath(); ctx.arc(66, bodyTop + 12, 9, 0, 7); ctx.fill();
+    }
+  } else {
+    ledA = 0.35 + 0.55 * (0.55 + 0.45 * Math.sin(phase * 3));
+  }
+  ctx.beginPath(); ctx.arc(66, bodyTop + 12, 2.8, 0, 7);
+  ctx.fillStyle = `rgba(${led},${Math.min(1, ledA)})`; ctx.fill();
+
+  // lens housing
+  ctx.beginPath(); ctx.arc(lens.x, lens.y, 12, 0, 7);
+  ctx.fillStyle = bodyCol(); ctx.fill();
+  ctx.beginPath(); ctx.arc(lens.x, lens.y, 12, 0, 7);
+  ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // ── expressive eye ──
+  let eyeOpen = 1, ppx = 0, ppy = 0, pupilR = 3.4, hi = 1.6, eyeR = 8.5;
+  if (mood === 'offline') {
+    eyeOpen = Math.sin(phase * 5) > 0.8 ? 0.12 : 1;
+    ppx = Math.sin(phase * 13) * 2.5; ppy = Math.cos(phase * 17) * 1.6 - 0.5; pupilR = 3;
+  } else if (mood === 'serverDown') {
+    eyeOpen = Math.min(1, Math.max(0.12, 0.5 + 0.32 * Math.sin(phase))); ppy = 2.2;
+  } else if (mood === 'welcome') {
+    // EXCITED: wide eyes, a happy double-blink three times a loop, and a pupil
+    // that keeps darting up to admire the logo it just put on the wall.
+    const t = phase / (2 * Math.PI);
+    const k = (t * 3) % 1;                          // 3 whole cycles per loop
+    const blink = Math.min(1,
+      Math.exp(-Math.pow((k - 0.10) / 0.022, 2)) +   // blink…
+      Math.exp(-Math.pow((k - 0.18) / 0.022, 2)));   // …and again, quickly
+    eyeOpen = 1 - 0.88 * blink;
+    eyeR = 9.2;                                      // wider than the calm moods
+    pupilR = 3.2;
+    ppx = Math.sin(phase * 4) * 1.4;
+    ppy = -2.6 + 0.45 * Math.sin(phase * 6);
+    hi = 2.6;                                        // big catchlight = bright, alert
+  } else {
+    eyeOpen = Math.sin(phase * 3) > 0.93 ? 0.12 : 1;
+    ppx = Math.sin(phase * 2) * 1.2; ppy = -2.2; hi = 2.2;
+  }
+  ctx.save();
+  ctx.translate(lens.x, lens.y);
+  ctx.scale(1, eyeOpen);
+  ctx.beginPath(); ctx.arc(0, 0, eyeR, 0, 7);
+  ctx.fillStyle = 'rgba(1,136,254,.95)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(ppx, ppy, pupilR, 0, 7);
+  ctx.fillStyle = '#122033'; ctx.fill();
+  ctx.beginPath(); ctx.arc(ppx - 1.7, ppy - 1.7, hi, 0, 7);
+  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+  // a second, smaller sparkle — the classic "delighted" eye
+  if (mood === 'welcome') {
+    ctx.beginPath(); ctx.arc(ppx + 2.2, ppy + 2.0, 1.0, 0, 7);
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ── wire up ── */
+const DPR = window.devicePixelRatio || 1;
+function prep(id, w, h) {
+  const c = document.getElementById(id), x = c.getContext('2d');
+  c.width = w * DPR; c.height = h * DPR; x.scale(DPR, DPR);
+  return x;
+}
+const HERO = prep('hero', 260, 230);
+const M = [prep('m0',150,150), prep('m1',150,150), prep('m2',150,150), prep('m3',150,150)];
+const MOODS = ['welcome', 'offline', 'serverDown', 'empty'];
+
+const INTRO = 1700, PERIOD = 12000;
+let rate = 1, paused = false, start = performance.now(), introFrom = performance.now();
+
+function tick(now) {
+  if (!paused) {
+    const it = clamp01(((now - introFrom) * rate) / INTRO);
+    const lp = ((((now - start) * rate) % PERIOD) / PERIOD);
+    HERO.save(); HERO.translate(15, 0); paintScene(HERO, 230, 'welcome', lp, it); HERO.restore();
+    M.forEach((c, i) => paintScene(c, 150, MOODS[i], lp, i === 0 ? it : 1));
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+document.getElementById('toggle').onclick = e => {
+  SHOW_BOOT = !SHOW_BOOT;
+  e.target.textContent = SHOW_BOOT
+    ? 'Showing: boot screen — switch to brand logo'
+    : 'Showing: brand logo — switch to boot screen';
+  introFrom = performance.now();
+};
+document.getElementById('replay').onclick = () => introFrom = performance.now();
+document.getElementById('slow').onclick = e => {
+  rate = rate === 1 ? .5 : rate === .5 ? .25 : 1;
+  e.target.textContent = 'Speed: ' + rate + '×';
+  introFrom = start = performance.now();
+};
+document.getElementById('pause').onclick = e => {
+  paused = !paused; e.target.textContent = paused ? 'Play' : 'Pause';
+};
+</script>
+</body>
+</html>
