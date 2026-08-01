@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.38.0
+ * Version:           1.39.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.38.0' );
+define( 'AUN_APP_API_VERSION', '1.39.0' );
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
 // v13 = adds aun_app_content.app_downloadable (per-file "downloadable in app").
@@ -615,6 +615,51 @@ function aun_app_api_admin_bar_counter( $bar ) {
 	) );
 }
 add_action( 'admin_bar_menu', 'aun_app_api_admin_bar_counter', 90 );
+
+/**
+ * Live counter for repair requests still waiting on YOUR decision.
+ *
+ * A "send for repair" from the app sits at `submitted` until an admin approves
+ * or rejects it, and until then the customer is waiting — they've been told to
+ * expect an answer before shipping anything. Nothing surfaced that anywhere in
+ * wp-admin, so a request could sit unseen for days. Same treatment the bug
+ * reports get: a persistent indicator on every WP page that disappears by
+ * itself once the queue is empty.
+ *
+ * Count cached 60s, and the cache is cleared the moment a request arrives or is
+ * decided (see AUN_App_Services + the Repairs screen).
+ *
+ * @param WP_Admin_Bar $bar Admin bar.
+ */
+function aun_app_api_admin_bar_repairs( $bar ) {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$count = get_transient( 'aun_app_pending_repairs_count' );
+	if ( false === $count ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'aun_app_repairs';
+		$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table WHERE status = %s", 'submitted' ) );
+		set_transient( 'aun_app_pending_repairs_count', $count, MINUTE_IN_SECONDS );
+	}
+	if ( (int) $count < 1 ) {
+		return;
+	}
+	$bar->add_node( array(
+		'id'    => 'aun-app-repairs',
+		'title' => '<span class="ab-icon dashicons dashicons-hammer" style="top:2px;"></span>'
+			. '<span class="ab-label">' . (int) $count . '</span>',
+		'href'  => admin_url( 'admin.php?page=aun-app-repairs' ),
+		'meta'  => array(
+			'title' => sprintf(
+				/* translators: %d: number of repair requests awaiting approval. */
+				_n( '%d repair request awaiting your approval', '%d repair requests awaiting your approval', (int) $count, 'aun-app' ),
+				(int) $count
+			),
+		),
+	) );
+}
+add_action( 'admin_bar_menu', 'aun_app_api_admin_bar_repairs', 90 );
 
 /**
  * Support-ticket queue in the admin bar.

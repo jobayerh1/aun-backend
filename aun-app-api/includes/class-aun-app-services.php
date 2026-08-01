@@ -340,6 +340,10 @@ class AUN_App_Services {
 		$ref = self::generate_ref( $table, 'RP' );
 		$wpdb->update( $table, array( 'ref' => $ref ), array( 'id' => $id ) );
 
+		// The customer has been told to wait for our answer before shipping, so
+		// surface this in the admin bar immediately rather than up to a minute late.
+		delete_transient( 'aun_app_pending_repairs_count' );
+
 		AUN_App_SMS::send(
 			(string) $args['phone'],
 			"SmartLiving: We received your repair request {$ref} for {$model}. We will confirm by SMS before you send the projector. Do NOT ship it yet."
@@ -493,6 +497,79 @@ class AUN_App_Services {
 	 * @param int $limit Max repairs per run.
 	 * @return array{checked:int,changed:int,skipped:int}
 	 */
+	/**
+	 * Cron half of job-sheet linking: find app requests that are waiting for a
+	 * job sheet and adopt one if the service centre has created it.
+	 *
+	 * Reuses repair_erp_sync() so the matching rules (phone + serial, the date
+	 * guard, the completed guard) stay in exactly one place — this must never
+	 * become a second, subtly different matcher.
+	 *
+	 * When a link is made the customer is told, because "we have received your
+	 * projector" is the single most reassuring message in the whole flow and it
+	 * was previously swallowed: the status poll treats its FIRST observation as
+	 * a silent baseline, so the very moment the job sheet appeared produced no
+	 * notification at all.
+	 *
+	 * @param int $limit Max rows per run.
+	 * @return int How many were linked.
+	 */
+	public static function link_pending_repairs( $limit = 40 ) {
+		global $wpdb;
+		if ( ! AUN_App_ERP::repair_configured() ) {
+			return 0;
+		}
+
+		$table       = self::repairs_table();
+		$linkable    = self::REPAIR_LINKABLE;
+		$linkable_ph = implode( ',', array_fill( 0, count( $linkable ), '%s' ) );
+
+		$rows = (array) $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM $table
+			  WHERE job_sheet_no = '' AND serial != '' AND status IN ($linkable_ph)
+			  ORDER BY updated_at ASC LIMIT %d",
+			array_merge( $linkable, array( (int) $limit ) )
+		) );
+
+		$linked = 0;
+		foreach ( $rows as $row ) {
+			$canonical = AUN_App_Phone::normalize( (string) $row->phone );
+			if ( '' === $canonical ) {
+				continue;
+			}
+
+			$erp = self::repair_erp_sync( $row, $canonical );
+			if ( ! is_array( $erp ) || '' === (string) $erp['job_sheet_no'] ) {
+				continue; // no job sheet yet — try again next run
+			}
+			$linked++;
+
+			$uid = (int) $row->user_id;
+			if ( $uid < 1 ) {
+				foreach ( AUN_App_Phone::find_users( $canonical ) as $u ) {
+					$uid = (int) $u->ID;
+					break;
+				}
+			}
+			if ( $uid < 1 ) {
+				continue;
+			}
+
+			$status = trim( (string) ( $erp['status'] ?? '' ) );
+			if ( '' === $status ) {
+				continue;
+			}
+
+			AUN_App_Notices::repair_received( $uid, (string) $row->ref, (string) $erp['job_sheet_no'], $status );
+
+			// Record the baseline NOW so the status poll doesn't immediately
+			// announce this same status a second time.
+			$wpdb->update( $table, array( 'last_erp_status' => $status ), array( 'id' => (int) $row->id ) );
+		}
+
+		return $linked;
+	}
+
 	public static function poll_repair_statuses( $limit = 40 ) {
 		global $wpdb;
 		$stats = array( 'checked' => 0, 'changed' => 0, 'skipped' => 0 );
@@ -503,7 +580,18 @@ class AUN_App_Services {
 		$table    = self::repairs_table();
 		$final    = self::REPAIR_FINAL;
 		$final_ph = implode( ',', array_fill( 0, count( $final ), '%s' ) );
-		$rows     = (array) $wpdb->get_results( $wpdb->prepare(
+
+		// STEP 1 — adopt job sheets for requests that don't have one yet.
+		//
+		// Linking used to happen ONLY inside repair_erp_sync(), which runs when
+		// the customer opens the app. So a customer who shipped their projector
+		// and then waited quietly was never linked, never polled, and never
+		// notified — the pipeline looked like a dead end precisely for the
+		// people being most patient. Doing it here means "we received it" lands
+		// whether or not they open the app.
+		self::link_pending_repairs( $limit );
+
+		$rows = (array) $wpdb->get_results( $wpdb->prepare(
 			"SELECT * FROM $table
 			  WHERE job_sheet_no != '' AND status NOT IN ($final_ph)
 			  ORDER BY updated_at ASC LIMIT %d",

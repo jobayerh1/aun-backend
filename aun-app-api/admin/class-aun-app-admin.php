@@ -43,12 +43,17 @@ class AUN_App_Admin {
 	}
 
 	public function menu() {
+		// First argument is the PAGE title (the browser tab), second is the MENU
+		// label. They deliberately differ: a page titled just "Dashboard" gave a
+		// browser tab identical to WordPress's own Dashboard, so the two were
+		// impossible to tell apart when several tabs were open. Menu labels stay
+		// short because the sidebar has little room; tab titles are qualified.
 		add_menu_page( 'AUN App', 'AUN App', self::CAP, 'aun-app', array( $this, 'page_dashboard' ), 'dashicons-smartphone', 57 );
-		add_submenu_page( 'aun-app', 'Dashboard', 'Dashboard', self::CAP, 'aun-app', array( $this, 'page_dashboard' ) );
-		add_submenu_page( 'aun-app', 'App Content', 'App Content', self::CAP, 'aun-app-content', array( $this, 'page_content' ) );
-		add_submenu_page( 'aun-app', 'Repairs', 'Repairs', self::CAP, 'aun-app-repairs', array( $this, 'page_repairs' ) );
-		add_submenu_page( 'aun-app', 'Bug Reports', 'Bug Reports', self::CAP, 'aun-app-feedback', array( $this, 'page_feedback' ) );
-		add_submenu_page( 'aun-app', 'Settings', 'Settings', self::CAP, 'aun-app-settings', array( $this, 'page_settings' ) );
+		add_submenu_page( 'aun-app', 'AUN App Dashboard', 'Dashboard', self::CAP, 'aun-app', array( $this, 'page_dashboard' ) );
+		add_submenu_page( 'aun-app', 'AUN App Content', 'App Content', self::CAP, 'aun-app-content', array( $this, 'page_content' ) );
+		add_submenu_page( 'aun-app', 'AUN App Repairs', 'Repairs', self::CAP, 'aun-app-repairs', array( $this, 'page_repairs' ) );
+		add_submenu_page( 'aun-app', 'AUN App Bug Reports', 'Bug Reports', self::CAP, 'aun-app-feedback', array( $this, 'page_feedback' ) );
+		add_submenu_page( 'aun-app', 'AUN App Settings', 'Settings', self::CAP, 'aun-app-settings', array( $this, 'page_settings' ) );
 	}
 
 	/* --------------------------------------------------------------------- *
@@ -180,6 +185,10 @@ class AUN_App_Admin {
 					AUN_App_Notices::repair_decision( (int) $row->user_id, (string) $row->ref, false, $note );
 				}
 				$wpdb->update( $table, $update, array( 'id' => $id ) );
+
+				// Deciding a request takes it out of the pending queue — clear the
+				// badge now so it doesn't keep showing a request you just handled.
+				delete_transient( 'aun_app_pending_repairs_count' );
 
 				if ( '' !== $sms && ! empty( $_POST['notify_sms'] ) && '' !== $row->phone ) {
 					AUN_App_SMS::send( $row->phone, $sms );

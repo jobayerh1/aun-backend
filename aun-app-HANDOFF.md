@@ -23,7 +23,36 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.44.0+48**, **plugin 1.38.0 (DB v14)**, **spare-parts 0.22.0**.
+Current versions: **app 1.45.0+49**, **plugin 1.39.0 (DB v14)**, **spare-parts 0.22.0**.
+
+## 2026-08-01 — app 1.45.0+49 / app-api 1.39.0: notification deep links everywhere, admin-bar repair queue, repair-pipeline gaps closed
+
+**Every notification tap now lands on the specific thing it's about**
+- Added the two missing routes: `parts` → that parts request (quote + Approve/Decline), `maintenance` → the projector the reminder is about (by serial).
+- **Root fix, not just the two cases:** a system-tray tap only carries what the SERVER put in the FCM payload, while an in-app tap carries the notice's full stored data. When those disagree the same notification lands in two different places depending on where you tapped — which had already happened: maintenance pushes shipped without `serial`. Now (a) the maintenance push includes `serial`, and (b) the router falls back to looking the notice up by `notice_id` and routing on its stored data whenever the payload can't resolve a target. That makes the two tap paths identical by construction, and any future notice type whose push forgets a routing field still deep-links.
+- The admin test reminder (serial `TEST`) deliberately does NOT deep-link — it matches no real device, so it falls back to the notification centre instead of stranding the tester on a blank screen.
+
+**Admin panel**
+- Browser tab titles: the AUN App pages used bare page titles, so "Dashboard" was indistinguishable from WordPress's own Dashboard tab. Page titles are now qualified ("AUN App Dashboard", "AUN App Settings", …) while the sidebar menu labels stay short.
+- New admin-bar counter for **repair requests awaiting approval** (hammer icon), matching the existing bug-report counter. Cleared instantly when a request arrives or is decided rather than waiting out the 60s cache. (Bug reports already had one — this round added the repairs half.)
+
+**Repair pipeline: two real gaps closed (see "how the repair flow works" below)**
+- **Linking only ever happened when the customer opened the app.** `repair_erp_sync()` runs on app requests, so a customer who shipped their projector and then waited quietly was never linked to their job sheet, never polled, and never notified — the pipeline dead-ended for exactly the most patient customers. The cron now links pending requests itself (`AUN_App_Services::link_pending_repairs()`), reusing `repair_erp_sync()` so the matching rules stay in one place.
+- **The arrival itself was never announced.** The status poll treats its first observation as a silent baseline (so it doesn't announce a status the customer has already seen), which meant the moment the job sheet was created — "we have received your projector", the single most reassuring message in the flow — produced no notification at all. New `AUN_App_Notices::repair_received()` fires on link, deduped per ref, and sets the poll baseline so the poll doesn't immediately repeat it.
+
+### How the repair flow actually works (end to end)
+1. Customer submits "Send for repair" in the app → row in `aun_app_repairs`, status `submitted`, SMS says *don't ship yet*.
+2. Admin approves/rejects in **AUN App → Repairs** → status `approved`, in-app notice + push + SMS. **← now surfaced in the admin bar**
+3. Customer ships. You receive it and create a job sheet in UltimatePOS exactly as always — no double entry.
+4. The job sheet is auto-linked to the app request by phone + serial, guarded so an older/finished job sheet for the same device can't be adopted. Status → `received`. **← now also happens from cron, and now notifies**
+5. `poll_repair_statuses()` cron watches the linked job sheet and pushes on every ERP status change (Under Repair → Ready → Delivered…).
+6. A terminal ERP status auto-closes the app request.
+
+So it was never a dead end — but steps 4–5 depended on the customer opening the app, and step 4 was silent, which is why it looked like one.
+
+**Tests:** 17 new PHP bench tests + 7 new Flutter routing tests. Full suites: 32 parts + 22 maintenance + 25 v12 + 19 ticket-queue + 17 repair-linking PHP (115 total), 77 Flutter — zero regressions.
+
+**To deploy:** re-upload `aun-app-api.zip` (1.39.0) and rebuild the APK via `build-aun-app.cmd` (app 1.45.0+49). No DB migration. Spare-parts plugin unchanged this round (still 0.22.0 — upload it if you haven't already from the previous round).
 
 ## 2026-08-01 — app 1.44.0+48 / app-api 1.38.0 / spare-parts 0.22.0: in-app quote approval + spare-parts notifications + "Request spare parts" rename
 

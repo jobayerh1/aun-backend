@@ -228,6 +228,60 @@ class AUN_App_Notices {
 	}
 
 	/**
+	 * Personal notice + push the moment a repair request is matched to its
+	 * UltimatePOS job sheet — i.e. the projector physically arrived and the
+	 * service centre booked it in.
+	 *
+	 * This is separate from repair_status_changed() on purpose. The status poll
+	 * deliberately treats its first observation of a job sheet as a silent
+	 * baseline (so it doesn't announce a status the customer has already been
+	 * looking at), which meant the arrival itself — the one moment a customer
+	 * who has posted their projector actually wants confirmed — was never
+	 * announced at all. Deduped per ref, so it can only ever fire once.
+	 *
+	 * @param int    $user_id      Customer.
+	 * @param string $ref          RP- reference.
+	 * @param string $job_sheet_no ERP job sheet number.
+	 * @param string $status       ERP status label at booking-in time.
+	 */
+	public static function repair_received( $user_id, $ref, $job_sheet_no, $status ) {
+		$user_id = (int) $user_id;
+		$ref     = (string) $ref;
+		if ( $user_id < 1 || '' === $ref ) {
+			return;
+		}
+
+		$title    = "We have received your projector — $ref";
+		$title_bn = "আপনার প্রজেক্টর আমরা পেয়েছি — $ref";
+		$body     = 'Job sheet ' . $job_sheet_no . ' is open. Status: ' . $status . '. We will keep you posted here.';
+		$body_bn  = 'জব শিট ' . $job_sheet_no . ' খোলা হয়েছে। স্ট্যাটাস: ' . $status . '। আমরা এখানেই আপডেট জানাব।';
+
+		$id = self::create( array(
+			'user_id'   => $user_id,
+			'type'      => 'repair',
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array( 'ref' => $ref, 'job_sheet_no' => (string) $job_sheet_no ),
+			'dedup_key' => 'repair_received:' . $ref,
+		) );
+
+		if ( $id && self::$last_was_new && class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			AUN_App_Push::push_to_users(
+				array( $user_id ),
+				array(
+					'title'    => $title,
+					'title_bn' => $title_bn,
+					'body'     => $body,
+					'body_bn'  => $body_bn,
+				),
+				array( 'notice_id' => $id, 'type' => 'repair', 'ref' => $ref )
+			);
+		}
+	}
+
+	/**
 	 * Personal notice + push when a spare-parts request changes status.
 	 *
 	 * The spare-parts plugin only ever talked to the customer by SMS, so the app
@@ -433,7 +487,12 @@ class AUN_App_Notices {
 					AUN_App_Push::push_to_users(
 						array( (int) $user_id ),
 						$msg, // carries title/title_bn/body/body_bn already
-						array( 'notice_id' => $id, 'type' => 'maintenance' )
+						// `serial` so a tap on the SYSTEM notification opens the
+						// projector the reminder is about. Without it the tray tap
+						// could only reach the notification centre while an in-app
+						// tap went straight to the device — same notice, two
+						// different destinations depending on where you tapped.
+						array( 'notice_id' => $id, 'type' => 'maintenance', 'serial' => $serial )
 					);
 				}
 			}
