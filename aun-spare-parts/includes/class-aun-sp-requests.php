@@ -115,13 +115,20 @@ class AUN_SP_Requests {
 			$where = $wpdb->prepare( 'r.overall_status = %s', $filter );
 		}
 		if ( $search !== '' ) {
-			// Search matches ref, phone (any format), name or source order number.
+			// Search matches ref, name, source order number, or the phone in ANY stored
+			// format (web = 01XXXXXXXXX, Android app = 8801XXXXXXXXX).
 			$like  = '%' . $wpdb->esc_like( $search ) . '%';
-			$plike = '%' . $wpdb->esc_like( aun_sp_normalize_phone( $search ) ) . '%';
-			$where .= $wpdb->prepare(
-				' AND (r.ref LIKE %s OR r.customer_name LIKE %s OR r.source_order LIKE %s OR r.phone_current LIKE %s)',
-				$like, $like, $like, aun_sp_normalize_phone( $search ) !== '' ? $plike : $like
-			);
+			$parts = array();
+			$parts[] = $wpdb->prepare( 'r.ref LIKE %s', $like );
+			$parts[] = $wpdb->prepare( 'r.customer_name LIKE %s', $like );
+			$parts[] = $wpdb->prepare( 'r.source_order LIKE %s', $like );
+			$digits  = preg_replace( '/\D+/', '', $search );
+			if ( strlen( $digits ) >= 9 ) {
+				$parts[] = aun_sp_phone_where( 'r.phone_current', $search );
+			} else {
+				$parts[] = $wpdb->prepare( 'r.phone_current LIKE %s', $like );
+			}
+			$where .= ' AND (' . implode( ' OR ', $parts ) . ')';
 		}
 
 		$rows = $wpdb->get_results(
@@ -310,7 +317,9 @@ class AUN_SP_Requests {
 		$onfile_note    = function ( $v ) { return '<div style="color:#646970;font-size:12px;margin-top:3px;">On purchase record: ' . esc_html( $v ) . '</div>'; };
 		$phone_onfile   = isset( $r->phone_onfile ) ? (string) $r->phone_onfile : '';
 		$address_onfile = isset( $r->address_onfile ) ? trim( (string) $r->address_onfile ) : '';
-		if ( $phone_onfile !== '' && $r->phone_current !== $phone_onfile ) {
+		// Compare NORMALISED numbers: an app-created row may hold 8801… against an
+		// on-file 01…, which is the same number and must not read as "changed".
+		if ( $phone_onfile !== '' && aun_sp_normalize_phone( $r->phone_current ) !== aun_sp_normalize_phone( $phone_onfile ) ) {
 			$phone_html .= $badge . $onfile_note( $phone_onfile );
 		}
 		$address_html = esc_html( $r->address_current );
@@ -330,6 +339,7 @@ class AUN_SP_Requests {
 		wp_nonce_field( 'aun_sp_update', 'aun_sp_update_nonce' );
 		echo '<h2>Parts</h2>';
 		echo '<p style="color:#646970;margin-top:0;">Update each part&rsquo;s <strong>status</strong> as it moves &mdash; the customer sees this on their tracking page. Set a <strong>price</strong> on any out-of-warranty part. <em>Factory PO, ETA and Note are optional</em>, just for your own records.</p>';
+		echo '<p style="color:#646970;margin-top:0;"><span style="color:#8250df;">&#9679;</span> Setting a part to <strong>&ldquo;Quoted&rdquo;</strong> and saving <strong>sends the price to the customer for approval</strong> (same as the button below) &mdash; they get an SMS and Approve / Decline buttons. Every other status just texts them a progress update.</p>';
 		echo '<div style="overflow-x:auto;"><table class="wp-list-table widefat striped" style="min-width:820px;"><thead><tr><th>Part</th><th style="width:64px;">Qty</th><th>Status</th><th>Factory PO</th><th>ETA</th><th>Note</th><th>Unit price (৳)</th><th style="width:90px;">Line total</th><th>Courier tracking</th><th>Photo</th></tr></thead><tbody>';
 		$grand = 0.0;
 		foreach ( (array) $items as $it ) {
@@ -377,13 +387,36 @@ class AUN_SP_Requests {
 		echo '</ul>';
 		echo '<p style="color:#646970;">Either way the total is <strong>qty × unit price</strong> for every priced part. Use the button again to re-send a revised quote.</p>';
 		echo '<p><label>Note to the customer (optional)<br><textarea name="quote_note" rows="2" class="large-text" style="max-width:620px;">' . esc_textarea( (string) $r->quote_note ) . '</textarea></label></p>';
+		// What happened to the quote we sent. This used to read the approval timestamp
+		// only, so a DECLINED quote (which never gets one) still showed "awaiting
+		// approval" — contradicting the red "Quote declined" badge at the top.
 		if ( $r->quoted_at ) {
-			$state = $r->approved_at
-				? '<span style="color:#1a7f37;font-weight:600;">approved ' . esc_html( $r->approved_at ) . '</span>'
-				: '<span style="color:#8250df;font-weight:600;">awaiting approval</span>';
+			if ( 'declined' === $r->overall_status ) {
+				$state = '<span style="color:#b32d2e;font-weight:600;">declined by the customer</span>';
+			} elseif ( $r->approved_at ) {
+				$state = '<span style="color:#1a7f37;font-weight:600;">approved ' . esc_html( $r->approved_at ) . '</span>';
+			} elseif ( 'quote_sent' === $r->overall_status ) {
+				$state = '<span style="color:#8250df;font-weight:600;">awaiting the customer&rsquo;s decision</span>';
+			} else {
+				$state = '<span style="color:#646970;font-weight:600;">no longer awaiting approval &mdash; request is &ldquo;'
+					. esc_html( self::overall_statuses()[ $r->overall_status ] ?? $r->overall_status ) . '&rdquo;</span>';
+			}
 			echo '<p>Quote total: <strong>৳' . esc_html( number_format_i18n( (float) $r->quote_total, 2 ) ) . '</strong> · sent ' . esc_html( $r->quoted_at ) . ' · ' . $state . '</p>';
 		}
-		echo '<p><button class="button" name="send_quote" value="1">Send quote for approval</button></p>';
+
+		// Label the button for what it will actually do right now.
+		if ( 'declined' === $r->overall_status ) {
+			$btn  = 'Send a revised quote';
+			$hint = 'The customer declined. Change the prices above, then send a new quote to ask again.';
+		} elseif ( $r->quoted_at ) {
+			$btn  = 'Re-send quote for approval';
+			$hint = 'Sends the current total again and re-opens Approve / Decline for the customer.';
+		} else {
+			$btn  = 'Send quote for approval';
+			$hint = '';
+		}
+		echo '<p><button class="button" name="send_quote" value="1">' . esc_html( $btn ) . '</button>'
+			. ( $hint ? ' <span style="color:#646970;">' . esc_html( $hint ) . '</span>' : '' ) . '</p>';
 		echo '</form>';
 
 		// Customer-added photos (re-uploads from the tracking page).
@@ -440,12 +473,14 @@ class AUN_SP_Requests {
 			return;
 		}
 		$t_req = AUN_SP_Install::table( 'requests' );
+		// Format-tolerant, so a web request and an app request from the same customer
+		// are recognised as related even though they store the number differently.
 		$dupes = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, ref, overall_status, model, created_at
 			 FROM $t_req
-			 WHERE phone_current = %s AND id <> %d
+			 WHERE " . aun_sp_phone_where( 'phone_current', $r->phone_current ) . " AND id <> %d
 			 ORDER BY created_at DESC LIMIT 10",
-			$r->phone_current, (int) $r->id
+			(int) $r->id
 		) );
 		if ( empty( $dupes ) ) {
 			return;
@@ -689,6 +724,11 @@ class AUN_SP_Requests {
 		$this->log( $id, 0, 'quote_sent', 'Quote sent — total ৳' . number_format_i18n( $total, 2 ) . ( $quoted ? ' (' . $quoted . ' part(s) marked Quoted)' : '' ) );
 		$extra = $this->sms_customer( $id, 'quote', 'quote_sent', '' );
 
+		// Real-time push to the app: this is the one status the customer has to ACT
+		// on, so it must not wait for them to happen to open the app. The AUN App
+		// API listens and sends an "approve or decline" notification.
+		do_action( 'aun_sp_status_changed', $id, 'quote_sent', '' );
+
 		$lead = $was_auto
 			? 'Part marked <strong>Quoted</strong>, so the quote was sent for approval (৳' . esc_html( number_format_i18n( $total, 2 ) ) . ').'
 			: 'Quote sent for approval (৳' . esc_html( number_format_i18n( $total, 2 ) ) . ').';
@@ -696,6 +736,100 @@ class AUN_SP_Requests {
 		return '<div class="notice notice-success is-dismissible"><p>' . $lead
 			. ( $quoted ? ' ' . $quoted . ' other part(s) marked &ldquo;Quoted&rdquo;.' : '' )
 			. ' The customer can now Approve or Decline on their tracking page.' . $extra . '</p></div>';
+	}
+
+	/* ------------------------------------------------------- Customer decision */
+
+	/**
+	 * Customer approves or declines a quote.
+	 *
+	 * ONE implementation shared by every channel the customer can answer on: the
+	 * public tracking page (SMS link) and the AUN Care app. Keeping it here means
+	 * the atomic claim, the confirmation SMS, the audit log and the admin email
+	 * can never drift apart between the two — a customer who taps Approve in the
+	 * app gets exactly what a customer who taps Approve on the web gets.
+	 *
+	 * The UPDATE is conditional on the request still being 'quote_sent', which is
+	 * what makes this safe against a double-tap, two devices, or the customer
+	 * answering by web and app at the same moment: only the first call claims it.
+	 *
+	 * @param int    $request_id Request row id.
+	 * @param string $decision   'approve' | 'decline'.
+	 * @param string $source     Where it came from, for the audit log ('web'|'app').
+	 * @return array{ok:bool,code:string,message:string}
+	 */
+	public static function customer_decision( $request_id, $decision, $source = 'web' ) {
+		global $wpdb;
+
+		$request_id = (int) $request_id;
+		if ( ! in_array( $decision, array( 'approve', 'decline' ), true ) ) {
+			return array( 'ok' => false, 'code' => 'invalid', 'message' => AUN_SP_I18N::msg( 'srv_invalid' ) );
+		}
+
+		$t_req = AUN_SP_Install::table( 'requests' );
+		$req   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $t_req WHERE id = %d LIMIT 1", $request_id ) );
+		if ( ! $req ) {
+			return array( 'ok' => false, 'code' => 'not_found', 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) );
+		}
+
+		$approved = ( 'approve' === $decision );
+		$status   = $approved ? 'approved' : 'declined';
+
+		$fields = $approved
+			? array( 'overall_status' => 'approved', 'approved_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) )
+			: array( 'overall_status' => 'declined', 'updated_at' => current_time( 'mysql' ) );
+
+		$set    = array();
+		$values = array();
+		foreach ( $fields as $col => $val ) {
+			$set[]    = "$col = %s";
+			$values[] = $val;
+		}
+		$values[] = $request_id;
+
+		$claimed = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $t_req SET " . implode( ', ', $set ) . " WHERE id = %d AND overall_status = 'quote_sent'",
+			$values
+		) );
+		if ( ! $claimed ) {
+			// Someone (or the customer's other device) already answered this quote.
+			return array( 'ok' => false, 'code' => 'already_answered', 'message' => AUN_SP_I18N::msg( 'srv_quote_gone' ) );
+		}
+
+		$wpdb->insert( AUN_SP_Install::table( 'events' ), array(
+			'request_id' => $request_id,
+			'type'       => $approved ? 'approved' : 'declined',
+			'message'    => 'Customer ' . ( $approved ? 'approved' : 'declined' ) . ' the quote'
+				. ( 'app' === $source ? ' (in the app)' : '' ),
+			'by_user'    => 'customer',
+			'created_at' => current_time( 'mysql' ),
+		) );
+
+		if ( $approved && AUN_SP_SMS::is_configured() && $req->phone_current !== '' ) {
+			$msg = AUN_SP_Messages::fill(
+				AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_APPROVED ),
+				array( 'ref' => $req->ref, 'pay' => AUN_SP_Messages::pay_info(), 'track' => AUN_SP_Messages::track_link( $req->ref ) )
+			);
+			AUN_SP_SMS::send_tracked( $request_id, $req->phone_current, $msg, 'approval confirmation' );
+		}
+
+		$to = get_option( 'aun_sp_alert_email', get_option( 'admin_email' ) );
+		if ( is_email( $to ) ) {
+			$subject = $approved ? 'Quote APPROVED: ' . $req->ref : 'Quote declined: ' . $req->ref;
+			$body    = $req->customer_name . ' ' . ( $approved ? 'approved' : 'declined' ) . " the quote for {$req->ref}"
+				. ( $approved ? ' (Tk ' . number_format( (float) $req->quote_total, 2 ) . ')' : '' )
+				. ' via ' . ( 'app' === $source ? 'the AUN Care app' : 'the tracking page' ) . ".\n\n"
+				. admin_url( 'admin.php?page=aun-sp&request=' . $request_id );
+			wp_mail( $to, $subject, $body );
+		}
+
+		/**
+		 * Lets other plugins react to a customer's answer — the AUN App API uses
+		 * this to push an in-app notification confirming the decision.
+		 */
+		do_action( 'aun_sp_status_changed', $request_id, $status, 'quote_sent' );
+
+		return array( 'ok' => true, 'code' => $status, 'message' => $status );
 	}
 
 	/* --------------------------------------------------------------- Notifications */

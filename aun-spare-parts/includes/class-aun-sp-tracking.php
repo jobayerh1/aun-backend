@@ -78,10 +78,11 @@ class AUN_SP_Tracking {
 		$t_item = AUN_SP_Install::table( 'request_items' );
 
 		if ( 'phone' === $by ) {
-			$reqs = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM $t_req WHERE phone_current = %s ORDER BY created_at DESC LIMIT 20",
-				aun_sp_normalize_phone( $query )
-			) );
+			// Match any stored format — app-created requests hold 8801XXXXXXXXX while
+			// the web form stores 01XXXXXXXXX (see aun_sp_phone_where()).
+			$reqs = $wpdb->get_results(
+				"SELECT * FROM $t_req WHERE " . aun_sp_phone_where( 'phone_current', $query ) . " ORDER BY created_at DESC LIMIT 20"
+			);
 		} else {
 			$reqs = $wpdb->get_results( $wpdb->prepare(
 				"SELECT * FROM $t_req WHERE ref = %s LIMIT 1",
@@ -247,51 +248,20 @@ class AUN_SP_Tracking {
 		}
 
 		$t_req = AUN_SP_Install::table( 'requests' );
-		$req   = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $t_req WHERE ref = %s LIMIT 1", $ref ) );
+		$req   = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM $t_req WHERE ref = %s LIMIT 1", $ref ) );
 		if ( ! $req ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) ) );
 		}
 
-		$to = get_option( 'aun_sp_alert_email', get_option( 'admin_email' ) );
+		// The whole decision — atomic claim, SMS, audit log, admin email — lives in
+		// AUN_SP_Requests::customer_decision() so this page and the AUN Care app
+		// behave identically. See that method for why the UPDATE is conditional.
+		$result = AUN_SP_Requests::customer_decision( (int) $req->id, $decision, 'web' );
 
-		if ( 'approve' === $decision ) {
-			// Conditional UPDATE = atomic claim: a double-tap (or two devices) can't
-			// approve twice and trigger duplicate SMS/emails.
-			$claimed = (int) $wpdb->query( $wpdb->prepare(
-				"UPDATE $t_req SET overall_status = 'approved', approved_at = %s, updated_at = %s WHERE id = %d AND overall_status = 'quote_sent'",
-				current_time( 'mysql' ), current_time( 'mysql' ), (int) $req->id
-			) );
-			if ( ! $claimed ) {
-				wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_quote_gone' ) ) );
-			}
-			$this->log( (int) $req->id, 'approved', 'Customer approved the quote' );
-
-			if ( AUN_SP_SMS::is_configured() && $req->phone_current !== '' ) {
-				$msg = AUN_SP_Messages::fill(
-					AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_APPROVED ),
-					array( 'ref' => $req->ref, 'pay' => AUN_SP_Messages::pay_info(), 'track' => AUN_SP_Messages::track_link( $req->ref ) )
-				);
-				AUN_SP_SMS::send_tracked( (int) $req->id, $req->phone_current, $msg, 'approval confirmation' );
-			}
-			if ( is_email( $to ) ) {
-				wp_mail( $to, 'Quote APPROVED: ' . $req->ref, $req->customer_name . " approved the quote for {$req->ref} (Tk " . number_format( (float) $req->quote_total, 2 ) . ").\n\n" . admin_url( 'admin.php?page=aun-sp&request=' . (int) $req->id ) );
-			}
-			wp_send_json_success( array( 'message' => 'approved' ) );
+		if ( empty( $result['ok'] ) ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
 		}
-
-		// Decline (same atomic claim as approve).
-		$claimed = (int) $wpdb->query( $wpdb->prepare(
-			"UPDATE $t_req SET overall_status = 'declined', updated_at = %s WHERE id = %d AND overall_status = 'quote_sent'",
-			current_time( 'mysql' ), (int) $req->id
-		) );
-		if ( ! $claimed ) {
-			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_quote_gone' ) ) );
-		}
-		$this->log( (int) $req->id, 'declined', 'Customer declined the quote' );
-		if ( is_email( $to ) ) {
-			wp_mail( $to, 'Quote declined: ' . $req->ref, $req->customer_name . " declined the quote for {$req->ref}.\n\n" . admin_url( 'admin.php?page=aun-sp&request=' . (int) $req->id ) );
-		}
-		wp_send_json_success( array( 'message' => 'declined' ) );
+		wp_send_json_success( array( 'message' => $result['code'] ) );
 	}
 
 	/* --------------------------------------------------------------------- Helpers */
@@ -314,16 +284,5 @@ class AUN_SP_Tracking {
 		}
 		set_transient( $key, $count + 1, 65 );
 		return true;
-	}
-
-	private function log( $request_id, $type, $message ) {
-		global $wpdb;
-		$wpdb->insert( AUN_SP_Install::table( 'events' ), array(
-			'request_id' => (int) $request_id,
-			'type'       => $type,
-			'message'    => $message,
-			'by_user'    => 'customer',
-			'created_at' => current_time( 'mysql' ),
-		) );
 	}
 }

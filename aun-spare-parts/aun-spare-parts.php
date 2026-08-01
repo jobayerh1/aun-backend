@@ -2,14 +2,14 @@
 /**
  * Plugin Name: AUN Spare Parts
  * Description: Spare-parts request intake + per-part tracking for AUN Projector. Reads sales/warranty from the UltimatePOS ERP and a legacy inFlow sales archive; lets customers request parts (no device sent in) and track each part. Phase 1: legacy import + phone/order/serial lookup + warranty calc + image compression.
- * Version: 0.19.0
+ * Version: 0.22.0
  * Author: Smart Living Bangladesh
  * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SP_VERSION', '0.19.0' );
+define( 'AUN_SP_VERSION', '0.22.0' );
 define( 'AUN_SP_FILE', __FILE__ );
 define( 'AUN_SP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SP_URL', plugin_dir_url( __FILE__ ) );
@@ -49,6 +49,34 @@ function aun_sp_normalize_phone( $raw ) {
 		$d = substr( $d, 0, 11 );
 	}
 	return $d;
+}
+
+/**
+ * SQL condition matching a phone column against a number in ANY stored format.
+ *
+ * Requests can be created by more than one writer: the web form stores the
+ * canonical 01XXXXXXXXX, while the AUN Care Android app stores the international
+ * 8801XXXXXXXXX. An exact `phone_current = '01…'` comparison silently missed every
+ * app-created request — customers tracking by mobile got "No request found".
+ *
+ * So we match on the last 10 digits (the part that is identical in every format),
+ * ignoring spaces, + and dashes. The exact-equality test is kept first so the
+ * indexed lookup still short-circuits for normal rows.
+ *
+ * @return string prepared SQL fragment, already escaped; '1=0' if unusable.
+ */
+function aun_sp_phone_where( $column, $raw ) {
+	global $wpdb;
+	$digits = preg_replace( '/\D+/', '', (string) $raw );
+	$last10 = substr( $digits, -10 );
+	if ( strlen( $last10 ) < 9 ) {
+		return '1=0'; // too short to identify anyone — match nothing
+	}
+	return $wpdb->prepare(
+		"( $column = %s OR REPLACE(REPLACE(REPLACE($column,' ',''),'+',''),'-','') LIKE %s )",
+		aun_sp_normalize_phone( $raw ),
+		'%' . $wpdb->esc_like( $last10 )
+	);
 }
 
 require_once AUN_SP_DIR . 'includes/class-aun-sp-install.php';

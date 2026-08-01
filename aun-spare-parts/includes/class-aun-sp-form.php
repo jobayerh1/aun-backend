@@ -328,11 +328,12 @@ class AUN_SP_Form {
 		$t_item = AUN_SP_Install::table( 'request_items' );
 		$open   = "overall_status NOT IN ('" . implode( "','", AUN_SP_Requests::TERMINAL_STATES ) . "')";
 
-		$rows = $wpdb->get_results( $wpdb->prepare(
+		// Format-tolerant match: requests filed from the Android app store the phone
+		// as 8801XXXXXXXXX, the web form as 01XXXXXXXXX.
+		$rows = $wpdb->get_results(
 			"SELECT id, ref, overall_status, model, created_at FROM $t_req
-			 WHERE phone_current = %s AND $open ORDER BY created_at DESC LIMIT 10",
-			$phone
-		) );
+			 WHERE " . aun_sp_phone_where( 'phone_current', $phone ) . " AND $open ORDER BY created_at DESC LIMIT 10"
+		);
 		if ( empty( $rows ) ) {
 			return array();
 		}

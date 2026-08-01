@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SP_Install {
 
-	const DB_VERSION = '6';
+	const DB_VERSION = '7';
 
 	/** Fully-qualified table name for a given short key. */
 	public static function table( $name ) {
@@ -150,10 +150,56 @@ class AUN_SP_Install {
 			AUN_SP_Messages::ensure_reject_template( 'Duplicate request' );
 		}
 
+		self::backfill_phones();
+
 		if ( ! wp_next_scheduled( 'aun_sp_daily_digest' ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'aun_sp_daily_digest' );
 		}
 
 		update_option( 'aun_sp_db_version', self::DB_VERSION );
+	}
+
+	/**
+	 * Bring every stored phone to the canonical 01XXXXXXXXX form.
+	 *
+	 * Requests created by the AUN Care Android app arrive as 8801XXXXXXXXX, so the
+	 * table ends up holding two formats. Lookups are format-tolerant now
+	 * (aun_sp_phone_where), but normalising the data keeps everything downstream —
+	 * admin search, duplicate detection, the "changed contact" badge — comparing
+	 * like with like. Idempotent: rows already canonical are skipped.
+	 *
+	 * @return int rows changed
+	 */
+	public static function backfill_phones() {
+		global $wpdb;
+		$t = self::table( 'requests' );
+
+		$rows = $wpdb->get_results( "SELECT id, phone_current, phone_onfile FROM $t" );
+		if ( empty( $rows ) ) {
+			return 0;
+		}
+
+		$changed = 0;
+		foreach ( $rows as $row ) {
+			$update = array();
+
+			$pc = aun_sp_normalize_phone( $row->phone_current );
+			if ( $pc !== '' && $pc !== $row->phone_current ) {
+				$update['phone_current'] = $pc;
+			}
+			// phone_onfile only exists from DB v4 onward.
+			if ( isset( $row->phone_onfile ) ) {
+				$po = aun_sp_normalize_phone( $row->phone_onfile );
+				if ( $po !== '' && $po !== $row->phone_onfile ) {
+					$update['phone_onfile'] = $po;
+				}
+			}
+
+			if ( $update ) {
+				$wpdb->update( $t, $update, array( 'id' => (int) $row->id ) );
+				$changed++;
+			}
+		}
+		return $changed;
 	}
 }

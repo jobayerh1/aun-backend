@@ -631,6 +631,48 @@ class AUN_App_Services {
 	 * --------------------------------------------------------------------- */
 
 	/**
+	 * Notify the app when the spare-parts plugin changes a request's status.
+	 *
+	 * Hooked to `aun_sp_status_changed`, which the spare-parts plugin fires the
+	 * moment a quote is sent or the customer answers it — the two points where
+	 * waiting for the customer to next open the app would be too late.
+	 *
+	 * @param int    $request_id Spare-parts request id.
+	 * @param string $status     New overall status.
+	 */
+	public static function on_parts_status_changed( $request_id, $status ) {
+		if ( ! self::parts_available() || ! class_exists( 'AUN_App_Phone' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$t_req = AUN_SP_Install::table( 'requests' );
+		$r     = $wpdb->get_row( $wpdb->prepare(
+			"SELECT ref, phone_current, quote_total FROM $t_req WHERE id = %d",
+			(int) $request_id
+		) );
+		if ( ! $r || '' === (string) $r->phone_current ) {
+			return;
+		}
+
+		// A parts request can be made without an app account (the web form), so
+		// no matching user is the normal case, not an error — they get the SMS.
+		$users = AUN_App_Phone::find_users( AUN_App_Phone::normalize( (string) $r->phone_current ) );
+		if ( empty( $users ) ) {
+			return;
+		}
+
+		$labels = class_exists( 'AUN_SP_Requests' ) ? AUN_SP_Requests::overall_statuses() : array();
+		AUN_App_Notices::parts_status_changed(
+			(int) $users[0]->ID,
+			(string) $r->ref,
+			(string) $status,
+			(string) ( $labels[ $status ] ?? $status ),
+			(float) $r->quote_total
+		);
+	}
+
+	/**
 	 * @param string $canonical User's canonical phone.
 	 * @param int    $user_id   User id (repairs are linked by id too).
 	 * @return array{spare_parts:array,repairs:array}
@@ -658,6 +700,22 @@ class AUN_App_Services {
 			) );
 
 			foreach ( (array) $rows as $r ) {
+				// Safety net for statuses the admin sets directly (ready, closed,
+				// rejected, waiting_customer) which don't fire aun_sp_status_changed.
+				// Deduped per (ref, status), so syncing repeatedly never re-notifies.
+				// Bounded to recently-touched requests so deploying this doesn't
+				// notify everyone about months-old requests they've long moved on from.
+				$touched = strtotime( (string) ( $r->updated_at ?: $r->created_at ) );
+				if ( $user_id > 0 && $touched && $touched > strtotime( '-14 days', current_time( 'timestamp' ) ) ) {
+					AUN_App_Notices::parts_status_changed(
+						(int) $user_id,
+						(string) $r->ref,
+						(string) $r->overall_status,
+						(string) ( $ov[ $r->overall_status ] ?? $r->overall_status ),
+						(float) $r->quote_total
+					);
+				}
+
 				$items = $wpdb->get_results(
 					$wpdb->prepare( "SELECT part_label, qty, line_status, eta, unit_price, tracking_no FROM $t_item WHERE request_id = %d", $r->id )
 				);

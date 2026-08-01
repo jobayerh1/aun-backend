@@ -227,6 +227,104 @@ class AUN_App_Notices {
 		}
 	}
 
+	/**
+	 * Personal notice + push when a spare-parts request changes status.
+	 *
+	 * The spare-parts plugin only ever talked to the customer by SMS, so the app
+	 * showed a new quote silently — no notification at all. This mirrors the
+	 * repair flow: one notice per (ref, status), so the same status never
+	 * notifies twice no matter how often we sync.
+	 *
+	 * 'quote_sent' is the one that MATTERS: it is the only status the customer
+	 * has to answer, and its body tells them they can answer right in the app.
+	 *
+	 * @param int    $user_id     Customer.
+	 * @param string $ref         SP- reference.
+	 * @param string $status_key  Machine status (quote_sent, approved, …).
+	 * @param string $label       Human status label from the plugin.
+	 * @param float  $quote_total Quote total, for the quote_sent wording.
+	 */
+	public static function parts_status_changed( $user_id, $ref, $status_key, $label, $quote_total = 0 ) {
+		$user_id = (int) $user_id;
+		$ref     = (string) $ref;
+		if ( $user_id < 1 || '' === $ref || '' === $status_key ) {
+			return;
+		}
+
+		// Statuses worth interrupting someone for. Internal churn (submitted,
+		// in_progress) is visible in the app but never pushed — a notification
+		// per bookkeeping step is how people learn to ignore your app.
+		$total = number_format_i18n( (float) $quote_total, 0 );
+		$copy  = array(
+			'quote_sent'       => array(
+				"Quote ready for $ref — ৳$total",
+				"$ref-এর কোটেশন প্রস্তুত — ৳$total",
+				'Tap to approve or decline right here in the app.',
+				'অ্যাপ থেকেই অনুমোদন বা বাতিল করতে ট্যাপ করুন।',
+			),
+			'approved'          => array(
+				"Approved — sourcing parts for $ref",
+				"অনুমোদিত — $ref-এর পার্টস সংগ্রহ চলছে",
+				'We have started sourcing your parts.',
+				'আমরা আপনার পার্টস সংগ্রহ শুরু করেছি।',
+			),
+			'waiting_customer' => array(
+				"We need one more photo for $ref",
+				"$ref-এর জন্য আরেকটি ছবি প্রয়োজন",
+				'Open the request to upload a clearer photo.',
+				'পরিষ্কার ছবি আপলোড করতে অনুরোধটি খুলুন।',
+			),
+			'ready'            => array(
+				"Your parts for $ref are ready",
+				"$ref-এর পার্টস প্রস্তুত",
+				'They are ready to dispatch.',
+				'পাঠানোর জন্য প্রস্তুত।',
+			),
+			'closed'           => array(
+				"$ref completed",
+				"$ref সম্পন্ন",
+				'Thank you for choosing AUN Care.',
+				'AUN Care বেছে নেওয়ার জন্য ধন্যবাদ।',
+			),
+			'rejected'         => array(
+				"$ref could not be accepted",
+				"$ref গ্রহণ করা যায়নি",
+				(string) $label,
+				(string) $label,
+			),
+		);
+
+		if ( ! isset( $copy[ $status_key ] ) ) {
+			return;
+		}
+		list( $title, $title_bn, $body, $body_bn ) = $copy[ $status_key ];
+
+		$id = self::create( array(
+			'user_id'   => $user_id,
+			'type'      => 'parts',
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array( 'ref' => $ref, 'status' => (string) $status_key ),
+			// One notice per distinct status for this request.
+			'dedup_key' => 'parts_status:' . $ref . ':' . $status_key,
+		) );
+
+		if ( $id && self::$last_was_new && class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			AUN_App_Push::push_to_users(
+				array( $user_id ),
+				array(
+					'title'    => $title,
+					'title_bn' => $title_bn,
+					'body'     => $body,
+					'body_bn'  => $body_bn,
+				),
+				array( 'notice_id' => $id, 'type' => 'parts', 'ref' => $ref )
+			);
+		}
+	}
+
 	/* --------------------------------------------------------------------- *
 	 * Maintenance (dust-filter) reminders — mirrors MaintenanceSmsService
 	 * --------------------------------------------------------------------- */

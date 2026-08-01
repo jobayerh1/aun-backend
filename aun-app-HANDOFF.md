@@ -23,7 +23,31 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.43.0+47**, **plugin 1.37.0 (DB v14)**.
+Current versions: **app 1.44.0+48**, **plugin 1.38.0 (DB v14)**, **spare-parts 0.22.0**.
+
+## 2026-08-01 — app 1.44.0+48 / app-api 1.38.0 / spare-parts 0.22.0: in-app quote approval + spare-parts notifications + "Request spare parts" rename
+
+**Approve / decline a spare-parts quote inside the app**
+- Previously the customer could only answer a quote by opening the SMS tracking link in a browser. Now the quote card in the parts request detail screen has **Approve** / **Decline** buttons with a confirm dialog.
+- The decision logic moved into one shared method, `AUN_SP_Requests::customer_decision( $id, $decision, $source )`, which the public tracking page AND the app both call. Atomic claim (`UPDATE … WHERE overall_status = 'quote_sent'`), confirmation SMS, audit-log event and admin email all live there, so the two channels can't drift apart. The audit log records which channel answered.
+- New endpoint `POST /parts/decision` `{ref, decision}`. **Authorisation matters here**: the web tracker identifies a request by ref alone (it's reached from an SMS link), but every app caller is a known account, so the endpoint confirms the request belongs to *their* phone. Without that, any logged-in user could approve someone else's quote by guessing a sequential `SP-` ref. Covered by a test.
+- Answering a quote that was already answered (e.g. they tapped the SMS link first) returns **409 already_answered** and the app shows "This quote was already answered." rather than a generic failure.
+- The quote card renders whenever a decision is pending **even if the total is ৳0** — an in-warranty quote still needs approving, and gating on the total would have hidden the buttons from exactly the customers who owe nothing.
+
+**Spare parts finally send notifications (they never did before)**
+- Audit finding: repairs, maintenance, tickets and content all pushed; **spare parts had zero notification integration** — SMS only. A quote could arrive and the app would never say a word.
+- New `AUN_App_Notices::parts_status_changed()` → in-app notice + push, deduped per (ref, status). Notifies on `quote_sent`, `approved`, `waiting_customer`, `ready`, `closed`, `rejected`. Internal churn (`submitted`, `in_progress`) deliberately stays silent.
+- Delivery is two-layer: the spare-parts plugin fires `do_action( 'aun_sp_status_changed', … )` on quote-send and on the customer's answer (real-time push for the statuses that can't wait), and `my_requests()` syncs any other status when the app next refreshes — bounded to requests touched in the last 14 days so deploying this doesn't notify people about months-old requests.
+- New Android channel `aun_parts` ("Spare parts updates", IMPORTANCE_HIGH) so it can be muted independently; own icon/colour in the notification centre.
+
+**"Buy spare parts" → "Request spare parts"**
+- Warranty-valid customers aren't buying anything, so "Buy" was wrong. Renamed in EN + BN across the services tile, the onboarding slide copy, the tile subtitle ("free under warranty"), and a stale code comment. Matches the vocabulary the plugin already uses (`SP-` *requests*, "Track your spare-part request").
+
+**Tests:** 32 new PHP bench tests (shared decision path, double-answer refusal, cross-account authorisation, REST 404/409, notice dedup, silent internal statuses, hook bridge, push channel) + 6 new Flutter unit tests. Full suites re-run: 22 maintenance + 25 v12 + 19 ticket-queue PHP, 70 Flutter — zero regressions.
+
+**Known gap (pre-existing, not introduced here):** tapping a push notification opens the app but doesn't deep-link to the specific request. That's true for every notification type today, not just parts.
+
+**To deploy this round:** re-upload **both** `aun-app-api.zip` (1.38.0) **and** `aun-spare-parts.zip` (0.22.0) — the shared decision method lives in the spare-parts plugin and the app-api calls it. Upload order doesn't matter: the endpoint checks `method_exists( 'AUN_SP_Requests', 'customer_decision' )` and returns a clean 503 rather than fataling if the spare-parts plugin is still the old one. Then rebuild the APK via `build-aun-app.cmd` (app 1.44.0+48). No DB migration this round.
 
 ## 2026-08-01 — app 1.43.0+47 / plugin 1.37.0 (DB v14): actionable maintenance reminders + welcome-animation dust fix + pending-mood confirmation dialogs
 

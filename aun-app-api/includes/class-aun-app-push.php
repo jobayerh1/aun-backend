@@ -121,6 +121,8 @@ class AUN_App_Push {
 				return 'aun_support';
 			case 'repair':
 				return 'aun_repairs';
+			case 'parts':
+				return 'aun_parts';
 			case 'maintenance':
 				return 'aun_reminders';
 			case 'firmware':

@@ -215,6 +215,12 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		register_rest_route( $ns, '/parts/decision', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'parts_decision' ),
+			'permission_callback' => $auth,
+		) );
+
 		register_rest_route( $ns, '/repairs/request', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'repairs_request' ),
@@ -806,6 +812,68 @@ class AUN_App_REST {
 			return $this->err( 'not_found', 'That repair was not found on your account.', 404 );
 		}
 		return $this->ok( $detail );
+	}
+
+	/**
+	 * Customer approves or declines a spare-parts quote from inside the app.
+	 *
+	 * The decision itself is the spare-parts plugin's job (one shared
+	 * implementation with the public tracking page — see
+	 * AUN_SP_Requests::customer_decision), so all this does is authorise.
+	 *
+	 * Authorisation matters here in a way it doesn't on the web tracker: that
+	 * page is reached by an SMS link and identifies a request by its ref alone,
+	 * but every app caller is a known account, so we must confirm the request
+	 * actually belongs to THEIR phone. Without this check any logged-in user
+	 * could approve someone else's quote by guessing a sequential SP- ref.
+	 */
+	public function parts_decision( $request ) {
+		$me       = $this->identity();
+		$ref      = strtoupper( trim( (string) $request->get_param( 'ref' ) ) );
+		$decision = (string) $request->get_param( 'decision' );
+
+		if ( '' === $ref || ! in_array( $decision, array( 'approve', 'decline' ), true ) ) {
+			return $this->err( 'invalid', 'Invalid request.', 400 );
+		}
+		// method_exists as well as parts_available(): customer_decision() ships in
+		// AUN Spare Parts 0.22.0, and the two plugins are updated separately. If
+		// this one is newer, fail cleanly instead of fataling on a missing method.
+		if ( ! AUN_App_Services::parts_available()
+			|| ! method_exists( 'AUN_SP_Requests', 'customer_decision' ) ) {
+			return $this->err( 'unavailable', 'Spare parts service is temporarily unavailable.', 503 );
+		}
+		if ( '' === $me['phone'] ) {
+			return $this->err( 'no_phone', 'No phone number on your account.', 403 );
+		}
+
+		global $wpdb;
+		$t_req    = AUN_SP_Install::table( 'requests' );
+		$variants = AUN_App_Phone::variants( $me['phone'] );
+		$ph       = implode( ',', array_fill( 0, count( $variants ), '%s' ) );
+
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT id, overall_status FROM $t_req
+			 WHERE ref = %s AND ( phone_current IN ($ph) OR phone_onfile IN ($ph) ) LIMIT 1",
+			array_merge( array( $ref ), $variants, $variants )
+		) );
+		if ( ! $row ) {
+			return $this->err( 'not_found', 'That request was not found on your account.', 404 );
+		}
+
+		$result = AUN_SP_Requests::customer_decision( (int) $row->id, $decision, 'app' );
+		if ( empty( $result['ok'] ) ) {
+			// already_answered is the common one: they answered by SMS link first.
+			return $this->err(
+				(string) $result['code'],
+				(string) $result['message'],
+				'already_answered' === $result['code'] ? 409 : 400
+			);
+		}
+
+		return $this->ok( array(
+			'ref'    => $ref,
+			'status' => (string) $result['code'],
+		) );
 	}
 
 	public function my_service_requests() {
