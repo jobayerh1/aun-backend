@@ -343,6 +343,84 @@ class AUN_App_Notices {
 	}
 
 	/**
+	 * Admin-only: send ONE real maintenance reminder to a phone number right
+	 * now, bypassing the purchase-date/eligibility check entirely.
+	 *
+	 * The real pipeline can't be tested on demand — the first reminder is 30
+	 * days after a real ERP sale — so this exists purely so the app can be
+	 * verified end to end (feed → Home card → push → mark done / snooze)
+	 * without waiting a month. Every call inserts a FRESH row (dedup_key
+	 * includes the current timestamp) so it can be sent repeatedly, and it
+	 * never touches or resembles the real `maint:` dedup keys the daily cron
+	 * uses, so a test send can never suppress or collide with a real one.
+	 *
+	 * @param string $phone  Any phone number the app recognises (need not own
+	 *                       a device — this is a pure UI/pipeline test).
+	 * @param int    $offset 30, 60 or 90 — which of the three messages.
+	 * @return array{ok:bool,message:string}
+	 */
+	public static function send_test_maintenance( $phone, $offset ) {
+		if ( ! class_exists( 'AUN_App_Phone' ) ) {
+			return array( 'ok' => false, 'message' => 'Phone helper unavailable.' );
+		}
+		$canonical = AUN_App_Phone::normalize( (string) $phone );
+		if ( '' === $canonical ) {
+			return array( 'ok' => false, 'message' => 'Enter a valid mobile number.' );
+		}
+		// Same resolution path the app's own login/warranty matching uses —
+		// so "does this number have an account" means the same thing here as
+		// it does everywhere else in the plugin.
+		$users = AUN_App_Phone::find_users( $canonical );
+		if ( empty( $users ) ) {
+			return array( 'ok' => false, 'message' => 'No app account is registered to that number yet — the customer must log into the app at least once.' );
+		}
+		$user_id = (int) $users[0]->ID;
+
+		$messages = self::maintenance_messages();
+		if ( ! isset( $messages[ (int) $offset ] ) ) {
+			$offset = 30;
+		}
+		$msg = $messages[ (int) $offset ];
+
+		$id = self::create( array(
+			'user_id'   => (int) $user_id,
+			'type'      => 'maintenance',
+			'title'     => $msg['title'],
+			'title_bn'  => $msg['title_bn'],
+			'body'      => $msg['body'],
+			'body_bn'   => $msg['body_bn'],
+			'data'      => array( 'serial' => 'TEST', 'model' => '', 'offset' => (int) $offset ),
+			// ⚠️ `time()` alone has 1-second resolution — two test sends fired
+			// within the same second got the SAME dedup key, and the second one
+			// was silently swallowed as a "duplicate" (caught by the bench
+			// test). uniqid() with the extra-entropy flag makes every call
+			// unique regardless of timing.
+			'dedup_key' => 'admintest:' . (int) $user_id . ':' . uniqid( '', true ),
+		) );
+
+		if ( ! $id ) {
+			return array( 'ok' => false, 'message' => 'Could not create the notice — check the database.' );
+		}
+
+		$pushed = 0;
+		if ( class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			// Count of tokens actually pushed to (0 = configured but no live
+			// session on that account, e.g. logged out everywhere).
+			$pushed = (int) AUN_App_Push::push_to_users(
+				array( (int) $user_id ),
+				$msg,
+				array( 'notice_id' => $id, 'type' => 'maintenance' )
+			);
+		}
+
+		return array(
+			'ok'      => true,
+			'message' => 'Sent to user #' . (int) $user_id . '. It will appear in the notification panel and as a task card on Home the next time the app talks to the server.'
+				. ( $pushed > 0 ? ' A push notification was also sent.' : ' (No push delivered — the account may be logged out everywhere, or push is unconfigured. The in-app card will still appear on next refresh.)' ),
+		);
+	}
+
+	/**
 	 * Daily cron: materialise due maintenance reminders for every user who has
 	 * a live app session, WITH push — so "clean your dust filter" month 2/3
 	 * arrives even if the app never gets opened. Dedup keys make this safe to
@@ -432,7 +510,7 @@ class AUN_App_Notices {
 
 		$since = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - self::FEED_WINDOW_DAYS * DAY_IN_SECONDS );
 
-		$sql = "SELECT n.*, s.read_at, s.dismissed
+		$sql = "SELECT n.*, s.read_at, s.dismissed, s.completed_at, s.snoozed_until
 			 FROM $t n
 			 LEFT JOIN $ts s ON s.notice_id = n.id AND s.user_id = %d
 			 WHERE (n.user_id = %d OR (n.user_id = 0 AND $model_sql))
@@ -444,6 +522,7 @@ class AUN_App_Notices {
 		$rows     = (array) $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
 		$items    = array();
 		$unread   = 0;
+		$now      = current_time( 'timestamp' );
 
 		foreach ( $rows as $r ) {
 			if ( ! empty( $r->dismissed ) ) {
@@ -453,16 +532,25 @@ class AUN_App_Notices {
 			if ( ! $read ) {
 				$unread++;
 			}
+			// Snoozed-but-past-due counts as active again — "remind me later"
+			// is a delay, not a second dismiss.
+			$snoozed_until = (string) ( $r->snoozed_until ?? '' );
+			$snoozing      = '' !== $snoozed_until && strtotime( $snoozed_until ) > $now;
+
 			$items[] = array(
-				'id'         => (int) $r->id,
-				'type'       => (string) $r->type,
-				'title'      => (string) $r->title,
-				'title_bn'   => (string) $r->title_bn,
-				'body'       => (string) $r->body,
-				'body_bn'    => (string) $r->body_bn,
-				'data'       => json_decode( (string) $r->data, true ) ?: array(),
-				'created_at' => (string) $r->created_at,
-				'read'       => $read,
+				'id'            => (int) $r->id,
+				'type'          => (string) $r->type,
+				'title'         => (string) $r->title,
+				'title_bn'      => (string) $r->title_bn,
+				'body'          => (string) $r->body,
+				'body_bn'       => (string) $r->body_bn,
+				'data'          => json_decode( (string) $r->data, true ) ?: array(),
+				'created_at'    => (string) $r->created_at,
+				'read'          => $read,
+				// Task-style state — meaningful for type='maintenance' today,
+				// harmless (always false/null) for every other notice type.
+				'completed'     => ! empty( $r->completed_at ),
+				'snoozed_until' => $snoozing ? $snoozed_until : null,
 			);
 		}
 
@@ -470,6 +558,41 @@ class AUN_App_Notices {
 			'items'  => $items,
 			'unread' => $unread,
 		);
+	}
+
+	/**
+	 * Mark a maintenance reminder done — "yes, I cleaned it". Idempotent.
+	 *
+	 * @param int $user_id
+	 * @param int $notice_id
+	 */
+	public static function complete( $user_id, $notice_id ) {
+		self::upsert_state( $user_id, $notice_id, array(
+			'completed_at'  => current_time( 'mysql' ),
+			'snoozed_until' => null, // "done" beats any pending snooze
+		) );
+	}
+
+	/**
+	 * Push a reminder's due-again date forward — "remind me later". Clears
+	 * any earlier completion, so re-snoozing after marking done (rare, but a
+	 * mis-tap should be recoverable) is not a dead end.
+	 *
+	 * @param int $user_id
+	 * @param int $notice_id
+	 * @param int $days      1–14, enforced server-side regardless of what the
+	 *                       app sends.
+	 */
+	public static function snooze( $user_id, $notice_id, $days ) {
+		$days = max( 1, min( 14, (int) $days ) );
+		self::upsert_state( $user_id, $notice_id, array(
+			// Site-local time, matching every other timestamp in this class
+			// (created_at, read_at, completed_at) — mixing UTC in here would
+			// make snoozed_until compare wrong against current_time('timestamp')
+			// in feed() by the site's UTC offset.
+			'snoozed_until' => date( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS ),
+			'completed_at'  => null,
+		) );
 	}
 
 	/** Upsert one user's state row for a notice. */

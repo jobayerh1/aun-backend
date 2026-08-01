@@ -257,6 +257,18 @@ class AUN_App_REST {
 			'callback'            => array( $this, 'notifications_dismiss' ),
 			'permission_callback' => $auth,
 		) );
+		// v1.37: maintenance reminders become actionable, like a task rather
+		// than a message — "I cleaned it" / "remind me later".
+		register_rest_route( $ns, '/me/notifications/complete', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'notifications_complete' ),
+			'permission_callback' => $auth,
+		) );
+		register_rest_route( $ns, '/me/notifications/snooze', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'notifications_snooze' ),
+			'permission_callback' => $auth,
+		) );
 
 		// ── v1.9: bug reports ──
 		register_rest_route( $ns, '/feedback', array(
@@ -535,6 +547,34 @@ class AUN_App_REST {
 		}
 		AUN_App_Notices::dismiss( $me['user_id'], $id );
 		return $this->ok( array( 'dismissed' => true ) );
+	}
+
+	/** "Yes, I cleaned it" on a maintenance reminder. */
+	public function notifications_complete( $request ) {
+		$me = $this->identity();
+		$id = (int) $request->get_param( 'id' );
+		if ( $id < 1 ) {
+			return $this->err( 'invalid_id', 'Invalid notification.', 400 );
+		}
+		AUN_App_Notices::complete( $me['user_id'], $id );
+		$feed = AUN_App_Notices::feed( $me['user_id'], $me['phone'] );
+		return $this->ok( array( 'completed' => true, 'unread' => $feed['unread'] ) );
+	}
+
+	/** "Remind me later" on a maintenance reminder. */
+	public function notifications_snooze( $request ) {
+		$me   = $this->identity();
+		$id   = (int) $request->get_param( 'id' );
+		$days = (int) $request->get_param( 'days' );
+		if ( $id < 1 ) {
+			return $this->err( 'invalid_id', 'Invalid notification.', 400 );
+		}
+		if ( $days < 1 ) {
+			$days = 3; // sensible default if the app ever omits it
+		}
+		AUN_App_Notices::snooze( $me['user_id'], $id, $days );
+		$feed = AUN_App_Notices::feed( $me['user_id'], $me['phone'] );
+		return $this->ok( array( 'snoozed' => true, 'unread' => $feed['unread'] ) );
 	}
 
 	public function submit_feedback( $request ) {

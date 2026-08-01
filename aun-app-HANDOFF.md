@@ -23,7 +23,26 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.42.0+46**, **plugin 1.36.0 (DB v13)**.
+Current versions: **app 1.43.0+47**, **plugin 1.37.0 (DB v14)**.
+
+## 2026-08-01 — app 1.43.0+47 / plugin 1.37.0 (DB v14): actionable maintenance reminders + welcome-animation dust fix + pending-mood confirmation dialogs
+
+**Actionable maintenance (dust-filter) reminders — home task card + mark done / snooze**
+- Backend: `aun_app_notice_state` gets two new columns, `completed_at` and `snoozed_until` (DB v14 migration, both fresh-install CREATE TABLE and existing-install ALTER TABLE paths covered).
+- New REST endpoints: `POST /me/notifications/complete` and `POST /me/notifications/snooze` (`days`, clamped 1–14 server-side).
+- `AUN_App_Notices::feed()` now returns `completed` and `snoozed_until` per item; a lapsed snooze automatically reports `snoozed_until: null` again (server-side, so the phone's clock is never trusted for this).
+- App: `AppNotice.isActiveTask` = `type == 'maintenance' && !completed && snoozedUntil == null`. New `HomeMaintenanceCard` widget shows any active maintenance reminder directly on Home (above the status strip), with "Mark as done" / "Remind me later" (3 days / 1 week) actions — optimistic UI, re-syncs from server on failure.
+- Notification-centre list now shows a "Done" / "Snoozed" pill next to completed/snoozed maintenance items.
+- **New admin test tool** (WP Admin → AUN App settings → "Maintenance Reminder Test" card): enter any phone number that has logged into the app at least once and pick day 30/60/90 — sends a real reminder immediately (push + in-app), so the pipeline can be verified without waiting on the real 30-day ERP schedule. Test sends use a separate dedup namespace (`admintest:`) so they never collide with or get suppressed by the real cron path, and can be repeated freely.
+- Tests: 22 new PHP bench tests (schema, feed defaults, complete/snooze endpoints, snooze clamping, lapsed-snooze-reactivates, invalid-id rejection, admin test-tool incl. dedup/repeatability) + 6 new Flutter unit tests (`isActiveTask` logic, JSON parsing incl. backward-compatible defaults for older responses) — all passing. Full existing suite (64 Flutter tests total) re-run with zero regressions.
+
+**Welcome onboarding animation — dust-mote physics fix**
+- Fixed a bug where dust motes appeared to move in a "trail, faster in one direction line by line": speed was accidentally locked to each mote's screen position (checkerboard pattern) instead of being independent. Motes now get independently-randomized speed/lane, explicitly balanced across buckets so small-N randomness can't accidentally clump one speed on one side. Regression test added (`test/welcome_dust_test.dart`).
+
+**Pending-mood confirmation dialogs**
+- Spare-parts and repair-request "request submitted" confirmation dialogs now use the existing `ProjectorSceneArt(mood: ProjectorMood.pending)` character animation instead of a static emoji icon, matching the request's status.
+
+**To deploy this round:** re-upload `aun-app-api.zip` to WordPress (plugin 1.37.0 — DB v14 migration runs automatically on activation) **and** rebuild the APK via `build-aun-app.cmd` (app 1.43.0+47) — this round touches both sides, so both steps are required.
 
 Also: **osTicket bridge** (deploys to support.smartliving.com.bd, osTicket v1.18.4) lives at
 `<workdir>\osticket-bridge\aun-app-bridge\` (api.php + bridge-config.sample.php + .htaccess).

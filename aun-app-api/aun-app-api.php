@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.36.0
+ * Version:           1.37.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,13 +19,15 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.36.0' );
+define( 'AUN_APP_API_VERSION', '1.37.0' );
+// v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
+// maintenance reminders — mark done / remind me later).
 // v13 = adds aun_app_content.app_downloadable (per-file "downloadable in app").
 // v12 = adds aun_app_feedback.image_url (bug-report screenshot).
 // v11 = aun_app_repairs.last_erp_status (repair-status change push).
 // v10 = the aun_app_dismissed ledger. Bumping re-runs activation so existing
 // installs get new columns + crons.
-define( 'AUN_APP_API_DB_VERSION', '13' );
+define( 'AUN_APP_API_DB_VERSION', '14' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -359,6 +361,8 @@ function aun_app_api_activate() {
 		notice_id bigint(20) unsigned NOT NULL,
 		read_at datetime DEFAULT NULL,
 		dismissed tinyint(1) NOT NULL DEFAULT 0,
+		completed_at datetime DEFAULT NULL,
+		snoozed_until datetime DEFAULT NULL,
 		PRIMARY KEY (id),
 		UNIQUE KEY user_notice_idx (user_id, notice_id),
 		KEY user_idx (user_id)
@@ -385,6 +389,16 @@ function aun_app_api_activate() {
 	$fb_cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM $feedback" );
 	if ( ! in_array( 'image_url', $fb_cols, true ) ) {
 		$wpdb->query( "ALTER TABLE $feedback ADD COLUMN image_url varchar(500) NOT NULL DEFAULT ''" );
+	}
+
+	// v14: maintenance reminders become actionable — "mark as done" / "remind
+	// me later" — instead of a notification-centre item you can only dismiss.
+	$notice_state_cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM $notice_state" );
+	if ( ! in_array( 'completed_at', $notice_state_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $notice_state ADD COLUMN completed_at datetime DEFAULT NULL" );
+	}
+	if ( ! in_array( 'snoozed_until', $notice_state_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $notice_state ADD COLUMN snoozed_until datetime DEFAULT NULL" );
 	}
 
 	// v6: warranty duration exactly as the ERP product defines it (what the

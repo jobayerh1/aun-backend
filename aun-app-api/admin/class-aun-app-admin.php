@@ -1015,6 +1015,19 @@ class AUN_App_Admin {
 			}
 		}
 
+		// "Send test reminder": a REAL maintenance notice + push, right now,
+		// to any phone that has an app account — the only way to see one
+		// without waiting on the real 30/60/90-day schedule.
+		if ( isset( $_POST['aun_maint_test_nonce'] ) && wp_verify_nonce( $_POST['aun_maint_test_nonce'], 'aun_app_maint_test' ) ) {
+			$result = AUN_App_Notices::send_test_maintenance(
+				(string) ( $_POST['maint_test_phone'] ?? '' ),
+				(int) ( $_POST['maint_test_offset'] ?? 30 )
+			);
+			$class  = ! empty( $result['ok'] ) ? 'notice-success' : 'notice-error';
+			echo '<div class="notice ' . esc_attr( $class ) . '"><p><strong>Maintenance reminder test:</strong> '
+				. esc_html( (string) $result['message'] ) . '</p></div>';
+		}
+
 		// "Test TMDB": a live check of the "what to watch" key.
 		if ( isset( $_POST['aun_tmdb_test_nonce'] ) && wp_verify_nonce( $_POST['aun_tmdb_test_nonce'], 'aun_app_tmdb_test' ) ) {
 			$diag  = AUN_App_Watch::diagnostic();
@@ -1370,6 +1383,27 @@ class AUN_App_Admin {
 			</form>
 		</div>
 		<?php endif; ?>
+
+		<div class="aun-card">
+			<h2><span class="dashicons dashicons-clock"></span> Maintenance Reminder Test</h2>
+			<p class="description" style="max-width:720px">
+				The real reminders arrive 30/60/90 days after an eligible purchase — there is no way
+				to see one sooner. This sends a REAL reminder right now to any phone number that has
+				logged into the app at least once: it appears in the notification panel, as a task
+				card on the Home screen, and (if push is set up) as a push notification. Use it to
+				verify the whole thing works before waiting on the real schedule.
+			</p>
+			<form method="post" style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+				<?php wp_nonce_field( 'aun_app_maint_test', 'aun_maint_test_nonce' ); ?>
+				<input type="text" name="maint_test_phone" placeholder="e.g. 01700000000" style="width:200px" />
+				<select name="maint_test_offset">
+					<option value="30">Day 30 — first reminder</option>
+					<option value="60">Day 60 — second reminder</option>
+					<option value="90">Day 90 — final notice</option>
+				</select>
+				<button type="submit" class="button button-secondary">Send test reminder</button>
+			</form>
+		</div>
 
 		<div class="aun-card">
 			<h2><span class="dashicons dashicons-info"></span> Testing note</h2>
