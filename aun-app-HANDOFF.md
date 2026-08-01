@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.41.0+45**, **plugin 1.36.0 (DB v13)**.
+Current versions: **app 1.42.0+46**, **plugin 1.36.0 (DB v13)**.
 
 Also: **osTicket bridge** (deploys to support.smartliving.com.bd, osTicket v1.18.4) lives at
 `<workdir>\osticket-bridge\aun-app-bridge\` (api.php + bridge-config.sample.php + .htaccess).
@@ -1627,3 +1627,31 @@ AOT release compile OK. Camera **confirmed working on the user's phone**.
     the new mood is covered automatically), AOT OK, asset confirmed in the bundle.
   - ⚠️ **APP-ONLY — rebuild the APK.** Plugin stays 1.36.0. Previews kept for reference:
     `aun-welcome-animation-preview.html`.
+- **v1.47.0** — (2026-08-01, app 1.42.0+46, plugin unchanged) — APP-ONLY: dust physics + status icons
+  - **(1) ⚠️ REGRESSION FIXED — welcome-mood dust "moved in lines".** Real bug in the code that
+    shipped in v1.46, not a perception issue: `trips = 1 + (i % 2)` alternated 1,2,1,2… in lock-step
+    with the particle's own index — which was ALSO its position along the beam (`off = i/16 + …`).
+    That's a perfect checkerboard: exactly half the motes travelled at 2× the other half, arranged in
+    strict alternating order. It read as organised lanes because it *was* organised, just not on
+    purpose. Same root cause as the `sin(phase * 0.5)` non-integer-multiplier bug from v1.31/v1.36 —
+    deriving a visual parameter from loop-position math instead of treating it as data.
+    Fix: new `_DustMote` (off/trips/lane/wobAmp/wobPhase/radius), generated ONCE with a seeded
+    `Random` — genuinely independent per particle, not a formula of `i`. ⚠️ Second bug caught by the
+    new test before it shipped: with only 16 motes across 3 speed buckets, pure independent
+    randomness can (and with the first seed tried, DID) land an entire speed bucket on one side of
+    the beam by chance — a smaller-scale repeat of the same bug, from luck instead of a formula. Fixed
+    by explicitly BALANCING `trips` and `lane` (even spread, then each shuffled independently), so
+    speed and position are uncorrelated **by construction**, not by hoping the RNG behaves.
+    `trips` stays a whole number (1/2/3) — the standing rule that a loop-position multiplier must be
+    an integer or the loop snaps.
+  - **(2) Spare-parts and repair submit confirmations now use the projector buddy.** Both dialogs
+    showed a static emoji (🛠️ for parts, 📦 for repair). Replaced with
+    `ProjectorSceneArt(mood: ProjectorMood.pending, size: 150)` — the same waiting/hourglass mood the
+    device-registration success dialog already uses for "received, review in progress" (see
+    `register_device_screen.dart`). One visual language for every "we got it, hang tight" moment in
+    the app, not three different ones.
+  - Tests: NEW `test/welcome_dust_test.dart` (2 — renders without throwing; trip counts stay whole
+    AND are not a fixed alternating pattern AND no speed bucket clusters on one side of the beam),
+    exposed via a `@visibleForTesting` seam (`debugDustMoteSpeeds()`) rather than weakening the
+    painter's privacy. Full suite: analyze clean, **58** tests, AOT OK.
+  - ⚠️ **APP-ONLY — rebuild the APK.** Plugin stays 1.36.0.

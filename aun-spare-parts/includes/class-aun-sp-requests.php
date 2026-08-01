@@ -275,6 +275,20 @@ class AUN_SP_Requests {
 		// sometimes submit twice). Shown so you can reject the duplicate in a click.
 		$this->duplicate_notice( $r );
 
+		// Parts marked "Quoted" but the request never entered the approval flow —
+		// the customer has NO Approve/Decline buttons and never got the quote SMS.
+		// (Requests saved before this was fixed sit in exactly this state.)
+		$has_quoted = false;
+		foreach ( (array) $items as $it ) {
+			if ( 'quoted' === $it->line_status ) {
+				$has_quoted = true;
+				break;
+			}
+		}
+		if ( $has_quoted && ! in_array( $r->overall_status, array( 'quote_sent', 'approved', 'declined', 'closed', 'rejected' ), true ) ) {
+			echo '<div class="notice notice-warning inline" style="max-width:820px;"><p><strong>This quote has not been sent.</strong> Parts are marked &ldquo;Quoted&rdquo;, but the customer has no Approve / Decline buttons and has not been texted the price. Click <strong>Send quote for approval</strong> below to send it.</p></div>';
+		}
+
 		// Hard-to-source flag.
 		if ( $age_yrs !== null && $age_yrs >= $hard_yrs ) {
 			echo '<div class="notice notice-warning inline"><p><strong>Heads up:</strong> this device is about ' . (int) $age_yrs . ' years old — parts may be hard or impossible to source from the factory.</p></div>';
@@ -356,7 +370,12 @@ class AUN_SP_Requests {
 		echo '<p><button class="button button-primary" name="save_updates" value="1">Save updates</button></p>';
 
 		echo '<hr style="margin:18px 0;"><h3>Send a price quote <span style="font-weight:400;color:#646970;">(out-of-warranty)</span></h3>';
-		echo '<p style="color:#646970;">&ldquo;Save updates&rdquo; only records the prices. To actually charge the customer, click <strong>Send quote for approval</strong> below &mdash; they get an SMS and approve (or decline) on their tracking page. You only order from the factory after they approve.</p>';
+		echo '<p style="color:#646970;">The customer gets an SMS with the price and approves (or declines) it on their tracking page. You only order from the factory after they approve. There are two equivalent ways to send it:</p>';
+		echo '<ul style="color:#646970;list-style:disc;margin:0 0 10px 18px;">';
+		echo '<li>set a part&rsquo;s <strong>Status</strong> to &ldquo;Quoted&rdquo; (with a price) and press <strong>Save updates</strong>, or</li>';
+		echo '<li>press <strong>Send quote for approval</strong> below.</li>';
+		echo '</ul>';
+		echo '<p style="color:#646970;">Either way the total is <strong>qty × unit price</strong> for every priced part. Use the button again to re-send a revised quote.</p>';
 		echo '<p><label>Note to the customer (optional)<br><textarea name="quote_note" rows="2" class="large-text" style="max-width:620px;">' . esc_textarea( (string) $r->quote_note ) . '</textarea></label></p>';
 		if ( $r->quoted_at ) {
 			$state = $r->approved_at
@@ -471,6 +490,7 @@ class AUN_SP_Requests {
 			$qtys     = (array) ( $_POST['item_qty'] ?? array() );
 			$labels   = self::item_statuses();
 			$changes  = array(); // human-readable per-part status changes, for the SMS
+			$became_quoted = false; // a part was moved to "Quoted" in this save
 
 			foreach ( $statuses as $iid => $new ) {
 				$iid = (int) $iid;
@@ -510,7 +530,13 @@ class AUN_SP_Requests {
 				$qty_sfx = $new_qty > 1 ? ' ×' . $new_qty : '';
 				if ( $cur->line_status !== $new ) {
 					$this->log( $id, $iid, 'status_change', $cur->part_label . $qty_sfx . ': ' . $labels[ $cur->line_status ] . ' → ' . $labels[ $new ] );
-					$changes[] = $cur->part_label . $qty_sfx . ': ' . $labels[ $new ];
+					// A part moving INTO "Quoted" is the admin saying "quote this" — it
+					// triggers the real quote flow below instead of a plain parts SMS.
+					if ( 'quoted' === $new ) {
+						$became_quoted = true;
+					} else {
+						$changes[] = $cur->part_label . $qty_sfx . ': ' . $labels[ $new ];
+					}
 				}
 				if ( (int) $cur->qty !== $new_qty ) {
 					$this->log( $id, $iid, 'qty_change', $cur->part_label . ': quantity ' . (int) $cur->qty . ' → ' . $new_qty );
@@ -518,43 +544,22 @@ class AUN_SP_Requests {
 			}
 
 			$quote_note = sanitize_textarea_field( wp_unslash( $_POST['quote_note'] ?? '' ) );
-			// Always recompute the quote total from the saved per-part prices, so it is
-			// never stale (this is what fixed the "total shows 0" bug). unit_price is
-			// PER PIECE, so the total must multiply by qty — otherwise a customer
-			// ordering 3 LCDs would be quoted (and charged) for one.
-			$total   = round( (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(unit_price * (CASE WHEN qty < 1 THEN 1 ELSE qty END)),0) FROM $t_item WHERE request_id = %d", $id ) ), 2 );
-			$current = (string) $wpdb->get_var( $wpdb->prepare( "SELECT overall_status FROM $t_req WHERE id = %d", $id ) );
+			$total      = $this->quote_total( $id );
+			$current    = (string) $wpdb->get_var( $wpdb->prepare( "SELECT overall_status FROM $t_req WHERE id = %d", $id ) );
 
-			// "Send quote for approval" — price the request and ask the customer to approve.
-			if ( isset( $_POST['send_quote'] ) ) {
+			// Sending a quote has TWO entry points and they must behave identically:
+			//   - the explicit "Send quote for approval" button, and
+			//   - simply setting a part's status to "Quoted" and saving, which is what
+			//     the workflow reads like. That second path used to only save the row
+			//     (no quote, no approve/decline for the customer) while still firing a
+			//     generic parts-update SMS — so it LOOKED like the quote had gone out.
+			// Already quote_sent? Don't auto-resend on every save; the button re-sends.
+			$auto_quote = ( $became_quoted && 'quote_sent' !== $current );
+			if ( isset( $_POST['send_quote'] ) || $auto_quote ) {
 				if ( $total <= 0 ) {
-					return '<div class="notice notice-error is-dismissible"><p>Enter a price for at least one part before sending a quote.</p></div>';
+					return '<div class="notice notice-error is-dismissible"><p><strong>No quote was sent.</strong> Enter a price for at least one part first — a quote of ৳0 has nothing for the customer to approve.</p></div>';
 				}
-				$wpdb->update(
-					$t_req,
-					array(
-						'overall_status' => 'quote_sent',
-						'quote_total'    => $total,
-						'quote_note'     => $quote_note,
-						'quoted_at'      => current_time( 'mysql' ),
-						'approved_at'    => null,
-						'updated_at'     => current_time( 'mysql' ),
-					),
-					array( 'id' => $id )
-				);
-
-				// Reflect the quote on the parts themselves: every priced part still sitting
-				// at "Pending" moves to "Quoted" (free / in-warranty parts at ৳0 are left
-				// alone). Without this the line items kept showing "Pending" after a quote.
-				$quoted = (int) $wpdb->query( $wpdb->prepare(
-					"UPDATE $t_item SET line_status = 'quoted', updated_at = %s
-					 WHERE request_id = %d AND line_status = 'pending' AND unit_price > 0",
-					current_time( 'mysql' ), $id
-				) );
-
-				$this->log( $id, 0, 'quote_sent', 'Quote sent — total ৳' . number_format_i18n( $total, 2 ) . ( $quoted ? ' (' . $quoted . ' part(s) marked Quoted)' : '' ) );
-				$extra = $this->sms_customer( $id, 'quote', 'quote_sent', '' );
-				return '<div class="notice notice-success is-dismissible"><p>Quote sent for approval.' . ( $quoted ? ' ' . $quoted . ' part(s) marked &ldquo;Quoted&rdquo;.' : '' ) . $extra . '</p></div>';
+				return $this->do_send_quote( $id, $total, $quote_note, $auto_quote );
 			}
 
 			// Plain save: keep the total current and let the overall status follow the
@@ -621,6 +626,76 @@ class AUN_SP_Requests {
 		}
 
 		return '';
+	}
+
+	/**
+	 * The quote total = Σ (unit price × qty). unit_price is PER PIECE, so the qty
+	 * multiplier is what stops a 3-piece order being charged as one.
+	 *
+	 * Defensive fallback: if the qty column is missing (a site that hasn't run the
+	 * v0.17 migration yet) the multiplied query errors and returns NULL, which would
+	 * silently make every quote ৳0 and refuse to send. In that case fall back to the
+	 * un-multiplied sum rather than pricing the job at nothing.
+	 */
+	private function quote_total( $id ) {
+		global $wpdb;
+		$t_item = AUN_SP_Install::table( 'request_items' );
+
+		$suppress = $wpdb->suppress_errors( true );
+		$sum      = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COALESCE(SUM(unit_price * (CASE WHEN qty < 1 OR qty IS NULL THEN 1 ELSE qty END)),0) FROM $t_item WHERE request_id = %d",
+			$id
+		) );
+		$wpdb->suppress_errors( $suppress );
+
+		if ( null === $sum ) {
+			$sum = $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(unit_price),0) FROM $t_item WHERE request_id = %d", $id ) );
+		}
+		return round( (float) $sum, 2 );
+	}
+
+	/**
+	 * Put the request into "quote sent — awaiting approval": this is what actually
+	 * gives the customer the Approve / Decline buttons on the tracking page and texts
+	 * them the quote. Shared by the button and by marking a part "Quoted".
+	 */
+	private function do_send_quote( $id, $total, $quote_note, $was_auto ) {
+		global $wpdb;
+		$t_req  = AUN_SP_Install::table( 'requests' );
+		$t_item = AUN_SP_Install::table( 'request_items' );
+
+		$wpdb->update(
+			$t_req,
+			array(
+				'overall_status' => 'quote_sent',
+				'quote_total'    => $total,
+				'quote_note'     => $quote_note,
+				'quoted_at'      => current_time( 'mysql' ),
+				'approved_at'    => null,
+				'updated_at'     => current_time( 'mysql' ),
+			),
+			array( 'id' => $id )
+		);
+
+		// Reflect the quote on the parts themselves: every priced part still sitting
+		// at "Pending" moves to "Quoted" (free / in-warranty parts at ৳0 are left
+		// alone). Without this the line items kept showing "Pending" after a quote.
+		$quoted = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $t_item SET line_status = 'quoted', updated_at = %s
+			 WHERE request_id = %d AND line_status = 'pending' AND unit_price > 0",
+			current_time( 'mysql' ), $id
+		) );
+
+		$this->log( $id, 0, 'quote_sent', 'Quote sent — total ৳' . number_format_i18n( $total, 2 ) . ( $quoted ? ' (' . $quoted . ' part(s) marked Quoted)' : '' ) );
+		$extra = $this->sms_customer( $id, 'quote', 'quote_sent', '' );
+
+		$lead = $was_auto
+			? 'Part marked <strong>Quoted</strong>, so the quote was sent for approval (৳' . esc_html( number_format_i18n( $total, 2 ) ) . ').'
+			: 'Quote sent for approval (৳' . esc_html( number_format_i18n( $total, 2 ) ) . ').';
+
+		return '<div class="notice notice-success is-dismissible"><p>' . $lead
+			. ( $quoted ? ' ' . $quoted . ' other part(s) marked &ldquo;Quoted&rdquo;.' : '' )
+			. ' The customer can now Approve or Decline on their tracking page.' . $extra . '</p></div>';
 	}
 
 	/* --------------------------------------------------------------- Notifications */
@@ -784,8 +859,17 @@ class AUN_SP_Requests {
 	 * only via their own actions: quote, approval, photo, reject/decline).
 	 */
 	public static function compute_overall( array $line_statuses, $current, $has_approved ) {
+		$started_states = array( 'applied', 'at_factory', 'shipped', 'arrived', 'dispatched', 'delivered' );
+
 		if ( in_array( $current, array( 'quote_sent', 'waiting_customer', 'declined', 'rejected' ), true ) ) {
-			return $current;
+			// One exception to "a state waiting on the customer is sticky": once a part
+			// has actually been ordered, the admin has decided to proceed regardless of
+			// the quote, so let the status follow the work. Without this a request whose
+			// customer never answers stays "awaiting approval" for ever, even after the
+			// parts ship. Declined/rejected/waiting-on-photo stay sticky.
+			if ( 'quote_sent' !== $current || ! array_intersect( $line_statuses, $started_states ) ) {
+				return $current;
+			}
 		}
 		$all = count( $line_statuses );
 		if ( $all === 0 ) {
