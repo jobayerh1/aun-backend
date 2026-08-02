@@ -42,6 +42,83 @@ class AUN_App_Admin {
 		wp_send_json_success( $result );
 	}
 
+	/**
+	 * Exactly what the in-app Projector Planner can see, and where each figure
+	 * came from.
+	 *
+	 * Without this the planner fails silently in a way that looks like broken
+	 * code but is actually missing product data: every projector with no stated
+	 * throw ratio falls back to the same 1.35 default, so every model behaves
+	 * identically and the picker appears to do nothing. This makes that visible
+	 * and says which product to fix.
+	 */
+	private function planner_diagnostics() {
+		if ( ! class_exists( 'AUN_App_Projectors' ) ) {
+			return;
+		}
+
+		echo '<div class="aun-card">';
+		echo '<h2><span class="dashicons dashicons-visibility"></span> Projector Planner</h2>';
+
+		if ( ! AUN_App_Projectors::available() ) {
+			echo '<p class="description">WooCommerce is not active, so the planner has no catalogue to show.</p></div>';
+			return;
+		}
+
+		$cats      = implode( ', ', AUN_App_Projectors::categories() );
+		$catalogue = AUN_App_Projectors::catalogue( true );
+
+		echo '<p class="description" style="max-width:820px">These are the ONLY products the app offers in the planner: category <code>'
+			. esc_html( $cats ) . '</code>, minus anything marked discontinued. '
+			. 'A projector with no stated throw ratio silently falls back to 1.35, which makes it behave exactly like every other guessed model — fill those in on the product page.</p>';
+
+		if ( empty( $catalogue ) ) {
+			echo '<p style="color:#b32d2e;font-weight:600;margin-top:12px">No products matched. '
+				. 'Check that the category slug above is right — the projector catalogue is at /projector-price/, so the slug should be <code>projector-price</code>.</p></div>';
+			return;
+		}
+
+		$guessed = 0;
+		echo '<table class="widefat striped" style="margin-top:12px"><thead><tr>'
+			. '<th>Projector</th><th>Throw ratio</th><th>Source</th><th>Min / Max screen</th><th>Aspect</th>'
+			. '</tr></thead><tbody>';
+
+		foreach ( $catalogue as $p ) {
+			$source = (string) ( $p['sources']['throw_ratio'] ?? 'default' );
+			$is_guess = ! $p['exact'];
+			if ( $is_guess ) {
+				$guessed++;
+			}
+			$label = array(
+				'meta'      => '<span style="color:#00794c;font-weight:600">Set on product</span>',
+				'extracted' => '<span style="color:#996800;font-weight:600">Read from description</span>',
+				'default'   => '<span style="color:#b32d2e;font-weight:700">GUESSED — please set</span>',
+			);
+			echo '<tr>'
+				. '<td><strong>' . esc_html( $p['name'] ) . '</strong></td>'
+				. '<td>' . esc_html( number_format( (float) $p['throw_ratio'], 2 ) ) . ':1</td>'
+				. '<td>' . ( $label[ $source ] ?? esc_html( $source ) ) . '</td>'
+				. '<td>' . ( $p['min_screen'] ? (int) $p['min_screen'] . '"' : '—' ) . ' / '
+					. ( $p['max_screen'] ? (int) $p['max_screen'] . '"' : '—' ) . '</td>'
+				. '<td>' . esc_html( $p['aspect'] ) . '</td>'
+				. '</tr>';
+		}
+		echo '</tbody></table>';
+
+		echo '<p class="description" style="margin-top:10px">'
+			. esc_html( count( $catalogue ) ) . ' projector(s) in the planner';
+		if ( $guessed > 0 ) {
+			echo ' — <strong style="color:#b32d2e">' . (int) $guessed
+				. ' still using a guessed throw ratio.</strong> Until those are set, those models all behave the same in the app.';
+		} else {
+			echo ' — every one has real optics data.';
+		}
+		echo '</p>';
+
+		echo '<p class="description" style="margin-top:6px">Missing a max screen size caps the planner at its default 15 ft. Set “Optimal Max Screen” on the product to tighten it per model.</p>';
+		echo '</div>';
+	}
+
 	public function menu() {
 		// First argument is the PAGE title (the browser tab), second is the MENU
 		// label. They deliberately differ: a page titled just "Dashboard" gave a
@@ -488,6 +565,8 @@ class AUN_App_Admin {
 				<button type="submit" class="button button-secondary">Run verification sweep now</button>
 			</form>
 		</div>
+
+		<?php $this->planner_diagnostics(); ?>
 
 		<div class="aun-card aun-endpoints">
 			<h2><span class="dashicons dashicons-rest-api"></span> API Base URL</h2>
