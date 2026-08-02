@@ -5,7 +5,7 @@
  *              real-world screen-size physics, human-scale reference, living-room decor,
  *              and Smart Optimal Projection Limiter. (v3.3.4 — slider hint fires on scroll-into-view;
  *              smooth glide w/ clean 0.5 ft steps; thumb ring pulses until the visitor interacts.)
- * Version:     3.3.4
+ * Version:     3.4.0
  * Author:      Smart Living Bangladesh
  */
 
@@ -79,7 +79,90 @@ class AUN_Throw_Calculator {
      *  SPEC EXTRACTORS  ($product_id removed — was never used)
      * ═══════════════════════════════════════════════════════════ */
 
-    private static function extract_throw_ratio( string $meta_string, string $desc ): float|false {
+    /**
+     * Resolve every projection spec for a product, in one place.
+     *
+     * This is the SINGLE source of truth for "what are this projector's optics",
+     * shared by the website shortcode below and by the AUN Care app (which reads
+     * it through the AUN App API's /projectors endpoint). Nothing about a
+     * projector is hardcoded anywhere else — if a number is wrong, it is wrong
+     * here or in the product data, not in three different places.
+     *
+     * Resolution order per field: explicit admin meta → regex-extracted from the
+     * product's own specs/description → a documented fallback. `sources` reports
+     * which of the three answered, so a caller can tell the customer when a
+     * figure is an estimate rather than presenting a guess as fact.
+     *
+     * @param int $product_id WooCommerce product id.
+     * @return array{throw_ratio:float,min_screen:int,max_screen:int,min_distance_m:float,sources:array<string,string>}
+     */
+    public static function specs( int $product_id ): array {
+        $all_meta    = get_post_meta( $product_id );
+        $meta_string = html_entity_decode( wp_strip_all_tags(
+            wp_json_encode( $all_meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES )
+        ) );
+
+        $desc     = '';
+        $product  = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : null;
+        if ( $product && is_a( $product, 'WC_Product' ) ) {
+            $desc = html_entity_decode( wp_strip_all_tags(
+                $product->get_description() . ' ' . $product->get_short_description()
+            ) );
+        }
+
+        $sources = array();
+
+        $throw_ratio = (float) get_post_meta( $product_id, '_aun_throw_ratio', true );
+        if ( $throw_ratio >= 0.1 ) {
+            $sources['throw_ratio'] = 'meta';
+        } else {
+            $extracted = self::extract_throw_ratio( $meta_string, $desc );
+            if ( false !== $extracted ) {
+                $throw_ratio            = $extracted;
+                $sources['throw_ratio'] = 'extracted';
+            } else {
+                // A standard-lens projector. Deliberately still reported as
+                // 'default' so the app can label the result an estimate.
+                $throw_ratio            = 1.35;
+                $sources['throw_ratio'] = 'default';
+            }
+        }
+
+        $min_screen = (int) get_post_meta( $product_id, '_aun_min_screen_size', true );
+        $sources['min_screen'] = $min_screen > 0 ? 'meta' : 'none';
+
+        $min_distance_m = 0.0;
+        if ( $min_screen <= 0 ) {
+            $d = self::extract_min_projection_distance( $meta_string, $desc );
+            if ( false !== $d ) {
+                $min_distance_m           = $d;
+                $sources['min_distance'] = 'extracted';
+            }
+        }
+
+        $max_screen = (int) get_post_meta( $product_id, '_aun_max_screen_size', true );
+        if ( $max_screen > 0 ) {
+            $sources['max_screen'] = 'meta';
+        } else {
+            $extracted = self::extract_max_screen_size( $meta_string, $desc );
+            if ( false !== $extracted ) {
+                $max_screen            = $extracted;
+                $sources['max_screen'] = 'extracted';
+            } else {
+                $sources['max_screen'] = 'none';
+            }
+        }
+
+        return array(
+            'throw_ratio'    => (float) $throw_ratio,
+            'min_screen'     => (int) $min_screen,
+            'max_screen'     => (int) $max_screen,
+            'min_distance_m' => (float) $min_distance_m,
+            'sources'        => $sources,
+        );
+    }
+
+    public static function extract_throw_ratio( string $meta_string, string $desc ): float|false {
         $pattern = '/(?:Projection|Throw)\s*Ratio.*?([0-9\.]+):1/i';
         foreach ( [ $meta_string, $desc ] as $text ) {
             if ( preg_match( $pattern, $text, $m ) ) {
@@ -90,7 +173,7 @@ class AUN_Throw_Calculator {
         return false;
     }
 
-    private static function extract_min_projection_distance( string $meta_string, string $desc ): float|false {
+    public static function extract_min_projection_distance( string $meta_string, string $desc ): float|false {
         $pattern = '/(?:Projection|Throw)\s*Distance[^\d]*([\d\.]+)/iu';
         foreach ( [ $meta_string, $desc ] as $text ) {
             if ( preg_match( $pattern, $text, $m ) ) {
@@ -101,7 +184,7 @@ class AUN_Throw_Calculator {
         return false;
     }
 
-    private static function extract_max_screen_size( string $meta_string, string $desc ): int|false {
+    public static function extract_max_screen_size( string $meta_string, string $desc ): int|false {
         $pattern = '/(?:Max Projection|Projection Size|Screen Size).*?(?:[\d\.]+\s*(?:-|to|~|–|—)\s*)?(\d{2,3})\s*(?:″|inch|\"|\')/i';
         foreach ( [ $meta_string, $desc ] as $text ) {
             if ( preg_match( $pattern, $text, $m ) ) {
@@ -122,29 +205,12 @@ class AUN_Throw_Calculator {
 
         $product_id = $product->get_id();
 
-        $all_meta    = get_post_meta( $product_id );
-        $meta_string = html_entity_decode( wp_strip_all_tags(
-            wp_json_encode( $all_meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES )
-        ) );
-        $desc = html_entity_decode( wp_strip_all_tags(
-            $product->get_description() . ' ' . $product->get_short_description()
-        ) );
-
-        $throw_ratio = (float) get_post_meta( $product_id, '_aun_throw_ratio', true );
-        if ( $throw_ratio < 0.1 ) {
-            $throw_ratio = self::extract_throw_ratio( $meta_string, $desc ) ?: 1.35;
-        }
-
-        $min_size_override  = (int) get_post_meta( $product_id, '_aun_min_screen_size', true );
-        $extracted_min_dist = 0;
-        if ( $min_size_override <= 0 ) {
-            $extracted_min_dist = self::extract_min_projection_distance( $meta_string, $desc ) ?: 0;
-        }
-
-        $max_size = (int) get_post_meta( $product_id, '_aun_max_screen_size', true );
-        if ( $max_size <= 0 ) {
-            $max_size = self::extract_max_screen_size( $meta_string, $desc ) ?: 0;
-        }
+        // One resolver for the website and the app — see self::specs().
+        $specs              = self::specs( $product_id );
+        $throw_ratio        = $specs['throw_ratio'];
+        $min_size_override  = $specs['min_screen'];
+        $extracted_min_dist = $specs['min_distance_m'];
+        $max_size           = $specs['max_screen'];
 
         $default_inches = 80;
         $default_feet   = round( ( ( $default_inches / 1.1473 ) * $throw_ratio / 12 ) * 2 ) / 2;

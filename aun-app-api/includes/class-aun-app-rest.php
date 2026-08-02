@@ -203,6 +203,17 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		// PUBLIC on purpose: the projector planner is the one feature a customer
+		// uses BEFORE they own anything, so requiring a login would gate the
+		// only part of the app that can win a sale.
+		register_rest_route( $ns, '/projectors', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'projectors' ),
+			// Public, but signs the caller in when they DO have a token so the
+			// planner can open on the projector they already own.
+			'permission_callback' => array( $this, 'auth_optional' ),
+		) );
+
 		register_rest_route( $ns, '/parts/catalog', array(
 			'methods'             => 'GET',
 			'callback'            => array( $this, 'parts_catalog' ),
@@ -689,6 +700,40 @@ class AUN_App_REST {
 		return $this->ok( $result );
 	}
 
+	/**
+	 * Projector catalogue + optics for the in-app planner.
+	 *
+	 * No auth: a prospective buyer has no account yet. When the caller IS
+	 * logged in we additionally say which catalogue entry matches each of their
+	 * registered projectors, so the planner can open on the one they own rather
+	 * than making an existing customer pick their own model out of a list.
+	 */
+	public function projectors( $request ) {
+		$models = AUN_App_Projectors::catalogue();
+
+		$mine = array();
+		// identity() is safe to call unauthenticated — it returns an empty
+		// phone/user for an anonymous caller, which is the normal case here.
+		$me = $this->identity();
+		if ( ! empty( $me['user_id'] ) && class_exists( 'AUN_App_Warranty' ) && AUN_App_Warranty::available() ) {
+			foreach ( (array) AUN_App_Warranty::get_devices( $me['phone'], (int) $me['user_id'] ) as $device ) {
+				$product_id = AUN_App_Projectors::match_model( (string) ( $device['model'] ?? '' ) );
+				if ( $product_id > 0 ) {
+					$mine[] = array(
+						'serial'     => (string) ( $device['serial'] ?? '' ),
+						'model'      => (string) ( $device['model'] ?? '' ),
+						'product_id' => $product_id,
+					);
+				}
+			}
+		}
+
+		return $this->ok( array(
+			'models' => $models,
+			'mine'   => $mine,
+		) );
+	}
+
 	public function parts_catalog() {
 		return $this->ok( array(
 			'available' => AUN_App_Services::parts_available(),
@@ -970,6 +1015,33 @@ class AUN_App_REST {
 		wp_set_current_user( $user->ID );
 		$this->token_row = $row;
 
+		return true;
+	}
+
+	/**
+	 * Permission callback for routes that are PUBLIC but better when signed in.
+	 *
+	 * Always allows the request, but authenticates first when a valid token
+	 * happens to be present. Needed because wp_set_current_user() only runs
+	 * inside auth_required(): a route using '__return_true' would see every
+	 * caller as anonymous even with a perfectly good token, so any
+	 * personalisation on such a route would silently never happen.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return true Always.
+	 */
+	public function auth_optional( $request ) {
+		$raw = $this->bearer( $request );
+		if ( '' !== $raw ) {
+			$row = AUN_App_Tokens::validate( $raw );
+			if ( $row ) {
+				$user = get_user_by( 'id', (int) $row->user_id );
+				if ( $user ) {
+					wp_set_current_user( $user->ID );
+					$this->token_row = $row;
+				}
+			}
+		}
 		return true;
 	}
 

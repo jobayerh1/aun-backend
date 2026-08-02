@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.39.0
+ * Version:           1.40.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.39.0' );
+define( 'AUN_APP_API_VERSION', '1.40.0' );
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
 // v13 = adds aun_app_content.app_downloadable (per-file "downloadable in app").
@@ -67,6 +67,7 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-greeting.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-help.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-tickets.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-watch.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-projectors.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-rest.php';
 
 if ( is_admin() ) {
@@ -553,6 +554,12 @@ add_action( 'aun_app_repair_poll', 'aun_app_api_repair_poll_cron' );
 // customer by SMS. This bridges its status changes into the app's notification
 // centre + push — above all "quote sent", which the customer must answer.
 add_action( 'aun_sp_status_changed', array( 'AUN_App_Services', 'on_parts_status_changed' ), 10, 2 );
+
+// The planner catalogue is cached for hours, so editing a projector's throw
+// ratio would otherwise not reach the app until the cache expired — long enough
+// to look broken while you're correcting a figure.
+add_action( 'woocommerce_update_product', array( 'AUN_App_Projectors', 'flush' ) );
+add_action( 'woocommerce_new_product', array( 'AUN_App_Projectors', 'flush' ) );
 
 /**
  * Upgrade path for sites where the plugin was activated before v1.1
