@@ -226,6 +226,18 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		register_rest_route( $ns, '/me/referral', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'referral_summary' ),
+			'permission_callback' => $auth,
+		) );
+
+		register_rest_route( $ns, '/me/referral/claim', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'referral_claim' ),
+			'permission_callback' => $auth,
+		) );
+
 		register_rest_route( $ns, '/parts/decision', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'parts_decision' ),
@@ -731,6 +743,38 @@ class AUN_App_REST {
 		return $this->ok( array(
 			'models' => $models,
 			'mine'   => $mine,
+		) );
+	}
+
+	/** This customer's referral code, stats and earned rewards. */
+	public function referral_summary() {
+		$me = $this->identity();
+		return $this->ok( AUN_App_Referrals::summary( (int) $me['user_id'] ) );
+	}
+
+	/**
+	 * Claim a friend's referral code.
+	 *
+	 * Every fraud check lives in AUN_App_Referrals::claim(); this only shapes
+	 * the reply. The rejection REASON is passed straight through, because
+	 * "referral codes are for first-time customers" is a fair answer that
+	 * saves a support message, whereas a generic failure would not.
+	 */
+	public function referral_claim( $request ) {
+		$me   = $this->identity();
+		$code = (string) $request->get_param( 'code' );
+
+		$result = AUN_App_Referrals::claim( (int) $me['user_id'], $code );
+		if ( empty( $result['ok'] ) ) {
+			return $this->err(
+				(string) $result['code'],
+				(string) $result['message'],
+				'unavailable' === $result['code'] ? 503 : 400
+			);
+		}
+		return $this->ok( array(
+			'coupon'  => (string) ( $result['coupon'] ?? '' ),
+			'message' => (string) $result['message'],
 		) );
 	}
 

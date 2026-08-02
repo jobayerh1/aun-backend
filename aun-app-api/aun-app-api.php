@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.42.0
+ * Version:           1.43.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,8 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.42.0' );
+define( 'AUN_APP_API_VERSION', '1.43.0' );
+// v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
 // v13 = adds aun_app_content.app_downloadable (per-file "downloadable in app").
@@ -27,7 +28,7 @@ define( 'AUN_APP_API_VERSION', '1.42.0' );
 // v11 = aun_app_repairs.last_erp_status (repair-status change push).
 // v10 = the aun_app_dismissed ledger. Bumping re-runs activation so existing
 // installs get new columns + crons.
-define( 'AUN_APP_API_DB_VERSION', '14' );
+define( 'AUN_APP_API_DB_VERSION', '15' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -68,6 +69,7 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-help.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-tickets.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-watch.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-projectors.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-referrals.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-rest.php';
 
 if ( is_admin() ) {
@@ -121,6 +123,16 @@ function aun_app_api_default_options() {
 		'onedrive_client_secret' => '',
 		'onedrive_tenant'        => '',       // Directory (tenant) ID, or 'common'.
 		'onedrive_refresh_token' => '',       // Delegated grant (optional; blank = app-only).
+		// Referral programme. Ships OFF with zero amounts, so nothing can be
+		// claimed until an admin has deliberately chosen the numbers.
+		'referral_enabled'         => 0,
+		'referral_friend_type'     => 'percent', // percent | fixed
+		'referral_friend_amount'   => 0,         // the friend's first-order discount
+		'referral_referrer_amount' => 0,         // thank-you credit, in Tk
+		'referral_min_order'       => 0,         // minimum spend to qualify
+		'referral_monthly_cap'     => 5,         // rewards per referrer per 30 days
+		'referral_claim_days'      => 30,        // how long a new account may claim
+		'referral_expiry_days'     => 90,        // coupon lifetime
 	);
 }
 
@@ -369,6 +381,41 @@ function aun_app_api_activate() {
 		KEY user_idx (user_id)
 	) $charset;" );
 
+	// v15: referral programme. Two tables: one code per customer, and one row
+	// per claim so a reward can be traced back to the exact order that earned it
+	// (and revoked if that order is later refunded).
+	$referrals = $wpdb->prefix . 'aun_app_referrals';
+	dbDelta( "CREATE TABLE IF NOT EXISTS $referrals (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		user_id bigint(20) unsigned NOT NULL,
+		code varchar(32) NOT NULL,
+		created_at datetime NOT NULL,
+		PRIMARY KEY (id),
+		UNIQUE KEY user_idx (user_id),
+		UNIQUE KEY code_idx (code)
+	) $charset;" );
+
+	$referral_claims = $wpdb->prefix . 'aun_app_referral_claims';
+	dbDelta( "CREATE TABLE IF NOT EXISTS $referral_claims (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		referrer_user_id bigint(20) unsigned NOT NULL,
+		referred_user_id bigint(20) unsigned NOT NULL,
+		referred_phone varchar(32) NOT NULL,
+		code varchar(32) NOT NULL,
+		friend_coupon varchar(64) DEFAULT NULL,
+		reward_coupon varchar(64) DEFAULT NULL,
+		order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		status varchar(16) NOT NULL DEFAULT 'pending',
+		created_at datetime NOT NULL,
+		rewarded_at datetime DEFAULT NULL,
+		PRIMARY KEY (id),
+		KEY referrer_idx (referrer_user_id),
+		KEY status_idx (status),
+		/* One claim per phone number, EVER. Deleting and recreating an account
+		   must not buy a second welcome discount. */
+		UNIQUE KEY phone_idx (referred_phone)
+	) $charset;" );
+
 	// v6: bug reports from the app.
 	$feedback = $wpdb->prefix . 'aun_app_feedback';
 	dbDelta( "CREATE TABLE IF NOT EXISTS $feedback (
@@ -560,6 +607,14 @@ add_action( 'aun_sp_status_changed', array( 'AUN_App_Services', 'on_parts_status
 // to look broken while you're correcting a figure.
 add_action( 'woocommerce_update_product', array( 'AUN_App_Projectors', 'flush' ) );
 add_action( 'woocommerce_new_product', array( 'AUN_App_Projectors', 'flush' ) );
+
+// Referral rewards are paid ONLY on completion — the point at which goods have
+// actually shipped — and clawed back if the order is later reversed. Rewarding
+// any earlier is what makes referral schemes farmable.
+add_action( 'woocommerce_order_status_completed', array( 'AUN_App_Referrals', 'on_order_completed' ) );
+add_action( 'woocommerce_order_status_refunded', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
+add_action( 'woocommerce_order_status_cancelled', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
+add_action( 'woocommerce_order_status_failed', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
 
 /**
  * Upgrade path for sites where the plugin was activated before v1.1
