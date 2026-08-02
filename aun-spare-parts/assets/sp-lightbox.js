@@ -32,7 +32,12 @@
 
 	var open = null; // only ever one lightbox at a time
 
-	function close() {
+	/**
+	 * @param {boolean} immediate Skip the fade-out and tear down now. Used when a
+	 *        second image is opened while this one is still closing — otherwise both
+	 *        overlays sit in the DOM together and the stale one covers the new image.
+	 */
+	function close( immediate ) {
 		if ( ! open ) { return; }
 		var o = open;
 		open = null;
@@ -41,22 +46,28 @@
 		document.documentElement.style.overflow = o.prevOverflow;
 		o.box.classList.remove( 'is-open' );
 
-		// Let the fade-out finish before removing (and skip the wait if the browser
-		// isn't animating, e.g. reduced motion).
 		var done = false;
-		var drop = function () {
+		var drop = function ( restoreFocus ) {
 			if ( done ) { return; }
 			done = true;
 			if ( o.box.parentNode ) { o.box.parentNode.removeChild( o.box ); }
-			if ( o.opener && document.contains( o.opener ) ) { o.opener.focus(); }
+			if ( restoreFocus && o.opener && document.contains( o.opener ) ) { o.opener.focus(); }
 		};
-		o.box.addEventListener( 'transitionend', drop );
-		setTimeout( drop, 320 );
+
+		if ( immediate ) {
+			drop( false ); // the caller is about to take focus itself
+			return;
+		}
+
+		// Let the fade-out finish before removing — with a timeout fallback for when
+		// no transition runs at all (reduced motion, background tab).
+		o.box.addEventListener( 'transitionend', function () { drop( true ); } );
+		setTimeout( function () { drop( true ); }, 320 );
 	}
 
 	function openLightbox( src, caption, root, opener ) {
 		if ( ! src ) { return; }
-		close();
+		close( true ); // tear down any previous one instantly, never stack overlays
 
 		var box = document.createElement( 'div' );
 		box.className = 'aun-sp-lb is-loading';
@@ -113,10 +124,12 @@
 		open = { box: box, onKey: onKey, prevOverflow: prevOverflow, opener: opener || null };
 		document.body.appendChild( box );
 
-		// Next frame so the browser has a starting style to transition FROM.
-		requestAnimationFrame( function () {
-			requestAnimationFrame( function () { box.classList.add( 'is-open' ); } );
-		} );
+		// Force a reflow so the browser commits the closed styles, then flip the class
+		// in the SAME tick — the transition then runs from those styles. (Deliberately
+		// not requestAnimationFrame: rAF is paused in hidden/background tabs, which would
+		// leave the lightbox stuck at opacity 0 instead of just skipping the animation.)
+		void box.offsetWidth;
+		box.classList.add( 'is-open' );
 		btn.focus();
 	}
 

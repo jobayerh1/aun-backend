@@ -56,8 +56,10 @@ class AUN_SP_Form {
 
 	public function register_assets() {
 		wp_register_style( 'aun-sp-form', AUN_SP_URL . 'assets/sp-form.css', array(), AUN_SP_VERSION );
-		wp_register_script( 'aun-sp-form', AUN_SP_URL . 'assets/sp-form.js', array(), AUN_SP_VERSION, true );
-		wp_register_script( 'aun-sp-track', AUN_SP_URL . 'assets/sp-track.js', array(), AUN_SP_VERSION, true );
+		// Shared image lightbox — a dependency of both widgets, so it loads once.
+		wp_register_script( 'aun-sp-lightbox', AUN_SP_URL . 'assets/sp-lightbox.js', array(), AUN_SP_VERSION, true );
+		wp_register_script( 'aun-sp-form', AUN_SP_URL . 'assets/sp-form.js', array( 'aun-sp-lightbox' ), AUN_SP_VERSION, true );
+		wp_register_script( 'aun-sp-track', AUN_SP_URL . 'assets/sp-track.js', array( 'aun-sp-lightbox' ), AUN_SP_VERSION, true );
 	}
 
 	/**
@@ -226,8 +228,13 @@ class AUN_SP_Form {
 									<div class="aun-sp-upload" data-part="<?php echo esc_attr( $key ); ?>" data-required="<?php echo 'required' === $p['photo'] ? '1' : '0'; ?>" hidden>
 										<div class="aun-sp-proof-row">
 											<?php if ( ! empty( $p['ref_image'] ) ) : ?>
-												<a class="aun-sp-refimg" href="<?php echo esc_url( $p['ref_image'] ); ?>" data-full="<?php echo esc_url( $p['ref_image'] ); ?>" title="Example">
-													<img src="<?php echo esc_url( $p['ref_image'] ); ?>" alt="example" loading="lazy">
+												<?php
+												// The caption names the part in the lightbox, so a customer who
+												// opened it from a long list still knows which photo they're on.
+												$example_for = AUN_SP_I18N::current_lang() === 'bn' ? $lbl_bn : $p['label'];
+												?>
+												<a class="aun-sp-refimg" href="<?php echo esc_url( $p['ref_image'] ); ?>" data-full="<?php echo esc_url( $p['ref_image'] ); ?>" data-caption="<?php echo esc_attr( $example_for ); ?>" title="<?php echo esc_attr( $example_for ); ?>">
+													<img src="<?php echo esc_url( $p['ref_image'] ); ?>" alt="<?php echo esc_attr( $example_for ); ?>" loading="lazy">
 													<span><?php echo self::t( 'See example', 'উদাহরণ দেখুন' ); ?></span>
 												</a>
 											<?php endif; ?>

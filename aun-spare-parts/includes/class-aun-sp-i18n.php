@@ -225,6 +225,7 @@ class AUN_SP_I18N {
 					'jsf_dup_track'    => array( 'k' => 'dup_track',    'en' => 'Track my existing request', 'bn' => 'আমার চলমান অনুরোধ ট্র্যাক করুন' ),
 					'jsf_dup_anyway'   => array( 'k' => 'dup_anyway',   'en' => 'This is a different problem — submit anyway', 'bn' => 'এটি ভিন্ন সমস্যা — তবুও জমা দিন' ),
 					'jsf_dup_cancel'   => array( 'k' => 'dup_cancel',   'en' => 'Cancel', 'bn' => 'বাতিল' ),
+					'jsf_lb_close'     => array( 'k' => 'lb_close',     'en' => 'Close', 'bn' => 'বন্ধ করুন' ),
 				),
 			),
 
@@ -251,6 +252,7 @@ class AUN_SP_I18N {
 					'jst_approved_msg' => array( 'k' => 'approved_msg', 'en' => 'Thank you — your quote is approved. We will start sourcing your parts.', 'bn' => 'ধন্যবাদ — আপনার কোটেশন অনুমোদিত হয়েছে। আমরা পার্টস সংগ্রহ শুরু করব।' ),
 					'jst_declined_msg' => array( 'k' => 'declined_msg', 'en' => 'Your quote has been declined. Contact us any time if you change your mind.', 'bn' => 'আপনার কোটেশন বাতিল করা হয়েছে। মত পরিবর্তন হলে যেকোনো সময় যোগাযোগ করুন।' ),
 					'jst_history'      => array( 'k' => 'history',      'en' => 'Progress history', 'bn' => 'অগ্রগতির ইতিহাস' ),
+					'jst_lb_close'     => array( 'k' => 'lb_close',     'en' => 'Close', 'bn' => 'বন্ধ করুন' ),
 				),
 			),
 

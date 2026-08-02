@@ -231,15 +231,18 @@
 				box.appendChild( el( 'div', 'aun-sp-reupload-exh', t( 'match_example' ) ) );
 				var exWrap = el( 'div', 'aun-sp-reupload-examples' );
 				examples.forEach( function ( p ) {
+					var pname = ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
 					var a = el( 'a', 'aun-sp-refimg' );
 					a.href = p.ref_image;
 					a.setAttribute( 'data-full', p.ref_image );
+					a.setAttribute( 'data-caption', pname ); // shown under the lightbox image
+					a.title = pname;
 					var img = el( 'img' );
 					img.src = p.ref_image;
-					img.alt = 'example';
+					img.alt = pname;
 					img.loading = 'lazy';
 					a.appendChild( img );
-					a.appendChild( el( 'span', null, ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label ) );
+					a.appendChild( el( 'span', null, pname ) );
 					exWrap.appendChild( a );
 				} );
 				box.appendChild( exWrap );
@@ -350,22 +353,8 @@
 		}
 	}
 
-	// Reference-image lightbox (delegated) — same behaviour as the request form, used here
-	// for the "take it like this" example photos in the re-upload box.
-	function openLightbox( src ) {
-		if ( ! src ) { return; }
-		var ov = document.createElement( 'div' );
-		ov.className = 'aun-sp-lightbox';
-		var img = document.createElement( 'img' );
-		img.src = src;
-		ov.appendChild( img );
-		ov.addEventListener( 'click', function () { if ( ov.parentNode ) { ov.parentNode.removeChild( ov ); } } );
-		document.body.appendChild( ov );
-	}
-	document.addEventListener( 'click', function ( e ) {
-		var a = e.target && e.target.closest ? e.target.closest( '.aun-sp-refimg' ) : null;
-		if ( a ) { e.preventDefault(); openLightbox( a.getAttribute( 'data-full' ) || a.getAttribute( 'href' ) ); }
-	} );
+	// The "take it like this" example photos open in the shared lightbox
+	// (sp-lightbox.js), which binds itself via a delegated listener.
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		document.querySelectorAll( '.aun-sp-track' ).forEach( init );

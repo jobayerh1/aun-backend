@@ -445,24 +445,8 @@
 		} );
 	}
 
-	// Reference-image lightbox (delegated, works for any part's "See example").
-	function openLightbox( src ) {
-		if ( ! src ) { return; }
-		var ov = document.createElement( 'div' );
-		ov.className = 'aun-sp-lightbox';
-		var img = document.createElement( 'img' );
-		img.src = src;
-		ov.appendChild( img );
-		ov.addEventListener( 'click', function () { if ( ov.parentNode ) { ov.parentNode.removeChild( ov ); } } );
-		document.body.appendChild( ov );
-	}
-	document.addEventListener( 'click', function ( e ) {
-		var a = e.target && e.target.closest ? e.target.closest( '.aun-sp-refimg' ) : null;
-		if ( a ) {
-			e.preventDefault();
-			openLightbox( a.getAttribute( 'data-full' ) || a.getAttribute( 'href' ) );
-		}
-	} );
+	// The reference-image lightbox lives in sp-lightbox.js (shared with the tracking
+	// page) and binds itself via a delegated listener — nothing to wire up here.
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		document.querySelectorAll( '.aun-sp' ).forEach( init );
