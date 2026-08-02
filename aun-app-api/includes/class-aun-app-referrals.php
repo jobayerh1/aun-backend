@@ -578,6 +578,12 @@ class AUN_App_Referrals {
 			$coupon->set_date_expires(
 				date( 'Y-m-d', strtotime( '+' . (int) $s['coupon_expiry_days'] . ' days', current_time( 'timestamp' ) ) )
 			);
+			// The same minimum as the friend's coupon. Without it a ৳500 reward
+			// could be spent on a ৳600 cable — a ~83% discount on an accessory,
+			// which is not what "৳500 off" was meant to mean.
+			if ( $s['min_order_total'] > 0 ) {
+				$coupon->set_minimum_amount( (float) $s['min_order_total'] );
+			}
 			$coupon->set_description( 'AUN Care app referral — thank-you reward' );
 			$coupon->save();
 			return $code;
@@ -659,9 +665,31 @@ class AUN_App_Referrals {
 			}
 		}
 
+		// The customer's OWN welcome coupon, if they claimed someone's code.
+		// Without this it was shown once in a snackbar and then lost — they had
+		// no way to find the code again when they reached checkout.
+		$mine = $wpdb->get_row( $wpdb->prepare(
+			"SELECT friend_coupon, status FROM $claims WHERE referred_user_id = %d LIMIT 1",
+			$user_id
+		) );
+		$my_coupon = '';
+		if ( $mine && ! empty( $mine->friend_coupon )
+			&& self::STATUS_REVOKED !== $mine->status ) {
+			// Only offer it while it can still be spent.
+			$cid = function_exists( 'wc_get_coupon_id_by_code' )
+				? (int) wc_get_coupon_id_by_code( (string) $mine->friend_coupon ) : 0;
+			if ( $cid > 0 ) {
+				$c = new WC_Coupon( $cid );
+				if ( 0 === (int) $c->get_usage_count() ) {
+					$my_coupon = (string) $mine->friend_coupon;
+				}
+			}
+		}
+
 		return array(
 			'enabled'         => self::available(),
 			'code'            => self::available() ? self::code_for( $user_id ) : '',
+			'my_coupon'       => $my_coupon,
 			'friend_type'     => $s['friend_type'],
 			'friend_amount'   => $s['friend_amount'],
 			'referrer_amount' => $s['referrer_amount'],
