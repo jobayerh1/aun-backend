@@ -389,24 +389,40 @@ class AUN_App_Notices {
 	 * @return array<int,array{title:string,title_bn:string,body:string,body_bn:string}>
 	 */
 	public static function maintenance_messages() {
+		/*
+		 * App copy, NOT the SMS copy.
+		 *
+		 * The SMS versions are written for a 160-character billed message with
+		 * no formatting and no way to act on them, so they have to compress
+		 * everything into one dense sentence. In the app the customer has room
+		 * to read, a "Mark as done" button, and their own projector on file —
+		 * so the message can do what the SMS cannot: say plainly WHAT to do,
+		 * WHY, and (by month three) what it costs them not to.
+		 *
+		 * The three-step escalation is kept deliberately, because it matches
+		 * the real risk curve: months one and two are education, month three
+		 * is the warranty consequence. The last one states that consequence
+		 * without threatening — a customer who feels punished stops reading,
+		 * and this is the message that most needs to land.
+		 */
 		return array(
 			30 => array(
-				'title'    => 'AUN Care Tip',
-				'title_bn' => 'AUN যত্ন টিপস',
-				'body'     => "Please clean your projector's dust filter regularly to ensure proper airflow and smooth performance. This helps extend product life.",
-				'body_bn'  => 'সঠিক বাতাস চলাচল ও ভালো পারফরম্যান্সের জন্য প্রজেক্টরের ডাস্ট ফিল্টারটি নিয়মিত পরিষ্কার করুন। এতে প্রজেক্টরের আয়ু বাড়ে।',
+				'title'    => 'Time to clean your dust filter',
+				'title_bn' => 'ডাস্ট ফিল্টার পরিষ্কার করার সময়',
+				'body'     => "Your projector has been with you a month now. Its dust filter pulls in air to keep the lamp cool, and in Bangladesh's dust that filter fills up faster than most people expect.\n\nSwitch the projector off, let it cool, then slide out the filter and rinse or brush the dust away. Let it dry fully before putting it back. Five minutes, once a month, is all it takes.",
+				'body_bn'  => "এক মাস হলো আপনি প্রজেক্টরটি ব্যবহার করছেন। ল্যাম্প ঠান্ডা রাখতে ডাস্ট ফিল্টার বাতাস টেনে নেয়, আর বাংলাদেশের ধুলায় এই ফিল্টার অনেকের ধারণার চেয়ে দ্রুত ভরে যায়।\n\nপ্রজেক্টর বন্ধ করে ঠান্ডা হতে দিন, তারপর ফিল্টারটি বের করে ধুয়ে বা ব্রাশ দিয়ে ধুলা পরিষ্কার করুন। ভালোভাবে শুকিয়ে আবার লাগান। মাসে একবার, মাত্র পাঁচ মিনিট।",
 			),
 			60 => array(
-				'title'    => 'AUN Reminder',
-				'title_bn' => 'AUN রিমাইন্ডার',
-				'body'     => "Dust buildup can block airflow and cause overheating. Clean the dust filter regularly to protect your projector's internal components.",
-				'body_bn'  => 'ধুলা জমে বাতাস চলাচল বন্ধ হয়ে প্রজেক্টর অতিরিক্ত গরম হতে পারে। ভেতরের যন্ত্রাংশ রক্ষায় ডাস্ট ফিল্টার নিয়মিত পরিষ্কার করুন।',
+				'title'    => 'Second reminder: check the dust filter',
+				'title_bn' => 'দ্বিতীয় রিমাইন্ডার: ডাস্ট ফিল্টার দেখুন',
+				'body'     => "A blocked filter is the most common reason a projector starts to struggle. As dust builds up, airflow drops and heat stays inside — you may notice the fan running louder, the picture dimming, or the projector shutting itself off mid-film.\n\nAll of that is avoidable. Clean the filter today and your projector keeps running as it did on day one.",
+				'body_bn'  => "ফিল্টার বন্ধ হয়ে যাওয়াই প্রজেক্টরে সমস্যা শুরুর সবচেয়ে সাধারণ কারণ। ধুলা জমলে বাতাস চলাচল কমে যায় ও ভেতরে তাপ আটকে থাকে — ফ্যানের শব্দ বাড়তে পারে, ছবি কম উজ্জ্বল হতে পারে, এমনকি চলতে চলতে প্রজেক্টর বন্ধ হয়ে যেতে পারে।\n\nএগুলো সহজেই এড়ানো যায়। আজই ফিল্টার পরিষ্কার করুন, প্রজেক্টর প্রথম দিনের মতোই চলবে।",
 			),
 			90 => array(
-				'title'    => 'AUN Important Notice',
-				'title_bn' => 'AUN জরুরি নোটিশ',
-				'body'     => 'Damage from overheating due to blocked ventilation or dust buildup is not covered under warranty. Regular filter cleaning is essential.',
-				'body_bn'  => 'ধুলা জমে বা বাতাস চলাচল বন্ধ হয়ে অতিরিক্ত গরমে হওয়া ক্ষতি ওয়ারেন্টির আওতায় পড়ে না। ফিল্টার নিয়মিত পরিষ্কার করা অত্যাবশ্যক।',
+				'title'    => 'Important: dust damage is not covered by warranty',
+				'title_bn' => 'গুরুত্বপূর্ণ: ধুলাজনিত ক্ষতি ওয়ারেন্টিতে নেই',
+				'body'     => "We want to be straight with you about one thing, because it is the repair we see most often.\n\nYour warranty covers manufacturing faults. It does not cover heat damage caused by a filter that was never cleaned — that is true of every projector brand, not just ours, because the damage comes from use rather than a defect. A burnt-out light engine is an expensive repair, and an entirely preventable one.\n\nPlease clean the filter this week, and keep doing it monthly. If you are unsure how, message us and we will walk you through it.",
+				'body_bn'  => "একটি বিষয় আপনাকে স্পষ্ট করে জানাতে চাই, কারণ এই মেরামতটিই আমরা সবচেয়ে বেশি পাই।\n\nআপনার ওয়ারেন্টি উৎপাদনজনিত ত্রুটি কভার করে। কিন্তু ফিল্টার পরিষ্কার না করার কারণে অতিরিক্ত গরমে হওয়া ক্ষতি কভার করে না — এটি শুধু আমাদের নয়, সব ব্র্যান্ডের ক্ষেত্রেই প্রযোজ্য, কারণ এই ক্ষতি ত্রুটি নয় বরং ব্যবহারের ফল। লাইট ইঞ্জিন পুড়ে গেলে মেরামত ব্যয়বহুল, অথচ এটি পুরোপুরি প্রতিরোধযোগ্য।\n\nএই সপ্তাহেই ফিল্টার পরিষ্কার করুন এবং প্রতি মাসে করতে থাকুন। কীভাবে করবেন বুঝতে না পারলে আমাদের মেসেজ দিন, আমরা দেখিয়ে দেব।",
 			),
 		);
 	}

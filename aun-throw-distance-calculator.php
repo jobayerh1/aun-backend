@@ -3,9 +3,10 @@
  * Plugin Name: AUN Throw Distance Calculator
  * Description: Interactive physics-based projection calculator with 3D room visualisation,
  *              real-world screen-size physics, human-scale reference, living-room decor,
- *              and Smart Optimal Projection Limiter. (v3.3.4 — slider hint fires on scroll-into-view;
- *              smooth glide w/ clean 0.5 ft steps; thumb ring pulses until the visitor interacts.)
- * Version:     3.4.0
+ *              and Smart Optimal Projection Limiter. (v3.5.0 — stats row unit fix: Diagonal, Width and
+ *              Height are now ALL in inches so the three figures are comparable, each with a small
+ *              muted equivalent underneath — cm for the diagonal, feet for width/height.)
+ * Version:     3.5.0
  * Author:      Smart Living Bangladesh
  */
 
@@ -522,6 +523,9 @@ class AUN_Throw_Calculator {
 }
 .aun-tc-stat i       { font-size: 13px; color: var(--brand); margin-bottom: 5px; display: block; }
 .aun-tc-stat-val     { display: block; font-size: 17px; font-weight: 800; color: #0f172a; line-height: 1; margin-bottom: 3px; }
+/* Secondary unit under each figure (cm for the diagonal, feet for width/height) —
+   same "big primary + small muted equivalent" pattern as the distance readout. */
+.aun-tc-stat-sub     { display: block; font-size: 10.5px; font-weight: 600; color: #94a3b8; line-height: 1; margin-bottom: 4px; }
 .aun-tc-stat-lbl     { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
 
 /* ── Distance display ───────────────────────────────────────────────── */
@@ -700,16 +704,19 @@ class AUN_Throw_Calculator {
         <div class="aun-tc-stat">
             <i class="fa-solid fa-display"></i>
             <span class="aun-tc-stat-val" id="<?php echo esc_attr( "{$uid}_s_diag" ); ?>">—</span>
+            <span class="aun-tc-stat-sub" id="<?php echo esc_attr( "{$uid}_s_diag_sub" ); ?>"></span>
             <span class="aun-tc-stat-lbl">Diagonal</span>
         </div>
         <div class="aun-tc-stat">
             <i class="fa-solid fa-arrows-left-right"></i>
             <span class="aun-tc-stat-val" id="<?php echo esc_attr( "{$uid}_s_w" ); ?>">—</span>
+            <span class="aun-tc-stat-sub" id="<?php echo esc_attr( "{$uid}_s_w_sub" ); ?>"></span>
             <span class="aun-tc-stat-lbl">Width</span>
         </div>
         <div class="aun-tc-stat">
             <i class="fa-solid fa-arrows-up-down"></i>
             <span class="aun-tc-stat-val" id="<?php echo esc_attr( "{$uid}_s_h" ); ?>">—</span>
+            <span class="aun-tc-stat-sub" id="<?php echo esc_attr( "{$uid}_s_h_sub" ); ?>"></span>
             <span class="aun-tc-stat-lbl">Height</span>
         </div>
     </div>
@@ -795,6 +802,9 @@ class AUN_Throw_Calculator {
     var sDiag    = el('s_diag');
     var sW       = el('s_w');
     var sH       = el('s_h');
+    var sDiagSub = el('s_diag_sub');
+    var sWSub    = el('s_w_sub');
+    var sHSub    = el('s_h_sub');
 
     if (!slider || !roomEl) return;
 
@@ -893,11 +903,17 @@ class AUN_Throw_Calculator {
         /* Dimensions for stats row */
         var wIn = diagIn / 1.1473;
         var hIn = wIn / (16 / 9);
-        var wFt = (wIn / 12).toFixed(1);
-        var hFt = (hIn / 12).toFixed(1);
+        /* All three headline figures are in INCHES so they are directly comparable —
+           a 100" screen IS 87.2" x 49.0". (Width/height used to be printed in feet,
+           which made the row read as three unrelated numbers.) The small muted line
+           under each gives the practical equivalent: cm for the diagonal (how screens
+           are specced) and feet for width/height (how a wall is measured). */
         sDiag.textContent = rounded + '"';
-        sW.textContent    = wFt + ' ft';
-        sH.textContent    = hFt + ' ft';
+        sW.textContent    = wIn.toFixed(1) + '"';
+        sH.textContent    = hIn.toFixed(1) + '"';
+        if (sDiagSub) sDiagSub.textContent = Math.round(diagIn * 2.54) + ' cm';
+        if (sWSub)    sWSub.textContent    = (wIn / 12).toFixed(1) + ' ft';
+        if (sHSub)    sHSub.textContent    = (hIn / 12).toFixed(1) + ' ft';
 
         /*
          * ── VISUAL SCALING — FIXED SHARED REFERENCE ───────────────────

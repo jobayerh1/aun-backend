@@ -49,10 +49,31 @@ class AUN_App_Projectors {
 	 * @return string[] Empty array = don't filter by category at all.
 	 */
 	public static function categories() {
+		// 'projector-price' is the slug of "Projector Price in Bangladesh"
+		// (/projector-price/) — the real projector catalogue. Without it the
+		// planner listed accessories, screens and mounts, none of which have a
+		// throw ratio.
 		return (array) apply_filters(
 			'aun_app_projector_categories',
-			array( 'projector', 'projectors' )
+			array( 'projector-price' )
 		);
+	}
+
+	/**
+	 * Is this product discontinued?
+	 *
+	 * Uses the same test as the rest of the site (see aun-campaign-bar.php):
+	 * the WooCommerce Discontinued Products plugin marks a product with the
+	 * `dp-discontinued` term in the `product_discontinued` taxonomy. Planning a
+	 * room around a projector nobody can buy wastes the customer's time, so
+	 * these are dropped from the catalogue entirely.
+	 *
+	 * @param int $product_id Product id.
+	 * @return bool
+	 */
+	public static function is_discontinued( $product_id ) {
+		return taxonomy_exists( 'product_discontinued' )
+			&& has_term( 'dp-discontinued', 'product_discontinued', (int) $product_id );
 	}
 
 	/**
@@ -86,17 +107,19 @@ class AUN_App_Projectors {
 
 		$products = wc_get_products( $args );
 
-		// A mis-set category slug would otherwise return an empty planner with
-		// no explanation, which reads as "the feature is broken". Falling back
-		// to the unfiltered catalogue keeps it usable; retarget the category
-		// with the aun_app_projector_categories filter if the list is too wide.
-		if ( empty( $products ) && $cats ) {
-			unset( $args['category'] );
-			$products = wc_get_products( $args );
-		}
+		// NOTE: deliberately NO fallback to the unfiltered catalogue here.
+		// An earlier version did that so a mis-set slug couldn't empty the
+		// planner, but the failure it caused was worse than the one it
+		// prevented: the planner silently filled with screens, mounts and
+		// cables, none of which have a throw ratio. An empty list is an
+		// obvious, fixable problem; a list of the wrong products is not.
 
 		$out = array();
 		foreach ( (array) $products as $product ) {
+			// Don't plan a room around something nobody can buy.
+			if ( self::is_discontinued( (int) $product->get_id() ) ) {
+				continue;
+			}
 			$entry = self::entry( $product );
 			if ( null !== $entry ) {
 				$out[] = $entry;
