@@ -78,9 +78,10 @@ class AUN_App_Admin {
 			return;
 		}
 
-		$guessed = 0;
+		$guessed  = 0;
+		$unmapped = 0;
 		echo '<table class="widefat striped" style="margin-top:12px"><thead><tr>'
-			. '<th>Projector</th><th>Throw ratio</th><th>Source</th><th>Min / Max screen</th><th>Aspect</th>'
+			. '<th>Projector</th><th>ERP ID</th><th>Throw ratio</th><th>Source</th><th>Min / Max screen</th><th>Aspect</th>'
 			. '</tr></thead><tbody>';
 
 		foreach ( $catalogue as $p ) {
@@ -94,8 +95,16 @@ class AUN_App_Admin {
 				'extracted' => '<span style="color:#996800;font-weight:600">Read from description</span>',
 				'default'   => '<span style="color:#b32d2e;font-weight:700">GUESSED — please set</span>',
 			);
+			$erp = (int) ( $p['erp_id'] ?? 0 );
+			if ( $erp < 1 ) {
+				$unmapped++;
+			}
+
 			echo '<tr>'
 				. '<td><strong>' . esc_html( $p['name'] ) . '</strong></td>'
+				. '<td>' . ( $erp > 0
+					? (int) $erp
+					: '<span style="color:#b32d2e;font-weight:700">not set</span>' ) . '</td>'
 				. '<td>' . esc_html( number_format( (float) $p['throw_ratio'], 2 ) ) . ':1</td>'
 				. '<td>' . ( $label[ $source ] ?? esc_html( $source ) ) . '</td>'
 				. '<td>' . ( $p['min_screen'] ? (int) $p['min_screen'] . '"' : '—' ) . ' / '
@@ -114,6 +123,15 @@ class AUN_App_Admin {
 			echo ' — every one has real optics data.';
 		}
 		echo '</p>';
+
+		if ( $unmapped > 0 ) {
+			echo '<p class="description" style="margin-top:6px;color:#b32d2e;font-weight:600">'
+				. (int) $unmapped . ' projector(s) have no ERP product ID. '
+				. 'That ID is how the app knows which of these a customer actually OWNS — without it '
+				. 'the planner has to guess from the product title, which picks the wrong variant as soon '
+				. 'as two models share a prefix (A005 vs A005 Pro). Set it on the product page, in the same '
+				. 'box as the throw ratio.</p>';
+		}
 
 		echo '<p class="description" style="margin-top:6px">Missing a max screen size caps the planner at its default 15 ft. Set “Optimal Max Screen” on the product to tighten it per model.</p>';
 		echo '</div>';

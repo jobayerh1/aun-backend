@@ -729,7 +729,8 @@ class AUN_App_REST {
 		$me = $this->identity();
 		if ( ! empty( $me['user_id'] ) && class_exists( 'AUN_App_Warranty' ) && AUN_App_Warranty::available() ) {
 			foreach ( (array) AUN_App_Warranty::get_devices( $me['phone'], (int) $me['user_id'] ) as $device ) {
-				$product_id = AUN_App_Projectors::match_model( (string) ( $device['model'] ?? '' ) );
+				// By ERP id, not by name — see AUN_App_Projectors::product_for_device().
+				$product_id = AUN_App_Projectors::product_for_device( $device );
 				if ( $product_id > 0 ) {
 					$mine[] = array(
 						'serial'     => (string) ( $device['serial'] ?? '' ),

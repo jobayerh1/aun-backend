@@ -151,6 +151,7 @@ class AUN_App_Projectors {
 
 		return array(
 			'id'          => $id,
+			'erp_id'      => self::erp_id_of( $id ),
 			'name'        => (string) $product->get_name(),
 			'image'       => $image_url,
 			'url'         => (string) $product->get_permalink(),
@@ -249,6 +250,103 @@ class AUN_App_Projectors {
 	 *
 	 * @param string $model_name Device model as registered.
 	 * @return int Catalogue product id, or 0 when nothing matches confidently.
+	 */
+	/**
+	 * The ERP (UltimatePOS) product id this WooCommerce product represents.
+	 *
+	 * Set on the product page by the AUN Throw Distance Calculator plugin. When
+	 * absent we accept a purely numeric SKU, since some catalogues already put
+	 * the ERP id there.
+	 *
+	 * @param int $product_id WooCommerce product id.
+	 * @return int ERP id, or 0 when unmapped.
+	 */
+	public static function erp_id_of( $product_id ) {
+		$erp = (int) get_post_meta( (int) $product_id, '_aun_erp_product_id', true );
+		if ( $erp > 0 ) {
+			return $erp;
+		}
+		if ( function_exists( 'wc_get_product' ) ) {
+			$product = wc_get_product( (int) $product_id );
+			if ( $product ) {
+				$sku = trim( (string) $product->get_sku() );
+				if ( '' !== $sku && ctype_digit( $sku ) ) {
+					return (int) $sku;
+				}
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * The catalogue entry for a projector the customer actually owns.
+	 *
+	 * Resolved by ID, never by name. A registered device carries the ERP
+	 * product id it was sold as, and slb_products holds that same id — the link
+	 * the warranty plugin and the hourly stock sync already run on, whose own
+	 * docblock says it never guesses by name.
+	 *
+	 * Name matching used to be the ONLY method here and it was wrong on real
+	 * data: a device recorded as "A005" matched "A005 Pro" exactly as well as
+	 * "A005", and every new model sharing a prefix would break it again. It
+	 * survives purely as a last resort for products nobody has mapped yet, and
+	 * the admin screen lists those so they can be fixed.
+	 *
+	 * @param array $device One entry from AUN_App_Warranty::get_devices().
+	 * @return int WooCommerce product id, or 0.
+	 */
+	public static function product_for_device( $device ) {
+		// 1. The device's own ERP product id, when the warranty record has it.
+		$erp = (int) ( $device['erp_product_id'] ?? 0 );
+
+		// 2. Otherwise via slb_products, which the device's model_id points at.
+		if ( $erp < 1 ) {
+			$erp = self::erp_id_for_model( (int) ( $device['model_id'] ?? 0 ) );
+		}
+
+		if ( $erp > 0 ) {
+			foreach ( self::catalogue() as $p ) {
+				if ( (int) ( $p['erp_id'] ?? 0 ) === $erp ) {
+					return (int) $p['id'];
+				}
+			}
+		}
+
+		// 3. Last resort only: an unmapped catalogue.
+		return self::match_model( (string) ( $device['model'] ?? '' ) );
+	}
+
+	/**
+	 * ERP product id behind a warranty model id (slb_products.id).
+	 *
+	 * @param int $model_id slb_products.id.
+	 * @return int
+	 */
+	public static function erp_id_for_model( $model_id ) {
+		global $wpdb;
+		$model_id = (int) $model_id;
+		if ( $model_id < 1 || ! class_exists( 'AUN_App_Warranty' ) ) {
+			return 0;
+		}
+		$t = AUN_App_Warranty::t_prods();
+		if ( ! in_array( 'erp_product_id', (array) $wpdb->get_col( "SHOW COLUMNS FROM $t" ), true ) ) {
+			return 0;
+		}
+		return (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT erp_product_id FROM $t WHERE id = %d LIMIT 1",
+			$model_id
+		) );
+	}
+
+	/**
+	 * LAST-RESORT name match, for products with no ERP id mapped yet.
+	 *
+	 * Prefer product_for_device(). This exists so an unmapped catalogue still
+	 * does something sensible, not as the primary mechanism — see that method
+	 * for why matching on names is unsafe.
+	 *
+	 * @param string $model_name Device model as registered.
+	 * @return int Catalogue product id, or 0.
 	 */
 	public static function match_model( $model_name ) {
 		$needle = self::normalise_model( $model_name );

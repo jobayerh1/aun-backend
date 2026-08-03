@@ -31,6 +31,19 @@ class AUN_Throw_Calculator {
         echo '<div class="options_group" style="background:#f0f9ff;border-left:4px solid #0188fe;">';
 
         woocommerce_wp_text_input( [
+            'id'                => '_aun_erp_product_id',
+            'label'             => 'ERP product ID',
+            'placeholder'       => 'e.g. 142',
+            'description'       => 'UltimatePOS product ID for this model. This is what links a REGISTERED '
+                                 . 'projector to this product, so the app can open the planner on the model the '
+                                 . 'customer actually owns. Without it the app has to guess from the title, which '
+                                 . 'breaks as soon as two models share a name prefix (A005 vs A005 Pro).',
+            'desc_tip'          => true,
+            'type'              => 'number',
+            'custom_attributes' => [ 'step' => '1', 'min' => '0' ],
+        ] );
+
+        woocommerce_wp_text_input( [
             'id'                => '_aun_throw_ratio',
             'label'             => 'Lens Throw Ratio',
             'placeholder'       => 'e.g. 1.35',
@@ -65,6 +78,9 @@ class AUN_Throw_Calculator {
 
     public static function save_calculator_fields( $post_id ) {
         if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+        $erp_id = isset( $_POST['_aun_erp_product_id'] ) ? absint( $_POST['_aun_erp_product_id'] ) : 0;
+        update_post_meta( $post_id, '_aun_erp_product_id', $erp_id > 0 ? $erp_id : '' );
 
         $throw_ratio = isset( $_POST['_aun_throw_ratio'] ) ? (float) $_POST['_aun_throw_ratio'] : 0;
         update_post_meta( $post_id, '_aun_throw_ratio',
