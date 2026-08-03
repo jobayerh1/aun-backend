@@ -1232,7 +1232,11 @@ class AUN_App_Admin {
 				? $_POST['referral_friend_type'] : 'percent';
 			$friend_max = 'percent' === $opts['referral_friend_type'] ? 50 : 100000;
 			$opts['referral_friend_amount']   = max( 0, min( $friend_max, (float) ( $_POST['referral_friend_amount'] ?? 0 ) ) );
-			$opts['referral_referrer_amount'] = max( 0, min( 100000, (float) ( $_POST['referral_referrer_amount'] ?? 0 ) ) );
+			$opts['referral_referrer_type']   = in_array( ( $_POST['referral_referrer_type'] ?? 'fixed' ), array( 'percent', 'fixed' ), true )
+				? $_POST['referral_referrer_type'] : 'fixed';
+			$referrer_max = 'percent' === $opts['referral_referrer_type'] ? 50 : 100000;
+			$opts['referral_referrer_amount'] = max( 0, min( $referrer_max, (float) ( $_POST['referral_referrer_amount'] ?? 0 ) ) );
+			$opts['referral_require_customer'] = empty( $_POST['referral_require_customer'] ) ? 0 : 1;
 			$opts['referral_min_order']       = max( 0, (float) ( $_POST['referral_min_order'] ?? 0 ) );
 			$opts['referral_monthly_cap']     = max( 0, min( 100, (int) ( $_POST['referral_monthly_cap'] ?? 5 ) ) );
 			$opts['referral_claim_days']      = max( 0, min( 365, (int) ( $_POST['referral_claim_days'] ?? 30 ) ) );
@@ -1415,78 +1419,7 @@ class AUN_App_Admin {
 							to this. Higher numbers make the twice-daily refresh a little slower.
 						</p>
 					</td></tr>
-					</table>
 
-					<h2 style="margin-top:28px"><span class="dashicons dashicons-groups"></span> Referral programme</h2>
-					<p class="description" style="max-width:820px">
-						Existing customers invite friends from the app. The <strong>friend</strong> gets a discount on their
-						first order; the <strong>referrer</strong> is paid only once that order is <strong>completed</strong>
-						— and the reward is taken back automatically if the order is later refunded or cancelled.
-						Paying any earlier is what makes referral schemes farmable.
-					</p>
-					<table class="form-table">
-					<tr><th>Enable</th><td>
-						<label><input type="checkbox" name="referral_enabled" value="1"
-							<?php checked( ! empty( $opts['referral_enabled'] ) ); ?> /> Run the referral programme</label>
-						<p class="description">Off by default. Nothing can be claimed until this is on AND the friend's discount is above zero.</p>
-					</td></tr>
-					<tr><th>Friend gets</th><td>
-						<input name="referral_friend_amount" type="number" step="1" min="0" style="width:110px"
-							value="<?php echo esc_attr( (string) ( $opts['referral_friend_amount'] ?? 0 ) ); ?>" />
-						<select name="referral_friend_type">
-							<option value="percent" <?php selected( ( $opts['referral_friend_type'] ?? 'percent' ), 'percent' ); ?>>% off</option>
-							<option value="fixed" <?php selected( ( $opts['referral_friend_type'] ?? 'percent' ), 'fixed' ); ?>>৳ off the cart</option>
-						</select>
-						<p class="description">
-							Their first order only. The coupon is generated per customer, locked to their own email and
-							usable once, so it cannot be forwarded or reused. Percentages are capped at 50%.
-						</p>
-					</td></tr>
-					<tr><th>Referrer gets</th><td>
-						৳ <input name="referral_referrer_amount" type="number" step="1" min="0" style="width:110px"
-							value="<?php echo esc_attr( (string) ( $opts['referral_referrer_amount'] ?? 0 ) ); ?>" />
-						<p class="description">
-							Paid as a coupon on their own account once the friend's order completes. Set to 0 for a
-							one-sided programme (friend only).
-						</p>
-					</td></tr>
-					<tr><th>Minimum order</th><td>
-						৳ <input name="referral_min_order" type="number" step="1" min="0" style="width:110px"
-							value="<?php echo esc_attr( (string) ( $opts['referral_min_order'] ?? 0 ) ); ?>" />
-						<p class="description">
-							Checked against what was actually PAID, so a heavily discounted order cannot earn a reward
-							worth more than its margin. Stops a ৳300 cable purchase triggering a payout.
-						</p>
-					</td></tr>
-					<tr><th>Rewards per referrer</th><td>
-						<input name="referral_monthly_cap" type="number" min="0" max="100" style="width:90px"
-							value="<?php echo (int) ( $opts['referral_monthly_cap'] ?? 5 ); ?>" /> per 30 days
-						<p class="description">0 = unlimited. A cap blunts industrial farming even if every other check is somehow passed.</p>
-					</td></tr>
-					<tr><th>Claim window</th><td>
-						<input name="referral_claim_days" type="number" min="0" max="365" style="width:90px"
-							value="<?php echo (int) ( $opts['referral_claim_days'] ?? 30 ); ?>" /> days after signup
-						<p class="description">
-							0 = no limit. Without a window somebody can shop for months and then apply a code retroactively.
-						</p>
-					</td></tr>
-					<tr><th>Coupon expiry</th><td>
-						<input name="referral_expiry_days" type="number" min="1" max="730" style="width:90px"
-							value="<?php echo (int) ( $opts['referral_expiry_days'] ?? 90 ); ?>" /> days
-					</td></tr>
-					<tr><th>Built-in protection</th><td>
-						<p class="description" style="max-width:760px">
-							Always on, regardless of the settings above: no self-referral (checked by phone, not just
-							account); one claim per phone number ever, so deleting an account buys nothing;
-							<strong>first-time customers only</strong> — anyone with a past order or a registered
-							projector is refused; and rewards are revoked if the order is refunded, cancelled or fails.
-						</p>
-					</td></tr>
-					<?php $this->referral_stats(); ?>
-					</table>
-
-					<h2 style="margin-top:28px"><span class="dashicons dashicons-video-alt3"></span> What to watch</h2>
-					<table class="form-table">
 					<tr><th>Local picks (Chorki/Bioscope…)</th><td>
 						<?php
 						// Parse the stored lines back into rows for the form.
@@ -1568,6 +1501,91 @@ class AUN_App_Admin {
 						</script>
 					</td></tr>
 				</table>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-groups"></span> Referral Programme</h2>
+					<p class="description" style="max-width:820px">
+						Existing customers invite friends from the app. The <strong>friend</strong> gets a discount on their
+						first order; the <strong>referrer</strong> is paid only once that order is <strong>completed</strong>
+						— and the reward is taken back automatically if the order is later refunded or cancelled.
+						Paying any earlier is what makes referral schemes farmable.
+					</p>
+					<table class="form-table">
+					<tr><th>Enable</th><td>
+						<label><input type="checkbox" name="referral_enabled" value="1"
+							<?php checked( ! empty( $opts['referral_enabled'] ) ); ?> /> Run the referral programme</label>
+						<p class="description">Off by default. Nothing can be claimed until this is on AND the friend's discount is above zero.</p>
+					</td></tr>
+					<tr><th>Friend gets</th><td>
+						<input name="referral_friend_amount" type="number" step="1" min="0" style="width:110px"
+							value="<?php echo esc_attr( (string) ( $opts['referral_friend_amount'] ?? 0 ) ); ?>" />
+						<select name="referral_friend_type">
+							<option value="percent" <?php selected( ( $opts['referral_friend_type'] ?? 'percent' ), 'percent' ); ?>>% off</option>
+							<option value="fixed" <?php selected( ( $opts['referral_friend_type'] ?? 'percent' ), 'fixed' ); ?>>৳ off the cart</option>
+						</select>
+						<p class="description">
+							Their first order only. The coupon is generated per customer, locked to their own email and
+							usable once, so it cannot be forwarded or reused. Percentages are capped at 50%.
+						</p>
+					</td></tr>
+					<tr><th>Referrer gets</th><td>
+						<input name="referral_referrer_amount" type="number" step="1" min="0" style="width:110px"
+							value="<?php echo esc_attr( (string) ( $opts['referral_referrer_amount'] ?? 0 ) ); ?>" />
+						<select name="referral_referrer_type">
+							<option value="fixed" <?php selected( ( $opts['referral_referrer_type'] ?? 'fixed' ), 'fixed' ); ?>>৳ fixed</option>
+							<option value="percent" <?php selected( ( $opts['referral_referrer_type'] ?? 'fixed' ), 'percent' ); ?>>% of their friend's order</option>
+						</select>
+						<p class="description">
+							Paid as a coupon on their own account once the friend's order completes. A percentage is
+							worked out from that order and issued as a FIXED taka amount — a percentage would be
+							meaningless against the referrer's own, unrelated next cart. Set to 0 for a one-sided
+							programme (friend only); they still get told their friend ordered.
+						</p>
+					</td></tr>
+					<tr><th>Who can invite</th><td>
+						<label><input type="checkbox" name="referral_require_customer" value="1"
+							<?php checked( ! isset( $opts['referral_require_customer'] ) || ! empty( $opts['referral_require_customer'] ) ); ?> />
+							Only customers who own an AUN projector</label>
+						<p class="description">
+							Strongly recommended. A referral from someone who has never bought anything is not a
+							recommendation — and without this, anyone can register and mint discount codes for the world.
+						</p>
+					</td></tr>
+					<tr><th>Minimum order</th><td>
+						৳ <input name="referral_min_order" type="number" step="1" min="0" style="width:110px"
+							value="<?php echo esc_attr( (string) ( $opts['referral_min_order'] ?? 0 ) ); ?>" />
+						<p class="description">
+							Checked against what was actually PAID, so a heavily discounted order cannot earn a reward
+							worth more than its margin. Stops a ৳300 cable purchase triggering a payout.
+						</p>
+					</td></tr>
+					<tr><th>Rewards per referrer</th><td>
+						<input name="referral_monthly_cap" type="number" min="0" max="100" style="width:90px"
+							value="<?php echo (int) ( $opts['referral_monthly_cap'] ?? 5 ); ?>" /> per 30 days
+						<p class="description">0 = unlimited. A cap blunts industrial farming even if every other check is somehow passed.</p>
+					</td></tr>
+					<tr><th>Claim window</th><td>
+						<input name="referral_claim_days" type="number" min="0" max="365" style="width:90px"
+							value="<?php echo (int) ( $opts['referral_claim_days'] ?? 30 ); ?>" /> days after signup
+						<p class="description">
+							0 = no limit. Without a window somebody can shop for months and then apply a code retroactively.
+						</p>
+					</td></tr>
+					<tr><th>Coupon expiry</th><td>
+						<input name="referral_expiry_days" type="number" min="1" max="730" style="width:90px"
+							value="<?php echo (int) ( $opts['referral_expiry_days'] ?? 90 ); ?>" /> days
+					</td></tr>
+					<tr><th>Built-in protection</th><td>
+						<p class="description" style="max-width:760px">
+							Always on, regardless of the settings above: no self-referral (checked by phone, not just
+							account); one claim per phone number ever, so deleting an account buys nothing;
+							<strong>first-time customers only</strong> — anyone with a past order or a registered
+							projector is refused; and rewards are revoked if the order is refunded, cancelled or fails.
+						</p>
+					</td></tr>
+					<?php $this->referral_stats(); ?>
+					</table>
 			</div>
 
 			<div class="aun-card">

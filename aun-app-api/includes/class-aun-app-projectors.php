@@ -251,34 +251,66 @@ class AUN_App_Projectors {
 	 * @return int Catalogue product id, or 0 when nothing matches confidently.
 	 */
 	public static function match_model( $model_name ) {
-		$needle = strtolower( trim( (string) $model_name ) );
+		$needle = self::normalise_model( $model_name );
 		if ( '' === $needle ) {
 			return 0;
 		}
 
 		$catalogue = self::catalogue();
 
+		// 1. Exact match on the normalised name always wins.
 		foreach ( $catalogue as $p ) {
-			if ( strtolower( $p['name'] ) === $needle ) {
+			if ( self::normalise_model( $p['name'] ) === $needle ) {
 				return (int) $p['id'];
 			}
 		}
 
-		// Longest match wins, so "A10" can't steal a device that is really an
-		// "A10 Pro" just by being checked first.
-		$best     = 0;
-		$best_len = 0;
+		// 2. Otherwise the CLOSEST containing name wins — the one with the
+		//    least extra text.
+		//
+		//    Picking the longest match was wrong: for a device recorded as
+		//    "A005", both "AUN A005" and "AUN A005 Pro" contain it and scored
+		//    identically, so the tie broke on catalogue order and quietly
+		//    selected the Pro. Extra words almost always mean a DIFFERENT
+		//    model, so the fewer of them the better.
+		$best  = 0;
+		$extra = PHP_INT_MAX;
 		foreach ( $catalogue as $p ) {
-			$name = strtolower( $p['name'] );
-			if ( false !== strpos( $name, $needle ) || false !== strpos( $needle, $name ) ) {
-				$len = min( strlen( $name ), strlen( $needle ) );
-				if ( $len > $best_len ) {
-					$best     = (int) $p['id'];
-					$best_len = $len;
-				}
+			$name = self::normalise_model( $p['name'] );
+			if ( '' === $name ) {
+				continue;
+			}
+			if ( false === strpos( $name, $needle ) && false === strpos( $needle, $name ) ) {
+				continue;
+			}
+			$diff = abs( strlen( $name ) - strlen( $needle ) );
+			if ( $diff < $extra ) {
+				$best  = (int) $p['id'];
+				$extra = $diff;
 			}
 		}
 		return $best;
+	}
+
+	/**
+	 * Reduce a product or device name to just the part that identifies a model.
+	 *
+	 * Catalogue titles carry marketing ("AUN A005 Full HD Projector") while a
+	 * registered device may hold only "A005", so the two never match literally.
+	 * Stripping the brand, the word "projector" and punctuation leaves the
+	 * distinguishing part — and keeps a real difference like "pro" intact,
+	 * because that IS a different model.
+	 *
+	 * @param string $name Raw name.
+	 * @return string
+	 */
+	public static function normalise_model( $name ) {
+		$n = strtolower( trim( (string) $name ) );
+		$n = str_replace( array( '-', '_', '/', '+' ), ' ', $n );
+		// Brand and category noise, never a model distinction.
+		$n = preg_replace( '/(aun|projector|projectors|full\s*hd|fhd|native|smart|android|wifi|wi\s*fi)/', ' ', $n );
+		$n = preg_replace( '/[^a-z0-9 ]/', '', $n );
+		return trim( preg_replace( '/\s+/', ' ', $n ) );
 	}
 
 	/** Drop the cached catalogue (product saved, or admin asked for a rebuild). */

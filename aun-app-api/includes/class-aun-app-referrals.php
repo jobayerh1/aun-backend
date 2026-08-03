@@ -75,11 +75,36 @@ class AUN_App_Referrals {
 				? $o['referral_friend_type'] : 'percent',
 			'friend_amount'    => max( 0, (float) ( $o['referral_friend_amount'] ?? 0 ) ),
 			'referrer_amount'  => max( 0, (float) ( $o['referral_referrer_amount'] ?? 0 ) ),
+			'referrer_type'    => in_array( ( $o['referral_referrer_type'] ?? 'fixed' ), array( 'percent', 'fixed' ), true )
+				? $o['referral_referrer_type'] : 'fixed',
+			// Only customers may invite. Someone who has never bought anything
+			// can otherwise mint discount codes for the world.
+			'require_customer' => ! isset( $o['referral_require_customer'] ) || ! empty( $o['referral_require_customer'] ),
 			'min_order_total'  => max( 0, (float) ( $o['referral_min_order'] ?? 0 ) ),
 			'monthly_cap'      => max( 0, (int) ( $o['referral_monthly_cap'] ?? 5 ) ),
 			'claim_window_days' => max( 0, (int) ( $o['referral_claim_days'] ?? 30 ) ),
 			'coupon_expiry_days' => max( 1, (int) ( $o['referral_expiry_days'] ?? 90 ) ),
 		);
+	}
+
+	/**
+	 * May this customer invite anyone?
+	 *
+	 * By default only people who have actually bought from us can. A referral
+	 * from someone who has never owned a projector is not a recommendation —
+	 * and without this rule anyone can register, mint a code and hand
+	 * discounts to the world.
+	 *
+	 * @param int $user_id User.
+	 * @return bool
+	 */
+	public static function can_invite( $user_id ) {
+		$s = self::settings();
+		if ( ! $s['require_customer'] ) {
+			return true;
+		}
+		$phone = self::phone_of( (int) $user_id );
+		return self::has_purchase_history( (int) $user_id, $phone );
 	}
 
 	/** Whether the programme can actually run right now. */
@@ -217,6 +242,17 @@ class AUN_App_Referrals {
 			return self::fail( 'unknown_code', 'That code was not recognised. Please check and try again.' );
 		}
 
+		// ── 0. The REFERRER must be allowed to invite ────────────────────
+		// Enforced here, not just hidden in the app: the endpoint is the real
+		// boundary, and a code shared before the setting changed must stop
+		// working the moment it does.
+		if ( ! self::can_invite( $referrer ) ) {
+			return self::fail(
+				'referrer_not_customer',
+				'That code is not active. Invite codes come from AUN projector owners.'
+			);
+		}
+
 		// ── 1. No self-referral, by account OR by phone ──────────────────
 		// The phone check matters more than the id: the same person can create
 		// a second account, but not with the same number.
@@ -311,6 +347,11 @@ class AUN_App_Referrals {
 			'status'           => self::STATUS_PENDING,
 			'created_at'       => current_time( 'mysql' ),
 		) );
+
+		// Immediate feedback to the referrer. Waiting until the friend's order
+		// completes leaves them with no sign the code ever worked, which is
+		// exactly when people conclude the programme is broken.
+		self::notify_claimed( $referrer );
 
 		return array(
 			'ok'      => true,
@@ -450,9 +491,27 @@ class AUN_App_Referrals {
 			return; // stays pending: a later, larger order can still qualify
 		}
 
+		// Re-check the BUYER at completion, not just the claimer.
+		//
+		// The "first-time customer" test runs when the code is claimed, against
+		// the phone on the account. Nothing stopped the actual order being
+		// placed under a DIFFERENT number that belongs to an existing customer
+		// — which would quietly discount a repeat buyer and pay a reward for
+		// someone we already had. Checking the order's own billing phone closes
+		// that gap.
+		$buyer_phone = (string) $order->get_billing_phone();
+		if ( '' !== $buyer_phone && self::phone_has_other_orders( $buyer_phone, (int) $order->get_id() ) ) {
+			$wpdb->update(
+				self::claims_table(),
+				array( 'status' => self::STATUS_REVOKED, 'order_id' => (int) $order->get_id() ),
+				array( 'id' => (int) $claim->id )
+			);
+			return;
+		}
+
 		$reward = '';
 		if ( $s['referrer_amount'] > 0 ) {
-			$reward = self::create_referrer_reward( (int) $claim->referrer_user_id, $s );
+			$reward = self::create_referrer_reward( (int) $claim->referrer_user_id, $s, (float) $order->get_total() );
 			if ( '' === $reward ) {
 				return; // leave pending and try again rather than silently losing it
 			}
@@ -469,7 +528,7 @@ class AUN_App_Referrals {
 			array( 'id' => (int) $claim->id )
 		);
 
-		self::notify_referrer( (int) $claim->referrer_user_id, $reward, $s );
+		self::notify_referrer( (int) $claim->referrer_user_id, $reward, $s, (float) $order->get_total() );
 	}
 
 	/**
@@ -558,7 +617,7 @@ class AUN_App_Referrals {
 	 * @param array $s       Settings.
 	 * @return string Coupon code, or ''.
 	 */
-	private static function create_referrer_reward( $user_id, $s ) {
+	private static function create_referrer_reward( $user_id, $s, $order_total = 0 ) {
 		if ( ! class_exists( 'WC_Coupon' ) ) {
 			return '';
 		}
@@ -570,8 +629,11 @@ class AUN_App_Referrals {
 			$code   = 'THANKS-' . strtoupper( wp_generate_password( 6, false, false ) );
 			$coupon = new WC_Coupon();
 			$coupon->set_code( $code );
+			// Always issued as a fixed amount, even when the admin expressed it
+			// as a percentage: a percentage of the FRIEND's order has no meaning
+			// on the referrer's next, unrelated cart.
 			$coupon->set_discount_type( 'fixed_cart' );
-			$coupon->set_amount( (float) $s['referrer_amount'] );
+			$coupon->set_amount( self::reward_value( $s, (float) $order_total ) );
 			$coupon->set_usage_limit( 1 );
 			$coupon->set_usage_limit_per_user( 1 );
 			$coupon->set_email_restrictions( array( $user->user_email ) );
@@ -592,36 +654,145 @@ class AUN_App_Referrals {
 		}
 	}
 
-	/** Tell the referrer they have been paid. */
-	private static function notify_referrer( $user_id, $reward, $s ) {
-		if ( ! class_exists( 'AUN_App_Notices' ) || '' === $reward ) {
+	/**
+	 * Somebody just used this customer's code.
+	 *
+	 * Sent at CLAIM time, long before any order. Without it the referrer has no
+	 * evidence their code worked until (and unless) the friend buys — which is
+	 * exactly when people decide the programme is broken and stop sharing.
+	 */
+	private static function notify_claimed( $referrer_id ) {
+		if ( ! class_exists( 'AUN_App_Notices' ) || (int) $referrer_id < 1 ) {
 			return;
 		}
-		$amount = number_format_i18n( (float) $s['referrer_amount'], 0 );
+		$title    = 'A friend used your invite code';
+		$title_bn = 'একজন বন্ধু আপনার কোড ব্যবহার করেছেন';
+		$body     = 'They have their discount. Once their order is delivered, your reward is unlocked.';
+		$body_bn  = 'তিনি ছাড় পেয়েছেন। তাঁর অর্ডার ডেলিভারি হলেই আপনার পুরস্কার আসবে।';
 
-		AUN_App_Notices::create( array(
-			'user_id'   => (int) $user_id,
+		$id = AUN_App_Notices::create( array(
+			'user_id'   => (int) $referrer_id,
 			'type'      => 'referral',
-			'title'     => 'Your friend ordered — ৳' . $amount . ' is yours',
-			'title_bn'  => 'আপনার বন্ধু অর্ডার করেছেন — ৳' . $amount . ' আপনার',
-			'body'      => 'Thank you for recommending us. Use code ' . $reward . ' on your next order.',
-			'body_bn'   => 'আমাদের সুপারিশ করার জন্য ধন্যবাদ। পরের অর্ডারে ' . $reward . ' কোডটি ব্যবহার করুন।',
-			'data'      => array( 'coupon' => $reward ),
-			'dedup_key' => 'referral_reward:' . $reward,
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array(),
+			// One per claim, so three friends produce three notices.
+			'dedup_key' => 'referral_claimed:' . (int) $referrer_id . ':' . uniqid( '', true ),
 		) );
 
-		if ( class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() && AUN_App_Notices::$last_was_new ) {
+		if ( $id && AUN_App_Notices::$last_was_new
+			&& class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
 			AUN_App_Push::push_to_users(
-				array( (int) $user_id ),
-				array(
-					'title'    => 'Your friend ordered — ৳' . $amount . ' is yours',
-					'title_bn' => 'আপনার বন্ধু অর্ডার করেছেন — ৳' . $amount . ' আপনার',
-					'body'     => 'Tap to see your reward code.',
-					'body_bn'  => 'রিওয়ার্ড কোড দেখতে ট্যাপ করুন।',
-				),
-				array( 'type' => 'referral', 'coupon' => $reward )
+				array( (int) $referrer_id ),
+				array( 'title' => $title, 'title_bn' => $title_bn, 'body' => $body, 'body_bn' => $body_bn ),
+				array( 'type' => 'referral', 'notice_id' => $id )
 			);
 		}
+	}
+
+	/**
+	 * The friend's order completed.
+	 *
+	 * Sent even when there is no coupon — a one-sided programme (referrer
+	 * amount 0) still owes the referrer the news that their recommendation
+	 * turned into a real sale. The earlier version returned silently whenever
+	 * the reward was empty, so the referrer saw a count go up and nothing else.
+	 */
+	private static function notify_referrer( $user_id, $reward, $s, $order_total = 0 ) {
+		if ( ! class_exists( 'AUN_App_Notices' ) || (int) $user_id < 1 ) {
+			return;
+		}
+
+		$paid = self::reward_value( $s, (float) $order_total );
+
+		if ( '' !== $reward ) {
+			$amount   = number_format_i18n( $paid, 0 );
+			$title    = 'Your friend ordered — ৳' . $amount . ' is yours';
+			$title_bn = 'আপনার বন্ধু অর্ডার করেছেন — ৳' . $amount . ' আপনার';
+			$body     = 'Thank you for recommending us. Use code ' . $reward . ' on your next order.';
+			$body_bn  = 'আমাদের সুপারিশ করার জন্য ধন্যবাদ। পরের অর্ডারে ' . $reward . ' কোডটি ব্যবহার করুন।';
+			$dedup    = 'referral_reward:' . $reward;
+		} else {
+			$title    = 'Your friend\'s order was delivered';
+			$title_bn = 'আপনার বন্ধুর অর্ডার ডেলিভারি হয়েছে';
+			$body     = 'Thank you for recommending us.';
+			$body_bn  = 'আমাদের সুপারিশ করার জন্য ধন্যবাদ।';
+			$dedup    = 'referral_done:' . (int) $user_id . ':' . uniqid( '', true );
+		}
+
+		$id = AUN_App_Notices::create( array(
+			'user_id'   => (int) $user_id,
+			'type'      => 'referral',
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array( 'coupon' => $reward ),
+			'dedup_key' => $dedup,
+		) );
+
+		if ( $id && AUN_App_Notices::$last_was_new
+			&& class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			AUN_App_Push::push_to_users(
+				array( (int) $user_id ),
+				array( 'title' => $title, 'title_bn' => $title_bn, 'body' => $body, 'body_bn' => $body_bn ),
+				array( 'type' => 'referral', 'coupon' => $reward, 'notice_id' => $id )
+			);
+		}
+	}
+
+	/**
+	 * What the referrer's reward is worth in taka.
+	 *
+	 * A percentage reward is taken off the ORDER that earned it, so it has to
+	 * be resolved to a real amount before it can be issued as a fixed-cart
+	 * coupon or shown in a message.
+	 *
+	 * @param array $s           Settings.
+	 * @param float $order_total Order that earned it.
+	 * @return float
+	 */
+	public static function reward_value( $s, $order_total ) {
+		if ( 'percent' === ( $s['referrer_type'] ?? 'fixed' ) ) {
+			return round( (float) $order_total * (float) $s['referrer_amount'] / 100, 2 );
+		}
+		return (float) $s['referrer_amount'];
+	}
+
+	/**
+	 * Does this phone number have orders OTHER than the given one?
+	 *
+	 * Used at completion to catch a welcome discount being spent by somebody
+	 * who is already a customer under a different number.
+	 *
+	 * @param string $phone    Billing phone from the order.
+	 * @param int    $order_id The order to ignore.
+	 * @return bool
+	 */
+	private static function phone_has_other_orders( $phone, $order_id ) {
+		if ( ! function_exists( 'wc_get_orders' ) || ! class_exists( 'AUN_App_Phone' ) ) {
+			return false;
+		}
+		$canonical = AUN_App_Phone::normalize( $phone );
+		if ( '' === $canonical ) {
+			return false;
+		}
+		foreach ( AUN_App_Phone::variants( $canonical ) as $variant ) {
+			$ids = wc_get_orders( array(
+				'billing_phone' => $variant,
+				'limit'         => 5,
+				'return'        => 'ids',
+				'status'        => array( 'wc-processing', 'wc-completed', 'wc-on-hold' ),
+			) );
+			foreach ( (array) $ids as $id ) {
+				if ( (int) $id !== (int) $order_id ) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/* --------------------------------------------------------------------- *
@@ -648,6 +819,7 @@ class AUN_App_Referrals {
 
 		$invited  = 0;
 		$rewarded = 0;
+		$earned   = 0.0;
 		$coupons  = array();
 		foreach ( $rows as $r ) {
 			if ( self::STATUS_REVOKED === $r->status ) {
@@ -657,9 +829,24 @@ class AUN_App_Referrals {
 			if ( self::STATUS_REWARDED === $r->status ) {
 				$rewarded++;
 				if ( ! empty( $r->reward_coupon ) ) {
+					// The coupon's OWN amount, not today's setting — a reward
+					// earned last month is worth what it was worth then.
+					$value = 0.0;
+					$spent = false;
+					if ( function_exists( 'wc_get_coupon_id_by_code' ) ) {
+						$cid = (int) wc_get_coupon_id_by_code( (string) $r->reward_coupon );
+						if ( $cid > 0 ) {
+							$rc    = new WC_Coupon( $cid );
+							$value = (float) $rc->get_amount();
+							$spent = (int) $rc->get_usage_count() > 0;
+						}
+					}
+					$earned   += $value;
 					$coupons[] = array(
-						'code' => (string) $r->reward_coupon,
-						'date' => substr( (string) $r->rewarded_at, 0, 10 ),
+						'code'  => (string) $r->reward_coupon,
+						'date'  => substr( (string) $r->rewarded_at, 0, 10 ),
+						'value' => $value,
+						'used'  => $spent,
 					);
 				}
 			}
@@ -695,6 +882,11 @@ class AUN_App_Referrals {
 			'referrer_amount' => $s['referrer_amount'],
 			'invited'         => $invited,
 			'rewarded'        => $rewarded,
+			// Total value of every reward earned, so the referrer can see what
+			// the programme has actually been worth to them.
+			'earned'          => round( $earned, 2 ),
+			'referrer_type'   => $s['referrer_type'],
+			'can_invite'      => self::available() && self::can_invite( $user_id ),
 			'rewards'         => $coupons,
 			// Whether THIS user may still claim someone else's code, so the app
 			// can hide an entry field that would only ever fail.
