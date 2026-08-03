@@ -151,6 +151,9 @@ class AUN_App_Projectors {
 
 		return array(
 			'id'          => $id,
+			// The SKU is how a registered device is matched to this product —
+			// see product_for_device(). Both sides already carry it.
+			'sku'         => (string) $product->get_sku(),
 			'erp_id'      => self::erp_id_of( $id ),
 			'name'        => (string) $product->get_name(),
 			'image'       => $image_url,
@@ -296,24 +299,69 @@ class AUN_App_Projectors {
 	 * @return int WooCommerce product id, or 0.
 	 */
 	public static function product_for_device( $device ) {
-		// 1. The device's own ERP product id, when the warranty record has it.
-		$erp = (int) ( $device['erp_product_id'] ?? 0 );
+		$catalogue = self::catalogue();
 
-		// 2. Otherwise via slb_products, which the device's model_id points at.
+		// 1. THE SKU. This is the link the rest of the system already runs on
+		//    and it needs no new data entry at all: the dealer-stock sync
+		//    records each serial's product_sku in slb_serials, and every
+		//    WooCommerce product carries that same SKU. Serial → SKU → product,
+		//    all exact.
+		$sku = self::sku_for_serial( (string) ( $device['serial'] ?? '' ) );
+		if ( '' !== $sku ) {
+			foreach ( $catalogue as $p ) {
+				if ( '' !== (string) ( $p['sku'] ?? '' )
+					&& 0 === strcasecmp( (string) $p['sku'], $sku ) ) {
+					return (int) $p['id'];
+				}
+			}
+		}
+
+		// 2. An explicit ERP product id on the product, for anything the SKU
+		//    route cannot reach (a serial that predates the sync, say).
+		$erp = (int) ( $device['erp_product_id'] ?? 0 );
 		if ( $erp < 1 ) {
 			$erp = self::erp_id_for_model( (int) ( $device['model_id'] ?? 0 ) );
 		}
-
 		if ( $erp > 0 ) {
-			foreach ( self::catalogue() as $p ) {
+			foreach ( $catalogue as $p ) {
 				if ( (int) ( $p['erp_id'] ?? 0 ) === $erp ) {
 					return (int) $p['id'];
 				}
 			}
 		}
 
-		// 3. Last resort only: an unmapped catalogue.
+		// 3. Last resort only, and never reliable — see this method's note.
 		return self::match_model( (string) ( $device['model'] ?? '' ) );
+	}
+
+	/**
+	 * The product SKU recorded against a serial by the dealer-stock sync.
+	 *
+	 * `slb_serials` is written by the AUN Warranty & Registration plugin from
+	 * the ERP, and holds product_sku next to the serial — so a registered
+	 * device can be traced to an exact product without anybody typing anything.
+	 *
+	 * @param string $serial Device serial.
+	 * @return string SKU, or ''.
+	 */
+	public static function sku_for_serial( $serial ) {
+		if ( ! class_exists( 'AUN_App_Warranty' ) ) {
+			return '';
+		}
+		$serial = trim( (string) $serial );
+		if ( '' === $serial ) {
+			return '';
+		}
+
+		global $wpdb;
+		$t = AUN_App_Warranty::t_serials();
+		if ( ! in_array( 'product_sku', (array) $wpdb->get_col( "SHOW COLUMNS FROM $t" ), true ) ) {
+			return '';
+		}
+		return (string) $wpdb->get_var( $wpdb->prepare(
+			"SELECT product_sku FROM $t WHERE serial = %s AND product_sku IS NOT NULL AND product_sku != '' LIMIT 1",
+			$serial
+		) );
 	}
 
 	/**
