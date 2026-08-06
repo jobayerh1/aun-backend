@@ -338,9 +338,15 @@ class AUN_SP_Requests {
 		echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;">';
 		wp_nonce_field( 'aun_sp_update', 'aun_sp_update_nonce' );
 		echo '<h2>Parts</h2>';
-		echo '<p style="color:#646970;margin-top:0;">Update each part&rsquo;s <strong>status</strong> as it moves &mdash; the customer sees this on their tracking page. Set a <strong>price</strong> on any out-of-warranty part. <em>Factory PO, ETA and Note are optional</em>, just for your own records.</p>';
+		echo '<p style="color:#646970;margin-top:0;">Update each part&rsquo;s <strong>status</strong> as it moves. Set a <strong>price</strong> on any out-of-warranty part.</p>';
+		// The ETA used to be described as "just for your own records" — it is NOT. It is
+		// printed on the customer's tracking page next to the part, so a rough internal
+		// guess typed here reads to them as a promised date.
+		echo '<p style="color:#646970;margin-top:0;"><span style="color:#1a7f37;">&#9679;</span> <strong>The customer sees:</strong> status, quantity, price and <strong>ETA</strong>. '
+			. '<span style="color:#646970;">&#9679;</span> <strong>Only you see:</strong> Factory PO and Note. '
+			. '<em>Leave the ETA blank unless you are willing to have that date quoted back to you.</em></p>';
 		echo '<p style="color:#646970;margin-top:0;"><span style="color:#8250df;">&#9679;</span> Setting a part to <strong>&ldquo;Quoted&rdquo;</strong> and saving <strong>sends the price to the customer for approval</strong> (same as the button below) &mdash; they get an SMS and Approve / Decline buttons. Every other status just texts them a progress update.</p>';
-		echo '<div style="overflow-x:auto;"><table class="wp-list-table widefat striped" style="min-width:820px;"><thead><tr><th>Part</th><th style="width:64px;">Qty</th><th>Status</th><th>Factory PO</th><th>ETA</th><th>Note</th><th>Unit price (৳)</th><th style="width:90px;">Line total</th><th>Courier tracking</th><th>Photo</th></tr></thead><tbody>';
+		echo '<div style="overflow-x:auto;"><table class="wp-list-table widefat striped" style="min-width:820px;"><thead><tr><th>Part</th><th style="width:64px;">Qty</th><th>Status</th><th>Factory PO <span style="font-weight:400;color:#646970;">(internal)</span></th><th>ETA <span style="font-weight:400;color:#1a7f37;">(customer sees)</span></th><th>Note <span style="font-weight:400;color:#646970;">(internal)</span></th><th>Unit price (৳)</th><th style="width:90px;">Line total</th><th>Courier tracking</th><th>Photo</th></tr></thead><tbody>';
 		$grand = 0.0;
 		foreach ( (array) $items as $it ) {
 			$iqty  = max( 1, (int) ( $it->qty ?? 1 ) );
@@ -387,6 +393,11 @@ class AUN_SP_Requests {
 		echo '</ul>';
 		echo '<p style="color:#646970;">Either way the total is <strong>qty × unit price</strong> for every priced part. Use the button again to re-send a revised quote.</p>';
 		echo '<p><label>Note to the customer (optional)<br><textarea name="quote_note" rows="2" class="large-text" style="max-width:620px;">' . esc_textarea( (string) $r->quote_note ) . '</textarea></label></p>';
+		if ( AUN_SP_Woo::is_active() ) {
+			$dc = isset( $r->delivery_charge ) ? (float) $r->delivery_charge : 0;
+			echo '<p><label>Delivery charge (৳) <input type="number" step="0.01" min="0" name="delivery_charge" value="' . esc_attr( $dc ) . '" class="small-text" style="width:100px;"></label>'
+				. ' <span style="color:#646970;">added to the order the customer pays. Leave 0 for free delivery.</span></p>';
+		}
 		// What happened to the quote we sent. This used to read the approval timestamp
 		// only, so a DECLINED quote (which never gets one) still showed "awaiting
 		// approval" — contradicting the red "Quote declined" badge at the top.
@@ -418,6 +429,9 @@ class AUN_SP_Requests {
 		echo '<p><button class="button" name="send_quote" value="1">' . esc_html( $btn ) . '</button>'
 			. ( $hint ? ' <span style="color:#646970;">' . esc_html( $hint ) . '</span>' : '' ) . '</p>';
 		echo '</form>';
+
+		// WooCommerce order + payment state, when one exists.
+		$this->order_panel( $r );
 
 		// Customer-added photos (re-uploads from the tracking page).
 		if ( ! empty( $by_item[0] ) ) {
@@ -460,6 +474,57 @@ class AUN_SP_Requests {
 			echo '<li style="padding:4px 0;border-bottom:1px solid #f0f0f1;"><span style="color:#646970;">' . esc_html( $e->created_at ) . '</span> — ' . esc_html( $e->message ) . ' <em style="color:#646970;">(' . esc_html( $e->by_user ) . ')</em></li>';
 		}
 		echo '</ul>';
+	}
+
+	/**
+	 * The WooCommerce order behind this request: what the customer owes, how they
+	 * chose to pay, and whether the money has actually arrived. Cash on delivery
+	 * reaches "processing" WITHOUT payment, so that case is spelled out rather than
+	 * being reported as paid.
+	 */
+	private function order_panel( $r ) {
+		if ( ! AUN_SP_Woo::is_active() ) {
+			return;
+		}
+		$order = AUN_SP_Woo::order_for( (int) $r->id );
+		if ( ! $order ) {
+			// Approved and chargeable but no order — either it was approved before the
+			// payment bridge existed, or creation failed. Offer to raise it by hand
+			// rather than leaving the customer with nothing to pay.
+			$owed = $this->quote_total( (int) $r->id );
+			if ( $owed > 0 && ! in_array( $r->overall_status, array( 'rejected', 'declined' ), true ) ) {
+				echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;">';
+				wp_nonce_field( 'aun_sp_mkorder', 'aun_sp_mkorder_nonce' );
+				echo '<h2 style="margin-top:0;">Payment</h2>';
+				echo '<p style="color:#646970;margin-top:0;">This request is <strong>cash on delivery</strong> &mdash; collect ৳'
+					. esc_html( number_format_i18n( $owed, 2 ) ) . ' plus any delivery charge when you hand the parts over. Nothing further is needed.</p>';
+				echo '<p style="color:#646970;">If the customer would rather pay online, send them a payment link &mdash; that creates the WooCommerce order and the amount is taken from the parts as priced right now.</p>';
+				echo '<p><button class="button button-primary">Send online payment link</button></p>';
+				echo '</form>';
+			}
+			return;
+		}
+
+		// An order exists only because the customer chose to pay online, so there is
+		// no cash-on-delivery case here — COD requests simply have no order.
+		$state = $order->is_paid()
+			? '<span style="color:#1a7f37;font-weight:600;">paid online</span>'
+			: '<span style="color:#8250df;font-weight:600;">started online payment — not completed</span>';
+
+		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;">';
+		echo '<h2 style="margin-top:0;">Payment &mdash; online</h2>';
+		echo '<p style="margin:0 0 6px;">Order <a href="' . esc_url( $order->get_edit_order_url() ) . '"><strong>#' . esc_html( $order->get_order_number() ) . '</strong></a>'
+			. ' · <strong>৳' . esc_html( number_format_i18n( (float) $order->get_total(), 2 ) ) . '</strong>'
+			. ' · ' . esc_html( wc_get_order_status_name( $order->get_status() ) )
+			. ' · ' . $state . '</p>';
+		if ( $order->get_payment_method_title() ) {
+			echo '<p style="margin:0 0 6px;color:#646970;">Method: ' . esc_html( $order->get_payment_method_title() ) . '</p>';
+		}
+		if ( $order->needs_payment() ) {
+			echo '<p style="margin:0;color:#646970;">Customer pay link: <a href="' . esc_url( $order->get_checkout_payment_url() ) . '" target="_blank" rel="noopener">open</a>'
+				. ' <span>— if they never complete it, treat the request as cash on delivery; the order stays unpaid and is cancelled automatically if you reject the request.</span></p>';
+		}
+		echo '</div>';
 	}
 
 	/**
@@ -579,6 +644,21 @@ class AUN_SP_Requests {
 			}
 
 			$quote_note = sanitize_textarea_field( wp_unslash( $_POST['quote_note'] ?? '' ) );
+			$delivery_notice = '';
+			if ( isset( $_POST['delivery_charge'] ) ) {
+				$charge = max( 0, round( (float) $_POST['delivery_charge'], 2 ) );
+				$wpdb->update( $t_req, array( 'delivery_charge' => $charge ), array( 'id' => $id ) );
+				// The order is built at approval, so a later edit has to be pushed onto
+				// it — otherwise the customer keeps paying the old total.
+				if ( AUN_SP_Woo::is_active() ) {
+					$synced = AUN_SP_Woo::sync_delivery_charge( $id, $charge );
+					if ( 'updated' === $synced ) {
+						$delivery_notice = ' Delivery charge updated on the customer\'s order.';
+					} elseif ( 'paid' === $synced ) {
+						$delivery_notice = ' <strong>Note:</strong> that order is already paid, so its delivery charge was left unchanged.';
+					}
+				}
+			}
 			$total      = $this->quote_total( $id );
 			$current    = (string) $wpdb->get_var( $wpdb->prepare( "SELECT overall_status FROM $t_req WHERE id = %d", $id ) );
 
@@ -601,6 +681,11 @@ class AUN_SP_Requests {
 			// parts automatically (it never overrides a state that waits on the customer).
 			$overall = $this->derive_overall( $current, $id );
 			$wpdb->update( $t_req, array( 'overall_status' => $overall, 'quote_total' => $total, 'quote_note' => $quote_note, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) );
+			// The request is the master record — push its state onto any payment order
+			// (Completed -> order completed; never the other way round).
+			if ( AUN_SP_Woo::is_active() && $overall !== $current ) {
+				AUN_SP_Woo::sync_from_request( $id, $overall );
+			}
 
 			$extra = '';
 			if ( ! empty( $_POST['notify'] ) ) {
@@ -620,7 +705,34 @@ class AUN_SP_Requests {
 			if ( ! empty( $_POST['notify'] ) && $extra === '' && empty( $changes ) && $overall === $current ) {
 				$extra = ' No status changed, so no SMS was sent.';
 			}
-			return '<div class="notice notice-success is-dismissible"><p>Saved.' . $moved . $extra . '</p></div>';
+			return '<div class="notice notice-success is-dismissible"><p>Saved.' . $moved . $extra . $delivery_notice . '</p></div>';
+		}
+
+		// Create the WooCommerce payment order by hand (recovery path).
+		if ( isset( $_POST['aun_sp_mkorder_nonce'] ) && wp_verify_nonce( $_POST['aun_sp_mkorder_nonce'], 'aun_sp_mkorder' ) ) {
+			if ( ! AUN_SP_Woo::is_active() ) {
+				return '<div class="notice notice-error is-dismissible"><p>WooCommerce isn&rsquo;t active, so no payment order can be created.</p></div>';
+			}
+			$oid = AUN_SP_Woo::create_order( $id );
+			if ( ! $oid ) {
+				return '<div class="notice notice-error is-dismissible"><p>Could not create the order &mdash; check that at least one part has a price above ৳0.</p></div>';
+			}
+			$order = wc_get_order( $oid );
+			$sent  = '';
+			// Text the customer their pay link, same as an automatic approval would.
+			$req = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current FROM $t_req WHERE id = %d", $id ) );
+			if ( $req && AUN_SP_SMS::is_configured() && $req->phone_current !== '' && $order->needs_payment() ) {
+				$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAY ), array(
+					'ref'   => $req->ref,
+					'link'  => $order->get_checkout_payment_url(),
+					'total' => number_format_i18n( (float) $order->get_total(), 2 ),
+					'track' => AUN_SP_Messages::track_link( $req->ref ),
+				) );
+				AUN_SP_SMS::send_tracked( $id, $req->phone_current, $msg, 'payment link' );
+				$sent = ' The customer has been texted the payment link.';
+			}
+			return '<div class="notice notice-success is-dismissible"><p>Payment order #' . esc_html( $order->get_order_number() )
+				. ' created for ৳' . esc_html( number_format_i18n( (float) $order->get_total(), 2 ) ) . '.' . $sent . '</p></div>';
 		}
 
 		// Reject.
@@ -643,6 +755,9 @@ class AUN_SP_Requests {
 				current_time( 'mysql' ), $id
 			) );
 			$this->log( $id, 0, 'rejected', 'Rejected: ' . $reason );
+			if ( AUN_SP_Woo::is_active() ) {
+				AUN_SP_Woo::sync_from_request( $id, 'rejected' );
+			}
 			$extra = ! empty( $_POST['notify'] ) ? $this->sms_customer( $id, 'rejected', 'rejected', $reason ) : '';
 			return '<div class="notice notice-success is-dismissible"><p>Request rejected.' . ( $marked ? ' ' . $marked . ' part(s) marked &ldquo;Unavailable&rdquo;.' : '' ) . $extra . '</p></div>';
 		}
@@ -805,12 +920,27 @@ class AUN_SP_Requests {
 			'created_at' => current_time( 'mysql' ),
 		) );
 
+		// Approving IS the commitment to buy, so raise the WooCommerce order now — the
+		// customer then pays online (SSLCommerz) or picks cash on delivery on Woo's own
+		// pay page. Doing it here rather than in the tracking page means the AUN Care
+		// app gets exactly the same behaviour. Degrades silently to the manual payment
+		// instructions when WooCommerce is absent or nothing is chargeable.
+		// NOTE: approving deliberately does NOT create a WooCommerce order. Cash on
+		// delivery is the default and needs no order at all; one is minted only if the
+		// customer actively chooses to pay online (AUN_SP_Tracking::ajax_pay).
 		if ( $approved && AUN_SP_SMS::is_configured() && $req->phone_current !== '' ) {
-			$msg = AUN_SP_Messages::fill(
-				AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_APPROVED ),
-				array( 'ref' => $req->ref, 'pay' => AUN_SP_Messages::pay_info(), 'track' => AUN_SP_Messages::track_link( $req->ref ) )
-			);
+			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_APPROVED ), array(
+				'ref'   => $req->ref,
+				'pay'   => AUN_SP_Messages::pay_info(),
+				'total' => number_format_i18n( (float) $req->quote_total, 2 ),
+				'track' => AUN_SP_Messages::track_link( $req->ref ),
+			) );
 			AUN_SP_SMS::send_tracked( $request_id, $req->phone_current, $msg, 'approval confirmation' );
+		}
+
+		// A declined quote must not leave a payable order behind.
+		if ( ! $approved && AUN_SP_Woo::is_active() ) {
+			AUN_SP_Woo::sync_from_request( $request_id, 'declined' );
 		}
 
 		$to = get_option( 'aun_sp_alert_email', get_option( 'admin_email' ) );
@@ -829,6 +959,9 @@ class AUN_SP_Requests {
 		 */
 		do_action( 'aun_sp_status_changed', $request_id, $status, 'quote_sent' );
 
+		// Hand the payment link back to the caller so the page (or the app) can offer
+		// "Pay now" immediately. Without this the customer approves, the buttons
+		// vanish, and nothing to pay with appears until they reload the page.
 		return array( 'ok' => true, 'code' => $status, 'message' => $status );
 	}
 
@@ -933,7 +1066,27 @@ class AUN_SP_Requests {
 			current_time( 'Y-m-d' )
 		) );
 
-		if ( $action === 0 && empty( $stale ) && empty( $late ) ) {
+		// Approved but the money never arrived. With no advance required, a customer
+		// can approve, never pay, and we'd still source the part — so surface it
+		// rather than letting it sit silently. COD orders sit at "processing" (payment
+		// is collected on delivery) and needs_payment() is false, so they're excluded.
+		$unpaid = array();
+		if ( AUN_SP_Woo::is_active() ) {
+			$rows = $wpdb->get_results( "SELECT id, ref, customer_name, wc_order_id FROM $t WHERE wc_order_id > 0 AND $open" );
+			foreach ( (array) $rows as $row ) {
+				$o = wc_get_order( (int) $row->wc_order_id );
+				if ( $o && $o->needs_payment() ) {
+					$unpaid[] = array(
+						'ref'   => $row->ref,
+						'who'   => $row->customer_name,
+						'num'   => $o->get_order_number(),
+						'total' => number_format_i18n( (float) $o->get_total(), 2 ),
+					);
+				}
+			}
+		}
+
+		if ( $action === 0 && empty( $stale ) && empty( $late ) && empty( $unpaid ) ) {
 			return; // nothing needs the admin today — no email
 		}
 
@@ -960,6 +1113,13 @@ class AUN_SP_Requests {
 				$lines[] = '  - ' . $l->part_label . ' (' . $l->ref . ') — expected ' . $l->eta;
 			}
 		}
+		if ( $unpaid ) {
+			$lines[] = '';
+			$lines[] = 'APPROVED BUT NOT PAID:';
+			foreach ( $unpaid as $u ) {
+				$lines[] = '  - ' . $u['ref'] . ' (' . $u['who'] . ') — order #' . $u['num'] . ', Tk ' . $u['total'] . ' outstanding';
+			}
+		}
 		if ( $stale ) {
 			$lines[] = '';
 			$lines[] = 'NO ACTIVITY FOR 14+ DAYS:';
@@ -976,6 +1136,9 @@ class AUN_SP_Requests {
 		}
 		if ( $stale ) {
 			$subject .= ', ' . count( (array) $stale ) . ' stale';
+		}
+		if ( $unpaid ) {
+			$subject .= ', ' . count( $unpaid ) . ' unpaid';
 		}
 		wp_mail( $to, $subject, implode( "\n", $lines ) );
 	}

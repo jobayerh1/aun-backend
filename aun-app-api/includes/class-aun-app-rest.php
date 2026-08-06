@@ -776,6 +776,9 @@ class AUN_App_REST {
 		return $this->ok( array(
 			'coupon'  => (string) ( $result['coupon'] ?? '' ),
 			'message' => (string) $result['message'],
+			// The number this coupon is locked to. Told here, at the moment of
+			// success, rather than discovered at checkout when it fails.
+			'phone'   => (string) ( $result['phone'] ?? '' ),
 		) );
 	}
 

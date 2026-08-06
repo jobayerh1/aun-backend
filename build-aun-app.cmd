@@ -34,15 +34,33 @@ if errorlevel 1 (
 
 copy /Y "C:\dev\aun-app\build\app\outputs\flutter-apk\app-release.apk" "%~dp0AUN-Care-Bangladesh.apk" >nul
 
+rem Which version is actually inside the file we just wrote? Printed below so
+rem there is never any doubt about what is being sent to a phone.
+set "APPVER=unknown"
+for /f "tokens=2" %%v in ('findstr /b "version:" C:\dev\aun-app\pubspec.yaml') do set "APPVER=%%v"
+
+rem Delete APKs left by earlier versions of this script under the OLD name.
+rem This caused a real, expensive bug: a stale AUN-Projector-app.apk from an
+rem earlier build sat next to the fresh one for weeks, and the old file was the
+rem one that got installed — so a fix that was verified, built and shipped
+rem looked like it had simply never worked. Two similar filenames in one folder
+rem is a trap; the build owns this folder, so it cleans up after itself.
+if exist "%~dp0AUN-Projector-app.apk" (
+    del /q "%~dp0AUN-Projector-app.apk"
+    echo  Removed an old AUN-Projector-app.apk from a previous build.
+)
+
 echo.
 echo ==========================================================
 echo  DONE!  The APK is saved next to this script as:
 echo.
 echo     AUN-Care-Bangladesh.apk
 echo.
+echo  Version: %APPVER%
 echo  Signed with: %SIGNING%
 echo.
-echo  Send it to your phone (WhatsApp/USB), tap it to install.
+echo  Send THIS file to your phone (WhatsApp/USB), tap to install.
+echo  If any other .apk is sitting in this folder, it is out of date.
 echo ==========================================================
 echo.
 echo  NOTE: the first build after switching to the upload key

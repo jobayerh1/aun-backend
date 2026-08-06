@@ -21,6 +21,8 @@ class AUN_SP_Messages {
 	const OPT_SMS_PHOTO    = 'aun_sp_sms_photo';
 	const OPT_SMS_QUOTE    = 'aun_sp_sms_quote';
 	const OPT_SMS_APPROVED = 'aun_sp_sms_approved';
+	const OPT_SMS_PAY      = 'aun_sp_sms_pay';
+	const OPT_SMS_PAID     = 'aun_sp_sms_paid';
 	const OPT_REJECT_TPL   = 'aun_sp_reject_templates';
 	const OPT_PAY_INFO     = 'aun_sp_pay_info';
 
@@ -34,6 +36,8 @@ class AUN_SP_Messages {
 			self::OPT_SMS_PHOTO    => 'AUN: the photo for request {ref} needs to be clearer. Please open the link, take it just like the example shown, and re-upload: {track}',
 			self::OPT_SMS_QUOTE    => 'AUN: your spare-parts quote for {ref} is ready - total Tk {total}. Please review and approve it here: {track}',
 			self::OPT_SMS_APPROVED => 'AUN: thank you, your quote for {ref} is approved. We will now start sourcing your parts. {pay}',
+			self::OPT_SMS_PAY      => 'AUN: to pay online for {ref} (Tk {total}), open this link: {link}',
+			self::OPT_SMS_PAID     => 'AUN: payment of Tk {total} received for {ref} - thank you. Track it: {track}',
 		);
 	}
 

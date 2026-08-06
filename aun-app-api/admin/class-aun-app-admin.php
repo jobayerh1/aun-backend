@@ -175,21 +175,136 @@ class AUN_App_Admin {
 		$rewarded = $by[ AUN_App_Referrals::STATUS_REWARDED ] ?? 0;
 		$revoked  = $by[ AUN_App_Referrals::STATUS_REVOKED ] ?? 0;
 
-		echo '<tr><th>So far</th><td>';
 		if ( 0 === $pending + $rewarded + $revoked ) {
 			echo '<p class="description">No referral codes have been used yet.</p>';
+			return;
+		}
+
+		echo '<div class="aun-stats" style="margin:0">';
+		echo '<div class="aun-stat"><span class="dashicons dashicons-yes-alt"></span>'
+			. '<div class="num">' . (int) $rewarded . '</div><div class="lbl">Completed &amp; paid</div></div>';
+		echo '<div class="aun-stat"><span class="dashicons dashicons-clock"></span>'
+			. '<div class="num">' . (int) $pending . '</div><div class="lbl">Waiting on a first order</div></div>';
+		if ( $revoked > 0 ) {
+			echo '<div class="aun-stat"><span class="dashicons dashicons-dismiss"></span>'
+				. '<div class="num">' . (int) $revoked . '</div><div class="lbl">Revoked (refunded or blocked)</div></div>';
+		}
+		echo '</div>';
+
+		if ( $pending > 10 && 0 === $rewarded ) {
+			echo '<p style="color:#b32d2e;font-weight:600;margin-top:14px">Many claims but no completed orders — worth checking whether the codes are being shared for the discount alone.</p>';
+		}
+	}
+
+	/**
+	 * Work out, for one real customer, whether the app will show them the
+	 * referral card — and if not, exactly which condition is responsible.
+	 *
+	 * This mirrors the phone's own decision (ReferralSummary.face in
+	 * models.dart) rather than describing it, so the two cannot drift: given
+	 * the same payload it reaches the same verdict the app reaches.
+	 *
+	 * @param string $raw_phone Whatever the admin typed.
+	 * @return array
+	 */
+	private function referral_diagnose( $raw_phone ) {
+		$out = array( 'phone' => trim( (string) $raw_phone ), 'error' => '', 'rows' => array(), 'verdict' => '', 'why' => '' );
+
+		if ( '' === $out['phone'] ) {
+			$out['error'] = 'Enter the customer\'s mobile number.';
+			return $out;
+		}
+		if ( ! class_exists( 'AUN_App_Phone' ) ) {
+			$out['error'] = 'Phone helper missing.';
+			return $out;
+		}
+
+		$canonical = AUN_App_Phone::normalize( $out['phone'] );
+		if ( ! $canonical ) {
+			$out['error'] = 'That is not a valid Bangladeshi mobile number.';
+			return $out;
+		}
+		$out['phone'] = AUN_App_Referrals::display_phone( $canonical );
+
+		$users = AUN_App_Phone::find_users( $canonical );
+		if ( empty( $users ) ) {
+			$out['error'] = 'No account on this site uses that number. The customer must log into the app at least once first.';
+			return $out;
+		}
+		$uid = (int) $users[0]->ID;
+
+		$s = AUN_App_Referrals::summary( $uid );
+
+		// The phone's logic, applied to this payload.
+		$enabled         = ! empty( $s['enabled'] );
+		$can_invite      = ! empty( $s['can_invite'] );
+		$can_claim       = ! empty( $s['can_claim'] );
+		$code            = (string) ( $s['code'] ?? '' );
+		$my_coupon       = (string) ( $s['my_coupon'] ?? '' );
+		$can_show_invite = $enabled && $can_invite && '' !== $code;
+
+		if ( ! $enabled ) {
+			$face = 'hidden';
+			$why  = 'The programme is not running: either it is switched off above, or the friend\'s discount is still 0, or WooCommerce is inactive.';
+		} elseif ( $can_show_invite ) {
+			$face = 'invite';
+			$why  = 'They own a projector, so they see the invite card with their own code.';
+		} elseif ( $can_claim ) {
+			$face = 'claim';
+			$why  = 'No projector yet, so they cannot invite — but they CAN redeem a friend\'s code, and that is what the card offers them.';
+		} elseif ( '' !== $my_coupon ) {
+			$face = 'coupon';
+			$why  = 'They have already redeemed a code; the card shows them the coupon they were given.';
 		} else {
-			echo '<p><strong>' . (int) $rewarded . '</strong> completed and paid &nbsp;·&nbsp; '
-				. '<strong>' . (int) $pending . '</strong> waiting on a first order';
-			if ( $revoked > 0 ) {
-				echo ' &nbsp;·&nbsp; <strong>' . (int) $revoked . '</strong> revoked (refunded or blocked)';
+			$face = 'hidden';
+			$why  = 'Nothing to offer: they cannot invite (no projector registered), cannot claim '
+				. '(this number has already used a code), and hold no unspent coupon — so there is '
+				. 'genuinely nothing to put on the card. This is correct behaviour, not a fault. '
+				. 'It resolves itself the moment they register a projector, which turns them into '
+				. 'an inviter. If this is your own test account, claim history is per NUMBER and '
+				. 'permanent by design, so testing the redeem flow again needs a different SIM.';
+		}
+
+		$out['rows'] = array(
+			'Account'                  => '#' . $uid . ' — ' . $users[0]->user_login,
+			'enabled (programme live)' => $enabled ? 'true' : 'false',
+			'can_invite'               => $can_invite ? 'true' : 'false',
+			'can_claim'                => $can_claim ? 'true' : 'false',
+			'code'                     => '' !== $code ? $code : '(none)',
+			'my_coupon'                => '' !== $my_coupon ? $my_coupon : '(none)',
+			'Has bought before'        => AUN_App_Referrals::has_purchase_history( $uid, $canonical ) ? 'yes' : 'no',
+			'Has used a code before'   => AUN_App_Referrals::has_claimed( $uid ) ? 'yes' : 'no',
+		);
+
+		// "Already claimed, but no coupon" is the one combination that used to
+		// be a dead end and is still worth explaining: the customer is refused
+		// a second code AND has nothing to show, which from their side looks
+		// like the feature is simply broken.
+		$claim = AUN_App_Referrals::claim_row( $uid, $canonical );
+		if ( $claim ) {
+			$out['rows']['Claim on file'] = sprintf(
+				'%s — status %s, coupon %s',
+				substr( (string) $claim->created_at, 0, 10 ),
+				(string) $claim->status,
+				'' !== (string) $claim->friend_coupon ? (string) $claim->friend_coupon : '(never issued)'
+			);
+			if ( (int) $claim->referred_user_id !== $uid ) {
+				$out['rows']['⚠ Claim account'] = 'claimed under account #' . (int) $claim->referred_user_id
+					. ' with the same number';
 			}
-			echo '</p>';
-			if ( $pending > 10 && 0 === $rewarded ) {
-				echo '<p style="color:#b32d2e;font-weight:600">Many claims but no completed orders — worth checking whether the codes are being shared for the discount alone.</p>';
+			$cc = (string) $claim->friend_coupon;
+			if ( '' !== $cc && function_exists( 'wc_get_coupon_id_by_code' ) ) {
+				$cid = (int) wc_get_coupon_id_by_code( $cc );
+				$out['rows']['Coupon state'] = $cid < 1
+					? 'the coupon no longer exists (deleted)'
+					: ( (int) ( new WC_Coupon( $cid ) )->get_usage_count() > 0
+						? 'already spent'
+						: 'unspent and valid' );
 			}
 		}
-		echo '</td></tr>';
+		$out['verdict'] = $face;
+		$out['why']     = $why;
+		return $out;
 	}
 
 	public function menu() {
@@ -508,6 +623,29 @@ class AUN_App_Admin {
 		.aun-badge-purple{background:#ede9fe;color:#5b21b6}
 		.aun-badge-grey{background:#f3f4f6;color:#6b7280}
 		.aun-endpoints code{display:block;padding:2px 0;color:#1d2327}
+
+		/* ── Settings: a sidebar of sections instead of one endless column ──
+		   Seven groups of unrelated settings stacked vertically is why things
+		   ended up filed under whatever heading happened to be last. */
+		.aun-settings{display:grid;grid-template-columns:232px minmax(0,1fr);gap:24px;align-items:start}
+		.aun-nav{position:sticky;top:46px;background:#fff;border:1px solid #e2e4e7;border-radius:10px;padding:6px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+		.aun-nav a{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:7px;color:#3c434a;text-decoration:none;font-weight:500;font-size:13.5px;line-height:1.3}
+		.aun-nav a:hover{background:#f0f6fc;color:#0188fe}
+		.aun-nav a.active{background:#0188fe;color:#fff}
+		.aun-nav a.active .dashicons{color:#fff}
+		.aun-nav .dashicons{font-size:18px;width:18px;height:18px;color:#8c8f94;flex:none}
+		.aun-panel{display:none}
+		.aun-panel.active{display:block}
+		.aun-card .aun-hint{color:#646970;font-size:13px;line-height:1.6;margin:-4px 0 18px;max-width:820px}
+		.aun-card h3{font-size:13px;font-weight:700;color:#50575e;text-transform:uppercase;letter-spacing:.5px;margin:26px 0 6px;padding-top:18px;border-top:1px solid #f0f0f1}
+		.aun-card h3:first-of-type{margin-top:4px;padding-top:0;border-top:0}
+		.aun-wrap .form-table th{width:190px;font-weight:600;color:#1d2327}
+		.aun-save{position:sticky;bottom:0;background:#fff;border:1px solid #e2e4e7;border-radius:10px;padding:12px 18px;margin-top:6px;display:flex;align-items:center;gap:14px;box-shadow:0 -2px 10px rgba(0,0,0,.06);z-index:5}
+		.aun-save .description{margin:0}
+		.aun-status-ok{color:#166534;font-weight:700}
+		.aun-status-warn{color:#92400e;font-weight:700}
+		.aun-status-bad{color:#b91c1c;font-weight:700}
+		@media (max-width:960px){.aun-settings{grid-template-columns:1fr}.aun-nav{position:static}}
 		CSS;
 	}
 
@@ -515,7 +653,12 @@ class AUN_App_Admin {
 		echo '<style data-no-optimize="1">' . $this->css() . '</style>';
 		echo '<div class="wrap aun-wrap">';
 		echo '<h1 class="aun-title"><span class="dashicons dashicons-smartphone"></span> ' . esc_html( $title ) . '</h1>';
-		echo '<p class="aun-subtitle">' . esc_html( $subtitle ) . '</p>';
+		// The running plugin version, stated plainly. "Is the new backend
+		// actually live?" is otherwise unanswerable from inside wp-admin, and
+		// a stale upload looks exactly like a bug in the app.
+		echo '<p class="aun-subtitle">' . esc_html( $subtitle )
+			. ' <span class="aun-badge aun-badge-grey" style="margin-left:6px">plugin v'
+			. esc_html( AUN_APP_API_VERSION ) . '</span></p>';
 	}
 
 	/* --------------------------------------------------------------------- *
@@ -1220,6 +1363,41 @@ class AUN_App_Admin {
 				. '</div>';
 		}
 
+		// "Why can't this customer see it?" — answers the question with the
+		// actual payload rather than a theory. Added after the referral card was
+		// reported missing three times: two of those rounds were spent guessing
+		// because nobody could see what the customer's own account returns.
+		$diag = null;
+		if ( isset( $_POST['aun_referral_diag_nonce'] ) && wp_verify_nonce( $_POST['aun_referral_diag_nonce'], 'aun_app_referral_diag' ) ) {
+			$diag = $this->referral_diagnose( (string) ( $_POST['referral_diag_phone'] ?? '' ) );
+		}
+
+		// Test reset. TWO steps by design: the first click only ever reports
+		// what exists, and deleting requires a second, explicit confirmation.
+		// This destroys real coupons, so a single mistyped digit must not be
+		// able to wipe a genuine customer's referral history.
+		$reset = null;
+		if ( isset( $_POST['aun_referral_reset_nonce'] ) && wp_verify_nonce( $_POST['aun_referral_reset_nonce'], 'aun_app_referral_reset' ) ) {
+			$reset_phone = (string) ( $_POST['referral_reset_phone'] ?? '' );
+			$confirmed   = ! empty( $_POST['referral_reset_confirm'] );
+			$reset       = AUN_App_Referrals::reset_for_phone( $reset_phone, ! $confirmed );
+			$reset['confirmed'] = $confirmed;
+
+			if ( $confirmed && ! empty( $reset['ok'] ) ) {
+				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( (string) $reset['message'] ) . '</p></div>';
+			} elseif ( empty( $reset['ok'] ) ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( (string) $reset['message'] ) . '</p></div>';
+			}
+		}
+
+		// "Release the phone lock": the support override for a customer who is
+		// checking out under a number other than the one they verified.
+		if ( isset( $_POST['aun_referral_unlock_nonce'] ) && wp_verify_nonce( $_POST['aun_referral_unlock_nonce'], 'aun_app_referral_unlock' ) ) {
+			$res   = AUN_App_Referrals::unlock_coupon( (string) ( $_POST['referral_unlock_code'] ?? '' ) );
+			$class = ! empty( $res['ok'] ) ? 'notice-success' : 'notice-error';
+			echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( (string) $res['message'] ) . '</p></div>';
+		}
+
 		if ( isset( $_POST['aun_settings_nonce'] ) && wp_verify_nonce( $_POST['aun_settings_nonce'], 'aun_app_settings_save' ) ) {
 			$opts['whatsapp_number']     = preg_replace( '/[^\d+]/', '', (string) ( $_POST['whatsapp_number'] ?? '' ) );
 			$opts['support_phone']       = sanitize_text_field( $_POST['support_phone'] ?? '' );
@@ -1269,6 +1447,7 @@ class AUN_App_Admin {
 			$opts['referral_monthly_cap']     = max( 0, min( 100, (int) ( $_POST['referral_monthly_cap'] ?? 5 ) ) );
 			$opts['referral_claim_days']      = max( 0, min( 365, (int) ( $_POST['referral_claim_days'] ?? 30 ) ) );
 			$opts['referral_expiry_days']     = max( 1, min( 730, (int) ( $_POST['referral_expiry_days'] ?? 90 ) ) );
+			$opts['referral_test_phones']     = sanitize_textarea_field( wp_unslash( $_POST['referral_test_phones'] ?? '' ) );
 			delete_transient( 'aun_app_od_token' ); // re-mint with the new settings
 			update_option( AUN_APP_API_OPTION, $opts );
 			delete_transient( AUN_App_Tickets::TOPICS_CACHE );
@@ -1276,13 +1455,41 @@ class AUN_App_Admin {
 			echo '<div class="notice notice-success is-dismissible"><p>Settings saved.</p></div>';
 		}
 
-		$this->header( 'App Settings', 'Support details, banners and version gates served to the Android app.' );
+		$this->header( 'App Settings', 'Everything the Android app reads from this site — grouped by what it affects.' );
+
+		// One form across every section, so a single Save covers the lot and
+		// switching sections can never lose a half-typed change. The section
+		// buttons show and hide panels; they do not navigate.
+		$sections = array(
+			'support'  => array( 'sos', 'Support &amp; contact' ),
+			'screens'  => array( 'smartphone', 'App screens' ),
+			'notify'   => array( 'bell', 'Notifications' ),
+			'connect'  => array( 'admin-plugins', 'Integrations' ),
+			'watch'    => array( 'video-alt2', 'What to watch' ),
+			'referral' => array( 'groups', 'Referrals' ),
+			'release'  => array( 'update', 'App release' ),
+		);
 		?>
+		<div class="aun-settings">
+			<nav class="aun-nav" id="aun-settings-nav">
+				<?php foreach ( $sections as $key => $s ) : ?>
+					<a href="#<?php echo esc_attr( $key ); ?>" data-panel="<?php echo esc_attr( $key ); ?>">
+						<span class="dashicons dashicons-<?php echo esc_attr( $s[0] ); ?>"></span>
+						<?php echo wp_kses_post( $s[1] ); ?>
+					</a>
+				<?php endforeach; ?>
+			</nav>
+
+			<div>
 		<form method="post">
 			<?php wp_nonce_field( 'aun_app_settings_save', 'aun_settings_nonce' ); ?>
 
+			<!-- ── Support & contact ─────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-support">
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-sos"></span> Support</h2>
+				<h2><span class="dashicons dashicons-sos"></span> Support &amp; contact</h2>
+				<p class="aun-hint">How customers reach you from inside the app — the Support tab and the
+					tap-to-call and chat buttons.</p>
 				<table class="form-table">
 					<tr><th>WhatsApp number</th><td><input name="whatsapp_number" value="<?php echo esc_attr( $opts['whatsapp_number'] ); ?>" placeholder="8801XXXXXXXXX" /><p class="description">Digits only, international format — used for the wa.me chat button.</p></td></tr>
 					<tr><th>Support phone</th><td><input name="support_phone" value="<?php echo esc_attr( $opts['support_phone'] ); ?>" placeholder="09XXXXXXXX" /><p class="description">Tap-to-call number.</p></td></tr>
@@ -1292,22 +1499,39 @@ class AUN_App_Admin {
 				</table>
 			</div>
 
+			</div><!-- /panel-support -->
+
+			<!-- ── App screens ───────────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-screens">
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-megaphone"></span> Home Screen</h2>
+				<h2><span class="dashicons dashicons-smartphone"></span> App screens</h2>
+				<p class="aun-hint">What customers see when they open the app. Every one of these is live the
+					moment you save — none of them needs an app rebuild.</p>
+
+				<h3>Home screen</h3>
 				<table class="form-table">
 					<tr><th>Announcement</th><td><textarea name="announcement" rows="2" style="width:100%" placeholder="Short notice shown at the top of the app home screen. Bangla is fine."><?php echo esc_textarea( $opts['announcement'] ); ?></textarea></td></tr>
 					<tr><th>Banners</th><td><textarea name="banners" rows="3" style="width:100%" placeholder="https://site/banner1.jpg | https://site/offer-page&#10;https://site/banner2.jpg"><?php echo esc_textarea( $opts['banners'] ); ?></textarea><p class="description">One per line: <code>image_url | optional_link</code></p></td></tr>
 					<tr><th>Discount note</th><td><input name="discount_note" style="width:100%" value="<?php echo esc_attr( $opts['discount_note'] ); ?>" placeholder="e.g. অ্যাপ থেকে অর্ডারে বিশেষ ছাড়!" /></td></tr>
-					<tr><th>Login screen video</th><td>
-						<input name="login_video_url" id="aun-video-url" style="width:78%" value="<?php echo esc_attr( $opts['login_video_url'] ); ?>" placeholder="https://.../login-video.mp4" />
+				</table>
+
+				<h3>Login screen</h3>
+				<table class="form-table">
+					<tr><th>Background video</th><td>
+						<input name="login_video_url" id="aun-video-url" style="width:70%" value="<?php echo esc_attr( $opts['login_video_url'] ); ?>" placeholder="https://.../login-video.mp4" />
 						<button type="button" class="button" id="aun-video-btn">Choose video</button>
 						<p class="description">MP4, ~720p, keep it a few MB — plays muted in a loop behind the app login screen. The app downloads it once and re-uses it. Change or clear anytime; no app rebuild needed.</p>
 					</td></tr>
 				</table>
 			</div>
+			</div><!-- /panel-screens -->
 
+			<!-- ── Notifications ─────────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-notify">
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-bell"></span> Push Notifications (Firebase)</h2>
+				<h2><span class="dashicons dashicons-bell"></span> Push notifications (Firebase)</h2>
+				<p class="aun-hint">Without this, notifications still appear inside the app — they just cannot
+					reach a phone that is not open.</p>
 				<table class="form-table">
 					<tr><th>Service-account JSON</th><td>
 						<textarea name="fcm_service_account" rows="4" style="width:100%;font-family:monospace;font-size:11px" placeholder='Paste the whole file: {"type":"service_account","project_id":"aun-projector",...}'><?php echo esc_textarea( $opts['fcm_service_account'] ); ?></textarea>
@@ -1315,15 +1539,38 @@ class AUN_App_Admin {
 							Firebase Console → Project settings → Service accounts → <em>Generate new private key</em> —
 							paste the downloaded file's full contents here. Stored in the database, never as a public file.<br>
 							Status: <?php echo AUN_App_Push::configured()
-								? '<strong style="color:#166534">✓ configured</strong> — new content, repair decisions and maintenance reminders are pushed to phones.'
-								: '<strong style="color:#92400e">not configured</strong> — notifications appear in-app only.'; ?>
+								? '<span class="aun-status-ok">✓ configured</span> — new content, repair decisions and maintenance reminders are pushed to phones.'
+								: '<span class="aun-status-warn">not configured</span> — notifications appear in-app only.'; ?>
 						</p>
 					</td></tr>
 				</table>
 			</div>
 
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-hammer"></span> Repair Tracking (ERP)</h2>
+				<h2><span class="dashicons dashicons-clock"></span> Maintenance reminder test</h2>
+				<p class="aun-hint">
+					Real dust-filter reminders arrive 30/60/90 days after an eligible purchase, so there is
+					normally no way to see one sooner. This sends a REAL reminder right now to any number that
+					has logged into the app at least once — notification panel, Home task card, and a push if
+					Firebase is set up above. Test sends use their own dedup namespace, so they never collide
+					with the real schedule and can be repeated.
+				</p>
+				<p style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
+					<input type="text" name="maint_test_phone" form="aun-maint-test-form" placeholder="e.g. 01700000000" style="width:200px" />
+					<select name="maint_test_offset" form="aun-maint-test-form">
+						<option value="30">Day 30 — first reminder</option>
+						<option value="60">Day 60 — second reminder</option>
+						<option value="90">Day 90 — final notice</option>
+					</select>
+					<button type="submit" form="aun-maint-test-form" class="button button-secondary">Send test reminder</button>
+				</p>
+			</div>
+			</div><!-- /panel-notify -->
+
+			<!-- ── Integrations ──────────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-connect">
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-hammer"></span> Repair tracking (UltimatePOS)</h2>
 				<table class="form-table">
 					<tr><th>Repair status API key</th><td>
 						<input name="repair_api_key" style="width:60%" value="<?php echo esc_attr( $opts['repair_api_key'] ); ?>" placeholder="Blank = use the SLB_ERP_API_KEY constant from wp-config.php" autocomplete="off" />
@@ -1331,15 +1578,15 @@ class AUN_App_Admin {
 							Key for the ERP <code>/api/repair-status</code> endpoint (<code>REPAIR_TRACK_API_KEY</code> in the ERP <code>.env</code>) —
 							the same one the website repair tracker uses. Leave blank to reuse the <code>SLB_ERP_API_KEY</code> constant.<br>
 							Status: <?php echo AUN_App_ERP::repair_configured()
-								? '<strong style="color:#166534">✓ configured</strong> — app repair requests auto-link to UltimatePOS job sheets and show the live repair status.'
-								: '<strong style="color:#92400e">not configured</strong> — the app will show only its own request statuses.'; ?>
+								? '<span class="aun-status-ok">✓ configured</span> — app repair requests auto-link to UltimatePOS job sheets and show the live repair status.'
+								: '<span class="aun-status-warn">not configured</span> — the app will show only its own request statuses.'; ?>
 						</p>
 					</td></tr>
 				</table>
 			</div>
 
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-tickets-alt"></span> Support Tickets (osTicket)</h2>
+				<h2><span class="dashicons dashicons-tickets-alt"></span> Support tickets (osTicket)</h2>
 				<table class="form-table">
 					<tr><th>osTicket site URL</th><td>
 						<input name="tickets_base_url" style="width:60%" value="<?php echo esc_attr( $opts['tickets_base_url'] ); ?>" placeholder="https://support.smartliving.com.bd" />
@@ -1353,16 +1600,16 @@ class AUN_App_Admin {
 							$ts_base   = rtrim( (string) $opts['tickets_base_url'], '/' );
 							$ts_secret = (string) $opts['tickets_secret'];
 							if ( '' === $ts_base && strlen( $ts_secret ) < 20 ) {
-								echo '<strong style="color:#92400e">not configured</strong> — fill in BOTH the site URL and the bridge secret above, then click <em>Save Settings</em> at the bottom of this page.';
+								echo '<span class="aun-status-warn">not configured</span> — fill in BOTH the site URL and the bridge secret above, then click <em>Save settings</em> at the bottom of this page.';
 							} elseif ( '' === $ts_base ) {
-								echo '<strong style="color:#92400e">the osTicket site URL is empty.</strong> Enter <code>https://support.smartliving.com.bd</code> in the field above and click <em>Save Settings</em>. (Secret looks set: ' . (int) strlen( $ts_secret ) . ' characters stored.)';
+								echo '<span class="aun-status-warn">the osTicket site URL is empty.</span> Enter <code>https://support.smartliving.com.bd</code> in the field above and click <em>Save settings</em>. (Secret looks set: ' . (int) strlen( $ts_secret ) . ' characters stored.)';
 							} elseif ( strlen( $ts_secret ) < 20 ) {
-								echo '<strong style="color:#92400e">the bridge secret is too short</strong> — 20+ characters needed, but only ' . (int) strlen( $ts_secret ) . ' were stored. Re-paste it and click <em>Save Settings</em>. (Site URL is set: <code>' . esc_html( $ts_base ) . '</code>.)';
+								echo '<span class="aun-status-warn">the bridge secret is too short</span> — 20+ characters needed, but only ' . (int) strlen( $ts_secret ) . ' were stored. Re-paste it and click <em>Save settings</em>. (Site URL is set: <code>' . esc_html( $ts_base ) . '</code>.)';
 							} else {
 								$ping = AUN_App_Tickets::call( 'ping' );
 								echo is_wp_error( $ping )
-									? '<strong style="color:#b91c1c">✗ bridge unreachable:</strong> ' . esc_html( $ping->get_error_message() )
-									: '<strong style="color:#166534">✓ connected</strong> — osTicket v' . esc_html( (string) ( $ping['version'] ?? '?' ) ) . '. Tickets, replies and push alerts are live.';
+									? '<span class="aun-status-bad">✗ bridge unreachable:</span> ' . esc_html( $ping->get_error_message() )
+									: '<span class="aun-status-ok">✓ connected</span> — osTicket v' . esc_html( (string) ( $ping['version'] ?? '?' ) ) . '. Tickets, replies and push alerts are live.';
 							}
 							?>
 						</p>
@@ -1378,10 +1625,89 @@ class AUN_App_Admin {
 						</p>
 					</td></tr>
 				</table>
+				<?php if ( AUN_App_Tickets::configured() ) : ?>
+				<p style="margin:14px 0 0;padding-top:16px;border-top:1px solid #f0f0f1">
+					<button type="submit" form="aun-tickets-test-form" class="button button-secondary">Send test ticket</button>
+					<span class="description" style="display:block;margin-top:6px;max-width:720px">
+						Creates one REAL ticket through the bridge from this server and shows the exact result —
+						the fastest way to diagnose "something went wrong" without reading an error log.
+						Delete the test ticket in the Agent Panel afterwards.
+					</span>
+				</p>
+				<?php endif; ?>
 			</div>
 
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-video-alt2"></span> What to Watch (home screen picks)</h2>
+				<h2><span class="dashicons dashicons-cloud"></span> OneDrive / SharePoint (firmware &amp; manuals)</h2>
+				<p class="aun-hint">
+					Where the app fetches large firmware files and PDF manuals from. Nothing to do with the
+					home-screen picks — this was previously filed under "What to watch", which is why it was
+					impossible to find.
+				</p>
+				<table class="form-table">
+					<tr><th>Connection</th><td>
+						<?php
+						$od_own  = '' !== trim( (string) $opts['onedrive_client_id'] ) && '' !== trim( (string) $opts['onedrive_client_secret'] );
+						$od_wpfd = '' !== AUN_App_Content::wpfd_onedrive_token();
+						$od_state = $od_own
+							? array( '#0f7b3f', 'Using this plugin\'s own OneDrive connection — independent of any other plugin.' )
+							: ( $od_wpfd
+								? array( '#8a6d00', 'Currently borrowing the WP File Download plugin\'s OneDrive connection. It works, but downloads would fall back to public share links if you remove that plugin. Fill the fields below to be fully independent.' )
+								: array( '#6b7280', 'Not connected. Public "Anyone with the link" OneDrive shares still download fine; fill these in only if you want authenticated access (e.g. org-restricted files).' ) );
+						?>
+						<p style="margin:0 0 10px;color:<?php echo esc_attr( $od_state[0] ); ?>"><strong><?php echo esc_html( $od_state[1] ); ?></strong></p>
+					</td></tr>
+					<tr><th>Client ID</th><td>
+						<input name="onedrive_client_id" style="width:60%" value="<?php echo esc_attr( $opts['onedrive_client_id'] ); ?>" placeholder="Application (client) ID" autocomplete="off" />
+					</td></tr>
+					<tr><th>Client secret</th><td>
+						<input name="onedrive_client_secret" type="password" style="width:60%" value="<?php echo esc_attr( $opts['onedrive_client_secret'] ); ?>" placeholder="Client secret VALUE" autocomplete="new-password" />
+					</td></tr>
+					<tr><th>Tenant ID</th><td>
+						<input name="onedrive_tenant" style="width:60%" value="<?php echo esc_attr( $opts['onedrive_tenant'] ); ?>" placeholder="Directory (tenant) ID — or leave blank for 'common'" autocomplete="off" />
+					</td></tr>
+					<tr><th>Refresh token</th><td>
+						<input name="onedrive_refresh_token" type="password" style="width:60%" value="<?php echo esc_attr( $opts['onedrive_refresh_token'] ); ?>" placeholder="Optional — only for a delegated (user) connection" autocomplete="new-password" />
+						<p class="description" style="max-width:760px">
+							Optional. Azure Portal → App registrations → your app: copy the <strong>Client ID</strong>
+							and <strong>Tenant ID</strong>, then Certificates &amp; secrets → new client secret (copy the
+							<em>Value</em>). Grant the <strong>Files.Read.All</strong> application permission and click
+							“Grant admin consent”. Leave the refresh token blank for that app-only setup.
+							Use <strong>App Content → any file → “Test download”</strong> to verify.
+						</p>
+					</td></tr>
+				</table>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-video-alt3"></span> YouTube (video guides)</h2>
+				<p class="aun-hint">
+					For the per-model video guides in the app — also previously filed under "What to watch",
+					which it has nothing to do with.
+				</p>
+				<table class="form-table">
+					<tr><th>YouTube Data API key</th><td>
+						<input name="youtube_api_key" style="width:60%" value="<?php echo esc_attr( $opts['youtube_api_key'] ); ?>" placeholder="Free key from Google Cloud → YouTube Data API v3" autocomplete="off" />
+						<p class="description">
+							Shows each <strong>video guide's real YouTube upload date</strong> in the app
+							(instead of the date you added it here) — works for videos on <strong>any</strong>
+							channel. Free: Google Cloud Console → enable “YouTube Data API v3” → create a key.
+							<strong>Leave blank to reuse the key already saved in the AUN Tutorials plugin.</strong>
+						</p>
+					</td></tr>
+				</table>
+			</div>
+			</div><!-- /panel-connect -->
+
+			<!-- ── What to watch ─────────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-watch">
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-video-alt2"></span> What to watch (home screen picks)</h2>
+				<p class="aun-hint">
+					The film and series rail on the app home screen — what a projector owner might actually
+					put on tonight. Trending titles come from TMDB; local platforms have no public API, so
+					those are curated by you below.
+				</p>
 				<table class="form-table">
 					<tr><th>TMDB API key</th><td>
 						<input name="tmdb_api_key" style="width:60%" value="<?php echo esc_attr( $opts['tmdb_api_key'] ); ?>" placeholder="Free key from themoviedb.org/settings/api" autocomplete="off" />
@@ -1400,42 +1726,6 @@ class AUN_App_Admin {
 							after updating this plugin, so newly added details (genre, runtime, cast) appear in the
 							app straight away instead of after the next scheduled rebuild.
 						</span>
-					</td></tr>
-					<tr><th>YouTube Data API key</th><td>
-						<input name="youtube_api_key" style="width:60%" value="<?php echo esc_attr( $opts['youtube_api_key'] ); ?>" placeholder="Free key from Google Cloud → YouTube Data API v3" autocomplete="off" />
-						<p class="description">
-							Shows each <strong>video guide's real YouTube upload date</strong> in the app
-							(instead of the date you added it here) — works for videos on <strong>any</strong>
-							channel. Free: Google Cloud Console → enable “YouTube Data API v3” → create a key.
-							<strong>Leave blank to reuse the key already saved in the AUN Tutorials plugin.</strong>
-						</p>
-					</td></tr>
-					<tr><th>OneDrive / SharePoint (firmware &amp; manuals)</th><td>
-						<?php
-						$od_own  = '' !== trim( (string) $opts['onedrive_client_id'] ) && '' !== trim( (string) $opts['onedrive_client_secret'] );
-						$od_wpfd = '' !== AUN_App_Content::wpfd_onedrive_token();
-						$od_state = $od_own
-							? array( '#0f7b3f', 'Using this plugin\'s own OneDrive connection — independent of any other plugin.' )
-							: ( $od_wpfd
-								? array( '#8a6d00', 'Currently borrowing the WP File Download plugin\'s OneDrive connection. It works, but downloads would fall back to public share links if you remove that plugin. Fill the fields below to be fully independent.' )
-								: array( '#6b7280', 'Not connected. Public "Anyone with the link" OneDrive shares still download fine; fill these in only if you want authenticated access (e.g. org-restricted files).' ) );
-						?>
-						<p style="margin:0 0 10px;color:<?php echo esc_attr( $od_state[0] ); ?>"><strong><?php echo esc_html( $od_state[1] ); ?></strong></p>
-						<p style="margin:6px 0"><label style="display:inline-block;width:150px">Client ID</label>
-							<input name="onedrive_client_id" style="width:52%" value="<?php echo esc_attr( $opts['onedrive_client_id'] ); ?>" placeholder="Application (client) ID" autocomplete="off" /></p>
-						<p style="margin:6px 0"><label style="display:inline-block;width:150px">Client secret</label>
-							<input name="onedrive_client_secret" type="password" style="width:52%" value="<?php echo esc_attr( $opts['onedrive_client_secret'] ); ?>" placeholder="Client secret VALUE" autocomplete="new-password" /></p>
-						<p style="margin:6px 0"><label style="display:inline-block;width:150px">Tenant ID</label>
-							<input name="onedrive_tenant" style="width:52%" value="<?php echo esc_attr( $opts['onedrive_tenant'] ); ?>" placeholder="Directory (tenant) ID — or leave blank for 'common'" autocomplete="off" /></p>
-						<p style="margin:6px 0"><label style="display:inline-block;width:150px">Refresh token</label>
-							<input name="onedrive_refresh_token" type="password" style="width:52%" value="<?php echo esc_attr( $opts['onedrive_refresh_token'] ); ?>" placeholder="Optional — only for a delegated (user) connection" autocomplete="new-password" /></p>
-						<p class="description">
-							Optional. Azure Portal → App registrations → your app: copy the <strong>Client ID</strong>
-							and <strong>Tenant ID</strong>, then Certificates &amp; secrets → new client secret (copy the
-							<em>Value</em>). Grant the <strong>Files.Read.All</strong> application permission and click
-							“Grant admin consent”. Leave the refresh token blank for that app-only setup.
-							Use <strong>App Content → any file → “Test download”</strong> to verify.
-						</p>
 					</td></tr>
 					<tr><th>How many titles</th><td>
 						<input name="watch_limit" type="number" min="1" max="<?php echo (int) AUN_App_Watch::MAX_LIMIT; ?>" style="width:90px"
@@ -1531,9 +1821,13 @@ class AUN_App_Admin {
 				</table>
 			</div>
 
+			</div><!-- /panel-watch -->
+
+			<!-- ── Referrals ─────────────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-referral">
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-groups"></span> Referral Programme</h2>
-					<p class="description" style="max-width:820px">
+				<h2><span class="dashicons dashicons-groups"></span> Referral programme</h2>
+					<p class="aun-hint">
 						Existing customers invite friends from the app. The <strong>friend</strong> gets a discount on their
 						first order; the <strong>referrer</strong> is paid only once that order is <strong>completed</strong>
 						— and the reward is taken back automatically if the order is later refunded or cancelled.
@@ -1553,8 +1847,9 @@ class AUN_App_Admin {
 							<option value="fixed" <?php selected( ( $opts['referral_friend_type'] ?? 'percent' ), 'fixed' ); ?>>৳ off the cart</option>
 						</select>
 						<p class="description">
-							Their first order only. The coupon is generated per customer, locked to their own email and
-							usable once, so it cannot be forwarded or reused. Percentages are capped at 50%.
+							Their first order only. The coupon is generated per customer, usable once, and locked to
+							the mobile number they verified in the app — so it cannot be forwarded or reused.
+							Percentages are capped at 50%.
 						</p>
 					</td></tr>
 					<tr><th>Referrer gets</th><td>
@@ -1609,15 +1904,172 @@ class AUN_App_Admin {
 							Always on, regardless of the settings above: no self-referral (checked by phone, not just
 							account); one claim per phone number ever, so deleting an account buys nothing;
 							<strong>first-time customers only</strong> — anyone with a past order or a registered
-							projector is refused; and rewards are revoked if the order is refunded, cancelled or fails.
+							projector is refused; the coupon only works for the number it was issued to; and rewards
+							are revoked if the order is refunded, cancelled or fails.
 						</p>
 					</td></tr>
-					<?php $this->referral_stats(); ?>
 					</table>
 			</div>
 
 			<div class="aun-card">
-				<h2><span class="dashicons dashicons-update"></span> App Version (APK distribution)</h2>
+				<h2><span class="dashicons dashicons-chart-bar"></span> How the programme is doing</h2>
+				<?php $this->referral_stats(); ?>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-hammer"></span> Testing with your own number</h2>
+				<p class="aun-hint">
+					The programme is built so a number can claim <strong>once, ever</strong> — which is exactly
+					right in production and exactly wrong when you have two SIMs and a flow to test. These two
+					tools let you walk the whole journey as many times as you need.
+				</p>
+
+				<h3>Test lines</h3>
+				<table class="form-table">
+					<tr><th>Numbers</th><td>
+						<textarea name="referral_test_phones" rows="2" style="width:340px;font-family:monospace"
+							placeholder="01712345678&#10;01812345678"><?php echo esc_textarea( (string) ( $opts['referral_test_phones'] ?? '' ) ); ?></textarea>
+						<p class="description" style="max-width:760px">
+							One per line, any format. These numbers may redeem a code <strong>even though they are
+							already customers</strong> — your own SIMs have order history and registered
+							projectors, so without this you can only ever test the inviting half.
+							<br><br>
+							It bypasses that <strong>one</strong> rule. Self-referral is still blocked, the reward
+							is still only paid when the order completes, the refund clawback still applies, and the
+							coupon is still locked to the number — because those are the parts worth testing.
+							<strong>Clear this box before you finish for the day.</strong>
+							<?php
+							$tp = AUN_App_Referrals::test_phones();
+							if ( ! empty( $tp ) ) {
+								echo '<br><br><span class="aun-status-warn">Active test lines: '
+									. esc_html( implode( ', ', array_map( array( 'AUN_App_Referrals', 'display_phone' ), $tp ) ) )
+									. '</span>';
+							}
+							?>
+						</p>
+					</td></tr>
+				</table>
+
+				<h3>Reset a number's referral history</h3>
+				<p class="description" style="max-width:760px;margin-bottom:12px">
+					Removes the claim, the invitations sent, the coupons issued and the invite code — so this
+					number can go through the whole programme again from scratch.
+					<strong>Orders, devices, warranties and the account itself are never touched.</strong>
+					You will see exactly what is about to go before anything is deleted.
+				</p>
+				<p style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
+					<input type="text" name="referral_reset_phone" form="aun-referral-reset-form"
+						value="<?php echo esc_attr( $reset['phone'] ?? '' ); ?>"
+						placeholder="01700000000" style="width:200px" />
+					<button type="submit" form="aun-referral-reset-form" class="button button-secondary">Show me what would be deleted</button>
+				</p>
+
+				<?php if ( is_array( $reset ) && ! empty( $reset['ok'] ) && empty( $reset['confirmed'] ) ) : ?>
+					<?php $nothing = 0 === $reset['claims'] + $reset['invites'] && empty( $reset['coupons'] ); ?>
+					<div style="margin-top:16px;padding:14px 16px;border:1px solid #e2e4e7;border-radius:10px;background:#f6f7f7">
+						<?php if ( $nothing ) : ?>
+							<p style="margin:0"><strong><?php echo esc_html( $reset['phone'] ); ?></strong> has no referral
+								history — there is nothing to reset. It can already go through the programme.</p>
+						<?php else : ?>
+							<p style="margin:0 0 8px"><strong>About to delete for <?php echo esc_html( $reset['phone'] ); ?>:</strong></p>
+							<ul style="margin:0 0 12px 18px;list-style:disc">
+								<li><?php echo (int) $reset['claims']; ?> claim(s) where they redeemed someone's code</li>
+								<li><?php echo (int) $reset['invites']; ?> invitation(s) where they were the referrer</li>
+								<li><?php echo count( $reset['coupons'] ); ?> coupon(s)<?php
+									echo empty( $reset['coupons'] ) ? '' : ': <code>' . esc_html( implode( '</code>, <code>', $reset['coupons'] ) ) . '</code>'; ?></li>
+								<li>their invite code (a fresh one is minted next time)</li>
+							</ul>
+							<form method="post" style="margin:0">
+								<?php wp_nonce_field( 'aun_app_referral_reset', 'aun_referral_reset_nonce' ); ?>
+								<input type="hidden" name="referral_reset_phone" value="<?php echo esc_attr( $reset['phone'] ); ?>" />
+								<input type="hidden" name="referral_reset_confirm" value="1" />
+								<button type="submit" class="button button-primary">Yes, delete this referral history</button>
+								<span class="description" style="margin-left:8px">This cannot be undone.</span>
+							</form>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-search"></span> Why can't a customer see the referral card?</h2>
+				<p class="aun-hint">
+					Enter the customer's mobile number to see exactly what their account returns and what the
+					app does with it. This runs the phone's own decision, so it gives the same verdict the app
+					gives — no guessing.
+				</p>
+				<p style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 4px">
+					<input type="text" name="referral_diag_phone" form="aun-referral-diag-form"
+						value="<?php echo esc_attr( $diag['phone'] ?? '' ); ?>"
+						placeholder="01700000000" style="width:200px" />
+					<button type="submit" form="aun-referral-diag-form" class="button button-secondary">Check this customer</button>
+				</p>
+				<?php if ( is_array( $diag ) ) : ?>
+					<?php if ( '' !== $diag['error'] ) : ?>
+						<p class="aun-status-warn" style="margin-top:14px"><?php echo esc_html( $diag['error'] ); ?></p>
+					<?php else : ?>
+						<table class="widefat" style="max-width:640px;margin-top:14px">
+							<tbody>
+							<?php foreach ( $diag['rows'] as $k => $v ) : ?>
+								<tr>
+									<td style="width:230px;color:#50575e"><?php echo esc_html( $k ); ?></td>
+									<td><code><?php echo esc_html( $v ); ?></code></td>
+								</tr>
+							<?php endforeach; ?>
+							</tbody>
+						</table>
+						<p style="margin-top:14px">
+							<strong>The app shows:</strong>
+							<?php
+							$labels = array(
+								'invite' => array( 'aun-badge-green', 'the INVITE card' ),
+								'claim'  => array( 'aun-badge-blue', 'the REDEEM card' ),
+								'coupon' => array( 'aun-badge-purple', 'their COUPON' ),
+								'hidden' => array( 'aun-badge-grey', 'NOTHING' ),
+							);
+							$lb = $labels[ $diag['verdict'] ] ?? $labels['hidden'];
+							?>
+							<span class="aun-badge <?php echo esc_attr( $lb[0] ); ?>"><?php echo esc_html( $lb[1] ); ?></span>
+						</p>
+						<p class="description" style="max-width:760px"><?php echo esc_html( $diag['why'] ); ?></p>
+						<?php if ( 'hidden' !== $diag['verdict'] ) : ?>
+							<p class="description" style="max-width:760px">
+								If the customer still sees nothing, their <strong>app is older than 1.60</strong> —
+								earlier builds hid the card from anyone without a projector. Check
+								<strong>Settings → App version</strong> on their phone.
+							</p>
+						<?php endif; ?>
+					<?php endif; ?>
+				<?php endif; ?>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-unlock"></span> Release a coupon's phone lock</h2>
+				<p class="aun-hint">
+					A referral coupon only works for the mobile number the customer verified in the app. That is
+					right nearly always — and occasionally wrong: someone checks out under a spouse's or a
+					relative's number and is refused correctly by the rule but unfairly in fact. Enter the
+					coupon code the customer is holding and this releases that one coupon.
+					<br><br>
+					Everything else about it stays in force: still single-use, still expiring, still subject to
+					the minimum order. There is deliberately no way to re-point a coupon at a <em>different</em>
+					number — the only number we can vouch for is the one that passed OTP.
+				</p>
+				<p style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
+					<input type="text" name="referral_unlock_code" form="aun-referral-unlock-form"
+						placeholder="WELCOME-K3P7QA" style="width:230px;font-family:monospace" />
+					<button type="submit" form="aun-referral-unlock-form" class="button button-secondary">Release the lock</button>
+				</p>
+			</div>
+			</div><!-- /panel-referral -->
+
+			<!-- ── App release ───────────────────────────────────────────── -->
+			<div class="aun-panel" id="panel-release">
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-update"></span> App version (APK distribution)</h2>
+				<p class="aun-hint">The version gates the app checks on launch. Raise these only after the new
+					APK is actually uploaded and reachable — a phone told to update to a file that is not there
+					has nowhere to go.</p>
 				<table class="form-table">
 					<tr><th>Latest version code</th><td><input name="latest_version_code" type="number" min="1" value="<?php echo (int) $opts['latest_version_code']; ?>" style="width:110px" /> <span class="description">Build number of the newest APK.</span></td></tr>
 					<tr><th>Latest version name</th><td><input name="latest_version_name" value="<?php echo esc_attr( $opts['latest_version_name'] ); ?>" style="width:110px" /></td></tr>
@@ -1627,58 +2079,87 @@ class AUN_App_Admin {
 				</table>
 			</div>
 
-			<p><input type="submit" class="button button-primary" value="Save Settings" /></p>
-		</form>
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-info"></span> Testing note</h2>
+				<p class="description" style="max-width:760px">
+					On a <strong>test site only</strong>, add <code>define( 'AUN_APP_DEV_OTP', true );</code> to
+					<code>wp-config.php</code> to receive login OTPs in the API response instead of by SMS.
+					Never enable this on the live site.
+				</p>
+			</div>
+			</div><!-- /panel-release -->
 
-		<?php // Standalone forms targeted by the buttons in the "What to Watch" card. ?>
+			<div class="aun-save">
+				<input type="submit" class="button button-primary" value="Save settings" />
+				<span class="description">Saves every section, not just the one you are looking at.</span>
+			</div>
+		</form>
+			</div><!-- /column -->
+		</div><!-- /aun-settings -->
+
+		<?php
+		// Standalone forms for the action buttons. They live OUTSIDE the settings
+		// form because HTML forbids nesting one form in another; the buttons and
+		// inputs above reach them by `form="..."`, which is what lets each tool
+		// sit with the feature it belongs to instead of in a heap at the bottom.
+		?>
 		<form id="aun-tmdb-test-form" method="post"><?php wp_nonce_field( 'aun_app_tmdb_test', 'aun_tmdb_test_nonce' ); ?></form>
 		<form id="aun-watch-rebuild-form" method="post"><?php wp_nonce_field( 'aun_app_watch_rebuild', 'aun_watch_rebuild_nonce' ); ?></form>
-
+		<form id="aun-maint-test-form" method="post"><?php wp_nonce_field( 'aun_app_maint_test', 'aun_maint_test_nonce' ); ?></form>
+		<form id="aun-referral-unlock-form" method="post"><?php wp_nonce_field( 'aun_app_referral_unlock', 'aun_referral_unlock_nonce' ); ?></form>
+		<form id="aun-referral-diag-form" method="post"><?php wp_nonce_field( 'aun_app_referral_diag', 'aun_referral_diag_nonce' ); ?></form>
+		<form id="aun-referral-reset-form" method="post"><?php wp_nonce_field( 'aun_app_referral_reset', 'aun_referral_reset_nonce' ); ?></form>
 		<?php if ( AUN_App_Tickets::configured() ) : ?>
-		<div class="aun-card">
-			<h2><span class="dashicons dashicons-yes-alt"></span> Support Ticket Test</h2>
-			<p class="description" style="max-width:720px">
-				Creates one REAL ticket through the bridge from this server and shows the exact
-				result — the fastest way to diagnose "something went wrong" without any error log.
-				Delete the test ticket in the Agent Panel afterwards.
-			</p>
-			<form method="post" style="margin-top:10px">
-				<?php wp_nonce_field( 'aun_app_tickets_test', 'aun_tickets_test_nonce' ); ?>
-				<button type="submit" class="button button-secondary">Send test ticket</button>
-			</form>
-		</div>
+		<form id="aun-tickets-test-form" method="post"><?php wp_nonce_field( 'aun_app_tickets_test', 'aun_tickets_test_nonce' ); ?></form>
 		<?php endif; ?>
-
-		<div class="aun-card">
-			<h2><span class="dashicons dashicons-clock"></span> Maintenance Reminder Test</h2>
-			<p class="description" style="max-width:720px">
-				The real reminders arrive 30/60/90 days after an eligible purchase — there is no way
-				to see one sooner. This sends a REAL reminder right now to any phone number that has
-				logged into the app at least once: it appears in the notification panel, as a task
-				card on the Home screen, and (if push is set up) as a push notification. Use it to
-				verify the whole thing works before waiting on the real schedule.
-			</p>
-			<form method="post" style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-				<?php wp_nonce_field( 'aun_app_maint_test', 'aun_maint_test_nonce' ); ?>
-				<input type="text" name="maint_test_phone" placeholder="e.g. 01700000000" style="width:200px" />
-				<select name="maint_test_offset">
-					<option value="30">Day 30 — first reminder</option>
-					<option value="60">Day 60 — second reminder</option>
-					<option value="90">Day 90 — final notice</option>
-				</select>
-				<button type="submit" class="button button-secondary">Send test reminder</button>
-			</form>
 		</div>
 
-		<div class="aun-card">
-			<h2><span class="dashicons dashicons-info"></span> Testing note</h2>
-			<p class="description" style="max-width:720px">
-				On a <strong>test site only</strong>, add <code>define( 'AUN_APP_DEV_OTP', true );</code> to
-				<code>wp-config.php</code> to receive login OTPs in the API response instead of by SMS.
-				Never enable this on the live site.
-			</p>
-		</div>
-		</div>
+		<script data-no-optimize="1">
+		( function () {
+			var nav = document.getElementById( 'aun-settings-nav' );
+			if ( ! nav ) { return; }
+			var links = nav.querySelectorAll( 'a[data-panel]' );
+			var KEY = 'aunAppSettingsPanel';
+
+			function show( name, remember ) {
+				var found = false;
+				links.forEach( function ( a ) {
+					var on = a.getAttribute( 'data-panel' ) === name;
+					a.classList.toggle( 'active', on );
+					var panel = document.getElementById( 'panel-' + a.getAttribute( 'data-panel' ) );
+					if ( panel ) { panel.classList.toggle( 'active', on ); }
+					if ( on ) { found = true; }
+				} );
+				if ( ! found ) { return false; }
+				if ( remember ) {
+					try { window.localStorage.setItem( KEY, name ); } catch ( e ) {}
+				}
+				return true;
+			}
+
+			links.forEach( function ( a ) {
+				a.addEventListener( 'click', function ( e ) {
+					e.preventDefault();
+					show( a.getAttribute( 'data-panel' ), true );
+					// Keep the section in the URL so a browser refresh — which is
+					// what a settings save is — comes back to the same place.
+					if ( window.history && window.history.replaceState ) {
+						window.history.replaceState( null, '', '#' + a.getAttribute( 'data-panel' ) );
+					}
+				} );
+			} );
+
+			var start = ( window.location.hash || '' ).replace( '#', '' );
+			if ( ! start ) {
+				try { start = window.localStorage.getItem( KEY ) || ''; } catch ( e ) {}
+			}
+			// Falls back to the first section when the stored one no longer
+			// exists — a renamed section must never leave a blank page.
+			if ( ! start || ! show( start, false ) ) {
+				show( links[0].getAttribute( 'data-panel' ), false );
+			}
+		} )();
+		</script>
 
 		<script data-no-optimize="1">
 		jQuery(function($){

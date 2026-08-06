@@ -239,6 +239,15 @@
 .aun-sp-quote-total{display:flex;justify-content:space-between;gap:12px;font-size:16px;font-weight:700;color:var(--aun-ink);padding:10px 0 2px;}
 .aun-sp-quote-note{font-size:13px;color:var(--aun-muted);margin-top:8px;}
 .aun-sp-quote-pay{font-size:13px;color:#9a6700;background:rgba(255,188,0,0.10);border:1px solid rgba(255,188,0,0.4);border-radius:8px;padding:8px 12px;margin-top:10px;}
+/* Pay online / cash-on-delivery choice */
+.aun-sp-paychoice{margin-top:14px;padding-top:12px;border-top:1px solid var(--aun-border);}
+.aun-sp-pay-btn{display:flex;width:100%;text-decoration:none;background:#16a34a;}
+.aun-sp-pay-btn:hover{background:#12833b;}
+.aun-sp-pay-btn:disabled{opacity:.6;}
+.aun-sp-quote-payhint{font-size:13px;color:var(--aun-muted);margin-top:8px;text-align:center;line-height:1.5;}
+.aun-sp-quote-payhint.is-error{color:#b3261e;}
+.aun-sp-quote-paid{margin-top:12px;padding:10px 12px;border-radius:9px;background:rgba(22,163,74,0.10);color:#16a34a;font-size:14px;font-weight:700;text-align:center;}
+
 .aun-sp-quote-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
 .aun-sp-quote-actions .aun-sp-btn{flex:1 1 150px;}
 .aun-sp-btn-ghost{background:#fff;color:var(--aun-muted);}

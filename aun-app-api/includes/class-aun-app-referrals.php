@@ -38,6 +38,16 @@ class AUN_App_Referrals {
 	const ORDER_META_CODE = '_aun_referral_code';
 
 	/**
+	 * Coupon meta: the canonical phone the coupon was issued to.
+	 *
+	 * A referral coupon is otherwise a bearer token — whoever types the code
+	 * first gets the discount, because WooCommerce has no "belongs to this
+	 * account" restriction and the app's identity is a phone the website
+	 * checkout knows nothing about. This meta is what ties the two together.
+	 */
+	const COUPON_META_PHONE = '_aun_referral_phone';
+
+	/**
 	 * Code alphabet — no O/0, I/1, S/5. Codes get read aloud over the phone and
 	 * retyped from a WhatsApp message; ambiguous characters turn a working code
 	 * into a support ticket.
@@ -288,7 +298,12 @@ class AUN_App_Referrals {
 		// ── 3. New customers only ────────────────────────────────────────
 		// The single most important rule. Without it the programme is just a
 		// discount existing customers hand each other before every purchase.
-		if ( self::has_purchase_history( $user_id, $my_phone ) ) {
+		//
+		// A designated TEST line skips this one rule, and only this one: the
+		// shop's own SIMs have order history, so otherwise the friend side of
+		// the programme can never be walked end to end. Everything below and
+		// above still applies to them.
+		if ( ! self::is_test_phone( $my_phone ) && self::has_purchase_history( $user_id, $my_phone ) ) {
 			return self::fail(
 				'existing_customer',
 				'Referral codes are for first-time customers. Thank you for being with us already!'
@@ -333,7 +348,8 @@ class AUN_App_Referrals {
 		}
 
 		// ── Issue the friend's coupon ────────────────────────────────────
-		$coupon = self::create_friend_coupon( $user_id, $s );
+		// Locked to the number that just passed OTP — see COUPON_META_PHONE.
+		$coupon = self::create_friend_coupon( $user_id, $s, $my_phone );
 		if ( '' === $coupon ) {
 			return self::fail( 'coupon_failed', 'Could not create your discount. Please contact support.' );
 		}
@@ -358,6 +374,10 @@ class AUN_App_Referrals {
 			'code'    => 'claimed',
 			'message' => 'Your discount is ready — it will be waiting at checkout.',
 			'coupon'  => $coupon,
+			// So the app can say, at the moment it matters most, which number
+			// this coupon will work with. Finding that out at checkout instead
+			// is how a good discount becomes a support message.
+			'phone'   => self::display_phone( $my_phone ),
 		);
 	}
 
@@ -412,16 +432,72 @@ class AUN_App_Referrals {
 	}
 
 	/**
-	 * A single-use coupon locked to this customer's email.
+	 * The best email we actually have for an app customer.
 	 *
-	 * Both restrictions matter: single use stops one code discounting a whole
-	 * household's orders, and the email lock stops it being forwarded at all.
+	 * App accounts are created from a PHONE — `create_user()` never passes a
+	 * `user_email`, so `$user->user_email` is an empty string for anyone who
+	 * has only ever used the app, and the real address (when they have given
+	 * one) lives in app profile meta, deliberately away from the WP account.
+	 *
+	 * @param int $user_id User.
+	 * @return string Email, or '' when we genuinely have none.
+	 */
+	private static function customer_email( $user_id ) {
+		$email = '';
+		if ( class_exists( 'AUN_App_Profile' ) ) {
+			$email = AUN_App_Profile::get_email( (int) $user_id );
+		}
+		if ( '' === $email ) {
+			$user  = get_userdata( (int) $user_id );
+			$email = $user ? (string) $user->user_email : '';
+		}
+		return is_email( $email ) ? $email : '';
+	}
+
+	/**
+	 * Strip an unmatchable email restriction from an already-issued coupon.
+	 *
+	 * Coupons created before customer_email() existed are locked to '' and can
+	 * never be spent. They are live customers' real rewards, so they are healed
+	 * where they are read rather than written off — no migration to run, and a
+	 * coupon that was already valid is left exactly as it was.
+	 *
+	 * @param WC_Coupon $coupon Coupon.
+	 * @return void
+	 */
+	private static function heal_coupon_restrictions( $coupon ) {
+		$current = (array) $coupon->get_email_restrictions();
+		$valid   = array_values( array_filter(
+			array_map( 'trim', $current ),
+			'is_email'
+		) );
+		if ( count( $valid ) !== count( $current ) ) {
+			$coupon->set_email_restrictions( $valid );
+			$coupon->save();
+		}
+	}
+
+	/**
+	 * A single-use coupon for this customer.
+	 *
+	 * Single use stops one code discounting a whole household's orders. The
+	 * email lock stops it being forwarded — but ONLY when we have an email to
+	 * lock it to.
+	 *
+	 * That distinction was a programme-breaking bug: app accounts are created
+	 * from a phone number and carry NO `user_email`, so this locked every app
+	 * customer's coupon to the empty string. WooCommerce treats a non-empty
+	 * restriction array as a real restriction and compares it against the
+	 * billing email at checkout, which nothing can ever match — so every
+	 * referral coupon the app issued was rejected at the till. The friend
+	 * redeemed a code, was told their discount was ready, and then could not
+	 * spend it. Restrict only when the restriction can succeed.
 	 *
 	 * @param int   $user_id Friend.
 	 * @param array $s       Settings.
 	 * @return string Coupon code, or ''.
 	 */
-	private static function create_friend_coupon( $user_id, $s ) {
+	private static function create_friend_coupon( $user_id, $s, $phone = '' ) {
 		if ( ! class_exists( 'WC_Coupon' ) ) {
 			return '';
 		}
@@ -440,7 +516,10 @@ class AUN_App_Referrals {
 			$coupon->set_individual_use( true );
 			$coupon->set_usage_limit( 1 );
 			$coupon->set_usage_limit_per_user( 1 );
-			$coupon->set_email_restrictions( array( $user->user_email ) );
+			$email = self::customer_email( $user_id );
+			if ( '' !== $email ) {
+				$coupon->set_email_restrictions( array( $email ) );
+			}
 			$coupon->set_date_expires(
 				date( 'Y-m-d', strtotime( '+' . (int) $s['coupon_expiry_days'] . ' days', current_time( 'timestamp' ) ) )
 			);
@@ -448,11 +527,427 @@ class AUN_App_Referrals {
 				$coupon->set_minimum_amount( (float) $s['min_order_total'] );
 			}
 			$coupon->set_description( 'AUN Care app referral — welcome discount' );
+
+			// The lock. Set BEFORE save so the coupon is never briefly loose.
+			$phone = (string) $phone;
+			if ( '' !== $phone ) {
+				$coupon->update_meta_data( self::COUPON_META_PHONE, $phone );
+			}
+
 			$coupon->save();
 
 			return $code;
 		} catch ( Exception $e ) {
 			return '';
+		}
+	}
+
+	/* --------------------------------------------------------------------- *
+	 * The phone lock: a referral coupon belongs to ONE number
+	 * --------------------------------------------------------------------- */
+
+	/**
+	 * The phone a coupon is locked to, or '' when it carries no lock.
+	 *
+	 * Coupons issued before the lock existed have no meta and stay unlocked
+	 * on purpose: retro-locking a code someone is already holding would break
+	 * a promise we already made.
+	 *
+	 * @param WC_Coupon $coupon Coupon.
+	 * @return string Canonical 8801XXXXXXXXX, or ''.
+	 */
+	/**
+	 * A canonical number as a Bangladeshi customer writes it: 01XXXXXXXXX.
+	 *
+	 * Formatting lives here, not in the app, so the number the app promises
+	 * and the number the checkout compares can never drift apart.
+	 *
+	 * @param string $canonical 8801XXXXXXXXX.
+	 * @return string
+	 */
+	public static function display_phone( $canonical ) {
+		$canonical = (string) $canonical;
+		return 0 === strpos( $canonical, '880' ) ? substr( $canonical, 2 ) : $canonical;
+	}
+
+	public static function coupon_phone( $coupon ) {
+		if ( ! is_object( $coupon ) || ! method_exists( $coupon, 'get_meta' ) ) {
+			return '';
+		}
+		return (string) $coupon->get_meta( self::COUPON_META_PHONE );
+	}
+
+	/**
+	 * Does what the customer typed at checkout mean the same number?
+	 *
+	 * This is the whole point of canonicalising. `+880 1712-345678`,
+	 * `01712345678`, `1712345678` and `8801712345678` are one number written
+	 * five ways, and a customer who writes it differently from how they typed
+	 * it into the app has done nothing wrong.
+	 *
+	 * @param string $canonical Stored 8801XXXXXXXXX.
+	 * @param string $typed     Whatever was entered at checkout.
+	 * @return bool
+	 */
+	public static function phone_matches( $canonical, $typed ) {
+		if ( ! class_exists( 'AUN_App_Phone' ) || '' === (string) $canonical ) {
+			return false;
+		}
+
+		// Strip an international dialling prefix before canonicalising.
+		// AUN_App_Phone::normalize() understands +880/880/01/1 but not the
+		// 00880 form, and that IS how some people write it. Cleaned here
+		// rather than in the shared phone class, which OTP login depends on.
+		$typed = preg_replace( '/^\s*00/', '', (string) $typed );
+
+		$typed = AUN_App_Phone::normalize( $typed );
+		return $typed && (string) $typed === (string) $canonical;
+	}
+
+	/**
+	 * The refusal message. Says WHY, and shows enough of the number to be
+	 * recognised by its owner without handing a stranger the whole thing.
+	 *
+	 * @param string $canonical Locked number.
+	 * @param bool   $missing   True when no phone was entered at all.
+	 * @return string
+	 */
+	private static function lock_message( $canonical, $missing = false ) {
+		$masked = class_exists( 'AUN_App_Phone' )
+			? AUN_App_Phone::mask( $canonical ) : '';
+
+		if ( $missing ) {
+			return sprintf(
+				/* translators: %s: masked phone number. */
+				__( 'This referral discount belongs to the mobile number it was issued to (%s). Please enter that number in the Phone field to use it.', 'aun-app-api' ),
+				$masked
+			);
+		}
+
+		return sprintf(
+			/* translators: %s: masked phone number. */
+			__( 'This referral discount can only be used by the person it was issued to — the mobile number %s, which was verified in the AUN Care app. Please check out with that number, or remove the coupon to continue.', 'aun-app-api' ),
+			$masked
+		);
+	}
+
+	/* --------------------------------------------------------------------- *
+	 * Testing the programme with a real number
+	 * --------------------------------------------------------------------- */
+
+	/**
+	 * Numbers the admin has marked as test lines.
+	 *
+	 * These bypass ONE rule: "first-time customers only". Nothing else. The
+	 * shop owner's own two SIMs have order history and registered projectors,
+	 * so without this they can never reach the friend side of the programme
+	 * and can only test half of it.
+	 *
+	 * Self-referral, the reward rules, the payout-on-completion rule and the
+	 * refund clawback all still apply to a test number, because those are the
+	 * parts worth testing.
+	 *
+	 * @return string[] Canonical numbers.
+	 */
+	public static function test_phones() {
+		$o   = aun_app_api_get_options();
+		$out = array();
+		foreach ( preg_split( '/[\r\n,]+/', (string) ( $o['referral_test_phones'] ?? '' ) ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line || ! class_exists( 'AUN_App_Phone' ) ) {
+				continue;
+			}
+			$c = AUN_App_Phone::normalize( $line );
+			if ( $c ) {
+				$out[] = $c;
+			}
+		}
+		return array_unique( $out );
+	}
+
+	/** Is this a designated test line? */
+	public static function is_test_phone( $phone ) {
+		$phone = (string) $phone;
+		return '' !== $phone && in_array( $phone, self::test_phones(), true );
+	}
+
+	/**
+	 * Wipe every trace of the referral programme for one number, so the whole
+	 * flow can be walked again from the start.
+	 *
+	 * Deliberately narrow. It touches referral tables and the coupons this
+	 * programme issued — **never** orders, devices, warranties, tickets or the
+	 * user account. A test-reset tool that could delete a real customer's
+	 * purchase history would be far more dangerous than the inconvenience it
+	 * saves.
+	 *
+	 * @param string $raw_phone Any format.
+	 * @param bool   $dry_run   True = report only, change nothing.
+	 * @return array {ok, message, claims, invites, coupons[], phone}
+	 */
+	public static function reset_for_phone( $raw_phone, $dry_run = true ) {
+		global $wpdb;
+
+		$out = array( 'ok' => false, 'message' => '', 'claims' => 0, 'invites' => 0, 'coupons' => array(), 'phone' => '' );
+
+		if ( ! class_exists( 'AUN_App_Phone' ) ) {
+			$out['message'] = 'Phone helper missing.';
+			return $out;
+		}
+		$phone = AUN_App_Phone::normalize( $raw_phone );
+		if ( ! $phone ) {
+			$out['message'] = 'That is not a valid Bangladeshi mobile number.';
+			return $out;
+		}
+		$out['phone'] = self::display_phone( $phone );
+
+		// Every account that answers to this number — a number can have picked
+		// up more than one over time, and a reset that missed one would leave
+		// the tester blocked by a row they cannot see.
+		$uids = array();
+		foreach ( AUN_App_Phone::find_users( $phone ) as $u ) {
+			$uids[] = (int) $u->ID;
+		}
+
+		$claims = self::claims_table();
+		$codes  = self::table();
+
+		// Their claim as a FRIEND (keyed by phone, matching has_claimed).
+		$as_friend = (array) $wpdb->get_results( $wpdb->prepare(
+			"SELECT id, friend_coupon, reward_coupon FROM $claims WHERE referred_phone = %s",
+			$phone
+		) );
+
+		// Their claims as a REFERRER, so the inviting side can be replayed too.
+		$as_referrer = array();
+		if ( ! empty( $uids ) ) {
+			$in          = implode( ',', array_fill( 0, count( $uids ), '%d' ) );
+			$as_referrer = (array) $wpdb->get_results( $wpdb->prepare(
+				"SELECT id, friend_coupon, reward_coupon FROM $claims WHERE referrer_user_id IN ($in)",
+				$uids
+			) );
+		}
+
+		$out['claims']  = count( $as_friend );
+		$out['invites'] = count( $as_referrer );
+
+		$coupon_codes = array();
+		foreach ( array_merge( $as_friend, $as_referrer ) as $row ) {
+			foreach ( array( $row->friend_coupon, $row->reward_coupon ) as $c ) {
+				if ( '' !== (string) $c ) {
+					$coupon_codes[] = (string) $c;
+				}
+			}
+		}
+		$coupon_codes    = array_values( array_unique( $coupon_codes ) );
+		$out['coupons']  = $coupon_codes;
+
+		if ( $dry_run ) {
+			$out['ok'] = true;
+			return $out;
+		}
+
+		// ── Delete for real ──────────────────────────────────────────────
+		$ids = array();
+		foreach ( array_merge( $as_friend, $as_referrer ) as $row ) {
+			$ids[] = (int) $row->id;
+		}
+		$ids = array_values( array_unique( $ids ) );
+		if ( ! empty( $ids ) ) {
+			$in = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			$wpdb->query( $wpdb->prepare( "DELETE FROM $claims WHERE id IN ($in)", $ids ) );
+		}
+
+		foreach ( $coupon_codes as $code ) {
+			if ( ! function_exists( 'wc_get_coupon_id_by_code' ) ) {
+				break;
+			}
+			$cid = (int) wc_get_coupon_id_by_code( $code );
+			if ( $cid > 0 ) {
+				wp_delete_post( $cid, true );
+				// WooCommerce caches code -> id, so a destroyed coupon can
+				// otherwise still resolve and keep working.
+				wp_cache_delete(
+					WC_Cache_Helper::get_cache_prefix( 'coupons' ) . 'coupon_id_from_code_' . $code,
+					'coupons'
+				);
+			}
+		}
+		if ( ! empty( $coupon_codes ) && class_exists( 'WC_Cache_Helper' ) ) {
+			WC_Cache_Helper::get_transient_version( 'coupons', true );
+		}
+
+		// Their own invite code, so the next test mints a fresh one.
+		if ( ! empty( $uids ) ) {
+			$in = implode( ',', array_fill( 0, count( $uids ), '%d' ) );
+			$wpdb->query( $wpdb->prepare( "DELETE FROM $codes WHERE user_id IN ($in)", $uids ) );
+		}
+
+		$out['ok']      = true;
+		$out['message'] = sprintf(
+			'Reset %s: removed %d claim(s) as a friend, %d as a referrer, %d coupon(s), and their invite code. Orders, devices and warranties were not touched.',
+			$out['phone'],
+			count( $as_friend ),
+			count( $as_referrer ),
+			count( $coupon_codes )
+		);
+		return $out;
+	}
+
+	/**
+	 * Admin override: release the phone lock on one coupon.
+	 *
+	 * The lock is right almost always and wrong occasionally — a customer who
+	 * checks out under a spouse's or a relative's number is refused correctly
+	 * by the rule and unfairly in fact. Support needs a way to say "this one is
+	 * fine" that does not involve weakening the rule for everyone, and does not
+	 * involve editing post meta by hand.
+	 *
+	 * Releases only. There is deliberately no "lock it to a different number":
+	 * the only number we can vouch for is the one that passed OTP, and letting
+	 * an admin type a new one would turn a verified fact into a typo.
+	 *
+	 * @param string $code Coupon code.
+	 * @return array {ok:bool, message:string}
+	 */
+	public static function unlock_coupon( $code ) {
+		$code = trim( (string) $code );
+		if ( '' === $code ) {
+			return array( 'ok' => false, 'message' => 'Enter a coupon code first.' );
+		}
+		if ( ! function_exists( 'wc_get_coupon_id_by_code' ) ) {
+			return array( 'ok' => false, 'message' => 'WooCommerce is not active.' );
+		}
+
+		$id = (int) wc_get_coupon_id_by_code( $code );
+		if ( $id < 1 ) {
+			return array(
+				'ok'      => false,
+				'message' => sprintf( 'No coupon called "%s" exists.', $code ),
+			);
+		}
+
+		$coupon = new WC_Coupon( $id );
+		$locked = self::coupon_phone( $coupon );
+		if ( '' === $locked ) {
+			return array(
+				'ok'      => true,
+				'message' => sprintf( 'Coupon %s was not locked to a phone number — it already works with any number.', $coupon->get_code() ),
+			);
+		}
+
+		$coupon->delete_meta_data( self::COUPON_META_PHONE );
+		$coupon->save();
+
+		return array(
+			'ok'      => true,
+			'message' => sprintf(
+				'Released. Coupon %s was locked to %s and can now be used with any phone number. Its single-use limit, expiry and minimum order are unchanged.',
+				$coupon->get_code(),
+				self::display_phone( $locked )
+			),
+		);
+	}
+
+	/**
+	 * What a coupon's lock currently is, for the admin to look at before
+	 * deciding. Returns '' for "no such coupon" and '—' for "no lock", which
+	 * the caller distinguishes; a missing coupon and a free one are different
+	 * answers and collapsing them is how support ends up releasing a lock on
+	 * a coupon that never existed.
+	 *
+	 * @param string $code Coupon code.
+	 * @return array {found:bool, locked:string}
+	 */
+	public static function coupon_lock_status( $code ) {
+		$code = trim( (string) $code );
+		if ( '' === $code || ! function_exists( 'wc_get_coupon_id_by_code' ) ) {
+			return array( 'found' => false, 'locked' => '' );
+		}
+		$id = (int) wc_get_coupon_id_by_code( $code );
+		if ( $id < 1 ) {
+			return array( 'found' => false, 'locked' => '' );
+		}
+		$locked = self::coupon_phone( new WC_Coupon( $id ) );
+		return array(
+			'found'  => true,
+			'locked' => '' !== $locked ? self::display_phone( $locked ) : '',
+		);
+	}
+
+	/**
+	 * Cart/checkout validation, the LENIENT half.
+	 *
+	 * Runs whenever WooCommerce validates a coupon. It deliberately allows a
+	 * coupon through when no phone is known yet: people apply the code before
+	 * they fill the checkout form, and refusing it there would look like the
+	 * code is broken. The strict gate is at order placement below.
+	 *
+	 * @param bool      $valid  Current verdict.
+	 * @param WC_Coupon $coupon Coupon.
+	 * @return bool
+	 * @throws Exception When the known phone does not match — WooCommerce turns
+	 *                   the message into the notice the customer sees.
+	 */
+	public static function on_coupon_is_valid( $valid, $coupon ) {
+		if ( ! $valid ) {
+			return $valid;
+		}
+		$locked = self::coupon_phone( $coupon );
+		if ( '' === $locked ) {
+			return $valid;
+		}
+
+		$typed = '';
+		if ( function_exists( 'WC' ) && WC()->customer ) {
+			$typed = (string) WC()->customer->get_billing_phone();
+		}
+		// Nothing to judge yet — let them apply it and decide at placement.
+		if ( '' === trim( $typed ) ) {
+			return $valid;
+		}
+
+		if ( ! self::phone_matches( $locked, $typed ) ) {
+			throw new Exception( self::lock_message( $locked ) );
+		}
+		return $valid;
+	}
+
+	/**
+	 * Order placement, the STRICT half.
+	 *
+	 * By this point the billing phone has actually been submitted, so a blank
+	 * one is a real answer rather than "not filled in yet". This is the gate
+	 * that stops the order.
+	 *
+	 * @param array    $data   Posted checkout data.
+	 * @param WP_Error $errors Errors.
+	 */
+	public static function on_checkout_validation( $data, $errors ) {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart || ! is_object( $errors ) ) {
+			return;
+		}
+
+		$typed = isset( $data['billing_phone'] ) ? (string) $data['billing_phone'] : '';
+
+		foreach ( (array) WC()->cart->get_applied_coupons() as $code ) {
+			$id = function_exists( 'wc_get_coupon_id_by_code' )
+				? (int) wc_get_coupon_id_by_code( $code ) : 0;
+			if ( $id < 1 ) {
+				continue;
+			}
+			$locked = self::coupon_phone( new WC_Coupon( $id ) );
+			if ( '' === $locked ) {
+				continue;
+			}
+			if ( '' === trim( $typed ) ) {
+				$errors->add( 'aun_referral_phone', self::lock_message( $locked, true ) );
+				return;
+			}
+			if ( ! self::phone_matches( $locked, $typed ) ) {
+				$errors->add( 'aun_referral_phone', self::lock_message( $locked ) );
+				return;
+			}
 		}
 	}
 
@@ -598,14 +1093,20 @@ class AUN_App_Referrals {
 		}
 
 		// Fall back to the buyer: an order placed without the coupon still
-		// counts, since the referral did its job of bringing them in.
-		$customer_id = (int) $order->get_customer_id();
-		if ( $customer_id > 0 ) {
-			return $wpdb->get_row( $wpdb->prepare(
-				"SELECT * FROM $claims WHERE referred_user_id = %d AND status = %s LIMIT 1",
+		// counts, since the referral did its job of bringing them in. Matched
+		// by the order's billing phone as well as by account, because app
+		// customers are known by number and may check out as a guest — keyed
+		// on the account alone, the referrer simply never got paid.
+		$customer_id  = (int) $order->get_customer_id();
+		$order_phone  = class_exists( 'AUN_App_Phone' )
+			? AUN_App_Phone::normalize( (string) $order->get_billing_phone() ) : false;
+
+		if ( $customer_id > 0 || $order_phone ) {
+			return self::claim_row(
 				$customer_id,
+				$order_phone ? $order_phone : '',
 				self::STATUS_PENDING
-			) );
+			);
 		}
 		return null;
 	}
@@ -636,7 +1137,13 @@ class AUN_App_Referrals {
 			$coupon->set_amount( self::reward_value( $s, (float) $order_total ) );
 			$coupon->set_usage_limit( 1 );
 			$coupon->set_usage_limit_per_user( 1 );
-			$coupon->set_email_restrictions( array( $user->user_email ) );
+			// Only when we have one — see create_friend_coupon(). An app-only
+			// account has no user_email, and locking to '' made the reward
+			// unspendable.
+			$email = self::customer_email( $user_id );
+			if ( '' !== $email ) {
+				$coupon->set_email_restrictions( array( $email ) );
+			}
 			$coupon->set_date_expires(
 				date( 'Y-m-d', strtotime( '+' . (int) $s['coupon_expiry_days'] . ' days', current_time( 'timestamp' ) ) )
 			);
@@ -836,7 +1343,8 @@ class AUN_App_Referrals {
 					if ( function_exists( 'wc_get_coupon_id_by_code' ) ) {
 						$cid = (int) wc_get_coupon_id_by_code( (string) $r->reward_coupon );
 						if ( $cid > 0 ) {
-							$rc    = new WC_Coupon( $cid );
+							$rc = new WC_Coupon( $cid );
+							self::heal_coupon_restrictions( $rc );
 							$value = (float) $rc->get_amount();
 							$spent = (int) $rc->get_usage_count() > 0;
 						}
@@ -855,11 +1363,12 @@ class AUN_App_Referrals {
 		// The customer's OWN welcome coupon, if they claimed someone's code.
 		// Without this it was shown once in a snackbar and then lost — they had
 		// no way to find the code again when they reached checkout.
-		$mine = $wpdb->get_row( $wpdb->prepare(
-			"SELECT friend_coupon, status FROM $claims WHERE referred_user_id = %d LIMIT 1",
-			$user_id
-		) );
-		$my_coupon = '';
+		// By phone as well as by id — see claim_row(). Looking this up by id
+		// alone was how a customer ended up "already claimed" with no coupon
+		// to show for it.
+		$mine            = self::claim_row( $user_id );
+		$my_coupon       = '';
+		$my_coupon_phone = '';
 		if ( $mine && ! empty( $mine->friend_coupon )
 			&& self::STATUS_REVOKED !== $mine->status ) {
 			// Only offer it while it can still be spent.
@@ -867,8 +1376,15 @@ class AUN_App_Referrals {
 				? (int) wc_get_coupon_id_by_code( (string) $mine->friend_coupon ) : 0;
 			if ( $cid > 0 ) {
 				$c = new WC_Coupon( $cid );
+				self::heal_coupon_restrictions( $c );
 				if ( 0 === (int) $c->get_usage_count() ) {
 					$my_coupon = (string) $mine->friend_coupon;
+					// The coupon's OWN lock, not the claim row's phone: the
+					// coupon is what checkout will actually judge, and an older
+					// coupon may carry no lock at all — in which case the app
+					// must not promise a restriction that is not there.
+					$locked          = self::coupon_phone( $c );
+					$my_coupon_phone = '' !== $locked ? self::display_phone( $locked ) : '';
 				}
 			}
 		}
@@ -877,6 +1393,7 @@ class AUN_App_Referrals {
 			'enabled'         => self::available(),
 			'code'            => self::available() ? self::code_for( $user_id ) : '',
 			'my_coupon'       => $my_coupon,
+			'my_coupon_phone' => $my_coupon_phone,
 			'friend_type'     => $s['friend_type'],
 			'friend_amount'   => $s['friend_amount'],
 			'referrer_amount' => $s['referrer_amount'],
@@ -889,9 +1406,103 @@ class AUN_App_Referrals {
 			'can_invite'      => self::available() && self::can_invite( $user_id ),
 			'rewards'         => $coupons,
 			// Whether THIS user may still claim someone else's code, so the app
-			// can hide an entry field that would only ever fail.
-			'can_claim'       => self::available() && ! self::has_claimed( $user_id ),
+			// never offers an entry field that would only ever fail.
+			//
+			// Must mirror EVERY rule claim() enforces, not just some of them.
+			// It previously omitted the purchase-history test, so an existing
+			// customer was shown "I have a code" and then refused with
+			// "referral codes are for first-time customers" — an offer we
+			// already knew we would not honour.
+			'can_claim'       => '' === self::claim_blocked_reason( $user_id ),
+			// Why claiming is unavailable, so the app can say which it is
+			// rather than leaving a blank where a reason belongs.
+			'claim_blocked'   => self::claim_blocked_reason( $user_id ),
 		);
+	}
+
+	/**
+	 * This customer's own claim row — the one that says they redeemed a code.
+	 *
+	 * Matched by PHONE as well as by account id, and that is the whole point.
+	 * The programme's identity of record is the phone: `has_claimed()` and the
+	 * one-claim-per-person rule both key on `referred_phone`, deliberately, so
+	 * that deleting and recreating an account cannot buy a second discount.
+	 *
+	 * Reading the claim back by `referred_user_id` alone therefore disagreed
+	 * with the rule that wrote it. A customer whose account id had changed —
+	 * recreated account, or a claim made while matched to a different WP user
+	 * with the same number — was told "you have already used a code" (found by
+	 * phone) AND shown no coupon (not found by id). Both doors shut: they
+	 * could not claim again, and could not reach the coupon they had been
+	 * given. One identity, one lookup.
+	 *
+	 * @param int         $user_id User.
+	 * @param string|null $phone   Canonical phone; resolved when null.
+	 * @param string|null $status  Restrict to this status, or null for any.
+	 * @return object|null Newest matching claim.
+	 */
+	public static function claim_row( $user_id, $phone = null, $status = null ) {
+		global $wpdb;
+		$user_id = (int) $user_id;
+		if ( null === $phone ) {
+			$phone = self::phone_of( $user_id );
+		}
+		$phone  = (string) $phone;
+		$claims = self::claims_table();
+
+		$where  = array();
+		$params = array();
+		if ( $user_id > 0 ) {
+			$where[]  = 'referred_user_id = %d';
+			$params[] = $user_id;
+		}
+		if ( '' !== $phone ) {
+			$where[]  = 'referred_phone = %s';
+			$params[] = $phone;
+		}
+		if ( empty( $where ) ) {
+			return null;
+		}
+
+		$sql = 'SELECT * FROM ' . $claims . ' WHERE (' . implode( ' OR ', $where ) . ')';
+		if ( null !== $status ) {
+			$sql     .= ' AND status = %s';
+			$params[] = $status;
+		}
+		// Newest first: if a number somehow carries more than one row, the
+		// current one is the one that matters.
+		$sql .= ' ORDER BY id DESC LIMIT 1';
+
+		return $wpdb->get_row( $wpdb->prepare( $sql, $params ) );
+	}
+
+	/**
+	 * Why this customer cannot redeem a code — a machine-readable reason the
+	 * app turns into a sentence.
+	 *
+	 * Returned even when they CAN claim (as ''), because the app should be
+	 * able to state a customer's standing without inferring it from a
+	 * combination of booleans. Inference is how the app ended up showing
+	 * nothing at all and looking broken.
+	 *
+	 * @param int $user_id User.
+	 * @return string '' | 'off' | 'used' | 'existing_customer'
+	 */
+	public static function claim_blocked_reason( $user_id ) {
+		if ( ! self::available() ) {
+			return 'off';
+		}
+		if ( self::has_claimed( (int) $user_id ) ) {
+			return 'used';
+		}
+		$phone = self::phone_of( (int) $user_id );
+		// Mirrors the same exemption claim() makes, or the app would say
+		// "not available" about a claim that would actually succeed.
+		if ( ! self::is_test_phone( $phone )
+			&& self::has_purchase_history( (int) $user_id, $phone ) ) {
+			return 'existing_customer';
+		}
+		return '';
 	}
 
 	/** Has this user already used somebody's code? */

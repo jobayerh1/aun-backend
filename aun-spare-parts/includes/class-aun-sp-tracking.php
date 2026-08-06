@@ -19,6 +19,10 @@ class AUN_SP_Tracking {
 		add_action( 'wp_ajax_nopriv_aun_sp_reupload',  array( $this, 'ajax_reupload' ) );
 		add_action( 'wp_ajax_aun_sp_approve',          array( $this, 'ajax_approve' ) );
 		add_action( 'wp_ajax_nopriv_aun_sp_approve',   array( $this, 'ajax_approve' ) );
+		// "Pay online" — mints the WooCommerce order on demand and hands back its pay
+		// page. Not choosing this simply leaves the request as cash on delivery.
+		add_action( 'wp_ajax_aun_sp_pay',             array( $this, 'ajax_pay' ) );
+		add_action( 'wp_ajax_nopriv_aun_sp_pay',      array( $this, 'ajax_pay' ) );
 	}
 
 	/** Render one string in the language the SITE is showing (TranslatePress-aware —
@@ -102,10 +106,12 @@ class AUN_SP_Tracking {
 		foreach ( $reqs as $r ) {
 			$items = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t_item WHERE request_id = %d ORDER BY id ASC", $r->id ) );
 			$parts = array();
+			$money = 0.0; // Σ unit × qty across the request
 			foreach ( (array) $items as $it ) {
 				$cat   = AUN_SP_Parts::get( $it->part_type );
 				$qty   = max( 1, (int) ( $it->qty ?? 1 ) );
 				$unit  = (float) $it->unit_price;
+				$money += $unit * $qty;
 				$parts[] = array(
 					'label'     => $it->part_label,
 					'label_bn'  => ( $cat && ! empty( $cat['label_bn'] ) ) ? $cat['label_bn'] : $it->part_label,
@@ -138,10 +144,29 @@ class AUN_SP_Tracking {
 				'waiting'      => ( 'waiting_customer' === $r->overall_status ),
 				'rejected'     => ( 'rejected' === $r->overall_status ),
 				'reason'       => 'rejected' === $r->overall_status ? (string) $r->admin_note : '',
-				'quote'        => ( 'quote_sent' === $r->overall_status ) ? array(
-					'total' => number_format( (float) $r->quote_total, 2 ),
-					'note'  => (string) $r->quote_note,
-					'pay'   => AUN_SP_Messages::pay_info(),
+				// Money the customer owes. Shown whenever ANY part carries a price —
+				// not only while a quote awaits approval, which used to mean the amount
+				// (and the payment instructions) disappeared the moment they approved,
+				// and never appeared at all if the admin priced the parts and skipped
+				// the approval step. Approve / Decline still only appear when we are
+				// actually waiting on their decision ('awaiting').
+				// Total is summed from the same lines shown above, so it can never
+				// disagree with them. A ৳0 request (in warranty / free) shows nothing.
+				// Live WooCommerce order, only if they already chose to pay online.
+				'order'        => AUN_SP_Woo::customer_summary( (int) $r->id ),
+				// Whether to offer "Pay online" at all: something is owed, the request
+				// is live, and WooCommerce is available. Cash on delivery is simply
+				// what happens when they don't take this option.
+				'can_pay'      => ( $money > 0 && AUN_SP_Woo::is_active()
+					&& ! in_array( $r->overall_status, array( 'rejected', 'declined' ), true ) ),
+				// Delivery is charged on the order, so it must appear here too —
+				// otherwise the block totals ৳3,400 while the Pay button says ৳3,520.
+				'delivery'     => ( isset( $r->delivery_charge ) && (float) $r->delivery_charge > 0 ) ? number_format( (float) $r->delivery_charge, 2 ) : '',
+				'quote'        => ( $money > 0 ) ? array(
+					'total'    => number_format( $money + ( isset( $r->delivery_charge ) ? (float) $r->delivery_charge : 0 ), 2 ),
+					'note'     => (string) $r->quote_note,
+					'pay'      => in_array( $r->overall_status, array( 'declined', 'rejected', 'closed' ), true ) ? '' : AUN_SP_Messages::pay_info(),
+					'awaiting' => ( 'quote_sent' === $r->overall_status ),
 				) : null,
 				'timeline'     => $timeline,
 				'parts'        => $parts,
@@ -261,7 +286,54 @@ class AUN_SP_Tracking {
 		if ( empty( $result['ok'] ) ) {
 			wp_send_json_error( array( 'message' => $result['message'] ) );
 		}
-		wp_send_json_success( array( 'message' => $result['code'] ) );
+		// Approving offers the online-payment choice straight away (no order is
+		// created until they take it — otherwise the request is cash on delivery).
+		wp_send_json_success( array(
+			'message'  => $result['code'],
+			'can_pay'  => ( 'approved' === $result['code'] && AUN_SP_Woo::is_active() ),
+		) );
+	}
+
+	/**
+	 * Customer chose "Pay online". Builds (or refreshes) the WooCommerce order at
+	 * THIS moment — so the amount always reflects the current parts, quantities and
+	 * prices — and returns its payment page. Cash on delivery needs no order, which
+	 * is why nothing is created until this is called.
+	 */
+	public function ajax_pay() {
+		$this->check_nonce();
+		if ( ! $this->rate_ok( 'pay', 15 ) ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_rate_limited' ) ), 429 );
+		}
+		if ( ! AUN_SP_Woo::is_active() ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
+		}
+
+		global $wpdb;
+		$ref = strtoupper( sanitize_text_field( wp_unslash( $_POST['ref'] ?? '' ) ) );
+		if ( $ref === '' ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_invalid' ) ) );
+		}
+		$t_req = AUN_SP_Install::table( 'requests' );
+		$req   = $wpdb->get_row( $wpdb->prepare( "SELECT id, overall_status FROM $t_req WHERE ref = %s LIMIT 1", $ref ) );
+		if ( ! $req ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) ) );
+		}
+		// Nothing to pay on a request we've closed off.
+		if ( in_array( $req->overall_status, array( 'rejected', 'declined' ), true ) ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
+		}
+
+		$order_id = AUN_SP_Woo::create_order( (int) $req->id );
+		if ( ! $order_id ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
+		}
+		$summary = AUN_SP_Woo::customer_summary( (int) $req->id );
+		if ( empty( $summary['pay_url'] ) ) {
+			// Already settled.
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_already_paid' ) ) );
+		}
+		wp_send_json_success( array( 'pay_url' => $summary['pay_url'], 'total' => $summary['total'] ) );
 	}
 
 	/* --------------------------------------------------------------------- Helpers */

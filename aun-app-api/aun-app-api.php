@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.46.0
+ * Version:           1.53.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.46.0' );
+define( 'AUN_APP_API_VERSION', '1.53.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -133,6 +133,9 @@ function aun_app_api_default_options() {
 		'referral_monthly_cap'     => 5,         // rewards per referrer per 30 days
 		'referral_claim_days'      => 30,        // how long a new account may claim
 		'referral_expiry_days'     => 90,        // coupon lifetime
+		// Test lines: numbers allowed to redeem a code even though they are
+		// existing customers. Bypasses THAT rule only. Blank on a normal site.
+		'referral_test_phones'     => '',
 	);
 }
 
@@ -611,6 +614,15 @@ add_action( 'woocommerce_new_product', array( 'AUN_App_Projectors', 'flush' ) );
 // Referral rewards are paid ONLY on completion — the point at which goods have
 // actually shipped — and clawed back if the order is later reversed. Rewarding
 // any earlier is what makes referral schemes farmable.
+// A referral coupon belongs to the OTP-verified number it was issued to.
+// Without this it is a bearer token: the code is single-use and expiring, but
+// whoever types it first gets the discount, including someone the friend
+// passed it on to. Two hooks by design — the filter judges only when a phone
+// is already known (so applying the code early still works), and checkout
+// validation is the gate that actually stops the order.
+add_filter( 'woocommerce_coupon_is_valid', array( 'AUN_App_Referrals', 'on_coupon_is_valid' ), 10, 2 );
+add_action( 'woocommerce_after_checkout_validation', array( 'AUN_App_Referrals', 'on_checkout_validation' ), 10, 2 );
+
 add_action( 'woocommerce_order_status_completed', array( 'AUN_App_Referrals', 'on_order_completed' ) );
 add_action( 'woocommerce_order_status_refunded', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
 add_action( 'woocommerce_order_status_cancelled', array( 'AUN_App_Referrals', 'on_order_reversed' ) );

@@ -14,7 +14,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 | **Flutter app source** | `C:\dev\aun-app` |
 | **Backend plugin (source)** | `<workdir>\aun-app-api\` and zipped `<workdir>\aun-app-api.zip` |
 | **ERP endpoint files** | `<workdir>\ERP\AppLookupController.php`, `<workdir>\ERP\WarrantyApiController.php`, `<workdir>\ERP\slb-erp-sync.php` |
-| **APK builder (user double-clicks)** | `<workdir>\build-aun-app.cmd` → outputs `AUN-Projector-app.apk` + `aun-app-build.log` |
+| **APK builder (user double-clicks)** | `<workdir>\build-aun-app.cmd` → outputs **`AUN-Care-Bangladesh.apk`** + `aun-app-build.log` |
 | **Toolchain** | Flutter `C:\dev\flutter`, Android SDK `C:\dev\android-sdk`, JDK21 `C:\dev\jdk-21.0.11+10`, pub cache `C:\dev\pub-cache` |
 | **Warranty plugin (reference)** | `<workdir>\AUN Warranty & Registration.php` (a.k.a. SLB Warranty) |
 | **Spare parts plugin (reference)** | bench: `wp-local\site\wp-content\plugins\aun-spare-parts\` |
@@ -23,7 +23,321 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.45.0+49**, **plugin 1.39.0 (DB v14)**, **spare-parts 0.22.0**.
+Current versions: **app 1.64.0+68**, **plugin 1.53.0**, **spare-parts 0.22.0**.
+
+## 2026-08-06 — app-api 1.53.0: test the referral programme with only two SIMs
+
+The programme lets a number claim **once, ever** — right in production, impossible to test against.
+Settings → Referrals → **"Testing with your own number"**:
+
+**1. Test lines** (`referral_test_phones`, one per line, any format). These may redeem a code even
+though they are already customers. It bypasses **that one rule** — self-referral is still blocked,
+the reward is still paid only on completion, the clawback still applies, the coupon is still locked
+to the number. Active test lines are echoed back in an amber warning so they cannot be left on by
+accident.
+
+**2. Reset a number's referral history.** `reset_for_phone( $phone, $dry_run )` removes claims as a
+friend (by phone, matching `has_claimed`), claims as a referrer (all accounts answering to that
+number), the coupons those claims issued, and the invite code row. **Never** orders, devices,
+warranties, tickets or the account — a test tool that could delete a real customer's purchase
+history would be far worse than the inconvenience it saves.
+
+**Two-step by design**: the first click only ever reports what exists ("about to delete: 1 claim,
+0 invitations, 1 coupon WELCOME-K3P7QA, their invite code"), and deleting needs a second explicit
+confirm. It destroys real coupons, so one mistyped digit must not be able to wipe a real customer.
+
+Also: `can_claim` is now literally `'' === claim_blocked_reason()`, so the flag and the reason can
+never disagree — one function decides, both fields come from it.
+
+**Tests:** NEW `test-referral-reset.php` (19): dry run changes nothing, real reset clears
+claim/coupon/code, account and order survive untouched, still blocked as an existing customer after
+a reset, unblocked once marked a test line, and **self-referral still refused for a test line** —
+the bypass is one rule, not a free pass.
+
+⚠️ **Bench gotcha:** `wc_get_coupon_id_by_code()` memoises in the object cache within a single
+request, so it keeps returning the id of a coupon that has just been deleted. Assert deletion via
+WooCommerce's own query (`post_title` + `shop_coupon` + `publish`) or by `new WC_Coupon( $code )`
+throwing "Invalid coupon" — not by that helper.
+
+## 2026-08-06 — app 1.64.0+68 / app-api 1.52.0: the referral card explains itself instead of vanishing
+
+Driven by a real cost: the owner spent a morning debugging a feature that was working correctly,
+because "not eligible" and "broken" looked identical from the app. **An absence cannot be read.**
+
+**New `ReferralFace.used`.** Programme running, cannot invite, cannot claim, holds no coupon —
+previously `hidden`, now a quiet card that says *"You have already used a referral code. One code
+per customer. Register your AUN projector to start inviting friends and earning rewards yourself."*
+It is styled deliberately UNLIKE an offer (grey accent band, grey icon, `isInformational`): an
+explanation dressed as a promotion is a worse lie than silence. `hidden` now means one thing only —
+**the programme is switched off** — because advertising a discontinued offer to avoid an empty space
+is worse than the empty space.
+
+**"What is available to you" status card** on the referral screen, always shown, both halves
+always stated: *Inviting friends* and *Redeeming a friend's code*, each with ✓/lock and a reason.
+A customer is normally eligible for only one side; saying nothing about the other is what made this
+look broken. The lock icon is neutral grey, never red — ineligibility is not an error.
+
+**`can_claim` now mirrors EVERY rule `claim()` enforces.** It omitted the purchase-history test, so
+an existing customer was shown "I have a code" and then refused with "referral codes are for
+first-time customers" — an offer we already knew we would not honour. New `claim_blocked` field
+returns the reason as data (`'' | off | used | existing_customer`), so the app states a customer's
+standing instead of inferring it from a combination of booleans. Inference is what produced the
+silent blank in the first place.
+
+**Tests:** Flutter referral suite 19 (used-state explains, only-off hides, informational styling
+never applied to a real offer, blocked reason carried through, absent reason not invented); NEW
+`test-claim-reason.php` bench suite (9): brand-new friend unblocked, already-used → `used`,
+existing customer → `existing_customer` **and** can invite instead, programme off → `off`.
+Full suite **148 Flutter pass**, analyze clean, all bench suites green (lock 40, identity 5).
+
+**To deploy:** upload `aun-app-api.zip` (1.52.0) **and** rebuild the APK (1.64.0+68) — both sides.
+
+## 2026-08-06 — app-api 1.51.0: the claim is keyed by PHONE, so read it back by phone
+
+The diagnostic ended the guessing in one shot. Account #1681 returned
+`can_invite:false, can_claim:false, my_coupon:(none), has used a code before: YES` — so the app
+had nothing to show and correctly showed nothing. **That account had already redeemed a code**,
+which is per-number and permanent by design; it was not a visibility bug at all.
+
+But the payload was self-contradictory in a way that exposed a real bug. `has_claimed()` and the
+one-claim-per-person rule key on **`referred_phone`** (deliberately — deleting and recreating an
+account must not buy a second discount), while `summary()` read the claim back by
+**`referred_user_id`**. When those disagree — recreated account, or a claim made while matched to a
+different WP user with the same number — the customer is told "you have already used a code"
+(found by phone) AND shown no coupon (not found by id). Both doors shut: cannot claim again,
+cannot reach the coupon they were given.
+
+Fixed with one `claim_row( $user_id, $phone, $status )` used everywhere, matching id OR phone,
+newest first. `claim_for_order()`'s fallback gained the same treatment and is arguably the bigger
+win: it matched the buyer by account id only, so **an app customer who checked out as a guest, or
+under a different account with the same number, never paid the referrer.** It now matches the
+order's billing phone too.
+
+**Diagnostic extended** to show the claim row (date, status, coupon), the coupon's real state
+(unspent / already spent / deleted), and a ⚠ line when the claim sits on a different account id
+with the same number. The "nothing to show" verdict now says plainly that it is correct behaviour,
+that registering a projector resolves it, and that re-testing the redeem flow needs a different SIM.
+
+**Tests:** NEW `test-claim-identity.php` (5) — claim written under one account id and read back
+under another with the same number: still refuses a second claim, still surfaces the coupon, app
+face becomes `coupon` not `hidden`, and an order under that number still finds the claim.
+`test-referral-lock.php` 40 pass, diagnostic suite green, `php -l` clean.
+
+## 2026-08-06 — app 1.63.0+67 / app-api 1.50.0: stop guessing why a customer can't see the referral card
+
+App 1.62 was confirmed installed and the card was STILL missing for a no-device account. Bench
+trace of the current plugin against a fresh phone-only user proves the backend is right
+(`can_invite:false, can_claim:true` → app computes face `claim` → shows). So the remaining
+suspect is **what the LIVE site returns** — most likely a plugin older than the one that added
+`can_claim`.
+
+**App fix — an old server must not be able to hide the feature.** `ReferralSummary.fromJson`
+treated an ABSENT `can_claim` as `false`. A site running a pre-`can_claim` plugin therefore blanked
+the redeem entry for everyone without a projector, with nothing in the app to explain it. Absent
+now means "server didn't say" → allow; the claim endpoint is the real authority and refuses with a
+precise reason. An explicit `false` is still honoured.
+
+**Admin diagnostic — Settings → Referrals → "Why can't a customer see the referral card?"**
+Type the customer's number, get the actual payload (`enabled` / `can_invite` / `can_claim` / `code`
+/ `my_coupon`, plus "has bought before" and "has used a code before") and the verdict:
+INVITE / REDEEM / COUPON / NOTHING, with the reason in words. `referral_diagnose()` mirrors
+`ReferralSummary.face` rather than describing it, so admin and app cannot drift. Accepts any phone
+format. When the verdict says the card SHOULD show, it tells you to check the phone's app version —
+closing the last loop.
+
+**Plugin version now shown in the page header** (`plugin v1.50.0` badge). "Is the new backend
+actually live?" was unanswerable from inside wp-admin, and a stale upload looks exactly like an app
+bug — which is precisely how this round started.
+
+**Tests:** referral suite 16 Flutter (explicit-false honoured, absent-key allows, can_invite
+default unchanged); NEW `test-diagnostic.php` bench check (4 phone formats, full row output,
+blank/garbage/unknown-number error paths, programme-off diagnosed as programme-off rather than
+blamed on the customer). Full suite **145 Flutter pass**, analyze clean, `php -l` clean.
+
+## 2026-08-06 — ⚠️ THE STALE-APK TRAP (cost three rounds of "the fix doesn't work")
+
+The referral card was reported missing three times after it had been fixed, verified and built.
+The code was never the problem. **The output filename changed** (`AUN-Projector-app.apk` →
+`AUN-Care-Bangladesh.apk`) and the old July build was still sitting in the same folder — two
+similar `.apk` names side by side, and the stale one kept being the one installed.
+
+How it was diagnosed, and how to diagnose it next time in one minute:
+1. `aun-app-build.log` timestamp + last line → did the build actually succeed, and when?
+2. `ls -la *.apk` → is the file the user is sending the file the build just wrote?
+3. `grep -a "<a string only the new build has>" the.apk` → decisive. Release AOT keeps literal
+   strings, so grepping the APK for a new UI string proves whether a fix is inside it.
+
+Fixed so it cannot recur: `build-aun-app.cmd` now **deletes any old-name APK** after a successful
+build and **prints the version** it just wrote. The stale file was renamed to
+`OLD-2026-07-23-DO-NOT-INSTALL.apk.bak` (not deleted). Users can self-check in the app:
+**Settings → App version**.
+
+Rule of thumb for any future "the fix isn't working": before touching code, prove which build is
+running. `flutter analyze` + tests passing says nothing about what is installed on the phone.
+
+## 2026-08-06 — app-api 1.49.0: settings page rebuilt + admin override for the coupon lock
+
+**Admin override.** `AUN_App_Referrals::unlock_coupon( $code )` removes `_aun_referral_phone` from
+one coupon; `coupon_lock_status()` reports what a coupon is currently locked to. Surfaced in
+Settings → Referrals → "Release a coupon's phone lock". **Releases only** — there is deliberately no
+"lock it to a different number", because the only number we can vouch for is the one that passed
+OTP, and letting an admin type a replacement turns a verified fact into a typo. Single-use, expiry
+and minimum-order survive the release (tested). Releasing twice is harmless — support will click it
+twice.
+
+**Settings page redesigned.** It had become one endless column where new settings were appended to
+whichever card happened to be last, so things were filed under headings they had nothing to do with:
+- **OneDrive / SharePoint (firmware & manuals)** was inside **"What to Watch"**.
+- **YouTube Data API key** (video guides) was also inside **"What to Watch"**.
+- **"Login screen video"** was under **"Home Screen"**.
+- The ticket test, maintenance-reminder test and testing note floated at the bottom of the page,
+  detached from the features they test.
+
+Now a sticky left nav with seven sections — Support & contact / App screens / Notifications /
+Integrations / What to watch / Referrals / App release — each with a one-line explanation of what it
+actually affects. Every test tool moved next to its own feature (the maintenance test lives under
+Notifications, the ticket test inside the osTicket card).
+
+**Mechanics worth knowing:**
+- ONE `<form>` spans every section, so a single Save covers the lot and switching sections cannot
+  lose a half-typed change. Hidden panels are `display:none`, and hidden inputs still submit —
+  verified in-browser (43 fields reach the save handler).
+- Action buttons use the HTML `form="…"` attribute to reach standalone forms rendered outside the
+  settings form. **HTML forbids nested forms**; this is what lets each tool sit with its feature
+  instead of in a heap at the bottom.
+- **Every input `name` is unchanged**, so the save handler needed no edits — the redesign cannot
+  silently drop a setting.
+- The chosen section is remembered in `localStorage` + the URL hash, so saving (a page reload)
+  returns you to the section you were editing. Unknown/renamed section falls back to the first.
+
+**Tests:** `test-referral-lock.php` now **40 pass** (10 new for the override). NEW
+`render-settings.php` bench check: all 7 panels render once, forms balanced with no nesting, divs
+balanced, all 38 settings fields still present, and the three misfiled settings assert as being in
+their NEW section and absent from the old one. Browser-verified: tab switching, hash/localStorage
+memory, and every `form=` association resolving to the right form.
+
+**To deploy:** re-upload `aun-app-api.zip` (1.49.0). **No APK rebuild** — this round is backend only.
+
+## 2026-08-06 — app 1.62.0+66 / app-api 1.48.0: a referral coupon now belongs to ONE phone number
+
+**Why:** with no email on app accounts, a referral coupon was a bearer token — single-use and
+expiring, but whoever typed the code first got the discount, including anyone the friend passed it
+to. The *reward* was already well guarded (`on_order_completed()` revokes the claim if the buyer's
+phone belongs to an existing customer); the *discount* was not.
+
+**The lock.** `claim()` already knows the friend's OTP-verified number, so the coupon is stamped
+with it: coupon meta `_aun_referral_phone` = canonical `8801XXXXXXXXX` (`COUPON_META_PHONE`).
+Coupons issued before this carry no meta and stay unlocked **on purpose** — retro-locking a code
+someone already holds breaks a promise we made.
+
+**Matching is forgiving about format, strict about identity.** `phone_matches()` canonicalises
+through `AUN_App_Phone::normalize()`, so `+8801712345678`, `01712345678`, `1712345678` (no leading
+zero), `017 1234 5678`, `017-1234-5678` and `00880…` are all the same number. The one addition is
+stripping a leading `00`, done locally in the referrals class rather than in the shared phone class
+that OTP login depends on.
+
+**Two hooks, deliberately.**
+- `woocommerce_coupon_is_valid` — LENIENT. Judges only when a billing phone is already known,
+  because people apply the code before filling the form and refusing there reads as "this code is
+  broken". Throws an `Exception`, which WooCommerce turns into the customer-facing notice.
+- `woocommerce_after_checkout_validation` — STRICT. By then the phone has actually been submitted,
+  so blank is a real answer. **This is the gate that stops the order.**
+
+**The refusal explains itself** and shows the number *masked* (`017******78`, via
+`AUN_App_Phone::mask`) — enough for the owner to recognise, useless to a stranger. Separate wording
+for "no phone entered" vs "wrong phone".
+
+**Told up front, not at the till.** `POST /me/referral/claim` returns `phone`, and `summary()`
+returns `my_coupon_phone` (read from the COUPON's own meta, so an unlocked older coupon is never
+described as restricted). The app replaced the redeem snackbar with a dialog showing the coupon and
+"Use 01712345678 as your mobile number at checkout", and repeats the note on the coupon card —
+the dialog is seen once, the card is where they return at checkout. Formatting lives server-side
+(`display_phone()`) so the promised number and the compared number cannot drift.
+
+**Tests:** NEW bench suite `test-referral-lock.php` — **29 pass** (10 input formats, wrong/garbage/
+landline/too-short rejections, empty-lock-matches-nothing, meta round-trip, unlocked-coupon
+passthrough, lenient-while-unknown, format-insensitive pass, wrong-number refusal, message masks
+the number, already-invalid coupon not re-judged). Flutter **143 pass**, analyze clean.
+⚠️ Bench gotcha re-confirmed: `wp eval-file` runs in FUNCTION scope — a file-level `$pass` is not
+the `global $pass` a helper increments; use `$GLOBALS`.
+
+**Residual, accepted:** WooCommerce Blocks checkout does not fire `woocommerce_after_checkout_
+validation`; the `is_valid` filter still covers it whenever a phone is known. The classic checkout
+this site uses is fully gated.
+
+**To deploy:** re-upload `aun-app-api.zip` (1.48.0) **and** rebuild the APK (1.62.0+66). No DB
+migration.
+
+> ⚠️ This log has entries only up to v1.45. The rounds between v1.45 and v1.59
+> (referral programme, planner) were shipped but never written up here — read
+> `git log` for those. Everything above/below this line is still accurate.
+
+## 2026-08-06 — app 1.61.0+65 / app-api 1.47.0: referral audit — the coupon nobody could spend
+
+**The programme-breaking one.** `create_friend_coupon()` and `create_referrer_reward()` both called
+`set_email_restrictions( array( $user->user_email ) )`. App accounts are created from a PHONE —
+`AUN_App_REST::create_user()` never passes a `user_email` — so every app customer's coupon was
+locked to the **empty string**. WooCommerce treats a non-empty restriction array as a real
+restriction and matches it against the billing email at checkout, which nothing can satisfy. So the
+friend redeemed a code, was told "your discount is ready", and the coupon was then **rejected at the
+till**. Same for the referrer's THANKS reward. Fixed by `customer_email()` — app profile meta
+(`aun_app_email`) first, then `user_email`, `is_email()`-validated — and restricting only when
+there IS an email to restrict to. Single-use + per-user limit + expiry + minimum-order still apply.
+Coupons already issued are healed where they are read (`heal_coupon_restrictions()`, called from
+`summary()`): a live customer's real reward is repaired, not written off, and no migration to run.
+
+**Percentage rewards were shown as taka (user-reported).** Admin sets "referrer gets 5%", the app
+showed "৳5". `referralYouGet` / `referralStep3` carried a hardcoded ৳ around a raw number. The
+backend was right all along — the reward coupon is always issued `fixed_cart` via `reward_value()`
+against the friend's real order total — so this was purely a lie in the copy.
+
+**৳ printed twice (user-reported).** Same root cause from the other side: `referrerLabel` returned
+"৳500" and was then dropped into a string that already had a ৳ → "৳৳500". `referrerLabel` is gone;
+one helper `referrerRewardLabel()` now decides the wording, and a percentage gets a whole different
+sentence (`referralRewardPercent`, "5% of their order") because a percentage is not a currency with
+a different symbol.
+
+**Third referral face.** `can_claim` flips false the instant a friend redeems — so a card keyed on
+it disappeared at the exact moment they were handed a coupon, taking the only screen that shows
+that coupon with it. `ReferralSummary.face` (`invite` / `claim` / `coupon` / `hidden`) is now the
+single decision, replacing the boolean-per-screen guessing that caused all three bugs.
+
+**Tests:** `test/referral_visibility_test.dart` now 14 (three faces, redeem-doesn't-vanish, both
+currency bugs in EN **and** BN, friend-label double-sign guard). Full suite **143 Flutter tests
+pass**, analyze clean, `php -l` clean.
+
+**To deploy:** re-upload `aun-app-api.zip` (1.47.0) **and** rebuild the APK (1.61.0+65). Both sides
+changed. No DB migration.
+
+## 2026-08-06 — app 1.60.0+64: the referral programme was invisible to the friend it exists for
+
+**The bug (user-reported):** the referral card only appeared for customers with a registered
+projector. Someone with no device saw nothing — and since the *redeem a friend's code* field
+lives behind that card, the one person a code is meant to reach had no way to enter one.
+
+**Root cause:** `ReferralSettingsCard` gated the whole card on `can_invite`. The backend was
+already right: `referral()` returns `can_invite` and `can_claim` as two independent answers
+(`can_invite` = has purchase history, `can_claim` = programme on and hasn't used a code yet).
+The app collapsed both sides of a two-sided programme onto the invite side. **No backend or
+plugin change this round.**
+
+**Fix:** the visibility rule moved out of the widget onto `ReferralSummary` as
+`showEntryPoint` / `canShowInvite` / `isClaimOnly` (same pattern as `AppNotice.isActiveTask`),
+so it is one testable decision instead of an inline condition duplicated per screen. The card
+shows when the customer can invite **or** can claim. An empty code counts as "cannot invite" —
+otherwise the share sheet would send a message with no code in it.
+
+**Two faces, not one card with a hole in it:** a claim-only visitor gets redeem-oriented copy
+(`referralClaimHeadline` / `referralClaimSub`, bn+en) and a redeem icon, and on `ReferralScreen`
+the hero speaks to them, the invite code + share button stay hidden, and **the "I have a code"
+button moves to the top** — it used to sit below "how it works" and the terms, which is a second
+way the same feature stayed unfound.
+
+**Tests:** new `test/referral_visibility_test.dart` (7) pinning the two flags apart, incl. the
+regression itself, programme-off, empty-code, and the JSON defaults (`can_claim` defaults false,
+`can_invite` defaults true). Full suite **136 Flutter tests pass**, `flutter analyze` clean.
+
+**To deploy:** rebuild the APK via `build-aun-app.cmd` (app 1.60.0+64). Nothing to upload.
 
 ## 2026-08-01 — app 1.45.0+49 / app-api 1.39.0: notification deep links everywhere, admin-bar repair queue, repair-pipeline gaps closed
 

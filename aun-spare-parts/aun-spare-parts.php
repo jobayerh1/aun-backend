@@ -2,14 +2,14 @@
 /**
  * Plugin Name: AUN Spare Parts
  * Description: Spare-parts request intake + per-part tracking for AUN Projector. Reads sales/warranty from the UltimatePOS ERP and a legacy inFlow sales archive; lets customers request parts (no device sent in) and track each part. Phase 1: legacy import + phone/order/serial lookup + warranty calc + image compression.
- * Version: 0.22.0
+ * Version: 0.28.0
  * Author: Smart Living Bangladesh
  * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SP_VERSION', '0.22.0' );
+define( 'AUN_SP_VERSION', '0.28.0' );
 define( 'AUN_SP_FILE', __FILE__ );
 define( 'AUN_SP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SP_URL', plugin_dir_url( __FILE__ ) );
@@ -91,6 +91,7 @@ require_once AUN_SP_DIR . 'includes/class-aun-sp-requests.php';
 require_once AUN_SP_DIR . 'includes/class-aun-sp-form.php';
 require_once AUN_SP_DIR . 'includes/class-aun-sp-tracking.php';
 require_once AUN_SP_DIR . 'includes/class-aun-sp-adminbar.php';
+require_once AUN_SP_DIR . 'includes/class-aun-sp-woo.php';
 
 register_activation_hook( __FILE__, array( 'AUN_SP_Install', 'activate' ) );
 
@@ -122,6 +123,9 @@ new AUN_SP_Tracking();
 
 // Toolbar badge (front end + admin) so pending requests are never forgotten.
 AUN_SP_Admin_Bar::init();
+
+// WooCommerce payment bridge (approved quote -> real order -> SSLCommerz / COD).
+AUN_SP_Woo::init();
 
 if ( is_admin() ) {
 	require_once AUN_SP_DIR . 'includes/class-aun-sp-admin.php';

@@ -340,6 +340,8 @@ class AUN_SP_Admin {
 			update_option( AUN_SP_Messages::OPT_SMS_PHOTO, sanitize_textarea_field( wp_unslash( $_POST['sms_photo'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_QUOTE, sanitize_textarea_field( wp_unslash( $_POST['sms_quote'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_APPROVED, sanitize_textarea_field( wp_unslash( $_POST['sms_approved'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_PAY, sanitize_textarea_field( wp_unslash( $_POST['sms_pay'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_PAID, sanitize_textarea_field( wp_unslash( $_POST['sms_paid'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_PAY_INFO, sanitize_textarea_field( wp_unslash( $_POST['pay_info'] ?? '' ) ) );
 
 			$count = (int) ( $_POST['r_count'] ?? 0 );
@@ -366,6 +368,8 @@ class AUN_SP_Admin {
 		$photo    = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO );
 		$quote    = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_QUOTE );
 		$approved = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_APPROVED );
+		$smspay   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAY );
+		$smspaid  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAID );
 		$pay      = AUN_SP_Messages::pay_info();
 		$tpls     = AUN_SP_Messages::reject_templates();
 
@@ -384,7 +388,9 @@ class AUN_SP_Admin {
 		echo '<tr><th>Better-photo request</th><td><textarea name="sms_photo" rows="2" class="large-text">' . esc_textarea( $photo ) . '</textarea><p class="description">Sent when you click &ldquo;Ask customer for a better photo&rdquo; on a request.</p></td></tr>';
 		echo '<tr><th>Quote ready</th><td><textarea name="sms_quote" rows="2" class="large-text">' . esc_textarea( $quote ) . '</textarea><p class="description">Sent when you click &ldquo;Send quote for approval&rdquo;. <code>{total}</code> is the quoted amount.</p></td></tr>';
 		echo '<tr><th>Quote approved</th><td><textarea name="sms_approved" rows="2" class="large-text">' . esc_textarea( $approved ) . '</textarea><p class="description">Sent to the customer when they approve the quote. <code>{pay}</code> inserts your payment instructions below.</p></td></tr>';
-		echo '<tr><th>Payment instructions</th><td><textarea name="pay_info" rows="2" class="large-text">' . esc_textarea( $pay ) . '</textarea><p class="description">Shown with the quote on the tracking page and via <code>{pay}</code> in the approval SMS, e.g. &ldquo;Pay 50% advance to bKash 017&hellip; to confirm.&rdquo;</p></td></tr>';
+		echo '<tr><th>Online payment link</th><td><textarea name="sms_pay" rows="2" class="large-text">' . esc_textarea( $smspay ) . '</textarea><p class="description">Sent when you press <strong>Send online payment link</strong> on a request. <code>{link}</code> is the payment page, <code>{total}</code> the amount. (Approving a quote does <em>not</em> send this &mdash; cash on delivery is the default.)</p></td></tr>';
+		echo '<tr><th>Payment received</th><td><textarea name="sms_paid" rows="2" class="large-text">' . esc_textarea( $smspaid ) . '</textarea><p class="description">Sent by <strong>this plugin</strong> the moment an online payment succeeds, and written to the request&rsquo;s activity log. WooCommerce&rsquo;s own emails/SMS are not used.</p></td></tr>';
+		echo '<tr><th>Payment instructions</th><td><textarea name="pay_info" rows="2" class="large-text">' . esc_textarea( $pay ) . '</textarea><p class="description">Fallback for when WooCommerce is unavailable &mdash; shown with the quote and via <code>{pay}</code>, e.g. &ldquo;Pay 50% advance to bKash 017&hellip; to confirm.&rdquo; With WooCommerce active the Pay button replaces this.</p></td></tr>';
 		echo '</tbody></table>';
 
 		echo '<h2 style="margin-top:24px;">Reject reason templates</h2>';
@@ -516,6 +522,31 @@ class AUN_SP_Admin {
 		echo '</tbody></table>';
 		echo '<p><button type="submit" class="button button-primary">Save settings</button></p>';
 		echo '</form>';
+
+		// Payment bridge self-check: says plainly whether an approved quote can turn
+		// into a payable order, and which gateways the customer would be offered.
+		global $wpdb;
+		$t_req    = AUN_SP_Install::table( 'requests' );
+		$has_col  = false;
+		foreach ( (array) $wpdb->get_results( "DESCRIBE $t_req" ) as $c ) {
+			if ( 'wc_order_id' === $c->Field ) { $has_col = true; break; }
+		}
+		$gateways = array();
+		if ( AUN_SP_Woo::is_active() && function_exists( 'WC' ) && WC()->payment_gateways() ) {
+			foreach ( WC()->payment_gateways()->get_available_payment_gateways() as $gw ) {
+				$gateways[] = $gw->get_title();
+			}
+		}
+		$orders_made = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $t_req WHERE wc_order_id > 0" );
+		$ok          = AUN_SP_Woo::is_active() && $has_col && ! empty( $gateways );
+
+		echo '<div class="notice ' . ( $ok ? 'notice-success' : 'notice-warning' ) . ' inline" style="max-width:640px;margin-top:18px;"><p style="margin:.6em 0;">';
+		echo '<strong>Payment bridge:</strong> ' . ( $ok ? 'ready' : 'not ready' ) . '<br>';
+		echo 'WooCommerce detected: <strong>' . ( AUN_SP_Woo::is_active() ? 'yes' : 'NO' ) . '</strong><br>';
+		echo 'Database ready (<code>wc_order_id</code>): <strong>' . ( $has_col ? 'yes' : 'NO — deactivate and reactivate the plugin' ) . '</strong><br>';
+		echo 'Payment methods a customer would see: <strong>' . ( $gateways ? esc_html( implode( ', ', $gateways ) ) : 'NONE — enable SSLCommerz / Cash on delivery in WooCommerce → Settings → Payments' ) . '</strong><br>';
+		echo 'Orders created so far: <strong>' . $orders_made . '</strong>';
+		echo '</p></div>';
 
 		echo '<p style="margin-top:14px;color:#646970;max-width:640px;">ERP live-lookup key (<code>AUN_SP_ERP_API_KEY</code> in wp-config.php): <strong>' . ( $has_key ? 'configured' : 'not set' ) . '</strong>. Without it, lookups use the legacy archive only — fine until the <code>/api/sales-lookup</code> endpoint is deployed.</p>';
 		echo '</div>';

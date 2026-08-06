@@ -12,6 +12,10 @@
 			uploading: 'Uploading…', upload_done: 'Thanks — we received your new photo.',
 			eta: 'ETA ',
 			quote_h: 'Quote — please review', total: 'Total', approve: 'Approve & proceed', decline: 'Decline',
+			price_h: 'Price for your parts', payable_h: 'Approved — amount payable',
+			delivery: 'Delivery', pay_online: 'Pay online now', pay_wait: 'Opening payment…',
+			cod_default: 'Prefer cash on delivery? Nothing to do — just pay when we hand over the parts.',
+			paid_msg: 'Payment received — thank you.',
 			approved_msg: 'Thank you — your quote is approved. We will start sourcing your parts.',
 			declined_msg: 'Your quote has been declined. Contact us any time if you change your mind.',
 			history: 'Progress history',
@@ -28,6 +32,10 @@
 			uploading: 'আপলোড হচ্ছে…', upload_done: 'ধন্যবাদ — আমরা আপনার নতুন ছবি পেয়েছি।',
 			eta: 'আনুমানিক ',
 			quote_h: 'কোটেশন — অনুগ্রহ করে দেখুন', total: 'মোট', approve: 'অনুমোদন করুন', decline: 'বাতিল করুন',
+			price_h: 'আপনার পার্টসের মূল্য', payable_h: 'অনুমোদিত — প্রদেয় পরিমাণ',
+			delivery: 'ডেলিভারি চার্জ', pay_online: 'এখনই অনলাইনে পেমেন্ট করুন', pay_wait: 'পেমেন্ট পেজ খোলা হচ্ছে…',
+			cod_default: 'ক্যাশ অন ডেলিভারি পছন্দ? কিছু করতে হবে না — পার্টস হাতে পাওয়ার সময় পেমেন্ট করবেন।',
+			paid_msg: 'পেমেন্ট পাওয়া গেছে — ধন্যবাদ।',
 			approved_msg: 'ধন্যবাদ — আপনার কোটেশন অনুমোদিত হয়েছে। আমরা পার্টস সংগ্রহ শুরু করব।',
 			declined_msg: 'আপনার কোটেশন বাতিল করা হয়েছে। মত পরিবর্তন হলে যেকোনো সময় যোগাযোগ করুন।',
 			history: 'অগ্রগতির ইতিহাস',
@@ -212,7 +220,8 @@
 				} );
 				body.appendChild( list );
 
-				if ( r.status_key === 'quote_sent' && r.quote ) { body.appendChild( quoteBlock( r, chip ) ); }
+				// Any priced request shows its cost; only a pending one shows the buttons.
+				if ( r.quote ) { body.appendChild( quoteBlock( r, chip ) ); }
 				if ( r.waiting ) { body.appendChild( reupload( r.ref, r.parts ) ); }
 				if ( r.timeline && r.timeline.length ) { body.appendChild( timeline( r.timeline ) ); }
 
@@ -282,7 +291,13 @@
 
 		function quoteBlock( r, chip ) {
 			var box = el( 'div', 'aun-sp-quote' );
-			box.appendChild( el( 'div', 'aun-sp-quote-h', t( 'quote_h' ) ) );
+			// "Please review" only reads correctly while a decision is pending; once
+			// approved the same figure is what they owe, and otherwise it is simply
+			// the price of the parts.
+			var head = t( 'price_h' );
+			if ( r.quote.awaiting ) { head = t( 'quote_h' ); }
+			else if ( r.status_key === 'approved' ) { head = t( 'payable_h' ); }
+			box.appendChild( el( 'div', 'aun-sp-quote-h', head ) );
 			( r.parts || [] ).forEach( function ( p ) {
 				if ( ! p.price || p.price === '0.00' ) { return; }
 				var line = el( 'div', 'aun-sp-quote-line' );
@@ -294,12 +309,34 @@
 				line.appendChild( el( 'span', 'aun-sp-quote-price', '৳' + ( p.line_total || p.price ) ) );
 				box.appendChild( line );
 			} );
+			// Delivery is part of what they pay, so show it as its own line.
+			if ( r.delivery ) {
+				var dl = el( 'div', 'aun-sp-quote-line' );
+				dl.appendChild( el( 'span', null, t( 'delivery' ) ) );
+				dl.appendChild( el( 'span', 'aun-sp-quote-price', '৳' + r.delivery ) );
+				box.appendChild( dl );
+			}
 			var tot = el( 'div', 'aun-sp-quote-total' );
 			tot.appendChild( el( 'span', null, t( 'total' ) ) );
 			tot.appendChild( el( 'span', null, '৳' + r.quote.total ) );
 			box.appendChild( tot );
 			if ( r.quote.note ) { box.appendChild( el( 'div', 'aun-sp-quote-note', r.quote.note ) ); }
-			if ( r.quote.pay ) { box.appendChild( el( 'div', 'aun-sp-quote-pay', r.quote.pay ) ); }
+
+			// Payment choice. Paying online is opt-in: taking it creates the order and
+			// sends them to the gateway; ignoring it simply means cash on delivery,
+			// which needs no order and no action from them.
+			if ( r.order && r.order.paid ) {
+				box.appendChild( el( 'div', 'aun-sp-quote-paid', '✓ ' + t( 'paid_msg' ) ) );
+			} else if ( r.can_pay ) {
+				box.appendChild( payChoice( r ) );
+			} else if ( r.quote.pay ) {
+				// WooCommerce unavailable — fall back to the manual instructions.
+				box.appendChild( el( 'div', 'aun-sp-quote-pay', r.quote.pay ) );
+			}
+
+			// Approve / Decline belong only to a decision that is actually pending.
+			// Everywhere else this block is a read-only statement of the cost.
+			if ( ! r.quote.awaiting ) { return box; }
 
 			var actions = el( 'div', 'aun-sp-quote-actions' );
 			var ok = el( 'button', 'aun-sp-btn' );
@@ -318,6 +355,47 @@
 			return box;
 		}
 
+		/**
+		 * "Pay online now" vs cash on delivery. The order is only created when they
+		 * press pay — so the amount is always current, and a customer who prefers COD
+		 * never generates a WooCommerce order at all.
+		 */
+		function payChoice( r ) {
+			var wrap = el( 'div', 'aun-sp-paychoice' );
+			var btn  = el( 'button', 'aun-sp-btn aun-sp-pay-btn' );
+			btn.type = 'button';
+			btn.textContent = t( 'pay_online' ) + ' — ৳' + r.quote.total;
+
+			var msg = el( 'div', 'aun-sp-quote-payhint', t( 'cod_default' ) );
+
+			btn.addEventListener( 'click', function () {
+				btn.disabled = true;
+				var was = btn.textContent;
+				btn.textContent = t( 'pay_wait' );
+				var fd = new FormData();
+				fd.append( 'ref', r.ref );
+				post( 'aun_sp_pay', fd ).then( function ( res ) {
+					if ( res && res.success && res.data && res.data.pay_url ) {
+						window.location.href = res.data.pay_url; // straight to the gateway
+						return;
+					}
+					btn.disabled = false;
+					btn.textContent = was;
+					msg.textContent = ( res && res.data && res.data.message ) || t( 'net_err' );
+					msg.className = 'aun-sp-quote-payhint is-error';
+				} ).catch( function () {
+					btn.disabled = false;
+					btn.textContent = was;
+					msg.textContent = t( 'net_err' );
+					msg.className = 'aun-sp-quote-payhint is-error';
+				} );
+			} );
+
+			wrap.appendChild( btn );
+			wrap.appendChild( msg );
+			return wrap;
+		}
+
 		function decide( ref, decision, actions, qm, chip ) {
 			qm.textContent = '…';
 			var fd = new FormData();
@@ -333,6 +411,16 @@
 						var nk = ( decision === 'approve' ) ? 'approved' : 'declined';
 						chip.textContent = ovLabel( nk );
 						chip.className = 'aun-sp-warranty ' + statusClass( nk );
+					}
+					// The card isn't re-rendered after a decision, so offer the payment
+					// choice right here — otherwise an approving customer is left with
+					// nothing to act on until they reload.
+					var d = res.data || {};
+					if ( decision === 'approve' && d.can_pay ) {
+						var box = qm.parentNode;
+						var choice = payChoice( lastReqs.filter( function ( x ) { return x.ref === ref; } )[0] || { ref: ref, quote: { total: '' } } );
+						box.appendChild( choice );
+						choice.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
 					}
 				} else {
 					qm.textContent = ( res && res.data && res.data.message ) || t( 'net_err' );
