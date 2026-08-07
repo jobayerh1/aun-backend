@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.53.0
+ * Version:           1.69.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.53.0' );
+define( 'AUN_APP_API_VERSION', '1.69.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -28,7 +28,11 @@ define( 'AUN_APP_API_VERSION', '1.53.0' );
 // v11 = aun_app_repairs.last_erp_status (repair-status change push).
 // v10 = the aun_app_dismissed ledger. Bumping re-runs activation so existing
 // installs get new columns + crons.
-define( 'AUN_APP_API_DB_VERSION', '15' );
+// v16 = aun_app_referral_claims.revoke_reason (a reversed order can be undone;
+// an ineligible buyer cannot).
+// v17 = aun_app_tokens.fcm_build (which notification channels that
+// phone's app actually has — Android drops pushes naming unknown ones).
+define( 'AUN_APP_API_DB_VERSION', '17' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -70,6 +74,7 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-tickets.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-watch.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-projectors.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-referrals.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-sslcommerz.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-rest.php';
 
 if ( is_admin() ) {
@@ -132,7 +137,24 @@ function aun_app_api_default_options() {
 		'referral_min_order'       => 0,         // minimum spend to qualify
 		'referral_monthly_cap'     => 5,         // rewards per referrer per 30 days
 		'referral_claim_days'      => 30,        // how long a new account may claim
-		'referral_expiry_days'     => 90,        // coupon lifetime
+		'referral_expiry_days'     => 90,        // the FRIEND's welcome coupon lifetime
+		// The referrer's EARNED reward lives much longer than a promotional
+		// discount: they worked for it. 0 = never expires.
+		'referral_reward_expiry_days' => 365,
+		// Which order status pays the reward. Stores using a shipment plugin
+		// (AST Pro adds wc-shipped / wc-delivered) should point this at
+		// "Delivered", so a refused cash-on-delivery parcel never pays out.
+		'referral_reward_status'   => 'completed',
+		// Pay on Completed AS WELL as the status above. Off: a shipment
+		// plugin that auto-completes at dispatch would otherwise pay early.
+		'referral_reward_also_completed' => 0,
+		// SSLCommerz, for the app's DIRECT payment session. Normally blank:
+		// the credentials are read from the WooCommerce gateway that is
+		// already configured. Fill these only if that lookup cannot find
+		// them — two copies of a credential drift apart.
+		'sslc_store_id'   => '',
+		'sslc_store_pass' => '',
+		'sslc_sandbox'    => 0,
 		// Test lines: numbers allowed to redeem a code even though they are
 		// existing customers. Bypasses THAT rule only. Blank on a normal site.
 		'referral_test_phones'     => '',
@@ -409,6 +431,11 @@ function aun_app_api_activate() {
 		reward_coupon varchar(64) DEFAULT NULL,
 		order_id bigint(20) unsigned NOT NULL DEFAULT 0,
 		status varchar(16) NOT NULL DEFAULT 'pending',
+		/* WHY a claim was revoked: 'reversed' (the order was refunded or
+		   cancelled) or 'ineligible' (the buyer failed a rule). Only the first
+		   can be undone: an admin who mis-clicks Cancelled and then corrects it
+		   must not cost the referrer a reward they earned. */
+		revoke_reason varchar(20) NOT NULL DEFAULT '',
 		created_at datetime NOT NULL,
 		rewarded_at datetime DEFAULT NULL,
 		PRIMARY KEY (id),
@@ -450,6 +477,22 @@ function aun_app_api_activate() {
 	}
 	if ( ! in_array( 'snoozed_until', $notice_state_cols, true ) ) {
 		$wpdb->query( "ALTER TABLE $notice_state ADD COLUMN snoozed_until datetime DEFAULT NULL" );
+	}
+
+	// v17: the app build behind each FCM token. Android silently refuses to
+	// display a notification whose channel the app never created, so a push must
+	// not name a channel newer than the build receiving it.
+	$tok_cols_v17 = (array) $wpdb->get_col( "SHOW COLUMNS FROM $tokens" );
+	if ( ! in_array( 'fcm_build', $tok_cols_v17, true ) ) {
+		$wpdb->query( "ALTER TABLE $tokens ADD COLUMN fcm_build int NOT NULL DEFAULT 0" );
+	}
+
+	// v16: why a referral claim was revoked, so an admin's mis-click on
+	// "Cancelled" can be undone while a genuine rule failure cannot.
+	// NOTE: no AFTER clause — the SQLite bench rejects it.
+	$claim_cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM $referral_claims" );
+	if ( ! in_array( 'revoke_reason', $claim_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $referral_claims ADD COLUMN revoke_reason varchar(20) NOT NULL DEFAULT ''" );
 	}
 
 	// v6: warranty duration exactly as the ERP product defines it (what the
@@ -620,13 +663,62 @@ add_action( 'woocommerce_new_product', array( 'AUN_App_Projectors', 'flush' ) );
 // passed it on to. Two hooks by design — the filter judges only when a phone
 // is already known (so applying the code early still works), and checkout
 // validation is the gate that actually stops the order.
-add_filter( 'woocommerce_coupon_is_valid', array( 'AUN_App_Referrals', 'on_coupon_is_valid' ), 10, 2 );
-add_action( 'woocommerce_after_checkout_validation', array( 'AUN_App_Referrals', 'on_checkout_validation' ), 10, 2 );
+// Applying stays INSTANT. The ownership check is not a validity rule — it was
+// hooked to `woocommerce_coupon_is_valid` at first, which runs on every cart
+// recalculation and is consulted at two moments with different data. That is
+// what produced "Coupon applied successfully" above a ৳0 discount, and a
+// refusal that stuck through refreshes. Applying now only ANNOUNCES the
+// condition; it is enforced once, at placement, where the number is known.
+add_action( 'woocommerce_applied_coupon', array( 'AUN_App_Referrals', 'on_applied_coupon' ), 10, 1 );
 
-add_action( 'woocommerce_order_status_completed', array( 'AUN_App_Referrals', 'on_order_completed' ) );
-add_action( 'woocommerce_order_status_refunded', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
-add_action( 'woocommerce_order_status_cancelled', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
-add_action( 'woocommerce_order_status_failed', array( 'AUN_App_Referrals', 'on_order_reversed' ) );
+// Earned rewards stack with EACH OTHER, and with nothing else. Rewards are
+// issued one per friend and are individual-use; without these two filters a
+// referrer who brought five customers would need five separate orders to spend
+// what they earned.
+add_filter( 'woocommerce_apply_individual_use_coupon', array( 'AUN_App_Referrals', 'keep_rewards_together' ), 10, 2 );
+add_filter( 'woocommerce_apply_with_individual_use_coupon', array( 'AUN_App_Referrals', 'allow_reward_stacking' ), 10, 3 );
+
+// A reward worth more than the cart is accepted and the remainder is destroyed
+// — WooCommerce caps the discount at the subtotal and still marks the coupon
+// used. Say so, with the amount, and let the customer decide.
+add_action( 'woocommerce_before_cart', array( 'AUN_App_Referrals', 'excess_reward_notice' ) );
+add_action( 'woocommerce_before_checkout_form', array( 'AUN_App_Referrals', 'excess_reward_notice' ) );
+add_action( 'woocommerce_after_checkout_validation', array( 'AUN_App_Referrals', 'on_checkout_validation' ), 10, 2 );
+// Backstop for the block checkout / Store API, which never fire the hook above.
+add_action( 'woocommerce_checkout_create_order', array( 'AUN_App_Referrals', 'on_create_order' ), 10, 2 );
+
+// Not `woocommerce_order_status_completed` any more: a store with a shipment
+// plugin (AST Pro adds wc-shipped / wc-delivered) needs to pay on DELIVERED,
+// or a refused cash-on-delivery parcel pays a reward for goods that came
+// straight back. The paying status is an admin setting, so this listens to
+// every transition and asks whether the new one is the one that pays.
+add_action( 'woocommerce_order_status_changed', 'aun_app_api_referral_status_changed', 10, 3 );
+
+/**
+ * Route an order-status change to the referral programme.
+ *
+ * @param int    $order_id Order.
+ * @param string $from     Previous status (bare slug).
+ * @param string $to       New status (bare slug).
+ */
+function aun_app_api_referral_status_changed( $order_id, $from, $to ) {
+	$to = AUN_App_Referrals::clean_status( $to );
+
+	if ( in_array( $to, AUN_App_Referrals::payout_statuses(), true ) ) {
+		AUN_App_Referrals::on_order_completed( $order_id );
+		return;
+	}
+
+	if ( in_array( $to, array( 'refunded', 'cancelled', 'failed' ), true ) ) {
+		AUN_App_Referrals::on_order_reversed( $order_id );
+	}
+}
+
+// A partial refund never changes the order status, so it would otherwise be
+// invisible here. It is NOT treated as a reversal on its own: a small goodwill
+// refund must not cost the referrer a reward they earned. Only a refund that
+// drags what was actually kept below the qualifying minimum counts.
+add_action( 'woocommerce_order_refunded', array( 'AUN_App_Referrals', 'on_partial_refund' ), 10, 2 );
 
 /**
  * Upgrade path for sites where the plugin was activated before v1.1
@@ -850,6 +942,270 @@ function aun_app_api_admin_bar_styles() {
 	#wpadminbar #wp-admin-bar-aun-app-tickets-default { min-width:290px; }
 	</style>';
 }
+/**
+ * Render checkout as an app screen when the app is the one showing it.
+ *
+ * The app opens WooCommerce's own order-pay page inside a WebView, so the
+ * theme's header, menu and footer would appear inside the payment screen —
+ * ugly, and worse, a way to wander off mid-transaction into the shop.
+ *
+ * Triggered by `?aun_app=1`, which `/parts/pay` appends. A cookie carries it
+ * across the gateway round trip, because the customer comes BACK from
+ * SSLCommerz to a fresh page load that has no query string of ours.
+ *
+ * Presentation only: nothing here touches prices, the order, or the gateway.
+ */
+function aun_app_api_checkout_chrome() {
+	$flagged = ! empty( $_GET['aun_app'] );
+	if ( $flagged && ! headers_sent() ) {
+		setcookie( 'aun_app_checkout', '1', time() + HOUR_IN_SECONDS, '/' );
+	}
+	if ( ! $flagged && empty( $_COOKIE['aun_app_checkout'] ) ) {
+		return;
+	}
+	// Only ever on the pages the payment flow actually passes through.
+	if ( function_exists( 'is_checkout' ) && ! is_checkout() && ! is_wc_endpoint_url( 'order-received' ) ) {
+		return;
+	}
+
+	// The overlay is printed at the START of <body> (see below) rather than
+	// after load, so the customer never sees the checkout form, the terms
+	// checkbox or WooCommerce's intermediate redirect page flash past. Those
+	// pages are real and must keep working — they are simply not something the
+	// customer asked to look at. Hidden behind an opaque layer, not removed.
+	$GLOBALS['aun_app_checkout_overlay'] = function_exists( 'is_wc_endpoint_url' )
+		&& is_wc_endpoint_url( 'order-pay' );
+
+	echo '<style data-no-optimize="1" id="aun-app-checkout">
+	header, .header, #masthead, .header-wrapper, #top-bar, .top-bar,
+	footer, .footer, #footer, .footer-wrapper, .absolute-footer,
+	.mobile-nav, #main-menu, .off-canvas, .breadcrumbs, .page-title,
+	#wpadminbar, .back-to-top { display: none !important; }
+	body { padding-top: 0 !important; background: #fff !important; }
+	.page-wrapper, #main, .container { padding-top: 0 !important; margin-top: 0 !important; }
+	#aun-app-redirect { position: fixed; inset: 0; z-index: 99999; background: #fff;
+	  display: flex; align-items: center; justify-content: center; flex-direction: column;
+	  gap: 14px; font: 400 15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+	  color: #4b5563; }
+	#aun-app-redirect .sp { width: 30px; height: 30px; border: 3px solid #e5e7eb;
+	  border-top-color: #0188fe; border-radius: 50%; animation: aunspin .8s linear infinite; }
+	@keyframes aunspin { to { transform: rotate(360deg); } }
+	</style>';
+
+	// Straight to the gateway when there is only one.
+	//
+	// WooCommerce's "Pay for order" page is a method chooser, and the customer
+	// has already chosen — they tapped "Pay online securely" in the app. With a
+	// single method left (the spare-parts plugin removes cash-on-delivery from
+	// its own orders) that page is a pointless extra tap on a screen that looks
+	// like the website they were trying not to visit.
+	//
+	// Only auto-submits when there is EXACTLY ONE method. With two or more the
+	// chooser is correct and stays, because picking for them would be guessing.
+	if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-pay' ) ) {
+		echo '<script data-no-optimize="1">
+		(function () {
+		  var KEY = "aunAutoPayTried";
+
+		  function go() {
+		    var form = document.querySelector("form#order_review");
+		    if (!form) { return; }
+
+		    // ── Loop guard: auto-submit AT MOST ONCE per order, ever. ──
+		    // Without this, anything that makes the submit fail — an unticked
+		    // terms box, a declined card, a gateway timeout — reloads the page,
+		    // which re-runs this script, which submits again. The customer sees
+		    // the checkout flashing forever and can never read the error that
+		    // would tell them what is wrong.
+		    var key = location.pathname;
+		    try {
+		      if (sessionStorage.getItem(KEY) === key) { return; }
+		      sessionStorage.setItem(KEY, key);
+		    } catch (e) { return; }  // no sessionStorage = no safe retry guard
+
+		    // If WooCommerce is already complaining, the customer must SEE it.
+		    if (document.querySelector(".woocommerce-error, .woocommerce-NoticeGroup, .wc-block-components-notice-banner.is-error")) { return; }
+
+		    var methods = form.querySelectorAll("input[name=payment_method]");
+		    if (methods.length !== 1) { return; }   // let them choose
+		    methods[0].checked = true;
+
+		    // The terms checkbox. WooCommerce refuses the order without it, and
+		    // an auto-submitted form has no one to tick it — which is what put
+		    // the page in a reload loop. The app states this consent on the Pay
+		    // button before we ever get here.
+		    var terms = form.querySelector("input#terms");
+		    if (terms && !terms.checked) {
+		      terms.checked = true;
+		      terms.dispatchEvent(new Event("change", { bubbles: true }));
+		    }
+
+		    // The overlay is already on screen (printed at the top of <body>),
+		    // so there is nothing to show here — only something to take away if
+		    // this goes wrong.
+
+		    // If the gateway has not taken over within a few seconds, the submit
+		    // failed. Drop the overlay so the customer can see the page rather
+		    // than staring at a spinner that will never finish.
+		    setTimeout(function () {
+		      var el = document.getElementById("aun-app-redirect");
+		      if (el) { el.remove(); }
+		    }, 8000);
+
+		    // A tick, so any gateway script that binds to the form is ready.
+		    setTimeout(function () {
+		      var btn = form.querySelector("#place_order, button[type=submit]");
+		      if (btn) { btn.click(); } else { form.submit(); }
+		    }, 350);
+		  }
+
+		  if (document.readyState === "complete") { go(); }
+		  else { window.addEventListener("load", go); }
+		})();
+		</script>';
+	}
+}
+add_action( 'wp_head', 'aun_app_api_checkout_chrome', 99 );
+
+/**
+ * The "Opening secure payment…" cover, printed as the FIRST thing in <body>.
+ *
+ * Position matters. Appending it after `load` meant the customer watched the
+ * checkout form, the terms checkbox and WooCommerce's intermediate redirect
+ * page appear and disappear — three flashes of a website they were trying not
+ * to visit. Printed here it is on screen before anything else paints, and it
+ * stays up across each redirect because every one of those pages runs this too.
+ *
+ * It only ever COVERS the page. Nothing underneath is removed or disabled, and
+ * the script above takes the cover away after 8 seconds if the submit failed,
+ * so a customer is never trapped behind a spinner.
+ */
+function aun_app_api_checkout_cover() {
+	if ( empty( $GLOBALS['aun_app_checkout_overlay'] ) ) {
+		return;
+	}
+	echo '<div id="aun-app-redirect"><div class="sp"></div><div>'
+		. esc_html__( 'Opening secure payment…', 'aun-app-api' )
+		. '</div></div>';
+}
+add_action( 'wp_body_open', 'aun_app_api_checkout_cover' );
+
+/**
+ * Where SSLCommerz sends the customer (and its own server) when a payment
+ * finishes, fails, is cancelled, or is confirmed out of band.
+ *
+ * Hooked on `template_redirect` at the front of the site rather than as a REST
+ * route, because the gateway POSTs a form here from the customer's browser and
+ * a plain URL is the least that can go wrong.
+ *
+ * **Nothing is trusted.** A redirect only tells us the customer's browser came
+ * back; the money is confirmed by calling the gateway ourselves. The page shown
+ * afterwards is a bare marker the app's WebView watches for — it never claims
+ * an outcome the server has not verified.
+ */
+function aun_app_api_sslcommerz_callback() {
+	$what = isset( $_GET['aun_sslc'] ) ? sanitize_key( wp_unslash( $_GET['aun_sslc'] ) ) : '';
+	if ( '' === $what ) {
+		return;
+	}
+
+	$paid = false;
+
+	// The second landing, reached by the redirect at the bottom of this page.
+	//
+	// The gateway returns the customer by POSTing a form, and Android's WebView
+	// does not report POST navigations to the app at all. So after validating,
+	// this page bounces itself to the same URL as a plain GET — a navigation
+	// every WebView reports, on every Android version, without the app needing
+	// to catch the subtler signals. `aun_final` says "already validated, just
+	// show the page", so the bounce cannot re-run the check without a val_id
+	// and turn a successful payment into a failure page.
+	$final = ! empty( $_GET['aun_final'] );
+	if ( $final ) {
+		$paid = ( 'success' === $what );
+	}
+
+	if ( ! $final && in_array( $what, array( 'success', 'ipn' ), true ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- the gateway posts here; authenticity comes from validate(), not a nonce.
+		$val_id = isset( $_POST['val_id'] ) ? sanitize_text_field( wp_unslash( $_POST['val_id'] ) ) : '';
+		if ( '' === $val_id && isset( $_GET['val_id'] ) ) {
+			$val_id = sanitize_text_field( wp_unslash( $_GET['val_id'] ) );
+		}
+
+		$data = AUN_App_SSLCommerz::validate( $val_id );
+		if ( is_wp_error( $data ) ) {
+			error_log( 'AUN APP API: SSLCommerz validation failed — ' . $data->get_error_message() );
+		} else {
+			$ok = AUN_App_SSLCommerz::settle( $data );
+			if ( is_wp_error( $ok ) ) {
+				error_log( 'AUN APP API: SSLCommerz settle refused — ' . $ok->get_error_message() );
+			} else {
+				$paid = true;
+			}
+		}
+	}
+
+	// The IPN is a server-to-server call with nobody watching: answer plainly
+	// and stop, or the gateway retries against a page it cannot parse.
+	if ( 'ipn' === $what ) {
+		status_header( 200 );
+		echo $paid ? 'OK' : 'IGNORED';
+		exit;
+	}
+
+	// A tiny page for the app's WebView. The marker in the URL is what the app
+	// matches on; the words are for the half-second a human might see them.
+	$state = $paid ? 'success' : ( 'cancel' === $what ? 'cancel' : 'fail' );
+	$msg   = $paid
+		? __( 'Payment received. Returning to the app…', 'aun-app-api' )
+		: ( 'cancel' === $what
+			? __( 'Payment cancelled. Returning to the app…', 'aun-app-api' )
+			: __( 'The payment did not go through. Returning to the app…', 'aun-app-api' ) );
+
+	status_header( 200 );
+	nocache_headers();
+	echo aun_app_api_payment_page( $state, $msg, $final ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped below.
+	exit;
+}
+
+/**
+ * The little page the app's WebView lands on, as a string.
+ *
+ * Separate from the handler purely so it can be tested: the handler must
+ * `exit` (it is a front-end response), and a function that exits cannot be
+ * asserted about.
+ *
+ * @param string $state 'success' | 'fail' | 'cancel'.
+ * @param string $msg   Sentence for the human.
+ * @param bool   $final True on the second landing — do not bounce again.
+ * @return string
+ */
+function aun_app_api_payment_page( $state, $msg, $final ) {
+	// Bounce once, as a GET, so the app sees a navigation it can act on.
+	// Skipped on the second pass, or the WebView would loop for ever.
+	$bounce = $final ? '' : add_query_arg(
+		array( 'aun_sslc' => $state, 'aun_final' => '1' ),
+		home_url( '/' )
+	);
+
+	return '<!doctype html><html><head><meta charset="utf-8">'
+		. '<meta name="viewport" content="width=device-width,initial-scale=1">'
+		. '<title>aun-app-payment-' . esc_attr( $state ) . '</title>'
+		. ( '' !== $bounce
+			? '<meta http-equiv="refresh" content="0;url=' . esc_url( $bounce ) . '">'
+			: '' )
+		. '</head>'
+		. '<body style="margin:0;display:flex;align-items:center;justify-content:center;'
+		. 'height:100vh;font:15px/1.6 -apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;'
+		. 'color:#4b5563;text-align:center;padding:24px">'
+		. '<div>' . esc_html( $msg ) . '</div>'
+		. ( '' !== $bounce
+			? '<script>location.replace(' . wp_json_encode( $bounce ) . ');</script>'
+			: '' )
+		. '</body></html>';
+}
+add_action( 'template_redirect', 'aun_app_api_sslcommerz_callback', 1 );
+
 add_action( 'wp_head', 'aun_app_api_admin_bar_styles' );
 add_action( 'admin_head', 'aun_app_api_admin_bar_styles' );
 

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SP_Install {
 
-	const DB_VERSION = '8';
+	const DB_VERSION = '9';
 
 	/** Fully-qualified table name for a given short key. */
 	public static function table( $name ) {
@@ -79,6 +79,9 @@ class AUN_SP_Install {
 			approved_at DATETIME NULL,
 			wc_order_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			delivery_charge DECIMAL(12,2) NOT NULL DEFAULT 0,
+			refunded_at DATETIME NULL,
+			refund_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+			refund_ref VARCHAR(96) NOT NULL DEFAULT '',
 			created_at DATETIME NULL,
 			updated_at DATETIME NULL,
 			PRIMARY KEY  (id),

@@ -86,6 +86,154 @@ class AUN_App_Services {
 		return max( 1, (int) apply_filters( 'aun_sp_max_qty', 5 ) );
 	}
 
+	/**
+	 * Find — and optionally bin — the empty order shells left by failed
+	 * payment attempts.
+	 *
+	 * These appear as ৳0 "Pending payment" orders with no customer name: a
+	 * fatal between `wc_create_order()` (which makes the shell) and the code
+	 * that fills it in leaves the shell behind. The cause is fixed, but the
+	 * debris from before the fix is still sitting in the orders list.
+	 *
+	 * The test is deliberately narrow — pending, unpaid, ৳0, no items, no
+	 * billing name, no billing email, no spare-parts ref. A genuine order
+	 * cannot satisfy all seven. And they are TRASHED, not destroyed, so a
+	 * mistake is recoverable from the orders screen.
+	 *
+	 * @param bool $dry_run True = report only.
+	 * @return array{count:int,ids:int[],trashed:int}
+	 */
+	public static function purge_empty_orders( $dry_run = true ) {
+		$out = array( 'count' => 0, 'ids' => array(), 'trashed' => 0 );
+		if ( ! function_exists( 'wc_get_orders' ) ) {
+			return $out;
+		}
+
+		$orders = wc_get_orders( array(
+			'status'  => array( 'wc-pending' ),
+			'limit'   => 200,
+			'orderby' => 'date',
+			'order'   => 'DESC',
+		) );
+
+		foreach ( (array) $orders as $o ) {
+			if ( ! is_a( $o, 'WC_Order' )
+				|| $o->is_paid()
+				|| (float) $o->get_total() > 0
+				|| count( $o->get_items() ) > 0
+				|| '' !== trim( (string) $o->get_billing_first_name() )
+				|| '' !== trim( (string) $o->get_billing_email() )
+				|| '' !== (string) $o->get_meta( '_aun_sp_ref' ) ) {
+				continue;
+			}
+			$out['count']++;
+			$out['ids'][] = $o->get_id();
+			if ( ! $dry_run ) {
+				$o->update_status( 'trash', 'Empty payment shell from a failed attempt (AUN app cleanup).' );
+				$out['trashed']++;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Give WooCommerce the front-end context it expects before we create an
+	 * order from a REST request.
+	 *
+	 * WooCommerce deliberately does NOT start a session for REST calls —
+	 * `WooCommerce::is_request('frontend')` returns false when
+	 * `is_rest_api_request()` is true, and `init_session()` only runs for
+	 * front-end requests. So inside our endpoint `WC()->session` and
+	 * `WC()->customer` are null.
+	 *
+	 * That is fine for WooCommerce itself, and fine for the spare-parts plugin.
+	 * It is NOT fine for the other plugins hooked onto order creation: one line
+	 * of `WC()->session->get( … )` in any of them is a fatal error, and the
+	 * customer sees "There has been a critical error on this website" instead
+	 * of a payment page. That is exactly what happened on the live site with
+	 * `connect-yeamazing` (YEAMCO_WcHooks.php:119 — "Call to a member function
+	 * get() on null").
+	 *
+	 * It also explains why the WEBSITE never hit this: its "Pay online" button
+	 * goes through admin-ajax, which IS a front-end request, so the session is
+	 * already there. Only the app took the REST path.
+	 *
+	 * Creating the session here costs one lightweight object and makes our
+	 * request look like the one every other plugin was written against.
+	 *
+	 * @return void
+	 */
+	public static function ensure_wc_context() {
+		if ( ! function_exists( 'WC' ) ) {
+			return;
+		}
+		$wc = WC();
+
+		if ( empty( $wc->session ) ) {
+			// Honour any session handler another plugin has swapped in, rather
+			// than hardcoding WC_Session_Handler.
+			$handler = apply_filters( 'woocommerce_session_handler', 'WC_Session_Handler' );
+			if ( class_exists( $handler ) ) {
+				$wc->session = new $handler();
+				$wc->session->init();
+			}
+		}
+
+		if ( empty( $wc->customer ) && class_exists( 'WC_Customer' ) ) {
+			try {
+				// The logged-in app customer, so anything reading billing
+				// details off WC()->customer sees the right person.
+				$wc->customer = new WC_Customer( get_current_user_id(), true );
+			} catch ( Exception $e ) {
+				// A missing customer is survivable; a fatal is not.
+				$wc->customer = null;
+			}
+		}
+
+		// Some hooks reach for the cart even on an order that never had one.
+		if ( empty( $wc->cart ) && method_exists( $wc, 'initialize_cart' ) ) {
+			$wc->initialize_cart();
+		}
+	}
+
+	/**
+	 * The payment position on one spare-parts request, or null.
+	 *
+	 * Delegates entirely to `AUN_SP_Woo::customer_summary()` — the same method
+	 * the website tracker renders from — so the app can never show a different
+	 * amount, a different paid state or a stale pay link. Guarded by
+	 * method_exists because the two plugins ship separately: online payment
+	 * arrived in spare-parts 0.29.0, and against an older copy this must return
+	 * null rather than fatal.
+	 *
+	 * @param int $request_id Spare-parts request id.
+	 * @return array|null
+	 */
+	public static function payment_summary( $request_id ) {
+		if ( ! class_exists( 'AUN_SP_Woo' )
+			|| ! method_exists( 'AUN_SP_Woo', 'customer_summary' ) ) {
+			return null;
+		}
+		$s = AUN_SP_Woo::customer_summary( (int) $request_id );
+		if ( ! is_array( $s ) ) {
+			return null;
+		}
+		return array(
+			'number'        => (string) ( $s['number'] ?? '' ),
+			// Strings from WooCommerce's own formatter — kept as strings so the
+			// app shows exactly what the website shows, thousands separator and
+			// all, instead of re-formatting and drifting.
+			'total'         => (string) ( $s['total'] ?? '' ),
+			'paid'          => ! empty( $s['paid'] ),
+			'method'        => (string) ( $s['method'] ?? '' ),
+			'pay_url'       => (string) ( $s['pay_url'] ?? '' ),
+			'refunded'      => ! empty( $s['refunded'] ),
+			'refund_amount' => (string) ( $s['refund_amount'] ?? '' ),
+			'refund_date'   => (string) ( $s['refund_date'] ?? '' ),
+			'refund_due'    => ! empty( $s['refund_due'] ),
+		);
+	}
+
 	/** Same unambiguous ref alphabet the spare-parts plugin uses. */
 	private static function generate_ref( $table, $prefix ) {
 		global $wpdb;
@@ -810,9 +958,16 @@ class AUN_App_Services {
 
 				// Status-history timeline — same event filter as the website
 				// tracker (skip raw SMS logs and contact edits).
+				// 'wc_order' is excluded as well as sms/contact_changed. Those
+				// are the plumbing of the payment order — "order #9292 created",
+				// "order #9292 refreshed — now ৳15.00" — written every time the
+				// order is rebuilt. True, and none of the customer's business:
+				// they tapped Pay twice and got three lines of accounting for
+				// it. The money events they DO need ('payment', 'refund') carry
+				// their own types and still come through.
 				$events   = $wpdb->get_results( $wpdb->prepare(
 					"SELECT message, created_at FROM $t_event
-					 WHERE request_id = %d AND type NOT IN ('sms','contact_changed')
+					 WHERE request_id = %d AND type NOT IN ('sms','contact_changed','wc_order')
 					 ORDER BY id ASC LIMIT 40",
 					$r->id
 				) );
@@ -824,6 +979,11 @@ class AUN_App_Services {
 					);
 				}
 
+				// Delivery is charged on the WooCommerce order, so the app has to
+				// show it too — otherwise the parts list totals ৳3,400 while the
+				// Pay button says ৳3,520 and the customer stops trusting both.
+				$delivery = isset( $r->delivery_charge ) ? (float) $r->delivery_charge : 0.0;
+
 				$spare[] = array(
 					'ref'          => (string) $r->ref,
 					'model'        => (string) $r->model,
@@ -833,6 +993,33 @@ class AUN_App_Services {
 					'quote_total'  => (float) $r->quote_total,
 					'quote_note'   => (string) $r->quote_note,
 					'created_at'   => substr( (string) $r->created_at, 0, 10 ),
+					'delivery'     => $delivery,
+					// What the Pay button will actually charge.
+					'payable'      => (float) $r->quote_total + $delivery,
+					// Live order + payment state, or null when they have not
+					// chosen to pay online — cash on delivery creates no order.
+					'payment'      => self::payment_summary( (int) $r->id ),
+					// Whether to OFFER online payment at all.
+					//
+					// Deliberately STRICTER than the website tracker, which lets
+					// someone pay straight from a quote (it is reached from an
+					// SMS link, where paying IS the answer). In the app the
+					// customer is looking at Approve and Decline buttons, and
+					// putting a Pay button beside them asks the same question
+					// twice with three answers. The flow is: decide first, then
+					// pay if you feel like it — cash on delivery otherwise.
+					//
+					// So 'quote_sent' is excluded here as well as the closed
+					// statuses. Approving flips this to true on the next load.
+					'can_pay'      => (
+						( (float) $r->quote_total + $delivery ) > 0
+						&& class_exists( 'AUN_SP_Woo' ) && AUN_SP_Woo::is_active()
+						&& ! in_array(
+							$r->overall_status,
+							array( 'quote_sent', 'rejected', 'declined' ),
+							true
+						)
+					),
 					'timeline'     => $timeline,
 					'items'        => array_map( function ( $i ) use ( $ist ) {
 						// `price` is PER PIECE (the website quotes it that way),

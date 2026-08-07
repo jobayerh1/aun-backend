@@ -187,15 +187,37 @@ class AUN_SP_I18N {
 				'label' => 'Status labels — per part',
 				'type'  => 'it',
 				'strings' => array(
-					'it_pending'     => array( 'k' => 'pending',     'en' => 'Pending', 'bn' => 'অপেক্ষমাণ' ),
-					'it_quoted'      => array( 'k' => 'quoted',      'en' => 'Quoted', 'bn' => 'কোট করা হয়েছে' ),
-					'it_applied'     => array( 'k' => 'applied',     'en' => 'Applied to factory', 'bn' => 'ফ্যাক্টরিতে আবেদন' ),
-					'it_at_factory'  => array( 'k' => 'at_factory',  'en' => 'At factory', 'bn' => 'ফ্যাক্টরিতে' ),
-					'it_shipped'     => array( 'k' => 'shipped',     'en' => 'Shipped', 'bn' => 'পাঠানো হয়েছে' ),
-					'it_arrived'     => array( 'k' => 'arrived',     'en' => 'Arrived', 'bn' => 'পৌঁছেছে' ),
-					'it_dispatched'  => array( 'k' => 'dispatched',  'en' => 'Dispatched', 'bn' => 'ডেলিভারিতে' ),
-					'it_delivered'   => array( 'k' => 'delivered',   'en' => 'Delivered', 'bn' => 'ডেলিভারি সম্পন্ন' ),
+					// Each label names WHERE the part is, because "Shipped" and "Dispatched"
+					// are meaningless on their own — a customer cannot tell whether a part
+					// shipped from the factory abroad or from our Dhaka office.
+					'it_pending'     => array( 'k' => 'pending',     'en' => 'Pending review', 'bn' => 'যাচাই চলছে' ),
+					'it_quoted'      => array( 'k' => 'quoted',      'en' => 'Price quoted', 'bn' => 'মূল্য জানানো হয়েছে' ),
+					'it_applied'     => array( 'k' => 'applied',     'en' => 'Ordered from the factory', 'bn' => 'ফ্যাক্টরিতে অর্ডার করা হয়েছে' ),
+					'it_at_factory'  => array( 'k' => 'at_factory',  'en' => 'Being prepared at the factory', 'bn' => 'ফ্যাক্টরিতে প্রস্তুত হচ্ছে' ),
+					'it_shipped'     => array( 'k' => 'shipped',     'en' => 'Shipped from the factory — on its way to Bangladesh', 'bn' => 'ফ্যাক্টরি থেকে পাঠানো হয়েছে — বাংলাদেশের পথে' ),
+					'it_arrived'     => array( 'k' => 'arrived',     'en' => 'Arrived at AUN, Dhaka', 'bn' => 'ঢাকায় AUN-এ পৌঁছেছে' ),
+					'it_dispatched'  => array( 'k' => 'dispatched',  'en' => 'Out for delivery to you', 'bn' => 'আপনার ঠিকানায় পাঠানো হয়েছে' ),
+					'it_delivered'   => array( 'k' => 'delivered',   'en' => 'Delivered to you', 'bn' => 'আপনি বুঝে পেয়েছেন' ),
 					'it_unavailable' => array( 'k' => 'unavailable', 'en' => 'Unavailable', 'bn' => 'অনুপলব্ধ' ),
+				),
+			),
+
+			// One plain-language line per part status, printed under the status chip on
+			// the tracking page (and usable in SMS via {detail}). The label says WHAT the
+			// status is; this says what it MEANS for the customer and what happens next.
+			'status_item_help' => array(
+				'label' => 'Status explanations — per part (shown to the customer under each status)',
+				'type'  => 'ith',
+				'strings' => array(
+					'ith_pending'     => array( 'k' => 'pending',     'en' => 'We have your request and are checking the part and its availability.', 'bn' => 'আমরা আপনার অনুরোধ পেয়েছি এবং পার্টটি ও তার প্রাপ্যতা যাচাই করছি।' ),
+					'ith_quoted'      => array( 'k' => 'quoted',      'en' => 'We have sent you the price. We order the part once you approve it.', 'bn' => 'আমরা আপনাকে মূল্য জানিয়েছি। আপনি অনুমোদন দিলেই আমরা পার্টটি অর্ডার করব।' ),
+					'ith_applied'     => array( 'k' => 'applied',     'en' => 'We have placed the order with the factory and are waiting for them to confirm it.', 'bn' => 'আমরা ফ্যাক্টরিতে অর্ডার দিয়েছি এবং তাদের নিশ্চিতকরণের অপেক্ষায় আছি।' ),
+					'ith_at_factory'  => array( 'k' => 'at_factory',  'en' => 'The factory has confirmed your part and is preparing it for shipment. This is usually the longest step.', 'bn' => 'ফ্যাক্টরি আপনার পার্টটি নিশ্চিত করেছে এবং পাঠানোর জন্য প্রস্তুত করছে। সাধারণত এই ধাপেই সবচেয়ে বেশি সময় লাগে।' ),
+					'ith_shipped'     => array( 'k' => 'shipped',     'en' => 'Your part has left the factory and is in transit to Bangladesh. It has not reached us yet.', 'bn' => 'আপনার পার্টটি ফ্যাক্টরি থেকে রওনা হয়েছে এবং বাংলাদেশে আসছে। এটি এখনও আমাদের কাছে পৌঁছায়নি।' ),
+					'ith_arrived'     => array( 'k' => 'arrived',     'en' => 'Your part has reached our Dhaka office. We will courier it to you next.', 'bn' => 'আপনার পার্টটি ঢাকায় আমাদের অফিসে পৌঁছেছে। এরপর আমরা কুরিয়ারে আপনার কাছে পাঠাব।' ),
+					'ith_dispatched'  => array( 'k' => 'dispatched',  'en' => 'We have handed your part to the courier. You can track the parcel with the link below.', 'bn' => 'আমরা আপনার পার্টটি কুরিয়ারে দিয়ে দিয়েছি। নিচের লিংক দিয়ে পার্সেলটি ট্র্যাক করতে পারবেন।' ),
+					'ith_delivered'   => array( 'k' => 'delivered',   'en' => 'The courier has delivered your part. Thank you for staying with AUN.', 'bn' => 'কুরিয়ার আপনার পার্টটি পৌঁছে দিয়েছে। AUN-এর সঙ্গে থাকার জন্য ধন্যবাদ।' ),
+					'ith_unavailable' => array( 'k' => 'unavailable', 'en' => 'We are unable to supply this part. See the note above for the reason.', 'bn' => 'আমরা এই পার্টটি সরবরাহ করতে পারছি না। কারণ উপরে উল্লেখ করা হয়েছে।' ),
 				),
 			),
 
@@ -253,6 +275,12 @@ class AUN_SP_I18N {
 					'jst_pay_wait'     => array( 'k' => 'pay_wait',     'en' => 'Opening payment…', 'bn' => 'পেমেন্ট পেজ খোলা হচ্ছে…' ),
 					'jst_cod_default'  => array( 'k' => 'cod_default',  'en' => 'Prefer cash on delivery? Nothing to do — just pay when we hand over the parts.', 'bn' => 'ক্যাশ অন ডেলিভারি পছন্দ? কিছু করতে হবে না — পার্টস হাতে পাওয়ার সময় পেমেন্ট করবেন।' ),
 					'jst_paid_msg'     => array( 'k' => 'paid_msg',     'en' => 'Payment received — thank you.', 'bn' => 'পেমেন্ট পাওয়া গেছে — ধন্যবাদ।' ),
+					'jst_decide_h'     => array( 'k' => 'decide_h',     'en' => 'Do you want to go ahead?', 'bn' => 'আপনি কি এগিয়ে যেতে চান?' ),
+					'jst_decide_sub'   => array( 'k' => 'decide_sub',   'en' => 'Approve and we will start sourcing your parts. Nothing is charged yet.', 'bn' => 'অনুমোদন করলে আমরা পার্টস সংগ্রহ শুরু করব। এখনই কোনো টাকা কাটা হবে না।' ),
+					'jst_pay_h'        => array( 'k' => 'pay_h',        'en' => 'How would you like to pay?', 'bn' => 'আপনি কীভাবে পেমেন্ট করতে চান?' ),
+					'jst_pay_sub'      => array( 'k' => 'pay_sub',      'en' => 'Pay online now, or simply pay cash when we hand the parts over.', 'bn' => 'এখনই অনলাইনে পেমেন্ট করুন, অথবা পার্টস হাতে পাওয়ার সময় ক্যাশ পরিশোধ করুন।' ),
+					'jst_refunded_msg' => array( 'k' => 'refunded_msg', 'en' => 'Refunded ৳{amount} on {date}.', 'bn' => '{date} তারিখে ৳{amount} ফেরত দেওয়া হয়েছে।' ),
+					'jst_refund_due'   => array( 'k' => 'refund_due_msg', 'en' => 'This request was cancelled after payment — your refund is being processed.', 'bn' => 'পেমেন্টের পর অনুরোধটি বাতিল হয়েছে — আপনার টাকা ফেরতের প্রক্রিয়া চলছে।' ),
 					'jst_total'        => array( 'k' => 'total',        'en' => 'Total', 'bn' => 'মোট' ),
 					'jst_approve'      => array( 'k' => 'approve',      'en' => 'Approve & proceed', 'bn' => 'অনুমোদন করুন' ),
 					'jst_decline'      => array( 'k' => 'decline',      'en' => 'Decline', 'bn' => 'বাতিল করুন' ),
@@ -433,15 +461,44 @@ class AUN_SP_I18N {
 		return self::js_dict( 'js_form' );
 	}
 
-	/** Payload for sp-track.js (flat keys + nested ov{} / it{} status labels). */
+	/** Payload for sp-track.js (flat keys + nested ov{} / it{} / ith{} status maps). */
 	public static function js_track_payload() {
 		$base = self::js_dict( 'js_track' );
 		$ov   = self::js_dict( 'status_overall' );
 		$it   = self::js_dict( 'status_item' );
+		$ith  = self::js_dict( 'status_item_help' );
 		$base['en']['ov'] = $ov['en'];
 		$base['bn']['ov'] = $ov['bn'];
 		$base['en']['it'] = $it['en'];
 		$base['bn']['it'] = $it['bn'];
+		$base['en']['ith'] = $ith['en'];
+		$base['bn']['ith'] = $ith['bn'];
 		return $base;
+	}
+
+	/**
+	 * The CUSTOMER-facing label / explanation for a per-part status key.
+	 *
+	 * The admin dropdown has its own shorter working labels (AUN_SP_Requests::
+	 * item_statuses()); those must never be what the customer is told, both because
+	 * they are internal shorthand and because they are English-only. SMS and any
+	 * server-rendered part status go through here instead.
+	 */
+	public static function it_label( $key, $lang = null ) {
+		return self::status_string( 'it_' . $key, $key, $lang );
+	}
+
+	/** The one-line explanation of a per-part status ('' if the slug is unknown). */
+	public static function it_help( $key, $lang = null ) {
+		return self::status_string( 'ith_' . $key, '', $lang );
+	}
+
+	private static function status_string( $slug, $fallback, $lang ) {
+		if ( ! self::def( $slug ) ) {
+			return $fallback;
+		}
+		$lang = in_array( $lang, self::LANGS, true ) ? $lang : self::current_lang();
+		$pair = self::current( $slug );
+		return isset( $pair[ $lang ] ) ? $pair[ $lang ] : $pair['en'];
 	}
 }

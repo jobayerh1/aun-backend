@@ -115,28 +115,64 @@ class AUN_App_Push {
 	 * @param string $type Notice type (ticket/repair/content/maintenance/…).
 	 * @return string Channel id.
 	 */
+	/**
+	 * The app build in which the `_v2` notification channels first existed.
+	 *
+	 * Android will not display a notification whose channel the app has never
+	 * created — silently, with no error anywhere. So a push must never name a
+	 * channel newer than the build it is going to.
+	 */
+	const CHANNELS_V2_BUILD = 69;
+
+	/**
+	 * Channel id for a notice type, for a SPECIFIC app build.
+	 *
+	 * @param string $type  Notice type.
+	 * @param int    $build App build number (0 = unknown).
+	 * @return string
+	 */
+	public static function channel_for_build( $type, $build ) {
+		$id = self::channel_for_type( $type );
+
+		// Unknown build (a token registered before the app started reporting
+		// it) is treated as OLD. Guessing "new" would lose the notification
+		// entirely; guessing "old" at worst costs the brand sound on a phone
+		// that would have played it, and the next login corrects the record.
+		if ( (int) $build < self::CHANNELS_V2_BUILD ) {
+			return preg_replace( '/_v2$/', '', $id );
+		}
+		return $id;
+	}
+
 	public static function channel_for_type( $type ) {
+		// ⚠️ The _v2 suffix MUST match MainActivity.kt exactly. Android freezes
+		// a channel's sound the first time it is created, so shipping the brand
+		// chime required brand-new ids; a push naming a channel the app has not
+		// created falls back to the device default and loses both the sound and
+		// the user's per-type controls. Change these two lists together.
 		switch ( $type ) {
 			case 'ticket':
-				return 'aun_support';
+				return 'aun_support_v2';
 			case 'repair':
-				return 'aun_repairs';
+				return 'aun_repairs_v2';
 			case 'parts':
-				return 'aun_parts';
+				return 'aun_parts_v2';
+			case 'referral':
+				return 'aun_referral_v2';
 			case 'maintenance':
-				return 'aun_reminders';
+				return 'aun_reminders_v2';
 			case 'firmware':
 			case 'manual':
 			case 'video':
 			case 'tip':
 			case 'content':
-				return 'aun_content';
+				return 'aun_content_v2';
 			default:
-				return 'aun_default';
+				return 'aun_default_v2';
 		}
 	}
 
-	public static function send_to_token( $fcm_token, $title, $body, $data = array() ) {
+	public static function send_to_token( $fcm_token, $title, $body, $data = array(), $build = 0 ) {
 		$sa     = self::service_account();
 		$bearer = self::access_token();
 		if ( ! $sa || '' === $bearer ) {
@@ -151,7 +187,9 @@ class AUN_App_Push {
 
 		// Route each push to the right Android notification channel so users get
 		// per-category controls (created by the app — see MainActivity.kt).
-		$channel = self::channel_for_type( (string) ( $data_map['type'] ?? '' ) );
+		// Chosen for THIS phone's build: naming a channel the app does not have
+		// makes Android drop the notification without a word.
+		$channel = self::channel_for_build( (string) ( $data_map['type'] ?? '' ), (int) $build );
 
 		$response = wp_remote_post(
 			'https://fcm.googleapis.com/v1/projects/' . rawurlencode( $sa['project_id'] ) . '/messages:send',
@@ -217,7 +255,7 @@ class AUN_App_Push {
 		$t  = aun_app_api_tokens_table();
 		$ph = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
 		$rows = (array) $wpdb->get_results( $wpdb->prepare(
-			"SELECT id, fcm_token, fcm_lang FROM $t
+			"SELECT id, fcm_token, fcm_lang, fcm_build FROM $t
 			 WHERE user_id IN ($ph) AND fcm_token != '' AND expires_at > %s",
 			array_merge( $user_ids, array( current_time( 'mysql' ) ) )
 		) );
@@ -235,7 +273,7 @@ class AUN_App_Push {
 			$bn     = 'bn' === (string) $row->fcm_lang;
 			$title  = $bn && '' !== (string) ( $msg['title_bn'] ?? '' ) ? $msg['title_bn'] : ( $msg['title'] ?? '' );
 			$body   = $bn && '' !== (string) ( $msg['body_bn'] ?? '' ) ? $msg['body_bn'] : ( $msg['body'] ?? '' );
-			$result = self::send_to_token( $fcm, $title, $body, $data );
+			$result = self::send_to_token( $fcm, $title, $body, $data, (int) $row->fcm_build );
 
 			if ( 'sent' === $result ) {
 				$sent++;

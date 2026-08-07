@@ -238,6 +238,12 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		register_rest_route( $ns, '/parts/pay', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'parts_pay' ),
+			'permission_callback' => $auth,
+		) );
+
 		register_rest_route( $ns, '/parts/decision', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'parts_decision' ),
@@ -376,9 +382,20 @@ class AUN_App_REST {
 		}
 		$lang = 'en' === (string) $request->get_param( 'lang' ) ? 'en' : 'bn';
 
+		// Which app build this token belongs to.
+		//
+		// Not bookkeeping — it decides whether a push is DELIVERED. Android
+		// refuses to display a notification naming a channel the app has not
+		// created, and the channel ids changed when the brand sound shipped
+		// (see MainActivity.kt). Without knowing the build, the server names
+		// the new channels at a phone that only has the old ones, and every
+		// push vanishes in silence: no error, no log, nothing on screen.
+		$build = max( 0, (int) $request->get_param( 'build' ) );
+
 		$wpdb->update( aun_app_api_tokens_table(), array(
 			'fcm_token' => $fcm,
 			'fcm_lang'  => $lang,
+			'fcm_build' => $build,
 		), array( 'id' => (int) $this->token_row->id ) );
 
 		// One physical phone = one FCM token: clear it from any OTHER login
@@ -920,6 +937,273 @@ class AUN_App_REST {
 	 * actually belongs to THEIR phone. Without this check any logged-in user
 	 * could approve someone else's quote by guessing a sequential SP- ref.
 	 */
+	/**
+	 * Start an online payment for a spare-parts request.
+	 *
+	 * Mints the WooCommerce order on demand and hands back its checkout URL —
+	 * exactly what the website tracker's own "Pay online" button does, calling
+	 * the same two plugin methods. Cash on delivery needs no order, which is
+	 * why nothing is created until this is called.
+	 *
+	 * **The app never talks to SSLCommerz itself.** The gateway is configured
+	 * once in WooCommerce and the customer pays on the site, so the merchant
+	 * credentials stay on the server: an APK can be unzipped by anyone, and a
+	 * store ID and password shipped inside one are simply published. Paying on
+	 * the site also means the gateway's own callback marks the order paid, which
+	 * is what drives the plugin's "payment received" SMS, the activity log and
+	 * the refund trail. A payment taken inside the app would settle at the bank
+	 * and leave every one of those records empty.
+	 */
+	public function parts_pay( $request ) {
+		$me  = $this->identity();
+		$ref = strtoupper( trim( (string) $request->get_param( 'ref' ) ) );
+
+		if ( '' === $ref ) {
+			return $this->err( 'invalid', 'Invalid request.', 400 );
+		}
+		// Online payment arrived in AUN Spare Parts 0.29.0 and the two plugins
+		// are updated separately — fail cleanly against an older copy.
+		if ( ! AUN_App_Services::parts_available()
+			|| ! class_exists( 'AUN_SP_Woo' )
+			|| ! method_exists( 'AUN_SP_Woo', 'create_order' ) ) {
+			return $this->err( 'unavailable', 'Online payment is not available right now. You can still pay cash on delivery.', 503 );
+		}
+		if ( ! AUN_SP_Woo::is_active() ) {
+			return $this->err( 'unavailable', 'Online payment is not available right now. You can still pay cash on delivery.', 503 );
+		}
+		if ( '' === $me['phone'] ) {
+			return $this->err( 'no_phone', 'No phone number on your account.', 403 );
+		}
+
+		// The request must belong to THIS account. The website identifies a
+		// request by ref alone because it is reached from an SMS link, but every
+		// app caller is a known account — without this check anyone could mint
+		// an order against someone else's request by guessing a ref.
+		global $wpdb;
+		$t_req    = AUN_SP_Install::table( 'requests' );
+		$variants = AUN_App_Phone::variants( $me['phone'] );
+		$ph       = implode( ',', array_fill( 0, count( $variants ), '%s' ) );
+
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT id, overall_status, quote_total, delivery_charge FROM $t_req
+			 WHERE ref = %s AND ( phone_current IN ($ph) OR phone_onfile IN ($ph) ) LIMIT 1",
+			array_merge( array( $ref ), $variants, $variants )
+		) );
+		if ( ! $row ) {
+			return $this->err( 'not_found', 'That request was not found on your account.', 404 );
+		}
+		if ( in_array( $row->overall_status, array( 'rejected', 'declined' ), true ) ) {
+			return $this->err( 'unavailable', 'This request is closed, so there is nothing to pay.', 400 );
+		}
+
+		// Reuse an order that is already correct.
+		//
+		// create_order() REBUILDS an unpaid order from current prices and logs
+		// "order #9292 refreshed" every time — so a customer who tapped Pay,
+		// changed their mind, and tapped again collected a line of accounting
+		// per tap in their own status history. Rebuilding is the right thing
+		// when the price has moved; it is pure noise when nothing has changed.
+		//
+		// Compared against the CURRENT payable, never assumed: if the admin has
+		// edited a quantity or a price since, the totals differ and we fall
+		// through to the rebuild, which is exactly when it earns its keep.
+		$payable = (float) $row->quote_total
+			+ ( isset( $row->delivery_charge ) ? (float) $row->delivery_charge : 0.0 );
+
+		$existing = AUN_App_Services::payment_summary( (int) $row->id );
+		if ( ! empty( $existing['pay_url'] ) && empty( $existing['paid'] ) ) {
+			$same = abs( (float) str_replace( ',', '', (string) $existing['total'] ) - $payable ) < 0.01;
+			if ( $same ) {
+				$order = AUN_SP_Woo::order_for( (int) $row->id );
+				return $this->ok(
+					$this->pay_payload( $order ? $order->get_id() : 0, $ref, $existing )
+				);
+			}
+		}
+
+		// Paying is a stronger "yes" than pressing Approve, so a customer who
+		// goes straight to payment approves the quote implicitly — otherwise the
+		// request stays stuck awaiting a decision even after the money arrives.
+		// Same rule as the website; the audit log records 'payment' as the
+		// channel either way.
+		if ( 'quote_sent' === $row->overall_status
+			&& method_exists( 'AUN_SP_Requests', 'customer_decision' ) ) {
+			AUN_SP_Requests::customer_decision( (int) $row->id, 'approve', 'payment' );
+		}
+
+		// Order creation reaches deep into WooCommerce — products, taxes,
+		// shipping, whatever gateway plugins have hooked in. A fatal anywhere in
+		// there used to take the whole request down and hand the app a WordPress
+		// error PAGE, which it then showed the customer as raw HTML. Catch it:
+		// the customer gets a sentence, the admin gets the real cause in the
+		// error log, and cash on delivery still works.
+		// Other plugins hook order creation and assume a front-end request.
+		// WooCommerce does not start a session for REST calls, so without this
+		// a single `WC()->session->get()` in any of them is a fatal error.
+		AUN_App_Services::ensure_wc_context();
+
+		// Watch what gets created while we are inside create_order().
+		//
+		// wc_create_order() makes an EMPTY order first and the items, billing
+		// name and total are added afterwards. If anything fatals in between —
+		// which is exactly what a third-party hook was doing — the empty shell
+		// survives as a ৳0 "Pending payment" order with no customer name. A
+		// handful of those in the orders list is confusing; a year of them is a
+		// mess nobody can safely clean up later. So we remember what we made
+		// and take it back if the attempt did not finish.
+		$made = array();
+		$watch = static function ( $new_id ) use ( &$made ) {
+			$made[] = (int) $new_id;
+		};
+		add_action( 'woocommerce_new_order', $watch, 1 );
+
+		try {
+			$order_id = AUN_SP_Woo::create_order( (int) $row->id );
+		} catch ( Throwable $e ) {
+			remove_action( 'woocommerce_new_order', $watch, 1 );
+			self::discard_empty_orders( $made );
+			error_log( sprintf(
+				'AUN APP API: spare-parts order creation failed for %s (request %d) — %s in %s:%d',
+				$ref,
+				(int) $row->id,
+				$e->getMessage(),
+				$e->getFile(),
+				$e->getLine()
+			) );
+			// Also kept where the shop owner can actually read it. Most people
+			// running a WordPress site cannot get at the PHP error log, and
+			// "there has been a critical error" is not a bug report.
+			update_option( 'aun_app_last_pay_error', array(
+				'time'    => current_time( 'mysql' ),
+				'ref'     => $ref,
+				'message' => $e->getMessage(),
+				'where'   => $e->getFile() . ':' . $e->getLine(),
+			), false );
+
+			// The customer gets a sentence, never the internals.
+			return $this->err(
+				'order_failed',
+				'Could not start the payment just now. Please try again in a moment, or pay cash on delivery.',
+				503
+			);
+		}
+
+		remove_action( 'woocommerce_new_order', $watch, 1 );
+
+		if ( ! $order_id ) {
+			self::discard_empty_orders( $made );
+			// Nothing threw, but no order came back. This is the QUIET failure
+			// mode and it needs recording just as much as a fatal: WooCommerce's
+			// own `wc_create_order()` catches Exception internally and returns a
+			// WP_Error, so a third-party hook that throws an Exception (rather
+			// than an Error, as connect-yeamazing did) lands here instead of in
+			// the catch above — with nothing to show the admin unless we write
+			// it down ourselves.
+			update_option( 'aun_app_last_pay_error', array(
+				'time'    => current_time( 'mysql' ),
+				'ref'     => $ref,
+				'message' => 'WooCommerce returned no order. Something hooked to order creation refused or failed silently — check the PHP error log around this time.',
+				'where'   => 'AUN_SP_Woo::create_order()',
+			), false );
+
+			return $this->err( 'unavailable', 'Could not start the payment. Please try again, or pay cash on delivery.', 503 );
+		}
+
+		$summary = AUN_App_Services::payment_summary( (int) $row->id );
+		if ( empty( $summary['pay_url'] ) ) {
+			// Nothing left to pay — treat as success so the app can just refresh
+			// and show the paid state rather than an error the customer would
+			// read as a failure.
+			return $this->err( 'already_paid', 'This request is already paid — thank you.', 409 );
+		}
+
+		return $this->ok( $this->pay_payload( (int) $order_id, $ref, $summary ) );
+	}
+
+	/**
+	 * Delete order shells left behind by an attempt that did not finish.
+	 *
+	 * Conservative on purpose. An order is only removed when it is ALL of:
+	 * unpaid and pending, worth nothing, holding no items, carrying no customer
+	 * name and no spare-parts reference. A real order cannot be all five, and
+	 * anything that fails even one test is left exactly where it is — an
+	 * over-eager cleanup of someone's orders would be far worse than the mess
+	 * it tidies.
+	 *
+	 * @param int[] $ids Order ids created during a failed attempt.
+	 * @return void
+	 */
+	private static function discard_empty_orders( $ids ) {
+		foreach ( array_unique( array_map( 'intval', (array) $ids ) ) as $id ) {
+			if ( $id < 1 || ! function_exists( 'wc_get_order' ) ) {
+				continue;
+			}
+			$o = wc_get_order( $id );
+			if ( ! $o
+				|| $o->is_paid()
+				|| 'pending' !== $o->get_status()
+				|| (float) $o->get_total() > 0
+				|| count( $o->get_items() ) > 0
+				|| '' !== trim( (string) $o->get_billing_first_name() )
+				|| '' !== (string) $o->get_meta( '_aun_sp_ref' ) ) {
+				continue;
+			}
+			$o->delete( true );
+		}
+	}
+
+	/**
+	 * The URL the app should open to pay this order, and how it was obtained.
+	 *
+	 * Prefers a DIRECT SSLCommerz session: the customer lands on the payment
+	 * screen itself, with no AUN page in between — no method chooser, no terms
+	 * checkbox, no intermediate redirect, and therefore nothing to hide behind
+	 * an overlay. That is how a payment inside an app is supposed to feel, and
+	 * it removes four fragile moving parts rather than adding any.
+	 *
+	 * Falls back to WooCommerce's own checkout page whenever a session cannot
+	 * be created — credentials not found, gateway unreachable, session refused.
+	 * The fallback is the flow that has already taken real money on this site,
+	 * so a bad day at the gateway's API costs a plainer screen, not a sale.
+	 *
+	 * @param int    $order_id WooCommerce order.
+	 * @param string $ref      Spare-parts reference.
+	 * @param array  $summary  Payment summary (for the fallback URL + totals).
+	 * @return array
+	 */
+	private function pay_payload( $order_id, $ref, $summary ) {
+		$out = array(
+			'total'  => (string) ( $summary['total'] ?? '' ),
+			'number' => (string) ( $summary['number'] ?? '' ),
+		);
+
+		$order = $order_id ? wc_get_order( $order_id ) : null;
+
+		if ( $order && class_exists( 'AUN_App_SSLCommerz' ) && AUN_App_SSLCommerz::available() ) {
+			$url = AUN_App_SSLCommerz::create_session( $order, $ref );
+			if ( ! is_wp_error( $url ) ) {
+				$out['pay_url'] = $url;
+				$out['direct']  = true;
+				return $out;
+			}
+			// Worth recording: a gateway that has started refusing sessions is
+			// invisible otherwise, because the fallback quietly keeps working.
+			error_log( 'AUN APP API: SSLCommerz session failed, falling back to checkout — ' . $url->get_error_message() );
+			update_option( 'aun_app_last_pay_error', array(
+				'time'    => current_time( 'mysql' ),
+				'ref'     => $ref,
+				'message' => 'Direct gateway session failed (used the website checkout instead): ' . $url->get_error_message(),
+				'where'   => 'AUN_App_SSLCommerz::create_session()',
+			), false );
+		}
+
+		// `aun_app=1` renders that checkout without the theme's header, footer
+		// and menus — see aun_app_api_checkout_chrome().
+		$out['pay_url'] = add_query_arg( 'aun_app', '1', (string) ( $summary['pay_url'] ?? '' ) );
+		$out['direct']  = false;
+		return $out;
+	}
+
 	public function parts_decision( $request ) {
 		$me       = $this->identity();
 		$ref      = strtoupper( trim( (string) $request->get_param( 'ref' ) ) );
@@ -1222,6 +1506,16 @@ class AUN_App_REST {
 			AUN_App_Profile::set_name( $user->ID, $name );
 		} else {
 			AUN_App_Profile::seed_from_erp( $user->ID, $canonical );
+		}
+
+		// Stamp the FIRST app login, once, for every account — not just ones the
+		// app created. The referral claim window is measured from this, and
+		// measuring it from the WordPress account instead refused a genuinely
+		// new app customer whose website account happened to be two years old.
+		// Set here rather than at signup so pre-existing accounts get a date the
+		// first time they actually turn up in the app.
+		if ( '' === (string) get_user_meta( $user->ID, 'aun_app_signup', true ) ) {
+			update_user_meta( $user->ID, 'aun_app_signup', current_time( 'mysql' ) );
 		}
 
 		$device_name = sanitize_text_field( (string) $request->get_param( 'device_name' ) );

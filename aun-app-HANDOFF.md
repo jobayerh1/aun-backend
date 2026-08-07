@@ -23,7 +23,564 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.64.0+68**, **plugin 1.53.0**, **spare-parts 0.22.0**.
+Current versions: **app 1.75.0+79**, **plugin 1.69.0 (DB v17)**, **spare-parts 0.29.0**.
+
+## 2026-08-07 — app-api 1.69.0: a reward worth more than the cart was silently burned
+
+**Measured on the bench, not assumed:**
+
+| Situation | What WooCommerce does |
+|---|---|
+| ৳500 reward, ৳300 cart | accepted · discount ৳300 · total ৳0 · **৳200 destroyed** (single-use coupon marked used) |
+| add a 2nd ৳500 reward  | also accepted · discount **still ৳300** · that coupon contributes nothing and is **also consumed** |
+
+So enabling reward stacking last round created a way to destroy ৳700 of earned money in one order,
+with nothing on screen saying so.
+
+**`excess_reward_notice()`** on the cart and checkout: when applied rewards' face value exceeds the
+subtotal it names the wasted amount — *"About ৳200 of them will not be used, and a used reward
+cannot be recovered. Remove a reward to keep it for next time."*
+
+**Warn, do not block.** Blocking means refusing customers their own money at the moment they try to
+spend it, and some genuinely will not care about the remainder. Silently burning it is the only
+option that is actually indefensible.
+
+**Current rules, for reference:** rewards stack with rewards; nothing else stacks with a reward;
+one use per coupon; one claim per phone ever; referrer cap 5 rewards per 30 days; claim window 30
+days from first app login; friend coupon 90 days, reward 365 (0 = never).
+
+**Tests:** NEW `test-excess-notice.php` (5) — warns with the amount when a reward exceeds the cart,
+stays quiet when it fits, warns on the combined excess of two, and never removes the coupon.
+Suites green: stacking 20, checkout 24, payout-status 16.
+
+## 2026-08-07 — app 1.75.0+79 / app-api 1.68.0: many friends, many rewards
+
+**How it works** (asked, then verified): **one coupon per rewarded friend** — `THANKS-XXXXXX`,
+created by `create_referrer_reward()` at payout. Amounts are never merged into one growing coupon,
+because a `fixed_cart` coupon is consumed whole on a single order: a ৳2,500 coupon spent on an ৳800
+cart loses ৳1,700. Small separate coupons waste far less. The app shows **Invited / Rewarded /
+Available**, then every coupon with its code, date, value, used/unused and expiry.
+
+**The bug that was in it:** every reward is `individual_use`, so a referrer who brought five
+customers held five ৳500 coupons and could spend **one per order** — five orders to collect ৳2,500.
+Nobody reads that as generous, and nothing in the app said so.
+
+Fixed with WooCommerce's own two filters, keeping the rule narrow — rewards combine with REWARDS,
+and with nothing else:
+- `woocommerce_apply_individual_use_coupon` → `keep_rewards_together()`
+- `woocommerce_apply_with_individual_use_coupon` → `allow_reward_stacking()`
+
+A seasonal sale coupon still cannot ride along, in either order of application. Identity comes from
+new meta `_aun_referral_reward` (prefix only as a fallback for coupons issued before it), so
+renaming the prefix cannot silently change who may combine with whom.
+
+**`available` added to `summary()`** — unspent, still-valid reward money. The app's third stat is now
+**Available** with "of ৳2,500 earned" beneath it when some has been spent; "earned" alone invited
+"so where is it?". A line under the rewards list explains that several can be used on one order.
+
+**Tests:** NEW `test-reward-stacking.php` (20): three rewards issued separately, all three applied to
+one cart, a shop coupon refused alongside (both application orders), and the app's figures —
+invited/rewarded/earned/available, one row per coupon with code and expiry, and `earned` holding
+steady while `available` drops when one is spent.
+
+## 2026-08-07 — app-api 1.67.0: "Pay the reward when: Delivered" now actually means Delivered
+
+Owner set **Delivered** and rewards still went out at **Shipped**. My line:
+
+```php
+$out = array( $s['reward_status'] );
+if ( ! in_array( 'completed', $out, true ) ) { $out[] = 'completed'; }   // ← always
+```
+
+`completed` was added unconditionally "so an order you later mark complete is never stranded".
+**AST Pro flips an order to Completed at the moment it is marked Shipped**, so `completed` fired at
+dispatch and the setting did nothing — the exact refused-cash-on-delivery hole it exists to close.
+The same list drives `is_established_customer()`, which is why the friend could also start
+inviting at dispatch.
+
+**Fixed:** the admin's choice is honoured exactly. New opt-in `referral_reward_also_completed`
+(default OFF) for a shop that genuinely wants both, with a warning next to it naming AST Pro. The
+settings card now **prints the statuses that are paying right now**, so this can never hide again.
+
+**Also fixed, found by the test:** `wc_get_orders()` silently IGNORES a status filter naming a
+status WooCommerce does not have registered. If the shipment plugin is ever deactivated, or the
+setting names a status that no longer exists, the filter becomes "any order at all" and every
+customer looks established. `is_established_customer()` now re-checks each returned order's own
+status. **Never trust a `wc_get_orders` status filter for an authorisation decision.**
+
+**Refund after delivery now tells BOTH parties.** The referrer already got a notice; the friend —
+the person who actually returned the order — got nothing. New `notify_friend_reversed()`: in-app +
+push, saying the referral no longer counts and that their friend was not rewarded either. Finds the
+account by phone when the stored user id is stale.
+
+**Tests:** NEW `test-payout-status.php` (16) walking the real sequence with `wc-shipped` /
+`wc-delivered` **registered as AST Pro registers them** — without that WooCommerce rejects
+`set_status('delivered')` and the test proves nothing. Asserts: shipped pays nothing, the
+auto-Completed that follows pays nothing, the friend cannot invite yet, delivered pays and unlocks
+inviting, refund revokes + destroys the coupon + notifies both, and an admin mis-click is still
+undoable. `test-referral-lifecycle.php` updated (28) — its "completed still pays too" assertion was
+asserting the bug.
+
+## 2026-08-07 — app-api 1.66.0: the coupon phone check moved OUT of coupon validity
+
+Owner-reported, and the diagnosis is a design mistake of mine: the ownership check was hooked to
+**`woocommerce_coupon_is_valid`**. That is a *validity* filter, and ownership is not validity. Three
+consequences, all seen live:
+
+1. **"Coupon applied successfully" above a ৳0 discount.** The filter is consulted at apply time AND
+   again on every recalculation, with different data available each time. Apply before typing a
+   phone → passes. Recalculate after typing a wrong one → fails. Applied, and worth nothing.
+2. **Slow checkout.** An account + form + session lookup on every single cart calculation, for a
+   fact that changes at most once per checkout.
+3. **A refusal that stuck for ever.** Once the wrong number was in the session, re-applying failed
+   through refreshes with the right number on screen.
+
+**The shape now — which is what large stores do:**
+- **Applying is instant and always succeeds.** No phone check at all. `woocommerce_applied_coupon`
+  only ANNOUNCES the condition ("linked to 017******78 — use that number"), and stays quiet when
+  the number already matches.
+- **Enforced once, at placement** (`woocommerce_after_checkout_validation`), where the number the
+  order will actually carry is finally known. On mismatch it **removes the coupon** and says so, so
+  the customer can complete the order at full price instead of hitting a wall they cannot clear.
+- **Backstop** on `woocommerce_checkout_create_order`, which fires for the block checkout and Store
+  API too — routes that never reach the classic validation hook.
+- One `blocked_coupons( $typed )` feeds both gates, so they cannot disagree about the same cart.
+
+`on_coupon_is_valid()` is **deleted**. Do not reintroduce an ownership rule into a validity filter.
+
+**Tests:** `test-coupon-checkout.php` rewritten (24) around the three live failures: applies with a
+wrong number already on file and is genuinely in the cart (never "applied but ৳0"), applies in
+<250ms, refused at placement AND removed, **re-applies successfully afterwards despite the stale
+session**, applies before any phone is entered, every phone format, logged-in owner ordering to
+another number, unlocked coupons untouched, Store API backstop stops order creation.
+`test-referral-lock.php` 32 (its cart-validation section moved to the checkout suite).
+
+## 2026-08-07 — app 1.74.0+78 / app-api 1.65.0 (DB v17): why most push stopped, and the coupon lock at checkout
+
+### 1. "Only a few notifications work" — I caused this two rounds ago
+
+⚠️ **Android silently refuses to display a notification whose channel the app has not created.**
+No error, no log, nothing on screen. When the brand sound shipped, the channel ids gained a `_v2`
+suffix in **app 1.65.0**, and `channel_for_type()` started naming them in **plugin 1.55.0**. Any
+phone on an older APK than build 69 therefore received pushes addressed to channels it did not
+have — and dropped every one. In-app notices still appeared on refresh, which is exactly the
+"some work, most don't" pattern reported.
+
+**Three fixes, because one is not enough:**
+- **DB v17** adds `aun_app_tokens.fcm_build`; the app now sends its build with the FCM token, and
+  `channel_for_build()` names the OLD channels for builds < 69. Unknown build is treated as old —
+  guessing "new" loses the notification; guessing "old" costs at most the brand sound.
+- **Manifest fallback**: `com.google.firebase.messaging.default_notification_channel_id` =
+  `aun_default_v2`. Without it ANY future channel rename repeats this outage. **Never rename a
+  channel again without checking both.**
+- **Notification health card** (Settings → Notifications): push configured y/n, active device
+  tokens (and how many are on pre-69 builds), each cron with its next run or NOT SCHEDULED, a
+  `DISABLE_WP_CRON` warning, and notices created per type in the last 7 days — separating "the
+  trigger never fired" from "it fired but never reached a phone".
+
+### 2. Refunded / refund-due on the service-request list
+
+The list showed a green "Paid" for ever, including on a request that was rejected and refunded.
+Now ordered refunded → refund due → paid → quote, because once money is coming back that is the
+only thing the customer wants to know. Shared `_MoneyLine` widget so the three cannot drift apart.
+
+### 3. The coupon lock refused the CORRECT number
+
+`on_coupon_is_valid()` read only `WC()->customer->get_billing_phone()` — the **session** copy.
+Enter a wrong number once and WooCommerce caches it, so every later check compared against the
+stale value: right number typed, field cleared, page refreshed, all refused for ever.
+
+`known_phones()` now collects every number we can attribute to the shopper — the logged-in
+**account's** number first (OTP-verified, cannot be mistyped), then the live checkout form
+(`$_POST['billing_phone']` and the ajax `post_data` blob), then the session last because it is the
+one that goes stale — and **any** match accepts. Placement-time validation uses the same set, so a
+logged-in customer checking out to a relative's phone is no longer refused by a rule written to
+protect them.
+
+**Tests:** NEW `test-coupon-checkout.php` (14) replaying the exact live sequence — wrong number
+refused, then corrected and accepted despite the stale session, via both the direct POST and the
+ajax `post_data` path, every phone format, account-number acceptance, stranger still refused with a
+masked hint, unlocked coupons untouched. Flutter 148, referral-lock 40, parts-pay 30, sslcommerz 26.
+
+## 2026-08-07 — app 1.73.0+77 / app-api 1.64.0: the stuck return page, and the ghost orders
+
+Direct SSLCommerz payment worked on the live site — but the app never closed afterwards.
+
+**1. Stuck on "Payment received. Returning to the app…".**
+⚠️ **Android's WebView does not call `shouldOverrideUrlLoading` for POST navigations**, and
+SSLCommerz returns the customer by POSTing to `success_url`. So `onNavigationRequest` — the only
+place the outcome was checked — never fired. The payment had gone through; the app just never
+learned. **Anything that watches for a return URL must never rely on that callback alone.**
+
+Fixed on both sides, because either alone is a single point of failure:
+- App: one `_checkOutcome( url )` called from `onNavigationRequest`, **`onPageFinished`** and
+  `onUrlChange`. Each signal misses a different case; page-finished is the one that catches POSTs.
+- Server: the callback page now **bounces itself once, as a GET**, to the same outcome plus
+  `aun_final=1` (meta-refresh AND `location.replace`, so it works without JS). A GET navigation is
+  reported by every WebView on every Android version. `aun_final` means "already validated, just
+  render" — so the bounce cannot re-run validation without a `val_id` and turn a paid order into a
+  failure page, and it never bounces twice.
+
+**2. Ghost ৳0 "Pending payment" orders with no customer.** `wc_create_order()` makes an EMPTY order
+first; items, billing name and total are added afterwards. Every attempt that fataled in between —
+the `connect-yeamazing` window — left the shell behind. Cause was already fixed; the debris was not.
+- **Prevention:** `/parts/pay` watches `woocommerce_new_order` during the attempt and, if it fails,
+  deletes what it made — but only when the order is pending AND unpaid AND ৳0 AND has no items AND
+  no billing name AND no `_aun_sp_ref`. A real order cannot be all six.
+- **Cleanup:** `AUN_App_Services::purge_empty_orders()` + a card in **Settings → Integrations** that
+  appears only when there is debris, previews the ids, and moves them to **Trash** (recoverable),
+  never destroys them.
+
+Also extracted `aun_app_api_payment_page()` from the callback handler — the handler must `exit`, and
+a function that exits cannot be asserted about.
+
+**Tests:** NEW `test-pay-return.php` (18) — bounce present with and without JS, carries the right
+outcome, never bounces twice, cancel/fail never render a success marker; empty shell found and
+trashed while a real order is untouched. sslcommerz 26, parts-pay 30, wc-context 13, referral 28,
+Flutter 148.
+
+## 2026-08-07 — app 1.72.0+76 / app-api 1.63.0: direct SSLCommerz session (the overlay is gone)
+
+The overlay existed to hide WooCommerce's checkout page. The better answer is not to go there at
+all — which is what every serious app does: **the server creates a hosted gateway session and the
+app opens the gateway URL directly.**
+
+**New `class-aun-app-sslcommerz.php`:**
+- `credentials()` — read from the **already-installed WooCommerce SSLCommerz gateway** by scanning
+  `woocommerce_%sslcommerz%_settings` (gateway ids differ between the official plugin and its
+  forks, so it matches the option NAME, not one hardcoded id). Admin override exists but should
+  stay blank: two copies of a credential drift, and the forgotten one breaks at midnight.
+- `create_session()` → `gwprocess/v4/api.php` → `GatewayPageURL`. **A fresh `tran_id` per ATTEMPT**,
+  not per order: reusing an abandoned attempt's id makes the gateway reject the retry as a duplicate.
+- `validate()` + `settle()` — server-to-server confirmation. **A redirect is a claim by the
+  customer's browser, never a receipt.** `settle()` refuses on: non-VALID status, amount mismatch
+  (pay ৳1 for a ৳3,520 order), currency mismatch, a `tran_id` belonging to another order, unknown
+  order — and treats an already-paid order as success so a replayed callback or duplicate IPN
+  cannot double-count. Only then `payment_complete()`, which is what drives the spare-parts
+  receipt SMS, activity log and refund trail.
+
+**Callbacks** on `template_redirect` at `?aun_sslc=success|fail|cancel|ipn`. The IPN answers plainly
+and exits (it is server-to-server, nobody is watching). The others render a bare marker page the
+app's WebView matches on. **The `ipn_url` matters most** — it arrives even if the customer kills the
+app mid-payment.
+
+**Fallback preserved:** no credentials, gateway unreachable, or session refused → the WooCommerce
+checkout path that has already taken real money. Recorded to `aun_app_last_pay_error` so a gateway
+quietly refusing sessions is visible instead of hiding behind a working fallback. `pay_payload()`
+returns `direct: true|false` so the app knows which it got.
+
+**Why NOT "payment separate from WooCommerce"** (the owner asked): the order is the single record
+the refund trail, the admin badge and the plugin's SMS all hang off. A second ledger would need
+reconciling by hand for ever, and the first refund would prove it. Only the checkout PAGE is
+bypassed. Still no `sslCommerzSdk.aar`: its own payment UI is a WebView on this same hosted page —
+we now open that page directly, without shipping credentials in the APK.
+
+**Tests:** NEW `test-sslcommerz.php` (26) — credential discovery + override, session payload
+(amount/currency/order-id/success+ipn urls), fresh tran_id per retry, and **every settle() refusal
+proven to refuse**, replay safety, dead-gateway → WP_Error not fatal. parts-pay 30, wc-context 13,
+Flutter 148.
+
+**To deploy:** `aun-app-api.zip` (1.63.0) + APK (1.72.0+76). Then check
+**Settings → Integrations → "In-app payments (SSLCommerz)"** — it should say *✓ direct payment
+ready* and name the option it read the store id from. ⚠️ If that gateway is in **sandbox**, the card
+says so; real money only moves when it is not.
+
+## 2026-08-07 — app 1.71.0+75 / app-api 1.62.0: first successful live payment, three polish fixes
+
+**Payment confirmed working end to end on the live site** (order #9292, ৳15, SSLCommerz).
+
+**1. Website pages flashed past before the gateway.** The overlay was appended after `load`, so the
+customer watched the checkout form, the terms box and WooCommerce's intermediate redirect page
+appear and vanish. It is now printed at the **start of `<body>`** via `wp_body_open`
+(`aun_app_api_checkout_cover()`), so it paints before anything else and stays up across each
+redirect — every one of those pages runs the same hook. It only ever COVERS; the 8-second timer
+still removes it if the submit failed. ⚠️ Depends on the theme calling `wp_body_open` (Flatsome
+does); without it there is simply no overlay, which is the old behaviour, not a break.
+
+**2. Internal order bookkeeping was in the customer's status history** — "order #9292 created",
+"order #9292 refreshed — now ৳15.00", one line per tap of Pay. Two fixes:
+- The app timeline now excludes event type **`wc_order`** (plumbing) while keeping `payment` and
+  `refund` (real money events). The plugin's type separation was already exactly right.
+- `/parts/pay` **reuses an existing unpaid order** when its total still matches the current payable
+  instead of rebuilding it, so tapping Pay twice no longer writes a "refreshed" line at all. Compared
+  against the live payable, never assumed — if the admin edited a price the totals differ and it
+  falls through to the rebuild, which is when rebuilding earns its keep.
+
+**3. A paid parts request looked identical to an unpaid one in My service requests.** The list now
+shows a green "Paid ৳15.00" line with a tick, and unpaid quotes gain "Pay online or cash on
+delivery" under the amount — the most useful difference on that screen, previously invisible.
+
+**Tests:** `test-parts-pay.php` now **30** (second tap reuses the order and writes no extra
+`wc_order` event; a price change still rebuilds to the new total; no "created"/"refreshed" lines
+reach the customer timeline). wc-context 13, referral suites green, Flutter 148.
+
+## 2026-08-07 — app 1.70.0+74 / app-api 1.61.0: the checkout reload loop
+
+The auto-submit added in 1.59.0 clicked Place Order without ticking WooCommerce's **terms**
+checkbox. Validation failed → page reloaded → the script ran again → submitted again. An infinite
+flashing checkout, and the customer could never read the error explaining why.
+
+**Two fixes, and the second matters more than the first:**
+
+1. Tick `input#terms` (with a `change` event, so anything listening reacts) before submitting.
+2. **A loop guard: auto-submit AT MOST ONCE per order, ever.** `sessionStorage` keyed on the path,
+   checked before anything else. Any failure — unticked box, declined card, gateway timeout —
+   reloads the page, and an auto-submitter that does not remember trying will retry for ever.
+   **Any future auto-submit must carry this guard.** Also: never auto-submit over a visible
+   `.woocommerce-error`, and drop the "Opening secure payment…" overlay after 8s so a failed submit
+   shows the page instead of a spinner that never ends.
+
+**Consent:** the app ticks the terms box on the customer's behalf, so the app now SAYS so, on the
+button they press — "By continuing you accept our terms and conditions." (`payTermsNote`, bn+en).
+Ticking it silently would be putting words in their mouth.
+
+**Tests:** NEW `scratchpad/loop-test.html` — runs the exact printed script against a synthetic
+checkout with a click counter. **8/8**, including *"the page reloads five times → still only ONE
+submit"*. Served over the local PHP server and read through the Browser pane (a `file://` page
+renders only as a static snapshot; and `navigate` to 127.0.0.1 is policy-blocked — use
+`preview_start` with the URL instead).
+
+## 2026-08-07 — app-api 1.60.0: the "critical error" was a missing WooCommerce session
+
+**Root cause, from the live error card:** `connect-yeamazing`
+(`YEAMCO_WcHooks.php:119` — "Call to a member function get() on null") hooks order creation and
+reads `WC()->session`. **WooCommerce does not start a session for REST requests** — verified in its
+own source: `WooCommerce::is_request('frontend')` returns false when `is_rest_api_request()` is true
+(class-woocommerce.php:660), and `init_session()` only runs for front-end requests. So
+`WC()->session` was null and that plugin fataled.
+
+This is also exactly why the WEBSITE never hit it: its "Pay online" goes through **admin-ajax**,
+which IS a front-end request and therefore has a session. Only the app took the REST path.
+
+**Fix:** `AUN_App_Services::ensure_wc_context()` — creates the session (honouring the
+`woocommerce_session_handler` filter), the `WC_Customer` for the logged-in app user, and the cart,
+before `create_order()`. Our request now looks like the one every other plugin was written against.
+**Any REST endpoint that creates or mutates a WooCommerce order should call this first.**
+
+**Also:** WooCommerce's `wc_create_order()` catches `Exception` internally and returns `WP_Error`, so
+a hook throwing an Exception lands in the `! $order_id` branch, not in our `catch ( Throwable )`.
+That quiet path now records to `aun_app_last_pay_error` too — otherwise the admin card stays empty
+for half the failure modes. (The live crash was an `Error`, which does propagate to our catch.)
+
+**Tests:** NEW `test-wc-context.php` (13) — reproduces the exact fatal shape with a hook calling
+`WC()->session->get()`, proves order creation survives, and proves a *different* exploding hook
+still yields a clean 503 with the cause recorded for the admin and nothing internal leaked to the
+customer. ⚠️ Bench caveat: under WP-CLI a session already exists, so the bench cannot reproduce the
+NULL-session condition itself — the fix is derived from WooCommerce's source, not from a red test.
+parts-pay 24, referral suites green.
+
+## 2026-08-07 — app 1.69.0+73 / app-api 1.59.0: three payment bugs from live testing
+
+**1. Pay landed on WooCommerce's method chooser, not the gateway.** The order-pay page is a chooser,
+and the customer has already chosen — they tapped "Pay online securely". `aun_app_api_checkout_chrome()`
+now auto-selects and submits **only when exactly one payment method exists** (the spare-parts plugin
+already strips COD from its own orders, so SSLCommerz is usually alone), behind a
+"Opening secure payment…" overlay. With two or more methods the chooser correctly stays — picking
+for the customer would be guessing.
+
+**2. Approve/Decline AND Pay shown together on a quote.** The app asked the same question twice with
+three answers, one of which (Decline) contradicts another (Pay). `can_pay` now excludes
+**`quote_sent`** as well as the closed statuses, so the flow is: decide first → then cash on
+delivery by default, with Pay online as an option. Deliberately stricter than the website tracker,
+which lets an SMS recipient pay straight from a quote — there, paying IS the answer. Guarded in the
+app too (`_PaymentCard` returns nothing while awaiting) so an older server cannot reproduce the
+confusing screen. `_refresh()` after a decision makes the Pay button appear the instant they approve.
+
+**3. "There has been a critical error" when paying a new request.** `AUN_SP_Woo::create_order()`
+reaches deep into WooCommerce (products, taxes, gateways), and a fatal there returned a WordPress
+error PAGE which the app then showed the customer as raw HTML. Now wrapped in `catch ( Throwable )`:
+the customer gets a sentence and cash on delivery still works, and the cause is recorded in
+`error_log` **and** in option `aun_app_last_pay_error`, surfaced as a red card in
+**Settings → Integrations → "Last spare-parts payment failure"** (with a Clear button). Most site
+owners cannot read a PHP error log, and "critical error" is not a bug report.
+⚠️ **The underlying fatal is not yet diagnosed** — it did not reproduce on the bench (24/24 green).
+The card is what will name it on the live site.
+
+Tests: `test-parts-pay.php` now **24** (adds: no pay button while awaiting, approving turns it on,
+declining turns it off). Flutter 148, analyze clean.
+
+## 2026-08-07 — app 1.68.0+72 / app-api 1.58.0: payment moves INSIDE the app
+
+The previous round opened the payment page in the external browser. Wrong call — the customer left
+the app. Now an in-app WebView (`lib/src/screens/payment_screen.dart`), which is what Daraz, Pathao
+and Foodpanda do here. `webview_flutter` was already a dependency (the YouTube embed), so no new
+native plugin.
+
+**The credentials still never enter the app, and that part is not negotiable:** the SERVER creates
+the payment URL, the app only displays it. SSLCommerz's Android SDK wants the store ID and password
+in the APK — a zip anyone can unpack — and those same credentials authorise refunds and transaction
+queries. Server-created session + WebView is the standard answer and costs the customer nothing;
+they never see a browser.
+
+**Things that will break an in-app checkout in this market, handled:**
+- **Wallet deep links.** bKash/Nagad hand off with `bkash://`, `intent://`, `tel:`. A WebView cannot
+  load those and shows a blank page. `onNavigationRequest` sends any non-http(s) scheme to the OS.
+- **Back button.** Goes back a WebView page first; only asks "leave payment?" at the first page.
+- **Theme chrome.** `/parts/pay` appends `?aun_app=1`; `aun_app_api_checkout_chrome()` hides header,
+  footer, menus and breadcrumbs on checkout pages. A **cookie** carries the flag across the gateway
+  round trip, because the customer returns to a fresh page load with no query string of ours.
+  Presentation only — it never touches prices, the order or the gateway.
+- **Trust.** A permanent padlock + real hostname bar under the WebView.
+
+**The WebView's result is never believed.** Reaching `order-received` only means they got to the end
+of checkout; whether money arrived is the SERVER's answer, because the gateway confirms to it and
+not to the phone. The screen re-fetches and shows whatever the server says.
+
+Tests: `test-parts-pay.php` still 21/21 (pay URL now carries `aun_app=1`), Flutter 148, analyze
+clean. ⚠️ First real Gradle build with the new payment screen happens in the user's build script.
+
+## 2026-08-07 — app 1.67.0+71 / app-api 1.57.0: online payment for spare parts (first money in the app)
+
+Spare-parts 0.29.0 added online payment on the website. This brings the same thing into the app.
+
+**How the plugin actually does it** (read before changing anything here): payment is a real
+**WooCommerce order**, minted ON DEMAND by `AUN_SP_Woo::create_order()` and paid at
+`$order->get_checkout_payment_url()` with whatever gateways the shop has enabled. Cash on delivery
+creates no order at all — it is simply what happens if the customer does nothing.
+`AUN_SP_Woo::customer_summary()` is the single source of truth for the money position.
+
+**⚠️ The app deliberately does NOT use `sslCommerzSdk.aar`, and this should not be "fixed" later.**
+Three reasons, in order of cost: (1) the SDK needs the merchant store ID + password inside the APK,
+where anyone can unzip them out — publishing them, in effect; (2) the gateway's server-to-server
+callback is what marks the order paid, and THAT is what fires the plugin's receipt SMS, the
+activity-log entry and the refund trail — a payment settled inside the app leaves all of those
+empty; (3) WooCommerce already offers every method the shop enables (cards, bKash, Nagad) without
+the app knowing they exist. The AAR is left unused in the workdir.
+
+**Backend:** `AUN_App_Services::payment_summary()` wraps `customer_summary()` (guarded by
+`method_exists` — the two plugins ship separately). The spare payload gains `delivery`, `payable`
+(= quote + delivery, computed server-side), `payment{…}` and `can_pay`. New `POST /parts/pay`
+mirrors the website's `ajax_pay` including the **implicit approval** — paying is a stronger yes than
+pressing Approve — but adds the authorisation the website does not need: the ref must belong to the
+caller's phone, or anyone could mint an order against a stranger's request by guessing a ref.
+
+**App:** `SpPayment` model (totals kept as pre-formatted STRINGS so the app never gives a second
+opinion about someone's money). New `_PaymentCard` with four mutually exclusive faces — refunded /
+refund due / paid / owing — because the customer's question is different in each. The owing face
+shows parts + delivery adding up to the button's figure. **`PartsDetailScreen` now re-fetches on app
+resume**: the browser is a different app and the gateway confirms to the SERVER, so returning from
+payment is just a resume, and the server decides whether the money arrived.
+
+**Tests:** NEW `test-parts-pay.php` (21): payload fields, payable arithmetic, no order until asked,
+pay URL, auto-approval, order total = parts + delivery, **a stranger gets 404**, paid state, pay_url
+disappears once settled, paying twice = 409, rejected request refuses. Flutter 148, all referral
+suites green.
+
+**To deploy:** upload **both** zips (`aun-spare-parts.zip` 0.29.0 if not already live, and
+`aun-app-api.zip` 1.57.0) and rebuild the APK (1.67.0+71). Then check
+**WooCommerce → Settings → Payments** has SSLCommerz enabled — the app's Pay button leads there.
+
+## 2026-08-07 — app 1.66.0+70 / app-api 1.56.0: claim window from first app login, profile row
+
+**The claim window now runs from FIRST APP LOGIN, not WordPress account creation.**
+`aun_app_signup` is stamped on first successful OTP verify for **every** account (previously only
+for accounts the app itself created), and `joined_at()` reads it with `user_registered` as a
+fallback. Measuring from the WP account refused people who made a website account years ago, never
+bought, and were installing the app for the first time — exactly the new customers the programme
+exists to attract.
+
+**And the customer is now told the deadline** instead of discovering it the day it lapses.
+`summary()` returns `claim_window_days` + `claim_deadline`; the app shows "Redeem by 6 Sep 2026" on
+the status row AND inside the enter-a-code dialog. `claim_blocked_reason()` gained `too_late` so the
+redeem box is not offered to someone whose window has closed — it mirrors every rule `claim()`
+enforces, which is the standing rule for that function.
+
+**Settings profile is now a tappable ROW** (avatar + name + phone + chevron) opening the existing
+`showProfileSheet()` — the same editor the Home avatar opens, so there is one profile editor rather
+than two that can drift. The always-open form implied unsaved state on every visit and pushed
+language and referrals below the fold.
+
+**Design options for "My devices"** published as an artifact (compact status row / hero card with
+warranty ring / grouped by state). Recommendation: the compact row. Awaiting the owner's choice.
+
+## 2026-08-07 — app 1.65.0+69 / app-api 1.55.0: coupon expiry in the app, brand sound, haptics
+
+**Expiry dates are now visible and follow the admin settings.** `summary()` returns
+`my_coupon_expires`, per-reward `expires`, and `friend_expiry_days` / `reward_expiry_days`. The app
+shows "Valid until 12 Nov 2026" (or "No expiry date") under the coupon and on every reward row, and
+the terms paragraph states both durations. **Read from the COUPON, never recomputed from today's
+setting** — changing the setting must not appear to move a deadline on a coupon already issued.
+Dates travel as ISO and are formatted per locale in the app.
+
+**Brand notification sound.** `android/app/src/main/res/raw/aun_notification.wav` — 1.05 s: a soft
+filtered-noise "lamp breath", then a rising A5–C#6–E6 bell with inharmonic partials and exponential
+decay. Generated by `scratchpad/make_sound.py` (pure stdlib, no numpy on this machine) — **keep that
+script if the sound ever needs regenerating.**
+⚠️ **Android freezes a channel's sound at creation and ignores later edits, for ever.** Shipping a
+new sound therefore required NEW channel ids: every channel is now `*_v2`, old ids are deleted in
+`createNotificationChannels()` so Settings does not show duplicates, and
+`AUN_App_Push::channel_for_type()` was updated to match. **Those two lists must change together.**
+Firmware/guides deliberately keep the system default — the brand sound is for messages about the
+customer's own business with us; hearing it for content we published is how a nice sound becomes an
+irritating one. New `aun_referral_v2` channel.
+
+**Haptic vocabulary** in `lib/src/ui/haptics.dart`: `selection` / `confirm` / `success` (two taps
+rising — Android has no success-notification haptic) / `warn` / `failure`. Deliberately five words,
+because a phone that buzzes at everything says nothing. Nothing fires on scroll, navigation, tab
+switches or pull-to-refresh. `confirmHaptic()` now delegates here so there is one place to tune it.
+
+**Answered, not changed:** the Claim window (30 days) is measured from **WP account creation**, not
+from receiving a code — see the note in the reply; worth revisiting if website-era accounts start
+being refused.
+
+**Pending the owner's choice:** three "My devices" card designs were shown (compact status row /
+hero card with warranty ring / grouped by warranty state) and a recommendation on the always-open
+Settings profile section. Neither implemented yet.
+
+## 2026-08-06 — app-api 1.54.0 (DB v16): referral payout hardening, 7 owner-reported issues
+
+All seven came from the owner testing the live flow end to end. Several were real money leaks.
+
+**1. A placed COD order made you an inviter instantly.** `can_invite()` used
+`has_purchase_history()`, which counts `processing` — so: order at 10am, mint a code, invite the
+neighbourhood, refuse the parcel at the door. Codes stayed live. The two callers pull in OPPOSITE
+risk directions, so they are now different functions: `has_purchase_history()` stays BROAD (decides
+who is REFUSED a welcome discount — a pending order is still enough to say "not new"), while new
+`is_established_customer()` is NARROW (decides who may MINT codes — a payout-status order, or a
+registered projector, which is a serial we sold).
+
+**2. Reward now pays on a configurable status** (`referral_reward_status`, default `completed`).
+The store runs **AST Pro** (adds `wc-shipped` / `wc-delivered`) — set it to **Delivered**. Hooked to
+`woocommerce_order_status_changed` so custom statuses work; the dropdown hides refunded/cancelled/
+failed/pending, and `completed` always pays too so a later completion is never stranded.
+
+**3. Reward expiry split from the friend's.** A welcome discount is a promotion and deserves a
+deadline; an earned reward is money the referrer worked for. New `referral_reward_expiry_days`,
+default **365**, **0 = never expires**.
+
+**4. The reward coupon is now phone-locked** like the friend's, and the email restriction is GONE
+from both. Email bound nothing on an app account (no `user_email`) and bound the wrong thing when
+it did. One lock, OTP-verified, on both coupons.
+
+**5. `set_individual_use(true)` on BOTH coupons** — the reward never had it, so it could be stacked
+on top of a seasonal sale coupon.
+
+**6. Revocation now explains itself:** `notify_reward_revoked()` → in-app notice + push, saying the
+order was cancelled/returned, that nothing else is affected, and that other rewards are kept.
+Taking a reward back silently is how a loyal customer decides they were cheated.
+
+**7. An admin mis-click is no longer permanent.** Cancelled → corrected used to leave the claim
+REVOKED for ever. DB v16 adds `revoke_reason`: `reversed` (undoable) vs `ineligible` (a judgement
+about the buyer, never undone by a status change). Returning to a paying status reinstates the claim
+and issues a fresh reward coupon.
+
+**Found while testing #6/#7 — the clawback could silently fail.** `claim_for_order()`'s fallback
+filtered on `PENDING`, so an order placed WITHOUT the coupon was matched and paid via that fallback,
+and then on refund matched nothing (no longer pending) — the reward survived a returned order. Now
+tried in order: coupon on the order → **`order_id` on the claim (any status)** → pending-buyer
+fallback. The last one stays PENDING-only on purpose, or a customer's later unrelated refund would
+reach back and revoke a reward a different order earned.
+
+**Partial refunds** (`woocommerce_order_refunded`) are judged on what was KEPT: only a refund that
+drags the kept amount below `min_order_total` revokes. A ৳200 goodwill refund on a ৳60,000 projector
+must not punish the referrer for our own customer-service gesture.
+
+**Tests:** NEW `test-referral-lifecycle.php` (28) covering all seven. Bench suites all green: lock
+40, identity 5, reason 9, reset 19, settings render 16.
+
+**To deploy:** upload `aun-app-api.zip` (1.54.0) — **DB v16 migration runs on activation**. No APK
+needed (1.64.0+68 still pending from the previous round). **Then set "Pay the reward when" to
+Delivered.**
 
 ## 2026-08-06 — app-api 1.53.0: test the referral programme with only two SIMs
 

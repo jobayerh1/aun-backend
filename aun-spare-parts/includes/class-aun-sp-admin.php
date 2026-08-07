@@ -342,6 +342,7 @@ class AUN_SP_Admin {
 			update_option( AUN_SP_Messages::OPT_SMS_APPROVED, sanitize_textarea_field( wp_unslash( $_POST['sms_approved'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_PAY, sanitize_textarea_field( wp_unslash( $_POST['sms_pay'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_PAID, sanitize_textarea_field( wp_unslash( $_POST['sms_paid'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_REFUND, sanitize_textarea_field( wp_unslash( $_POST['sms_refund'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_PAY_INFO, sanitize_textarea_field( wp_unslash( $_POST['pay_info'] ?? '' ) ) );
 
 			$count = (int) ( $_POST['r_count'] ?? 0 );
@@ -370,11 +371,12 @@ class AUN_SP_Admin {
 		$approved = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_APPROVED );
 		$smspay   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAY );
 		$smspaid  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAID );
+		$smsref   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REFUND );
 		$pay      = AUN_SP_Messages::pay_info();
 		$tpls     = AUN_SP_Messages::reject_templates();
 
 		echo '<div class="wrap"><h1>Messages</h1>';
-		echo '<p style="color:#646970;max-width:740px;">Reword any customer message. Placeholders are filled in automatically: <code>{ref}</code> <code>{model}</code> <code>{status}</code> <code>{changes}</code> <code>{track}</code> <code>{reason}</code> <code>{coupon}</code> <code>{parts}</code> <code>{date}</code> <code>{age}</code>. You can write these in Bangla if you prefer.</p>';
+		echo '<p style="color:#646970;max-width:740px;">Reword any customer message. Placeholders are filled in automatically: <code>{ref}</code> <code>{model}</code> <code>{status}</code> <code>{changes}</code> <code>{track}</code> <code>{reason}</code> <code>{coupon}</code> <code>{parts}</code> <code>{date}</code> <code>{age}</code> <code>{detail}</code>. You can write these in Bangla if you prefer.</p>';
 		echo $notice;
 		echo '<form method="post">';
 		wp_nonce_field( 'aun_sp_messages', 'aun_sp_messages_nonce' );
@@ -382,14 +384,15 @@ class AUN_SP_Admin {
 		echo '<h2>Customer SMS</h2>';
 		echo '<table class="form-table"><tbody>';
 		echo '<tr><th>Request received</th><td><textarea name="sms_received" rows="2" class="large-text">' . esc_textarea( $received ) . '</textarea><p class="description">Sent automatically the moment a customer submits a request &mdash; gives them their reference number + direct link.</p></td></tr>';
-		echo '<tr><th>Status update</th><td><textarea name="sms_status" rows="2" class="large-text">' . esc_textarea( $status ) . '</textarea><p class="description">Sent when you tick &ldquo;Text the customer&rdquo; and the overall status changes.</p></td></tr>';
-		echo '<tr><th>Parts update</th><td><textarea name="sms_parts" rows="2" class="large-text">' . esc_textarea( $partsu ) . '</textarea><p class="description">Sent when you save part changes that <em>don&rsquo;t</em> move the overall status (e.g. a part arrives while others are still at the factory). <code>{changes}</code> lists each changed part and its new status.</p></td></tr>';
+		echo '<tr><th>Status update</th><td><textarea name="sms_status" rows="2" class="large-text">' . esc_textarea( $status ) . '</textarea><p class="description">Sent when you tick &ldquo;Text the customer&rdquo; and the request as a whole moves <em>without</em> any individual part changing. When a part <em>does</em> move, the Parts update below is sent instead &mdash; it names the part, which is what the customer actually wants to know.</p></td></tr>';
+		echo '<tr><th>Parts update</th><td><textarea name="sms_parts" rows="2" class="large-text">' . esc_textarea( $partsu ) . '</textarea><p class="description">Sent whenever you save a change to any part&rsquo;s status &mdash; this is the everyday update. <code>{changes}</code> lists each changed part and its new stage (e.g. <em>LCD screen: Shipped from the factory &mdash; on its way to Bangladesh</em>). <code>{detail}</code> is the same list with the full explanation of each stage &mdash; clearer, but several times longer, so it costs more SMS parts.</p></td></tr>';
 		echo '<tr><th>Rejection</th><td><textarea name="sms_reject" rows="2" class="large-text">' . esc_textarea( $reject ) . '</textarea><p class="description"><code>{coupon}</code> becomes your goodwill line when a coupon code is set in Settings.</p></td></tr>';
 		echo '<tr><th>Better-photo request</th><td><textarea name="sms_photo" rows="2" class="large-text">' . esc_textarea( $photo ) . '</textarea><p class="description">Sent when you click &ldquo;Ask customer for a better photo&rdquo; on a request.</p></td></tr>';
 		echo '<tr><th>Quote ready</th><td><textarea name="sms_quote" rows="2" class="large-text">' . esc_textarea( $quote ) . '</textarea><p class="description">Sent when you click &ldquo;Send quote for approval&rdquo;. <code>{total}</code> is the quoted amount.</p></td></tr>';
 		echo '<tr><th>Quote approved</th><td><textarea name="sms_approved" rows="2" class="large-text">' . esc_textarea( $approved ) . '</textarea><p class="description">Sent to the customer when they approve the quote. <code>{pay}</code> inserts your payment instructions below.</p></td></tr>';
 		echo '<tr><th>Online payment link</th><td><textarea name="sms_pay" rows="2" class="large-text">' . esc_textarea( $smspay ) . '</textarea><p class="description">Sent when you press <strong>Send online payment link</strong> on a request. <code>{link}</code> is the payment page, <code>{total}</code> the amount. (Approving a quote does <em>not</em> send this &mdash; cash on delivery is the default.)</p></td></tr>';
 		echo '<tr><th>Payment received</th><td><textarea name="sms_paid" rows="2" class="large-text">' . esc_textarea( $smspaid ) . '</textarea><p class="description">Sent by <strong>this plugin</strong> the moment an online payment succeeds, and written to the request&rsquo;s activity log. WooCommerce&rsquo;s own emails/SMS are not used.</p></td></tr>';
+		echo '<tr><th>Refund issued</th><td><textarea name="sms_refund" rows="2" class="large-text">' . esc_textarea( $smsref ) . '</textarea><p class="description">Sent when you record a manual refund on a paid request that was rejected or declined. <code>{total}</code> is the amount refunded.</p></td></tr>';
 		echo '<tr><th>Payment instructions</th><td><textarea name="pay_info" rows="2" class="large-text">' . esc_textarea( $pay ) . '</textarea><p class="description">Fallback for when WooCommerce is unavailable &mdash; shown with the quote and via <code>{pay}</code>, e.g. &ldquo;Pay 50% advance to bKash 017&hellip; to confirm.&rdquo; With WooCommerce active the Pay button replaces this.</p></td></tr>';
 		echo '</tbody></table>';
 

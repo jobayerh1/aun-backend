@@ -38,6 +38,16 @@ class AUN_App_Referrals {
 	const ORDER_META_CODE = '_aun_referral_code';
 
 	/**
+	 * Coupon meta marking a coupon as a referrer's earned REWARD.
+	 *
+	 * Needed because rewards are allowed to stack with each other while still
+	 * refusing to stack with anything else in the shop — see
+	 * `allow_reward_stacking()`. Identity by meta, not by code prefix, so
+	 * renaming the prefix cannot quietly change who may combine with whom.
+	 */
+	const COUPON_META_REWARD = '_aun_referral_reward';
+
+	/**
 	 * Coupon meta: the canonical phone the coupon was issued to.
 	 *
 	 * A referral coupon is otherwise a bearer token — whoever types the code
@@ -91,10 +101,111 @@ class AUN_App_Referrals {
 			// can otherwise mint discount codes for the world.
 			'require_customer' => ! isset( $o['referral_require_customer'] ) || ! empty( $o['referral_require_customer'] ),
 			'min_order_total'  => max( 0, (float) ( $o['referral_min_order'] ?? 0 ) ),
+			// Slug WITHOUT the wc- prefix, e.g. 'completed' or 'delivered'.
+			'reward_status'    => self::clean_status( $o['referral_reward_status'] ?? 'completed' ),
+			// 0 = the referrer's reward never expires.
+			'reward_expiry_days' => max( 0, (int) ( $o['referral_reward_expiry_days'] ?? 365 ) ),
+			// Also pay when the order reaches Completed, on top of the status
+			// chosen above. OFF by default — see payout_statuses().
+			'reward_also_completed' => ! empty( $o['referral_reward_also_completed'] ),
 			'monthly_cap'      => max( 0, (int) ( $o['referral_monthly_cap'] ?? 5 ) ),
 			'claim_window_days' => max( 0, (int) ( $o['referral_claim_days'] ?? 30 ) ),
 			'coupon_expiry_days' => max( 1, (int) ( $o['referral_expiry_days'] ?? 90 ) ),
 		);
+	}
+
+	/**
+	 * When this customer joined the APP, as a timestamp.
+	 *
+	 * `aun_app_signup` is stamped on first app login (see AUN_App_REST), which
+	 * is the date that actually matters here. The WordPress `user_registered`
+	 * date is only a fallback for a row somehow missing the meta — using it as
+	 * the primary measure refused people who had made a website account years
+	 * ago, never bought anything, and were installing the app for the first
+	 * time: exactly the new customers the programme exists to attract.
+	 *
+	 * @param int $user_id User.
+	 * @return int Unix timestamp, or 0 when unknown.
+	 */
+	public static function joined_at( $user_id ) {
+		$stamp = (string) get_user_meta( (int) $user_id, 'aun_app_signup', true );
+		if ( '' !== $stamp ) {
+			return (int) strtotime( $stamp );
+		}
+		$u = get_userdata( (int) $user_id );
+		return $u ? (int) strtotime( $u->user_registered ) : 0;
+	}
+
+	/** How many whole days since they joined the app. */
+	public static function days_since_joined( $user_id ) {
+		$joined = self::joined_at( $user_id );
+		if ( $joined < 1 ) {
+			return 0;
+		}
+		return ( current_time( 'timestamp' ) - $joined ) / DAY_IN_SECONDS;
+	}
+
+	/**
+	 * The last date this customer may redeem a code ('YYYY-MM-DD'), or '' when
+	 * there is no window at all.
+	 *
+	 * Sent to the app so the deadline can be STATED rather than discovered the
+	 * day it passes.
+	 *
+	 * @param int $user_id User.
+	 * @return string
+	 */
+	public static function claim_deadline( $user_id ) {
+		$s = self::settings();
+		if ( $s['claim_window_days'] < 1 ) {
+			return '';
+		}
+		$joined = self::joined_at( $user_id );
+		if ( $joined < 1 ) {
+			return '';
+		}
+		return date( 'Y-m-d', $joined + ( (int) $s['claim_window_days'] * DAY_IN_SECONDS ) );
+	}
+
+	/** Normalise an order status to a bare slug ('wc-delivered' → 'delivered'). */
+	public static function clean_status( $status ) {
+		$status = sanitize_key( (string) $status );
+		return '' === $status ? 'completed' : preg_replace( '/^wc-/', '', $status );
+	}
+
+	/**
+	 * Order statuses that count as "this money is real".
+	 *
+	 * The configured payout status, plus anything beyond it in the shop's own
+	 * ordering is NOT assumed — a store can define statuses in any order, so
+	 * only the exact configured status pays. `completed` is always accepted as
+	 * well, because a shop that later marks a delivered order complete must
+	 * not have the reward silently stop working.
+	 *
+	 * @return string[] Bare slugs.
+	 */
+	public static function payout_statuses() {
+		$s   = self::settings();
+		$out = array( $s['reward_status'] );
+
+		// `completed` used to be added here ALWAYS, "so an order you later mark
+		// complete is never stranded". That was wrong, and it quietly defeated
+		// the setting above.
+		//
+		// Shipment plugins — AST Pro on this store — commonly flip an order to
+		// Completed at the moment it is marked Shipped. With `completed` always
+		// paying, choosing "Delivered" changed nothing: the reward went out at
+		// dispatch, before the parcel had been accepted, which is precisely the
+		// refused-cash-on-delivery hole the setting exists to close.
+		//
+		// So the admin's choice is now honoured exactly. A shop that genuinely
+		// wants both can tick the box; the default is off, because a payout
+		// rule that fires on a status you did not choose is worse than one that
+		// occasionally needs a second click.
+		if ( ! empty( $s['reward_also_completed'] ) && ! in_array( 'completed', $out, true ) ) {
+			$out[] = 'completed';
+		}
+		return $out;
 	}
 
 	/**
@@ -114,7 +225,93 @@ class AUN_App_Referrals {
 			return true;
 		}
 		$phone = self::phone_of( (int) $user_id );
-		return self::has_purchase_history( (int) $user_id, $phone );
+		// NOT has_purchase_history(): see is_established_customer(). Inviting
+		// requires a purchase that actually stuck.
+		return self::is_established_customer( (int) $user_id, $phone );
+	}
+
+	/**
+	 * Has this person really bought from us — money settled, goods received?
+	 *
+	 * Deliberately STRICTER than has_purchase_history(), and the distinction
+	 * matters because the two are used in opposite risk directions:
+	 *
+	 *   • has_purchase_history() decides who is REFUSED a welcome discount.
+	 *     It should be broad — a pending order is still enough to say "you are
+	 *     not a new customer", and being generous there would hand discounts
+	 *     to people who already shop with us.
+	 *
+	 *   • this decides who is ALLOWED to mint invite codes. It must be narrow.
+	 *     Sharing one function meant a cash-on-delivery order became an invite
+	 *     licence the moment it was placed: order at 10am, mint a code, invite
+	 *     the neighbourhood, refuse the parcel at the door. Nothing was ever
+	 *     paid and nothing was ever received, but the codes stayed live.
+	 *
+	 * A registered projector still counts on its own — that is a serial number
+	 * we sold, verified independently of any order.
+	 *
+	 * @param int    $user_id User.
+	 * @param string $phone   Canonical phone.
+	 * @return bool
+	 */
+	public static function is_established_customer( $user_id, $phone ) {
+		if ( function_exists( 'wc_get_orders' ) ) {
+			$want     = self::payout_statuses();
+			$statuses = array_map(
+				function ( $s ) {
+					return 'wc-' . $s;
+				},
+				$want
+			);
+
+			// Every result is re-checked against its OWN status, and that is
+			// not paranoia. `wc_get_orders()` quietly ignores a status filter
+			// naming a status WooCommerce does not have registered — so if the
+			// shipment plugin providing "delivered" is ever deactivated, or the
+			// setting names a status that no longer exists, the filter becomes
+			// "any order at all" and every customer looks established. A
+			// silent widening is the worst kind of failure in a rule that
+			// decides who may mint discount codes.
+			$verify = static function ( $orders ) use ( $want ) {
+				foreach ( (array) $orders as $o ) {
+					if ( is_a( $o, 'WC_Order' ) && in_array( $o->get_status(), $want, true ) ) {
+						return true;
+					}
+				}
+				return false;
+			};
+
+			if ( $verify( wc_get_orders( array(
+				'customer_id' => (int) $user_id,
+				'limit'       => 5,
+				'status'      => $statuses,
+			) ) ) ) {
+				return true;
+			}
+
+			if ( '' !== $phone && class_exists( 'AUN_App_Phone' ) ) {
+				foreach ( AUN_App_Phone::variants( $phone ) as $variant ) {
+					if ( $verify( wc_get_orders( array(
+						'billing_phone' => $variant,
+						'limit'         => 5,
+						'status'        => $statuses,
+					) ) ) ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		// A registered projector is a serial we sold. That is proof enough on
+		// its own, and is how offline buyers become inviters at all.
+		if ( class_exists( 'AUN_App_Warranty' ) && AUN_App_Warranty::available() ) {
+			$devices = AUN_App_Warranty::get_devices( $phone, (int) $user_id );
+			if ( ! empty( $devices ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/** Whether the programme can actually run right now. */
@@ -314,10 +511,7 @@ class AUN_App_Referrals {
 		// A code must be entered while the account is new. Otherwise someone
 		// can shop for months, then apply a code retroactively.
 		if ( $s['claim_window_days'] > 0 ) {
-			$registered = get_userdata( $user_id );
-			$age_days   = $registered
-				? ( current_time( 'timestamp' ) - strtotime( $registered->user_registered ) ) / DAY_IN_SECONDS
-				: 0;
+			$age_days = self::days_since_joined( $user_id );
 			if ( $age_days > $s['claim_window_days'] ) {
 				return self::fail(
 					'too_late',
@@ -516,10 +710,10 @@ class AUN_App_Referrals {
 			$coupon->set_individual_use( true );
 			$coupon->set_usage_limit( 1 );
 			$coupon->set_usage_limit_per_user( 1 );
-			$email = self::customer_email( $user_id );
-			if ( '' !== $email ) {
-				$coupon->set_email_restrictions( array( $email ) );
-			}
+			// The PHONE is the binding — one lock, OTP-verified, and the same
+			// one on both coupons. The old email restriction bound nothing on
+			// an app account (no user_email) and bound the wrong thing when it
+			// did, since that address is not what they type at checkout.
 			$coupon->set_date_expires(
 				date( 'Y-m-d', strtotime( '+' . (int) $s['coupon_expiry_days'] . ' days', current_time( 'timestamp' ) ) )
 			);
@@ -568,6 +762,24 @@ class AUN_App_Referrals {
 	public static function display_phone( $canonical ) {
 		$canonical = (string) $canonical;
 		return 0 === strpos( $canonical, '880' ) ? substr( $canonical, 2 ) : $canonical;
+	}
+
+	/**
+	 * A coupon's expiry as a plain ISO date, or '' when it never expires.
+	 *
+	 * The app formats it for the customer's own language, so the wire format
+	 * stays machine-readable and the phone's clock is never asked to interpret
+	 * a pre-rendered string.
+	 *
+	 * @param WC_Coupon $coupon Coupon.
+	 * @return string 'YYYY-MM-DD' or ''.
+	 */
+	public static function coupon_expiry( $coupon ) {
+		if ( ! is_object( $coupon ) || ! method_exists( $coupon, 'get_date_expires' ) ) {
+			return '';
+		}
+		$d = $coupon->get_date_expires();
+		return $d ? $d->date( 'Y-m-d' ) : '';
 	}
 
 	public static function coupon_phone( $coupon ) {
@@ -889,28 +1101,296 @@ class AUN_App_Referrals {
 	 * @throws Exception When the known phone does not match — WooCommerce turns
 	 *                   the message into the notice the customer sees.
 	 */
-	public static function on_coupon_is_valid( $valid, $coupon ) {
-		if ( ! $valid ) {
-			return $valid;
+	/**
+	 * Warn when applied rewards are worth more than this cart can use.
+	 *
+	 * Measured behaviour, not theory: a ৳500 reward on a ৳300 cart is accepted,
+	 * discounts ৳300, and the remaining ৳200 is gone — the coupon is single-use
+	 * and is marked used. Add a second ৳500 reward and the discount stays ৳300
+	 * while BOTH coupons are consumed. Two rewards, ৳700 destroyed, and nothing
+	 * on screen said a word.
+	 *
+	 * We warn rather than block. Blocking would mean refusing a customer their
+	 * own money at the moment they try to spend it, and they might genuinely
+	 * not care. But silently burning it is indefensible, so the choice is put
+	 * in front of them with the number attached.
+	 */
+	public static function excess_reward_notice() {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart || ! function_exists( 'wc_add_notice' ) ) {
+			return;
 		}
-		$locked = self::coupon_phone( $coupon );
+
+		$face = 0.0;
+		$n    = 0;
+		foreach ( (array) WC()->cart->get_applied_coupons() as $code ) {
+			$id = (int) wc_get_coupon_id_by_code( $code );
+			if ( $id < 1 ) {
+				continue;
+			}
+			$c = new WC_Coupon( $id );
+			if ( ! self::is_reward_coupon( $c ) || 'fixed_cart' !== $c->get_discount_type() ) {
+				continue;
+			}
+			$face += (float) $c->get_amount();
+			$n++;
+		}
+		if ( $n < 1 ) {
+			return;
+		}
+
+		$usable = (float) WC()->cart->get_subtotal();
+		$excess = $face - $usable;
+		if ( $excess < 0.01 ) {
+			return;
+		}
+
+		wc_add_notice(
+			sprintf(
+				/* translators: 1: wasted amount, 2: order amount. */
+				__( 'Your rewards add up to more than this order. About %1$s of them will not be used, and a used reward cannot be recovered — this order is only %2$s. Remove a reward to keep it for next time.', 'aun-app-api' ),
+				wp_strip_all_tags( wc_price( $excess ) ),
+				wp_strip_all_tags( wc_price( $usable ) )
+			),
+			'notice'
+		);
+	}
+
+	/** Is this coupon a referrer's earned reward? */
+	public static function is_reward_coupon( $coupon ) {
+		if ( is_string( $coupon ) ) {
+			if ( ! function_exists( 'wc_get_coupon_id_by_code' ) ) {
+				return false;
+			}
+			$id = (int) wc_get_coupon_id_by_code( $coupon );
+			if ( $id < 1 ) {
+				return false;
+			}
+			$coupon = new WC_Coupon( $id );
+		}
+		if ( ! is_a( $coupon, 'WC_Coupon' ) ) {
+			return false;
+		}
+		if ( '' !== (string) $coupon->get_meta( self::COUPON_META_REWARD ) ) {
+			return true;
+		}
+		// Rewards issued before the meta existed. Prefix only as a fallback —
+		// never as the primary test, or renaming it changes stacking rules.
+		return 0 === strpos( strtoupper( $coupon->get_code() ), 'THANKS-' );
+	}
+
+	/**
+	 * Let a referrer spend SEVERAL earned rewards on one order — but still
+	 * never alongside a shop coupon.
+	 *
+	 * Rewards are issued one per friend, and each is `individual_use`. Left
+	 * alone that means a referrer who has brought five customers holds five
+	 * ৳500 coupons and can spend exactly one per order: ৳2,500 earned, five
+	 * separate orders to collect it. Nobody reads that as generous.
+	 *
+	 * WooCommerce provides the two filters this needs, so the rule stays
+	 * narrow: rewards combine with rewards, and with nothing else. A seasonal
+	 * sale coupon still cannot ride along, which was the point of making them
+	 * individual-use in the first place.
+	 *
+	 * @param array     $keep   Coupons WooCommerce plans to keep/remove.
+	 * @param WC_Coupon $coupon The individual-use coupon being applied.
+	 * @return array
+	 */
+	public static function keep_rewards_together( $keep, $coupon ) {
+		if ( ! self::is_reward_coupon( $coupon ) ) {
+			return $keep;
+		}
+		// Applying a reward: keep any other rewards already in the cart.
+		$keep = (array) $keep;
+		if ( function_exists( 'WC' ) && WC()->cart ) {
+			foreach ( (array) WC()->cart->get_applied_coupons() as $code ) {
+				if ( self::is_reward_coupon( (string) $code ) && ! in_array( $code, $keep, true ) ) {
+					$keep[] = $code;
+				}
+			}
+		}
+		return $keep;
+	}
+
+	/**
+	 * May this coupon be applied while an individual-use coupon sits in the
+	 * cart? Yes, when both sides are earned rewards.
+	 *
+	 * @param bool      $apply       WooCommerce's verdict.
+	 * @param WC_Coupon $coupon      Coupon being applied.
+	 * @param WC_Coupon $ind_coupon  The individual-use coupon already applied.
+	 * @return bool
+	 */
+	public static function allow_reward_stacking( $apply, $coupon, $ind_coupon ) {
+		if ( self::is_reward_coupon( $coupon ) && self::is_reward_coupon( $ind_coupon ) ) {
+			return true;
+		}
+		return $apply;
+	}
+
+	/**
+	 * Applying a locked coupon: say which number it belongs to, and let it in.
+	 *
+	 * The phone is checked ONCE, at order placement. It is deliberately not
+	 * checked here, and the previous version — which hooked
+	 * `woocommerce_coupon_is_valid` — was wrong in three ways at once:
+	 *
+	 *  1. That filter runs on EVERY cart recalculation, so an ownership check
+	 *     that reads the session, the form and the account ran over and over
+	 *     for a fact that changes at most once per checkout. Slow, for nothing.
+	 *  2. It is consulted at two different moments with different data. Apply
+	 *     the coupon before typing a phone and it passed; recalculate after
+	 *     typing a wrong one and it failed — producing "Coupon applied
+	 *     successfully" sitting above a ৳0 discount. A customer cannot be
+	 *     expected to make sense of that, and they are right not to.
+	 *  3. A refusal there is sticky in a way nothing tells the customer about:
+	 *     WooCommerce had cached the wrong number, so the coupon then failed
+	 *     for ever, through refreshes, with the right number on screen.
+	 *
+	 * So: applying is instant and always succeeds. The customer is TOLD the
+	 * condition at the moment they apply, and it is enforced once, at the end,
+	 * where the number they are actually ordering with is finally known.
+	 *
+	 * @param string $code Coupon code just applied.
+	 */
+	public static function on_applied_coupon( $code ) {
+		if ( ! function_exists( 'wc_get_coupon_id_by_code' ) || ! function_exists( 'wc_add_notice' ) ) {
+			return;
+		}
+		$id = (int) wc_get_coupon_id_by_code( $code );
+		if ( $id < 1 ) {
+			return;
+		}
+		$locked = self::coupon_phone( new WC_Coupon( $id ) );
 		if ( '' === $locked ) {
-			return $valid;
+			return;
 		}
 
-		$typed = '';
+		// Already using the right number? Then there is nothing to warn about,
+		// and a warning nobody needs is just noise on a checkout page.
+		if ( self::any_phone_matches( $locked, self::known_phones() ) ) {
+			return;
+		}
+
+		wc_add_notice(
+			sprintf(
+				/* translators: %s: masked phone number. */
+				__( 'Discount applied. It is linked to the mobile number %s — please use that number in the Phone field, or the order cannot be placed with this discount.', 'aun-app-api' ),
+				class_exists( 'AUN_App_Phone' ) ? AUN_App_Phone::mask( $locked ) : ''
+			),
+			'notice'
+		);
+	}
+
+	/**
+	 * Locked coupons in the cart that this shopper cannot use.
+	 *
+	 * One place, so the checkout gate and the order-creation backstop cannot
+	 * reach different conclusions about the same cart.
+	 *
+	 * @param string $typed Billing phone being submitted, if any.
+	 * @return array<int,array{code:string,locked:string,missing:bool}>
+	 */
+	public static function blocked_coupons( $typed = '' ) {
+		$out = array();
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return $out;
+		}
+
+		$candidates = array_values( array_filter(
+			array_merge( array( (string) $typed ), self::known_phones() )
+		) );
+
+		foreach ( (array) WC()->cart->get_applied_coupons() as $code ) {
+			$id = function_exists( 'wc_get_coupon_id_by_code' )
+				? (int) wc_get_coupon_id_by_code( $code ) : 0;
+			if ( $id < 1 ) {
+				continue;
+			}
+			$locked = self::coupon_phone( new WC_Coupon( $id ) );
+			if ( '' === $locked ) {
+				continue;
+			}
+			if ( self::any_phone_matches( $locked, $candidates ) ) {
+				continue;
+			}
+			$out[] = array(
+				'code'    => (string) $code,
+				'locked'  => $locked,
+				'missing' => empty( $candidates ),
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * Every phone number we can currently attribute to this shopper.
+	 *
+	 * Reading ONE source was the bug. The original version asked only
+	 * `WC()->customer->get_billing_phone()`, which is the SESSION copy — and a
+	 * session remembers. A customer who mistyped their number once had that
+	 * wrong number cached, so the coupon was refused for ever afterwards: with
+	 * the right number typed, with the field emptied, after a page refresh. The
+	 * form said one thing and the session said another, and only the session
+	 * was being asked.
+	 *
+	 * So: collect everything, in order of how much it is worth trusting, and
+	 * let the caller accept if ANY of them matches. Being generous here is
+	 * safe — the strict gate at order placement still checks the number the
+	 * order will actually carry.
+	 *
+	 * @return string[] Raw, unnormalised.
+	 */
+	public static function known_phones() {
+		$out = array();
+
+		// 1. The account. For an app customer this is the OTP-VERIFIED number,
+		// which is the same fact the coupon was locked to — the strongest
+		// evidence available, and it cannot be typed wrong.
+		if ( is_user_logged_in() ) {
+			$uid = get_current_user_id();
+			foreach ( array( 'billing_phone', 'mobile_phone' ) as $key ) {
+				$v = (string) get_user_meta( $uid, $key, true );
+				if ( '' !== trim( $v ) ) {
+					$out[] = $v;
+				}
+			}
+		}
+
+		// 2. What is in the checkout form RIGHT NOW. WooCommerce sends the
+		// whole form as `post_data` with its ajax calls (applying a coupon,
+		// refreshing the order review), and that is fresher than the session.
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- reading only, no action taken on it.
+		if ( ! empty( $_POST['billing_phone'] ) ) {
+			$out[] = sanitize_text_field( wp_unslash( $_POST['billing_phone'] ) );
+		}
+		if ( ! empty( $_POST['post_data'] ) ) {
+			parse_str( wp_unslash( $_POST['post_data'] ), $form ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			if ( ! empty( $form['billing_phone'] ) ) {
+				$out[] = sanitize_text_field( $form['billing_phone'] );
+			}
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		// 3. The session. Last, because it is the one that goes stale.
 		if ( function_exists( 'WC' ) && WC()->customer ) {
-			$typed = (string) WC()->customer->get_billing_phone();
-		}
-		// Nothing to judge yet — let them apply it and decide at placement.
-		if ( '' === trim( $typed ) ) {
-			return $valid;
+			$v = (string) WC()->customer->get_billing_phone();
+			if ( '' !== trim( $v ) ) {
+				$out[] = $v;
+			}
 		}
 
-		if ( ! self::phone_matches( $locked, $typed ) ) {
-			throw new Exception( self::lock_message( $locked ) );
+		return array_values( array_unique( array_filter( array_map( 'trim', $out ) ) ) );
+	}
+
+	/** Does any of these numbers mean the locked one? */
+	public static function any_phone_matches( $locked, $phones ) {
+		foreach ( (array) $phones as $p ) {
+			if ( self::phone_matches( $locked, $p ) ) {
+				return true;
+			}
 		}
-		return $valid;
+		return false;
 	}
 
 	/**
@@ -928,27 +1408,62 @@ class AUN_App_Referrals {
 			return;
 		}
 
-		$typed = isset( $data['billing_phone'] ) ? (string) $data['billing_phone'] : '';
+		$typed   = isset( $data['billing_phone'] ) ? (string) $data['billing_phone'] : '';
+		$blocked = self::blocked_coupons( $typed );
 
-		foreach ( (array) WC()->cart->get_applied_coupons() as $code ) {
-			$id = function_exists( 'wc_get_coupon_id_by_code' )
-				? (int) wc_get_coupon_id_by_code( $code ) : 0;
-			if ( $id < 1 ) {
-				continue;
-			}
-			$locked = self::coupon_phone( new WC_Coupon( $id ) );
-			if ( '' === $locked ) {
-				continue;
-			}
-			if ( '' === trim( $typed ) ) {
-				$errors->add( 'aun_referral_phone', self::lock_message( $locked, true ) );
-				return;
-			}
-			if ( ! self::phone_matches( $locked, $typed ) ) {
-				$errors->add( 'aun_referral_phone', self::lock_message( $locked ) );
-				return;
-			}
+		foreach ( $blocked as $b ) {
+			// Remove it, so the order can be placed at full price on the next
+			// press rather than the customer being stuck against a wall they
+			// cannot see. They keep the code — it works on the right number,
+			// and nothing about the coupon itself has been used up.
+			WC()->cart->remove_coupon( $b['code'] );
+
+			$errors->add(
+				'aun_referral_phone',
+				self::lock_message( $b['locked'], $b['missing'] )
+					. ' ' . __( 'The discount has been removed so you can continue — re-apply it once the number matches.', 'aun-app-api' )
+			);
 		}
+
+		if ( ! empty( $blocked ) ) {
+			WC()->cart->calculate_totals();
+		}
+	}
+
+	/**
+	 * Last line of defence, at the moment the order object is built.
+	 *
+	 * `woocommerce_after_checkout_validation` only runs on the classic
+	 * checkout. This hook runs for the block checkout and the Store API too, so
+	 * a discount cannot be taken by any route that skips the form. It should
+	 * never fire in normal use — the gate above has already removed anything
+	 * blocked — which is exactly what a backstop is for.
+	 *
+	 * @param WC_Order $order Order being created.
+	 * @param array    $data  Posted checkout data.
+	 * @throws Exception When a locked coupon does not belong to this buyer.
+	 */
+	public static function on_create_order( $order, $data = array() ) {
+		$typed = '';
+		if ( is_array( $data ) && isset( $data['billing_phone'] ) ) {
+			$typed = (string) $data['billing_phone'];
+		} elseif ( is_a( $order, 'WC_Order' ) ) {
+			$typed = (string) $order->get_billing_phone();
+		}
+
+		$blocked = self::blocked_coupons( $typed );
+		if ( empty( $blocked ) ) {
+			return;
+		}
+
+		$first = $blocked[0];
+		if ( function_exists( 'WC' ) && WC()->cart ) {
+			foreach ( $blocked as $b ) {
+				WC()->cart->remove_coupon( $b['code'] );
+			}
+			WC()->cart->calculate_totals();
+		}
+		throw new Exception( esc_html( self::lock_message( $first['locked'], $first['missing'] ) ) );
 	}
 
 	/* --------------------------------------------------------------------- *
@@ -973,7 +1488,37 @@ class AUN_App_Referrals {
 		}
 
 		$claim = self::claim_for_order( $order );
-		if ( ! $claim || self::STATUS_PENDING !== $claim->status ) {
+		if ( ! $claim ) {
+			return;
+		}
+
+		// An admin mis-click is not a refund.
+		//
+		// Setting an order to Cancelled revokes the claim and destroys the
+		// coupon. Putting the correct status back used to leave the claim
+		// REVOKED for ever, so a two-second slip in wp-admin permanently cost
+		// the referrer a reward they had earned — invisibly, with no way back
+		// short of editing the database.
+		//
+		// Only a claim revoked BY A REVERSAL OF THIS ORDER is reinstated. One
+		// revoked because the buyer failed a rule stays revoked, because that
+		// judgement had nothing to do with the order's status.
+		if ( self::STATUS_REVOKED === $claim->status ) {
+			$undoable = 'reversed' === (string) ( $claim->revoke_reason ?? '' )
+				&& (int) $claim->order_id === (int) $order->get_id();
+			if ( ! $undoable ) {
+				return;
+			}
+			$wpdb->update(
+				self::claims_table(),
+				array( 'status' => self::STATUS_PENDING, 'revoke_reason' => '', 'reward_coupon' => '' ),
+				array( 'id' => (int) $claim->id )
+			);
+			$claim->status        = self::STATUS_PENDING;
+			$claim->reward_coupon = '';
+		}
+
+		if ( self::STATUS_PENDING !== $claim->status ) {
 			return;
 		}
 
@@ -998,7 +1543,13 @@ class AUN_App_Referrals {
 		if ( '' !== $buyer_phone && self::phone_has_other_orders( $buyer_phone, (int) $order->get_id() ) ) {
 			$wpdb->update(
 				self::claims_table(),
-				array( 'status' => self::STATUS_REVOKED, 'order_id' => (int) $order->get_id() ),
+				array(
+					'status'        => self::STATUS_REVOKED,
+					'order_id'      => (int) $order->get_id(),
+					// A judgement about the BUYER, not about the order status —
+					// so re-saving the order must never undo it.
+					'revoke_reason' => 'ineligible',
+				),
 				array( 'id' => (int) $claim->id )
 			);
 			return;
@@ -1024,6 +1575,39 @@ class AUN_App_Referrals {
 		);
 
 		self::notify_referrer( (int) $claim->referrer_user_id, $reward, $s, (float) $order->get_total() );
+	}
+
+	/**
+	 * Money was refunded WITHOUT the order changing status.
+	 *
+	 * Judged on what the customer actually kept, not on the fact that a refund
+	 * happened. A ৳200 goodwill refund on a ৳60,000 projector is not a returned
+	 * sale, and treating it as one would punish the referrer for our own
+	 * customer-service gesture. A refund that drops the kept amount below the
+	 * qualifying minimum is a different matter — that order no longer meets the
+	 * bar the reward was paid for.
+	 *
+	 * With no minimum configured there is nothing to fall below, so a partial
+	 * refund never revokes; a full refund arrives as a status change instead
+	 * and is handled there.
+	 *
+	 * @param int $order_id  Order.
+	 * @param int $refund_id Refund (unused).
+	 */
+	public static function on_partial_refund( $order_id, $refund_id = 0 ) {
+		$order = function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
+		if ( ! $order ) {
+			return;
+		}
+		$s   = self::settings();
+		$min = (float) $s['min_order_total'];
+		if ( $min <= 0 ) {
+			return;
+		}
+		$kept = (float) $order->get_total() - (float) $order->get_total_refunded();
+		if ( $kept < $min ) {
+			self::on_order_reversed( $order_id );
+		}
 	}
 
 	/**
@@ -1062,9 +1646,121 @@ class AUN_App_Referrals {
 
 		$wpdb->update(
 			self::claims_table(),
-			array( 'status' => self::STATUS_REVOKED ),
+			array( 'status' => self::STATUS_REVOKED, 'revoke_reason' => 'reversed' ),
 			array( 'id' => (int) $claim->id )
 		);
+
+		// Tell BOTH people, and say why.
+		//
+		// Taking a reward back silently is how a loyal customer decides they
+		// were cheated: they saw a coupon in the app, they told someone about
+		// it, and one day it was gone. The order really was returned, we can
+		// say so plainly, and an explanation costs nothing.
+		//
+		// The friend needs telling too. Their side of the programme also ended
+		// — and they are the one who returned the order, so they will be
+		// wondering what became of the discount they used.
+		self::notify_reward_revoked( (int) $claim->referrer_user_id, (string) $claim->reward_coupon );
+		self::notify_friend_reversed( (int) $claim->referred_user_id, (string) $claim->referred_phone );
+	}
+
+	/**
+	 * Tell the friend their referral ended because the order came back.
+	 *
+	 * Deliberately not an apology and not a telling-off: the order was
+	 * cancelled or returned, which is a normal thing that happens, and the only
+	 * useful facts are that the referral no longer counts and that their friend
+	 * has been told the same. Silence here reads as us quietly taking something
+	 * away.
+	 *
+	 * @param int    $user_id Friend's account.
+	 * @param string $phone   Their number, to find the account if the id is stale.
+	 */
+	private static function notify_friend_reversed( $user_id, $phone ) {
+		if ( ! class_exists( 'AUN_App_Notices' ) ) {
+			return;
+		}
+
+		$user_id = (int) $user_id;
+		if ( $user_id < 1 && '' !== $phone && class_exists( 'AUN_App_Phone' ) ) {
+			$users   = AUN_App_Phone::find_users( $phone );
+			$user_id = ! empty( $users ) ? (int) $users[0]->ID : 0;
+		}
+		if ( $user_id < 1 ) {
+			return;
+		}
+
+		$title    = 'Your referral discount has ended';
+		$title_bn = 'আপনার রেফারেল ছাড়টি বাতিল হয়েছে';
+		$body     = 'The order you used it on was cancelled or returned, so the referral no longer '
+			. 'counts and the friend who invited you has not been rewarded. Nothing else on your '
+			. 'account is affected.';
+		$body_bn  = 'যে অর্ডারে এটি ব্যবহার করেছিলেন সেটি বাতিল বা ফেরত হয়েছে, তাই রেফারেলটি আর গণ্য '
+			. 'হচ্ছে না এবং যিনি আপনাকে আমন্ত্রণ করেছিলেন তিনিও পুরস্কার পাননি। আপনার অ্যাকাউন্টের আর '
+			. 'কিছুতে প্রভাব পড়েনি।';
+
+		$id = AUN_App_Notices::create( array(
+			'user_id'   => $user_id,
+			'type'      => 'referral',
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array(),
+			'dedup_key' => 'referral_friend_reversed:' . $user_id . ':' . ( '' !== $phone ? $phone : uniqid( '', true ) ),
+		) );
+
+		if ( $id && AUN_App_Notices::$last_was_new
+			&& class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			AUN_App_Push::push_to_users(
+				array( $user_id ),
+				array( 'title' => $title, 'title_bn' => $title_bn, 'body' => $body, 'body_bn' => $body_bn ),
+				array( 'type' => 'referral', 'notice_id' => $id )
+			);
+		}
+	}
+
+	/**
+	 * The referrer's reward has been withdrawn because the order came back.
+	 *
+	 * @param int    $user_id Referrer.
+	 * @param string $coupon  The coupon that no longer works.
+	 */
+	private static function notify_reward_revoked( $user_id, $coupon ) {
+		if ( ! class_exists( 'AUN_App_Notices' ) || (int) $user_id < 1 ) {
+			return;
+		}
+
+		$title    = 'Your referral reward has been withdrawn';
+		$title_bn = 'আপনার রেফারেল পুরস্কার বাতিল হয়েছে';
+		$body     = 'Your friend\'s order was cancelled or returned, so the reward for it '
+			. 'has been withdrawn. Nothing else on your account is affected, and you keep '
+			. 'every other reward you have earned. Invite another friend any time.';
+		$body_bn  = 'আপনার বন্ধুর অর্ডারটি বাতিল বা ফেরত হয়েছে, তাই এর পুরস্কারটি বাতিল করা হয়েছে। '
+			. 'আপনার অ্যাকাউন্টের আর কিছুতে প্রভাব পড়েনি, আগের সব পুরস্কার আপনার কাছেই থাকছে। '
+			. 'যেকোনো সময় আবার বন্ধুকে আমন্ত্রণ করতে পারেন।';
+
+		$id = AUN_App_Notices::create( array(
+			'user_id'   => (int) $user_id,
+			'type'      => 'referral',
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array(),
+			// Per coupon, so the same withdrawal is never announced twice —
+			// and a later, different one still is.
+			'dedup_key' => 'referral_revoked:' . ( '' !== $coupon ? $coupon : (int) $user_id . ':' . uniqid( '', true ) ),
+		) );
+
+		if ( $id && AUN_App_Notices::$last_was_new
+			&& class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			AUN_App_Push::push_to_users(
+				array( (int) $user_id ),
+				array( 'title' => $title, 'title_bn' => $title_bn, 'body' => $body, 'body_bn' => $body_bn ),
+				array( 'type' => 'referral', 'notice_id' => $id )
+			);
+		}
 	}
 
 	/**
@@ -1092,11 +1788,31 @@ class AUN_App_Referrals {
 			}
 		}
 
+		// The claim this order ALREADY paid, whatever its status now.
+		//
+		// order_id is written when the reward is issued, so this is the exact
+		// link — and it must not be filtered by status, or a reward could
+		// never be clawed back. That was the asymmetry: an order placed
+		// without the coupon was matched by the pending-buyer fallback below
+		// and paid out, then on refund the same fallback found nothing
+		// (the claim was no longer pending) and the reward survived a return.
+		$by_order = $wpdb->get_row( $wpdb->prepare(
+			"SELECT * FROM $claims WHERE order_id = %d LIMIT 1",
+			(int) $order->get_id()
+		) );
+		if ( $by_order ) {
+			return $by_order;
+		}
+
 		// Fall back to the buyer: an order placed without the coupon still
 		// counts, since the referral did its job of bringing them in. Matched
 		// by the order's billing phone as well as by account, because app
 		// customers are known by number and may check out as a guest — keyed
 		// on the account alone, the referrer simply never got paid.
+		//
+		// Restricted to PENDING on purpose. Without it, a customer's LATER,
+		// unrelated order being refunded would reach back and revoke a reward
+		// that a completely different order had already earned.
 		$customer_id  = (int) $order->get_customer_id();
 		$order_phone  = class_exists( 'AUN_App_Phone' )
 			? AUN_App_Phone::normalize( (string) $order->get_billing_phone() ) : false;
@@ -1137,16 +1853,37 @@ class AUN_App_Referrals {
 			$coupon->set_amount( self::reward_value( $s, (float) $order_total ) );
 			$coupon->set_usage_limit( 1 );
 			$coupon->set_usage_limit_per_user( 1 );
-			// Only when we have one — see create_friend_coupon(). An app-only
-			// account has no user_email, and locking to '' made the reward
-			// unspendable.
-			$email = self::customer_email( $user_id );
-			if ( '' !== $email ) {
-				$coupon->set_email_restrictions( array( $email ) );
+
+			// Never stackable. Without this the referrer can put their reward
+			// on top of a seasonal sale coupon and take both discounts off the
+			// same cart — which is not what either was priced for.
+			$coupon->set_individual_use( true );
+
+			// Bound to the REFERRER'S PHONE, exactly like the friend's coupon.
+			//
+			// This used to be an email restriction, which was the wrong lock in
+			// two ways: app accounts have no email, so it usually bound nothing
+			// at all, and where it did bind it bound an address the customer
+			// never uses at checkout. The phone is the identity this whole
+			// system is built on, and it is OTP-verified.
+			$phone = self::phone_of( $user_id );
+			if ( '' !== $phone ) {
+				$coupon->update_meta_data( self::COUPON_META_PHONE, $phone );
 			}
-			$coupon->set_date_expires(
-				date( 'Y-m-d', strtotime( '+' . (int) $s['coupon_expiry_days'] . ' days', current_time( 'timestamp' ) ) )
-			);
+
+			// Marks this as an earned reward, which is what lets several of
+			// them be spent on one order — see allow_reward_stacking().
+			$coupon->update_meta_data( self::COUPON_META_REWARD, '1' );
+
+			// An EARNED reward is not a promotion. The friend's welcome
+			// discount is a marketing offer with a deadline; this is money the
+			// referrer worked for by bringing us a customer, so it gets its own
+			// much longer setting — and 0 means it never expires.
+			if ( (int) $s['reward_expiry_days'] > 0 ) {
+				$coupon->set_date_expires(
+					date( 'Y-m-d', strtotime( '+' . (int) $s['reward_expiry_days'] . ' days', current_time( 'timestamp' ) ) )
+				);
+			}
 			// The same minimum as the friend's coupon. Without it a ৳500 reward
 			// could be spent on a ৳600 cable — a ~83% discount on an accessory,
 			// which is not what "৳500 off" was meant to mean.
@@ -1324,10 +2061,11 @@ class AUN_App_Referrals {
 			$user_id
 		) );
 
-		$invited  = 0;
-		$rewarded = 0;
-		$earned   = 0.0;
-		$coupons  = array();
+		$invited   = 0;
+		$rewarded  = 0;
+		$earned    = 0.0;
+		$available = 0.0;
+		$coupons   = array();
 		foreach ( $rows as $r ) {
 			if ( self::STATUS_REVOKED === $r->status ) {
 				continue;
@@ -1342,19 +2080,33 @@ class AUN_App_Referrals {
 					$spent = false;
 					if ( function_exists( 'wc_get_coupon_id_by_code' ) ) {
 						$cid = (int) wc_get_coupon_id_by_code( (string) $r->reward_coupon );
+						$expires = '';
 						if ( $cid > 0 ) {
 							$rc = new WC_Coupon( $cid );
 							self::heal_coupon_restrictions( $rc );
-							$value = (float) $rc->get_amount();
-							$spent = (int) $rc->get_usage_count() > 0;
+							$value   = (float) $rc->get_amount();
+							$spent   = (int) $rc->get_usage_count() > 0;
+							$expires = self::coupon_expiry( $rc );
 						}
 					}
-					$earned   += $value;
+					$earned += $value;
+					// What they can actually spend today, as opposed to what
+					// they have earned in total. A referrer reading "৳2,500
+					// earned" wants to know how much of it is still there — a
+					// lifetime figure on its own invites "so where is it?".
+					if ( ! $spent ) {
+						$available += $value;
+					}
 					$coupons[] = array(
-						'code'  => (string) $r->reward_coupon,
-						'date'  => substr( (string) $r->rewarded_at, 0, 10 ),
-						'value' => $value,
-						'used'  => $spent,
+						'code'    => (string) $r->reward_coupon,
+						'date'    => substr( (string) $r->rewarded_at, 0, 10 ),
+						'value'   => $value,
+						'used'    => $spent,
+						// '' = never expires. Read from the COUPON itself, not
+						// recomputed from today's setting: changing the setting
+						// must not appear to move the deadline on a reward that
+						// was already issued.
+						'expires' => $expires,
 					);
 				}
 			}
@@ -1367,8 +2119,9 @@ class AUN_App_Referrals {
 		// alone was how a customer ended up "already claimed" with no coupon
 		// to show for it.
 		$mine            = self::claim_row( $user_id );
-		$my_coupon       = '';
-		$my_coupon_phone = '';
+		$my_coupon        = '';
+		$my_coupon_phone  = '';
+		$my_coupon_expiry = '';
 		if ( $mine && ! empty( $mine->friend_coupon )
 			&& self::STATUS_REVOKED !== $mine->status ) {
 			// Only offer it while it can still be spent.
@@ -1378,7 +2131,8 @@ class AUN_App_Referrals {
 				$c = new WC_Coupon( $cid );
 				self::heal_coupon_restrictions( $c );
 				if ( 0 === (int) $c->get_usage_count() ) {
-					$my_coupon = (string) $mine->friend_coupon;
+					$my_coupon        = (string) $mine->friend_coupon;
+					$my_coupon_expiry = self::coupon_expiry( $c );
 					// The coupon's OWN lock, not the claim row's phone: the
 					// coupon is what checkout will actually judge, and an older
 					// coupon may carry no lock at all — in which case the app
@@ -1392,8 +2146,19 @@ class AUN_App_Referrals {
 		return array(
 			'enabled'         => self::available(),
 			'code'            => self::available() ? self::code_for( $user_id ) : '',
-			'my_coupon'       => $my_coupon,
-			'my_coupon_phone' => $my_coupon_phone,
+			'my_coupon'         => $my_coupon,
+			'my_coupon_phone'   => $my_coupon_phone,
+			'my_coupon_expires' => $my_coupon_expiry,
+			// So the app can state the deadline BEFORE a code is redeemed —
+			// "your discount will be valid for 90 days" is part of the offer,
+			// and both figures follow the admin settings with no app release.
+			'friend_expiry_days' => (int) $s['coupon_expiry_days'],
+			'reward_expiry_days' => (int) $s['reward_expiry_days'],
+			// The redeem deadline, so a new customer is TOLD how long they have
+			// instead of finding out on the day it lapses. Both follow the
+			// admin setting, so the app never states a number we do not enforce.
+			'claim_window_days'  => (int) $s['claim_window_days'],
+			'claim_deadline'     => self::claim_deadline( $user_id ),
 			'friend_type'     => $s['friend_type'],
 			'friend_amount'   => $s['friend_amount'],
 			'referrer_amount' => $s['referrer_amount'],
@@ -1402,6 +2167,8 @@ class AUN_App_Referrals {
 			// Total value of every reward earned, so the referrer can see what
 			// the programme has actually been worth to them.
 			'earned'          => round( $earned, 2 ),
+			// Unspent, still-valid rewards: the balance, not the history.
+			'available'       => round( $available, 2 ),
 			'referrer_type'   => $s['referrer_type'],
 			'can_invite'      => self::available() && self::can_invite( $user_id ),
 			'rewards'         => $coupons,
@@ -1501,6 +2268,13 @@ class AUN_App_Referrals {
 		if ( ! self::is_test_phone( $phone )
 			&& self::has_purchase_history( (int) $user_id, $phone ) ) {
 			return 'existing_customer';
+		}
+		// Mirrors rule 4 in claim(). Without it the app offered a redeem box
+		// to someone whose window had closed, and only the refusal told them.
+		$s = self::settings();
+		if ( $s['claim_window_days'] > 0
+			&& self::days_since_joined( (int) $user_id ) > $s['claim_window_days'] ) {
+			return 'too_late';
 		}
 		return '';
 	}

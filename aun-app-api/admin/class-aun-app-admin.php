@@ -1372,6 +1372,17 @@ class AUN_App_Admin {
 			$diag = $this->referral_diagnose( (string) ( $_POST['referral_diag_phone'] ?? '' ) );
 		}
 
+		if ( isset( $_POST['aun_purge_orders_nonce'] ) && wp_verify_nonce( $_POST['aun_purge_orders_nonce'], 'aun_app_purge_orders' ) ) {
+			$purged = AUN_App_Services::purge_empty_orders( false );
+			echo '<div class="notice notice-success is-dismissible"><p>Moved ' . (int) $purged['trashed']
+				. ' empty order(s) to Trash. They can be restored from WooCommerce &rarr; Orders &rarr; Trash.</p></div>';
+		}
+
+		if ( isset( $_POST['aun_pay_error_clear_nonce'] ) && wp_verify_nonce( $_POST['aun_pay_error_clear_nonce'], 'aun_app_pay_error_clear' ) ) {
+			delete_option( 'aun_app_last_pay_error' );
+			echo '<div class="notice notice-success is-dismissible"><p>Cleared.</p></div>';
+		}
+
 		// Test reset. TWO steps by design: the first click only ever reports
 		// what exists, and deleting requires a second, explicit confirmation.
 		// This destroys real coupons, so a single mistyped digit must not be
@@ -1448,6 +1459,13 @@ class AUN_App_Admin {
 			$opts['referral_claim_days']      = max( 0, min( 365, (int) ( $_POST['referral_claim_days'] ?? 30 ) ) );
 			$opts['referral_expiry_days']     = max( 1, min( 730, (int) ( $_POST['referral_expiry_days'] ?? 90 ) ) );
 			$opts['referral_test_phones']     = sanitize_textarea_field( wp_unslash( $_POST['referral_test_phones'] ?? '' ) );
+			$opts['sslc_store_id']            = trim( sanitize_text_field( $_POST['sslc_store_id'] ?? '' ) );
+			$opts['sslc_store_pass']          = trim( sanitize_text_field( $_POST['sslc_store_pass'] ?? '' ) );
+			$opts['sslc_sandbox']             = empty( $_POST['sslc_sandbox'] ) ? 0 : 1;
+			$opts['referral_reward_status']   = AUN_App_Referrals::clean_status( $_POST['referral_reward_status'] ?? 'completed' );
+			// 0 is meaningful here: the referrer's earned reward never expires.
+			$opts['referral_reward_expiry_days'] = max( 0, min( 3650, (int) ( $_POST['referral_reward_expiry_days'] ?? 365 ) ) );
+			$opts['referral_reward_also_completed'] = empty( $_POST['referral_reward_also_completed'] ) ? 0 : 1;
 			delete_transient( 'aun_app_od_token' ); // re-mint with the new settings
 			update_option( AUN_APP_API_OPTION, $opts );
 			delete_transient( AUN_App_Tickets::TOPICS_CACHE );
@@ -1547,6 +1565,107 @@ class AUN_App_Admin {
 			</div>
 
 			<div class="aun-card">
+				<h2><span class="dashicons dashicons-heart"></span> Notification health</h2>
+				<p class="aun-hint">
+					Notifications arrive by three different routes and they fail in different ways, so
+					"notifications don't work" is never one problem. This shows each route separately.
+				</p>
+				<?php
+				global $wpdb;
+				$t_tok = aun_app_api_tokens_table();
+				$t_not = $wpdb->prefix . 'aun_app_notices';
+
+				$tokens_total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $t_tok WHERE fcm_token != '' AND expires_at > '" . esc_sql( current_time( 'mysql' ) ) . "'" );
+				$tokens_old   = (int) $wpdb->get_var( $wpdb->prepare(
+					"SELECT COUNT(*) FROM $t_tok WHERE fcm_token != '' AND expires_at > %s AND fcm_build < %d",
+					current_time( 'mysql' ),
+					AUN_App_Push::CHANNELS_V2_BUILD
+				) );
+
+				$crons = array(
+					'aun_app_tickets_poll'   => 'Support-ticket replies (every 10 min)',
+					'aun_app_repair_poll'    => 'Repair status from the ERP (every 10 min)',
+					'aun_app_daily_notices'  => 'Maintenance reminders (daily)',
+					'aun_app_verify_devices' => 'Device verification sweep (hourly)',
+				);
+				?>
+				<table class="form-table">
+					<tr><th>Push (Firebase)</th><td>
+						<?php if ( AUN_App_Push::configured() ) : ?>
+							<span class="aun-status-ok">✓ configured</span>
+						<?php else : ?>
+							<span class="aun-status-bad">not configured</span> — nothing can be pushed to a
+							phone. In-app notifications still appear when the app is opened.
+						<?php endif; ?>
+					</td></tr>
+					<tr><th>Phones registered</th><td>
+						<strong><?php echo (int) $tokens_total; ?></strong> active device token(s).
+						<?php if ( 0 === $tokens_total ) : ?>
+							<br><span class="aun-status-warn">None.</span> A phone registers when the app is
+							opened while logged in — if this is 0, no push can reach anyone.
+						<?php elseif ( $tokens_old > 0 ) : ?>
+							<br><span class="aun-status-warn"><?php echo (int) $tokens_old; ?> on an app build
+							older than <?php echo (int) AUN_App_Push::CHANNELS_V2_BUILD; ?></span> — they are
+							sent the older notification channels on purpose, because Android silently discards
+							a notification naming a channel the app does not have. They will move over on their
+							next update.
+						<?php endif; ?>
+					</td></tr>
+					<tr><th>Background jobs</th><td>
+						<?php
+						$broken = 0;
+						echo '<table class="widefat" style="max-width:640px"><tbody>';
+						foreach ( $crons as $hook => $label ) {
+							$next = wp_next_scheduled( $hook );
+							if ( ! $next ) {
+								$broken++;
+							}
+							echo '<tr><td style="width:58%">' . esc_html( $label ) . '</td><td>'
+								. ( $next
+									? '<span class="aun-status-ok">next ' . esc_html( human_time_diff( time(), $next ) ) . ( $next < time() ? ' ago (overdue)' : '' ) . '</span>'
+									: '<span class="aun-status-bad">NOT SCHEDULED</span>' )
+								. '</td></tr>';
+						}
+						echo '</tbody></table>';
+						?>
+						<p class="description" style="max-width:780px">
+							<?php if ( $broken > 0 ) : ?>
+								<span class="aun-status-bad">Some jobs are not scheduled</span> — deactivate and
+								reactivate this plugin to restore them.
+							<?php endif; ?>
+							<?php if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) : ?>
+								<br><span class="aun-status-warn">WP-Cron is disabled in wp-config.php.</span>
+								A real server cron must be calling <code>wp-cron.php</code>, or these never run
+								and ticket, repair and reminder notifications simply stop.
+							<?php else : ?>
+								<br>WordPress runs these on site visits. On a quiet site they can drift late;
+								a real server cron every 5 minutes makes them punctual.
+							<?php endif; ?>
+						</p>
+					</td></tr>
+					<tr><th>Sent in the last 7 days</th><td>
+						<?php
+						$rows = (array) $wpdb->get_results( $wpdb->prepare(
+							"SELECT type, COUNT(*) n FROM $t_not WHERE created_at > %s GROUP BY type ORDER BY n DESC",
+							gmdate( 'Y-m-d H:i:s', strtotime( '-7 days', current_time( 'timestamp' ) ) )
+						) );
+						if ( empty( $rows ) ) {
+							echo '<span class="aun-status-warn">Nothing at all.</span> If you expected some, the '
+								. 'trigger never fired — that is a different problem from push not arriving.';
+						} else {
+							echo '<code>';
+							foreach ( $rows as $r ) {
+								echo esc_html( $r->type ) . ': ' . (int) $r->n . '&nbsp;&nbsp; ';
+							}
+							echo '</code><br><span class="description">These were CREATED. Whether each reached '
+								. 'a phone depends on the two rows above.</span>';
+						}
+						?>
+					</td></tr>
+				</table>
+			</div>
+
+			<div class="aun-card">
 				<h2><span class="dashicons dashicons-clock"></span> Maintenance reminder test</h2>
 				<p class="aun-hint">
 					Real dust-filter reminders arrive 30/60/90 days after an eligible purchase, so there is
@@ -1633,6 +1752,98 @@ class AUN_App_Admin {
 						the fastest way to diagnose "something went wrong" without reading an error log.
 						Delete the test ticket in the Agent Panel afterwards.
 					</span>
+				</p>
+				<?php endif; ?>
+			</div>
+
+			<?php
+			// Surfaced here rather than left in the PHP error log, which most
+			// site owners cannot reach. "There has been a critical error on
+			// this website" is not a bug report; this is.
+			$pay_err = get_option( 'aun_app_last_pay_error' );
+			if ( is_array( $pay_err ) && ! empty( $pay_err['message'] ) ) : ?>
+			<div class="aun-card" style="border-color:#f0b4b4">
+				<h2><span class="dashicons dashicons-warning"></span> Last spare-parts payment failure</h2>
+				<p class="aun-hint">
+					A customer tapped <strong>Pay online</strong> and WooCommerce could not build the order.
+					They were told to try again or pay cash on delivery — nothing was charged.
+				</p>
+				<table class="widefat" style="max-width:760px">
+					<tbody>
+						<tr><td style="width:120px;color:#50575e">When</td><td><?php echo esc_html( (string) $pay_err['time'] ); ?></td></tr>
+						<tr><td style="color:#50575e">Request</td><td><code><?php echo esc_html( (string) $pay_err['ref'] ); ?></code></td></tr>
+						<tr><td style="color:#50575e">Error</td><td><code><?php echo esc_html( (string) $pay_err['message'] ); ?></code></td></tr>
+						<tr><td style="color:#50575e">Where</td><td><code style="font-size:11px"><?php echo esc_html( (string) $pay_err['where'] ); ?></code></td></tr>
+					</tbody>
+				</table>
+				<p style="margin-top:12px">
+					<button type="submit" form="aun-pay-error-clear-form" class="button">Clear this</button>
+				</p>
+			</div>
+			<?php endif; ?>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-money-alt"></span> In-app payments (SSLCommerz)</h2>
+				<p class="aun-hint">
+					When the app can create a payment session directly, the customer lands on the SSLCommerz
+					screen itself — no checkout page, no terms box, no website in between. If it cannot, the
+					app falls back to WooCommerce's own checkout, which still works. Either way the store
+					credentials stay on this server and never go near the APK.
+				</p>
+				<?php
+				$sslc = class_exists( 'AUN_App_SSLCommerz' ) ? AUN_App_SSLCommerz::credentials() : array( 'store_id' => '', 'source' => '', 'sandbox' => false );
+				?>
+				<table class="form-table">
+					<tr><th>Status</th><td>
+						<?php if ( '' !== $sslc['store_id'] ) : ?>
+							<span class="aun-status-ok">✓ direct payment ready</span>
+							— store <code><?php echo esc_html( $sslc['store_id'] ); ?></code>,
+							read from <code><?php echo esc_html( $sslc['source'] ); ?></code>.
+							<?php if ( ! empty( $sslc['sandbox'] ) ) : ?>
+								<br><span class="aun-status-warn">SANDBOX mode — no real money will move.</span>
+							<?php endif; ?>
+						<?php else : ?>
+							<span class="aun-status-warn">not found</span> — the app will use the website
+							checkout instead. That works, but the customer passes through a page or two of
+							the site. Fill the fields below to fix it.
+						<?php endif; ?>
+					</td></tr>
+					<tr><th>Store ID</th><td>
+						<input name="sslc_store_id" style="width:40%" value="<?php echo esc_attr( (string) ( $opts['sslc_store_id'] ?? '' ) ); ?>" placeholder="Leave blank to use the WooCommerce gateway's" autocomplete="off" />
+					</td></tr>
+					<tr><th>Store password</th><td>
+						<input name="sslc_store_pass" type="password" style="width:40%" value="<?php echo esc_attr( (string) ( $opts['sslc_store_pass'] ?? '' ) ); ?>" placeholder="Leave blank to use the WooCommerce gateway's" autocomplete="new-password" />
+						<p class="description" style="max-width:760px">
+							Only needed if the status above says "not found". Two copies of a credential drift
+							apart, and the one nobody remembers updating is the one that breaks at midnight.
+						</p>
+					</td></tr>
+					<tr><th>Sandbox</th><td>
+						<label><input type="checkbox" name="sslc_sandbox" value="1" <?php checked( ! empty( $opts['sslc_sandbox'] ) ); ?> />
+							Use the SSLCommerz sandbox for these fields</label>
+						<p class="description">Ignored when the credentials come from the WooCommerce gateway — its own sandbox setting is used.</p>
+					</td></tr>
+				</table>
+
+				<?php
+				// Debris from failed payment attempts. Shown only when there is
+				// some — an empty tool is just clutter.
+				$ghosts = class_exists( 'AUN_App_Services' ) ? AUN_App_Services::purge_empty_orders( true ) : array( 'count' => 0, 'ids' => array() );
+				if ( $ghosts['count'] > 0 ) : ?>
+				<h3>Empty orders to clean up</h3>
+				<p class="description" style="max-width:780px">
+					<strong><?php echo (int) $ghosts['count']; ?></strong> ৳0 &ldquo;Pending payment&rdquo;
+					order(s) with no customer and no items:
+					<code><?php echo esc_html( implode( ', #', array_map( 'strval', array_slice( $ghosts['ids'], 0, 12 ) ) ) ); ?></code><?php
+					echo count( $ghosts['ids'] ) > 12 ? ' …' : ''; ?>.
+					<br><br>
+					WooCommerce creates an order shell first and fills it in a moment later. When something
+					crashed in between — as a third-party plugin was doing before the session fix — the shell
+					survived. New attempts now clean up after themselves; this clears what is already there.
+					They are moved to <strong>Trash</strong>, not destroyed.
+				</p>
+				<p style="margin:0">
+					<button type="submit" form="aun-purge-orders-form" class="button">Move these to Trash</button>
 				</p>
 				<?php endif; ?>
 			</div>
@@ -1895,9 +2106,72 @@ class AUN_App_Admin {
 							0 = no limit. Without a window somebody can shop for months and then apply a code retroactively.
 						</p>
 					</td></tr>
-					<tr><th>Coupon expiry</th><td>
+					<tr><th>Pay the reward when</th><td>
+						<?php
+						$cur_status = AUN_App_Referrals::clean_status( $opts['referral_reward_status'] ?? 'completed' );
+						$statuses   = function_exists( 'wc_get_order_statuses' ) ? wc_get_order_statuses() : array( 'wc-completed' => 'Completed' );
+						?>
+						<select name="referral_reward_status" style="min-width:230px">
+							<?php foreach ( $statuses as $slug => $label ) :
+								$bare = AUN_App_Referrals::clean_status( $slug );
+								// Statuses that mean the sale did NOT stick can never be the
+								// trigger — offering them would be offering a foot-gun.
+								if ( in_array( $bare, array( 'refunded', 'cancelled', 'failed', 'pending' ), true ) ) {
+									continue;
+								}
+								?>
+								<option value="<?php echo esc_attr( $bare ); ?>" <?php selected( $cur_status, $bare ); ?>>
+									<?php echo esc_html( $label ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description" style="max-width:780px">
+							The order status at which the referrer is actually paid, and the status at which the
+							friend becomes able to invite people themselves.
+							<strong>If you use a shipment plugin with a "Delivered" status, choose it.</strong>
+							Paying on <em>Processing</em> or <em>Shipped</em> means a refused cash-on-delivery
+							parcel pays a reward for goods that came straight back.
+						</p>
+						<?php
+						$pay_now = class_exists( 'AUN_App_Referrals' ) ? AUN_App_Referrals::payout_statuses() : array();
+						?>
+						<p style="margin:8px 0 0">
+							<label>
+								<input type="checkbox" name="referral_reward_also_completed" value="1"
+									<?php checked( ! empty( $opts['referral_reward_also_completed'] ) ); ?> />
+								Also pay when the order reaches <strong>Completed</strong>
+							</label>
+						</p>
+						<p class="description" style="max-width:780px">
+							Leave this OFF unless you know you want it. <strong>AST Pro and similar plugins often
+							mark an order Completed at the moment it is marked Shipped</strong> — with this ticked,
+							the reward goes out at dispatch and the status you chose above stops mattering.
+						</p>
+						<p style="margin:10px 0 0">
+							<strong>Paying right now on:</strong>
+							<?php foreach ( $pay_now as $ps ) : ?>
+								<span class="aun-badge aun-badge-green"><?php echo esc_html( $ps ); ?></span>
+							<?php endforeach; ?>
+							<span class="description" style="display:block;margin-top:4px">
+								If a status you did not expect is listed here, that is why rewards are going out early.
+							</span>
+						</p>
+					</td></tr>
+					<tr><th>Friend's coupon expiry</th><td>
 						<input name="referral_expiry_days" type="number" min="1" max="730" style="width:90px"
 							value="<?php echo (int) ( $opts['referral_expiry_days'] ?? 90 ); ?>" /> days
+						<p class="description">A promotional offer, so a deadline is fair and creates urgency.</p>
+					</td></tr>
+					<tr><th>Referrer's reward expiry</th><td>
+						<input name="referral_reward_expiry_days" type="number" min="0" max="3650" style="width:90px"
+							value="<?php echo (int) ( $opts['referral_reward_expiry_days'] ?? 365 ); ?>" /> days
+						<p class="description" style="max-width:780px">
+							<strong>0 = never expires.</strong> This is different from the friend's coupon: it is
+							not an offer, it is money the referrer earned by bringing us a customer. A short
+							deadline on earned rewards is what makes people stop trusting a programme —
+							the big platforms give a year or no expiry at all.
+							<strong>365 days is the recommended setting; 0 if you want it to feel generous.</strong>
+						</p>
 					</td></tr>
 					<tr><th>Built-in protection</th><td>
 						<p class="description" style="max-width:760px">
@@ -2109,6 +2383,8 @@ class AUN_App_Admin {
 		<form id="aun-referral-unlock-form" method="post"><?php wp_nonce_field( 'aun_app_referral_unlock', 'aun_referral_unlock_nonce' ); ?></form>
 		<form id="aun-referral-diag-form" method="post"><?php wp_nonce_field( 'aun_app_referral_diag', 'aun_referral_diag_nonce' ); ?></form>
 		<form id="aun-referral-reset-form" method="post"><?php wp_nonce_field( 'aun_app_referral_reset', 'aun_referral_reset_nonce' ); ?></form>
+		<form id="aun-purge-orders-form" method="post"><?php wp_nonce_field( 'aun_app_purge_orders', 'aun_purge_orders_nonce' ); ?></form>
+		<form id="aun-pay-error-clear-form" method="post"><?php wp_nonce_field( 'aun_app_pay_error_clear', 'aun_pay_error_clear_nonce' ); ?></form>
 		<?php if ( AUN_App_Tickets::configured() ) : ?>
 		<form id="aun-tickets-test-form" method="post"><?php wp_nonce_field( 'aun_app_tickets_test', 'aun_tickets_test_nonce' ); ?></form>
 		<?php endif; ?>
