@@ -7,7 +7,13 @@
  * reword them — including writing them in Bangla — without touching code.
  *
  * Placeholders (replaced at send time): {ref} {model} {status} {reason} {coupon}
- * {track} {parts} {date} {age} {changes} {total} {pay}. Unknown placeholders are stripped.
+ * {track} {parts} {date} {age} {changes} {detail} {total} {pay}. Unknown ones are stripped.
+ *
+ * {changes} vs {detail} on a parts update:
+ *   {changes} — short:  "LCD screen: Arrived at AUN, Dhaka"
+ *   {detail}  — spelled out: adds the explanation of what that stage means. Much
+ *               longer, so it costs more SMS segments (a Bangla SMS is only 70
+ *               characters per part) — opt in per site.
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -23,6 +29,7 @@ class AUN_SP_Messages {
 	const OPT_SMS_APPROVED = 'aun_sp_sms_approved';
 	const OPT_SMS_PAY      = 'aun_sp_sms_pay';
 	const OPT_SMS_PAID     = 'aun_sp_sms_paid';
+	const OPT_SMS_REFUND   = 'aun_sp_sms_refund';
 	const OPT_REJECT_TPL   = 'aun_sp_reject_templates';
 	const OPT_PAY_INFO     = 'aun_sp_pay_info';
 
@@ -38,6 +45,7 @@ class AUN_SP_Messages {
 			self::OPT_SMS_APPROVED => 'AUN: thank you, your quote for {ref} is approved. We will now start sourcing your parts. {pay}',
 			self::OPT_SMS_PAY      => 'AUN: to pay online for {ref} (Tk {total}), open this link: {link}',
 			self::OPT_SMS_PAID     => 'AUN: payment of Tk {total} received for {ref} - thank you. Track it: {track}',
+			self::OPT_SMS_REFUND   => 'AUN: we have refunded Tk {total} for {ref}. It should reach your account shortly. Details: {track}',
 		);
 	}
 

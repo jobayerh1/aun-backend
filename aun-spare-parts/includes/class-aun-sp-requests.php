@@ -52,16 +52,23 @@ class AUN_SP_Requests {
 		);
 	}
 
+	/**
+	 * The working labels for YOUR dropdown. They spell out where the part physically
+	 * is, because "Shipped" and "Dispatched" read identically otherwise — the first
+	 * is the factory sending it to Bangladesh, the second is us sending it to the
+	 * customer. What the CUSTOMER is shown for the same keys is separate and
+	 * translatable: AUN_SP_I18N::it_label() / it_help().
+	 */
 	public static function item_statuses() {
 		return array(
-			'pending'     => 'Pending',
-			'quoted'      => 'Quoted',
-			'applied'     => 'Applied to factory',
-			'at_factory'  => 'At factory',
-			'shipped'     => 'Shipped',
-			'arrived'     => 'Arrived',
-			'dispatched'  => 'Dispatched',
-			'delivered'   => 'Delivered',
+			'pending'     => 'Pending review',
+			'quoted'      => 'Quoted (price sent)',
+			'applied'     => 'Ordered from factory',
+			'at_factory'  => 'At factory — being prepared',
+			'shipped'     => 'Shipped by factory → to Bangladesh',
+			'arrived'     => 'Arrived at AUN (Dhaka)',
+			'dispatched'  => 'Dispatched to customer (courier)',
+			'delivered'   => 'Delivered to customer',
 			'unavailable' => 'Unavailable',
 		);
 	}
@@ -131,21 +138,23 @@ class AUN_SP_Requests {
 			$where .= ' AND (' . implode( ' OR ', $parts ) . ')';
 		}
 
-		$rows = $wpdb->get_results(
-			"SELECT r.*,
-				(SELECT GROUP_CONCAT(part_label SEPARATOR ', ') FROM $t_item WHERE request_id = r.id) AS parts
-			 FROM $t_req r
-			 WHERE $where
-			 ORDER BY r.created_at DESC
-			 LIMIT 200"
-		);
+		// Self-heal BEFORE filtering. The stored overall_status is only recomputed when
+		// a request is opened and saved, so a row's badge could lag its actual parts.
+		// Healing only the rows the filter already returned was too late: a request
+		// whose stored status was stale was matched (or missed) by the WHERE clause on
+		// the stale value, so it could sit in the wrong tab and be counted in the wrong
+		// stat card — which reads exactly like "the dashboard is out of sync".
+		$this->sync_rows( $wpdb->get_results(
+			"SELECT id, overall_status, approved_at FROM $t_req WHERE " . self::open_sql() . ' LIMIT 500'
+		) );
 
-		// Self-heal: the stored overall_status is only recomputed when a request is
-		// opened and saved, so a row's badge could lag its actual parts (e.g. legacy
-		// rows, or parts advanced under older logic). Recompute each visible row from
-		// its parts and, if it drifted, persist + show the corrected value — so the
-		// list badge always matches the detail page and the stat cards below.
-		$this->sync_rows( $rows );
+		$rows = $wpdb->get_results(
+			"SELECT r.* FROM $t_req r WHERE $where ORDER BY r.created_at DESC LIMIT 200"
+		);
+		// Per-part detail for the Progress column. (This replaces a GROUP_CONCAT(…
+		// SEPARATOR …) subquery, which also happened to be the one query the SQLite
+		// test bench cannot parse.)
+		$parts_by = $this->parts_for( wp_list_pluck( (array) $rows, 'id' ) );
 
 		// Stat cards.
 		$open    = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $t_req WHERE " . self::open_sql() );
@@ -184,8 +193,10 @@ class AUN_SP_Requests {
 		}
 		echo '</p></form>';
 
-		echo '<table class="wp-list-table widefat fixed striped"><thead><tr>';
-		echo '<th>Ref</th><th>Customer</th><th>Phone</th><th>Parts</th><th>Warranty</th><th>Status</th><th>Age</th>';
+		echo '<table class="wp-list-table widefat striped"><thead><tr>';
+		echo '<th style="width:120px;">Ref</th><th>Customer</th><th style="width:120px;">Phone</th>'
+			. '<th style="width:38%;">Parts &amp; where they are</th><th style="width:90px;">Warranty</th>'
+			. '<th style="width:150px;">Request status</th><th style="width:60px;">Age</th>';
 		echo '</tr></thead><tbody>';
 
 		if ( empty( $rows ) ) {
@@ -199,13 +210,62 @@ class AUN_SP_Requests {
 			echo '<td><a href="' . esc_url( $url ) . '"><strong>' . esc_html( $r->ref ) . '</strong></a></td>';
 			echo '<td>' . esc_html( $r->customer_name ) . '</td>';
 			echo '<td>' . esc_html( $r->phone_current ) . '</td>';
-			echo '<td>' . esc_html( $r->parts ) . '</td>';
+			echo '<td>' . $this->parts_progress( $parts_by[ (int) $r->id ] ?? array() ) . '</td>';
 			echo '<td>' . esc_html( $wlbl ) . '</td>';
 			echo '<td>' . $this->status_badge( $r->overall_status ) . '</td>';
 			echo '<td>' . esc_html( $age ) . 'd</td>';
 			echo '</tr>';
 		}
 		echo '</tbody></table>';
+		echo '<p style="color:#646970;max-width:820px;">The <strong>Request status</strong> column is the whole request in one word &mdash; every stage between ordering and arrival reads as &ldquo;In progress&rdquo;, by design. <strong>Parts &amp; where they are</strong> is the detail: each part with the exact stage it has reached.</p>';
+	}
+
+	/** part rows for a set of request ids, keyed by request id (one query). */
+	private function parts_for( $ids ) {
+		global $wpdb;
+		$ids = array_map( 'intval', (array) $ids );
+		$out = array();
+		if ( empty( $ids ) ) {
+			return $out;
+		}
+		$t_item = AUN_SP_Install::table( 'request_items' );
+		$rows   = $wpdb->get_results(
+			"SELECT request_id, part_label, line_status, qty FROM $t_item WHERE request_id IN (" . implode( ',', $ids ) . ') ORDER BY id ASC'
+		);
+		foreach ( (array) $rows as $p ) {
+			$out[ (int) $p->request_id ][] = $p;
+		}
+		return $out;
+	}
+
+	/**
+	 * The list's Progress cell: every part with the stage it has actually reached.
+	 *
+	 * The overall status alone cannot answer "which of these is still at the factory
+	 * and which is already on its way to the customer?" — applied / at factory /
+	 * shipped / arrived all collapse into "In progress", so a whole dashboard of
+	 * genuinely different requests looked identical.
+	 */
+	private function parts_progress( $parts ) {
+		if ( empty( $parts ) ) {
+			return '<span style="color:#646970;">—</span>';
+		}
+		$colors = array(
+			'pending'     => '#646970', 'quoted'     => '#8250df', 'applied'   => '#bf6a02',
+			'at_factory'  => '#bf6a02', 'shipped'    => '#2271b1', 'arrived'   => '#1a7f37',
+			'dispatched'  => '#1a7f37', 'delivered'  => '#1a7f37', 'unavailable' => '#b32d2e',
+		);
+		$labels = self::item_statuses();
+		$out    = '';
+		foreach ( (array) $parts as $p ) {
+			$qty = max( 1, (int) ( $p->qty ?? 1 ) );
+			$c   = $colors[ $p->line_status ] ?? '#646970';
+			$out .= '<div style="margin:2px 0;line-height:1.5;">'
+				. '<span style="color:#1d2327;">' . esc_html( $p->part_label ) . ( $qty > 1 ? ' ×' . $qty : '' ) . '</span> '
+				. '<span style="display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;background:' . esc_attr( $c ) . '1a;color:' . esc_attr( $c ) . ';">'
+				. esc_html( $labels[ $p->line_status ] ?? $p->line_status ) . '</span></div>';
+		}
+		return $out;
 	}
 
 	/**
@@ -278,6 +338,10 @@ class AUN_SP_Requests {
 		echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=aun-sp' ) ) . '">&larr; All requests</a></p>';
 		echo $notice;
 
+		// Money first: whether this request has been paid for (and whether a refund is
+		// owed) is the thing most likely to be missed further down the page.
+		$this->payment_banner( $r );
+
 		// Possible-duplicate flag: other requests from the same phone (customers
 		// sometimes submit twice). Shown so you can reject the duplicate in a click.
 		$this->duplicate_notice( $r );
@@ -345,21 +409,35 @@ class AUN_SP_Requests {
 		echo '<p style="color:#646970;margin-top:0;"><span style="color:#1a7f37;">&#9679;</span> <strong>The customer sees:</strong> status, quantity, price and <strong>ETA</strong>. '
 			. '<span style="color:#646970;">&#9679;</span> <strong>Only you see:</strong> Factory PO and Note. '
 			. '<em>Leave the ETA blank unless you are willing to have that date quoted back to you.</em></p>';
-		echo '<p style="color:#646970;margin-top:0;"><span style="color:#8250df;">&#9679;</span> Setting a part to <strong>&ldquo;Quoted&rdquo;</strong> and saving <strong>sends the price to the customer for approval</strong> (same as the button below) &mdash; they get an SMS and Approve / Decline buttons. Every other status just texts them a progress update.</p>';
+		echo '<p style="color:#646970;margin-top:0;"><span style="color:#8250df;">&#9679;</span> Setting a part to <strong>&ldquo;Quoted (price sent)&rdquo;</strong> and saving <strong>sends the price to the customer for approval</strong> (same as the button below) &mdash; they get an SMS and Approve / Decline buttons. Every other status texts them a progress update <em>naming that part and its new stage</em>.</p>';
+		// The journey in one line, so the two easily-confused steps ("shipped" = the
+		// factory sending it here, "dispatched" = us sending it to the customer) can't
+		// be mixed up. The customer sees a fuller wording of the same stages.
+		echo '<p style="color:#646970;margin-top:0;background:#f6f7f7;border-left:3px solid #c3c4c7;padding:8px 12px;max-width:780px;">'
+			. '<strong>The journey:</strong> Ordered from factory &rarr; At factory (being prepared) &rarr; <strong>Shipped</strong> <em>by the factory, heading to Bangladesh</em> &rarr; Arrived at AUN Dhaka &rarr; <strong>Dispatched</strong> <em>by us to the customer, by courier</em> &rarr; Delivered.</p>';
 		echo '<div style="overflow-x:auto;"><table class="wp-list-table widefat striped" style="min-width:820px;"><thead><tr><th>Part</th><th style="width:64px;">Qty</th><th>Status</th><th>Factory PO <span style="font-weight:400;color:#646970;">(internal)</span></th><th>ETA <span style="font-weight:400;color:#1a7f37;">(customer sees)</span></th><th>Note <span style="font-weight:400;color:#646970;">(internal)</span></th><th>Unit price (৳)</th><th style="width:90px;">Line total</th><th>Courier tracking</th><th>Photo</th></tr></thead><tbody>';
 		$grand = 0.0;
+		// Once the customer has paid, quantities and prices are frozen: editing them
+		// would silently disagree with the money already taken. Enforced server-side
+		// too — see handle_post().
+		$locked = false;
+		if ( AUN_SP_Woo::is_active() ) {
+			$paid_order = AUN_SP_Woo::order_for( (int) $r->id );
+			$locked     = ( $paid_order && $paid_order->is_paid() );
+		}
+		$lock_attr = $locked ? ' readonly disabled style="background:#f0f0f1;color:#646970;"' : '';
 		foreach ( (array) $items as $it ) {
 			$iqty  = max( 1, (int) ( $it->qty ?? 1 ) );
 			$line  = round( (float) $it->unit_price * $iqty, 2 );
 			$grand += $line;
 			echo '<tr>';
 			echo '<td><strong>' . esc_html( $it->part_label ) . '</strong></td>';
-			echo '<td><input type="number" min="1" step="1" name="item_qty[' . $it->id . ']" value="' . esc_attr( $iqty ) . '" class="small-text" style="width:58px;"></td>';
+			echo '<td><input type="number" min="1" step="1" name="item_qty[' . $it->id . ']" value="' . esc_attr( $iqty ) . '" class="small-text" style="width:58px;"' . $lock_attr . '></td>';
 			echo '<td>' . $this->select( 'item_status[' . $it->id . ']', self::item_statuses(), $it->line_status ) . '</td>';
 			echo '<td><input type="text" name="item_po[' . $it->id . ']" value="' . esc_attr( $it->factory_po ) . '" class="small-text"></td>';
 			echo '<td><input type="date" name="item_eta[' . $it->id . ']" value="' . esc_attr( $it->eta ) . '"></td>';
 			echo '<td><input type="text" name="item_note[' . $it->id . ']" value="' . esc_attr( $it->note ) . '" class="regular-text" style="width:120px;"></td>';
-			echo '<td><input type="number" step="0.01" min="0" name="item_price[' . $it->id . ']" value="' . esc_attr( $it->unit_price ) . '" class="small-text" style="width:90px;"></td>';
+			echo '<td><input type="number" step="0.01" min="0" name="item_price[' . $it->id . ']" value="' . esc_attr( $it->unit_price ) . '" class="small-text" style="width:90px;"' . $lock_attr . '></td>';
 			echo '<td style="white-space:nowrap;">' . ( $line > 0 ? '৳' . esc_html( number_format_i18n( $line, 2 ) ) : '<span style="color:#646970;">—</span>' ) . '</td>';
 			$tno = isset( $it->tracking_no ) ? $it->tracking_no : '';
 			echo '<td><input type="text" name="item_track[' . $it->id . ']" value="' . esc_attr( $tno ) . '" class="small-text" placeholder="Pathao ID / URL" style="width:120px;">';
@@ -477,6 +555,65 @@ class AUN_SP_Requests {
 	}
 
 	/**
+	 * A loud, top-of-page statement of the money position — paid, refund owed, or
+	 * refunded. The quiet line further down was too easy to scroll past.
+	 */
+	private function payment_banner( $r ) {
+		if ( ! AUN_SP_Woo::is_active() ) {
+			return;
+		}
+		$order = AUN_SP_Woo::order_for( (int) $r->id );
+		if ( ! $order ) {
+			return; // cash on delivery — nothing collected yet
+		}
+		$total = '৳' . number_format_i18n( (float) $order->get_total(), 2 );
+		$link  = ' <a href="' . esc_url( $order->get_edit_order_url() ) . '">order #' . esc_html( $order->get_order_number() ) . '</a>';
+
+		if ( ! empty( $r->refunded_at ) ) {
+			echo '<div style="background:#f0f6ff;border:1px solid #2271b1;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+				. '<strong style="color:#2271b1;font-size:15px;">↩ REFUNDED ৳' . esc_html( number_format_i18n( (float) $r->refund_amount, 2 ) ) . '</strong> '
+				. '<span style="color:#646970;">on ' . esc_html( substr( (string) $r->refunded_at, 0, 10 ) )
+				. ( $r->refund_ref ? ' · ref ' . esc_html( $r->refund_ref ) : '' ) . ' · ' . $link . '</span></div>';
+			return;
+		}
+
+		if ( AUN_SP_Woo::refund_due( (int) $r->id ) ) {
+			echo '<div style="background:#fcf0f1;border:1px solid #b32d2e;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+				. '<strong style="color:#b32d2e;font-size:15px;">⚠ REFUND DUE ' . esc_html( $total ) . '</strong> '
+				. '<span style="color:#646970;">— the customer paid online and this request is now &ldquo;'
+				. esc_html( self::overall_statuses()[ $r->overall_status ] ?? $r->overall_status ) . '&rdquo;.' . $link . '</span>'
+				. '<div style="margin-top:8px;">' . $this->refund_form( $order ) . '</div></div>';
+			return;
+		}
+
+		if ( $order->is_paid() ) {
+			echo '<div style="background:#edfaef;border:1px solid #1a7f37;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+				. '<strong style="color:#1a7f37;font-size:15px;">✓ PAID ONLINE ' . esc_html( $total ) . '</strong> '
+				. '<span style="color:#646970;">' . esc_html( $order->get_payment_method_title() ) . ' · ' . $link
+				. ' · quantities and prices are locked below.</span></div>';
+			return;
+		}
+
+		echo '<div style="background:#fdf6e7;border:1px solid #bf6a02;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+			. '<strong style="color:#8a5300;font-size:15px;">● ONLINE PAYMENT STARTED, NOT COMPLETED</strong> '
+			. '<span style="color:#646970;">' . esc_html( $total ) . ' · ' . $link
+			. ' — treat as cash on delivery unless it completes.</span></div>';
+	}
+
+	/** The "record a manual refund" form (their gateway can't refund via WooCommerce). */
+	private function refund_form( $order ) {
+		ob_start();
+		echo '<form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
+		wp_nonce_field( 'aun_sp_refund', 'aun_sp_refund_nonce' );
+		echo '<label>Amount refunded ৳ <input type="number" step="0.01" min="0" name="refund_amount" value="' . esc_attr( (float) $order->get_total() ) . '" class="small-text" style="width:100px;"></label>';
+		echo '<label>Reference <input type="text" name="refund_ref" class="regular-text" style="width:180px;" placeholder="bKash TrxID / bank ref"></label>';
+		echo '<button class="button button-primary">Mark as refunded</button>';
+		echo '</form>';
+		echo '<p style="margin:6px 0 0;color:#646970;font-size:12px;">Send the money by hand first (bKash/bank), then record it here. The customer is texted and sees it on their tracking page.</p>';
+		return ob_get_clean();
+	}
+
+	/**
 	 * The WooCommerce order behind this request: what the customer owes, how they
 	 * chose to pay, and whether the money has actually arrived. Cash on delivery
 	 * reaches "processing" WITHOUT payment, so that case is spelled out rather than
@@ -589,18 +726,29 @@ class AUN_SP_Requests {
 			$tracks   = (array) ( $_POST['item_track'] ?? array() );
 			$qtys     = (array) ( $_POST['item_qty'] ?? array() );
 			$labels   = self::item_statuses();
-			$changes  = array(); // human-readable per-part status changes, for the SMS
+			// Money already taken? Then quantities and prices are frozen. The inputs are
+			// disabled in the UI, but never trust that — a stale tab or a crafted POST
+			// must not be able to change what the customer was charged.
+			$money_locked = false;
+			if ( AUN_SP_Woo::is_active() ) {
+				$paid_order   = AUN_SP_Woo::order_for( $id );
+				$money_locked = ( $paid_order && $paid_order->is_paid() );
+			}
+			$moves    = array(); // new line_status => the parts that moved to it
 			$became_quoted = false; // a part was moved to "Quoted" in this save
 
 			foreach ( $statuses as $iid => $new ) {
 				$iid = (int) $iid;
 				$new = array_key_exists( $new, $labels ) ? $new : 'pending';
-				$cur = $wpdb->get_row( $wpdb->prepare( "SELECT line_status, part_label, qty FROM $t_item WHERE id = %d AND request_id = %d", $iid, $id ) );
+				$cur = $wpdb->get_row( $wpdb->prepare( "SELECT line_status, part_label, qty, unit_price FROM $t_item WHERE id = %d AND request_id = %d", $iid, $id ) );
 				if ( ! $cur ) {
 					continue;
 				}
 				// Qty: at least 1, and never silently blank out an existing value.
 				$new_qty = isset( $qtys[ $iid ] ) ? max( 1, (int) $qtys[ $iid ] ) : max( 1, (int) $cur->qty );
+				if ( $money_locked ) {
+					$new_qty = max( 1, (int) $cur->qty ); // frozen after payment
+				}
 				$eta = sanitize_text_field( wp_unslash( $etas[ $iid ] ?? '' ) );
 				// Only a real Y-m-d reaches the DATE column — a malformed value would
 				// make MySQL reject the whole row update silently.
@@ -621,7 +769,7 @@ class AUN_SP_Requests {
 						'factory_po'  => sanitize_text_field( wp_unslash( $pos[ $iid ] ?? '' ) ),
 						'eta'         => $eta !== '' ? $eta : null,
 						'note'        => sanitize_text_field( wp_unslash( $notes[ $iid ] ?? '' ) ),
-						'unit_price'  => round( (float) ( $prices[ $iid ] ?? 0 ), 2 ),
+						'unit_price'  => $money_locked ? (float) $cur->unit_price : round( (float) ( $prices[ $iid ] ?? 0 ), 2 ),
 						'tracking_no' => $track,
 						'updated_at'  => current_time( 'mysql' ),
 					),
@@ -635,7 +783,7 @@ class AUN_SP_Requests {
 					if ( 'quoted' === $new ) {
 						$became_quoted = true;
 					} else {
-						$changes[] = $cur->part_label . $qty_sfx . ': ' . $labels[ $new ];
+						$moves[ $new ][] = $cur->part_label . $qty_sfx;
 					}
 				}
 				if ( (int) $cur->qty !== $new_qty ) {
@@ -643,9 +791,23 @@ class AUN_SP_Requests {
 				}
 			}
 
+			// Describe the moves in the CUSTOMER's words (never the internal dropdown
+			// label), grouping the parts that landed on the same stage — "LCD screen,
+			// Power board: Ordered from the factory" is one SMS segment where two
+			// separate sentences would have been two.
+			$changes = array();
+			$detail  = array();
+			foreach ( $moves as $status_key => $part_names ) {
+				$names     = implode( ', ', $part_names );
+				$label     = AUN_SP_I18N::it_label( $status_key );
+				$help      = AUN_SP_I18N::it_help( $status_key );
+				$changes[] = $names . ': ' . $label;
+				$detail[]  = $names . ' - ' . $label . ( $help !== '' ? '. ' . $help : '.' );
+			}
+
 			$quote_note = sanitize_textarea_field( wp_unslash( $_POST['quote_note'] ?? '' ) );
 			$delivery_notice = '';
-			if ( isset( $_POST['delivery_charge'] ) ) {
+			if ( isset( $_POST['delivery_charge'] ) && ! $money_locked ) {
 				$charge = max( 0, round( (float) $_POST['delivery_charge'], 2 ) );
 				$wpdb->update( $t_req, array( 'delivery_charge' => $charge ), array( 'id' => $id ) );
 				// The order is built at approval, so a later edit has to be pushed onto
@@ -689,16 +851,21 @@ class AUN_SP_Requests {
 
 			$extra = '';
 			if ( ! empty( $_POST['notify'] ) ) {
-				if ( $overall !== $current ) {
-					// Overall moved (e.g. submitted → In progress): one status SMS. The
-					// per-part changes are passed along so {changes} works here too.
-					$extra = $this->sms_customer( $id, 'status', $overall, implode( ', ', $changes ) );
-				} elseif ( ! empty( $changes ) ) {
-					// Overall stayed the same (typically "In progress" for weeks) but
-					// individual parts DID move — previously NO SMS went out at all here,
-					// silently, despite the ticked "Text the customer" box. Now the
-					// customer gets a parts-update SMS listing what changed.
-					$extra = $this->sms_customer( $id, 'parts', $overall, implode( ', ', $changes ) );
+				if ( ! empty( $changes ) ) {
+					// THE PART YOU MOVED IS THE NEWS. The overall status is a coarse
+					// internal bucket — six different part stages (ordered / at factory /
+					// shipped / arrived / dispatched / delivered-in-part) all collapse into
+					// "In progress". Routing on the overall meant that setting a part to
+					// "Ordered from factory" right after an approval texted the customer
+					// "your request is now In progress", which tells them nothing and
+					// contradicts what was actually done. Whenever a part moved, the SMS
+					// now names the part and its new status ({changes} / {detail}); the
+					// coarse status is still available to the template as {status}.
+					$extra = $this->sms_customer( $id, 'parts', $overall, implode( ', ', $changes ), $detail );
+				} elseif ( $overall !== $current ) {
+					// No part moved but the request as a whole did (e.g. it re-derived
+					// after a customer action): the overall status IS the news here.
+					$extra = $this->sms_customer( $id, 'status', $overall, '' );
 				}
 			}
 			$moved = ( $overall !== $current ) ? ' Status is now &ldquo;' . esc_html( self::overall_statuses()[ $overall ] ?? $overall ) . '&rdquo;.' : '';
@@ -706,6 +873,19 @@ class AUN_SP_Requests {
 				$extra = ' No status changed, so no SMS was sent.';
 			}
 			return '<div class="notice notice-success is-dismissible"><p>Saved.' . $moved . $extra . $delivery_notice . '</p></div>';
+		}
+
+		// Record a refund the admin paid out by hand (the gateway can't refund via
+		// WooCommerce, so this is a record + status change, not an API call).
+		if ( isset( $_POST['aun_sp_refund_nonce'] ) && wp_verify_nonce( $_POST['aun_sp_refund_nonce'], 'aun_sp_refund' ) ) {
+			if ( ! AUN_SP_Woo::is_active() ) {
+				return '<div class="notice notice-error is-dismissible"><p>WooCommerce isn&rsquo;t active.</p></div>';
+			}
+			$amount = round( (float) ( $_POST['refund_amount'] ?? 0 ), 2 );
+			$ref    = sanitize_text_field( wp_unslash( $_POST['refund_ref'] ?? '' ) );
+			AUN_SP_Woo::record_refund( $id, $amount, $ref );
+			return '<div class="notice notice-success is-dismissible"><p>Refund of ৳' . esc_html( number_format_i18n( $amount, 2 ) )
+				. ' recorded. The order is marked refunded, the customer has been texted, and it now shows on their tracking page.</p></div>';
 		}
 
 		// Create the WooCommerce payment order by hand (recovery path).
@@ -967,8 +1147,13 @@ class AUN_SP_Requests {
 
 	/* --------------------------------------------------------------- Notifications */
 
-	/** SMS the customer about a status change or a rejection (Alpha SMS). */
-	private function sms_customer( $id, $type, $status_key, $reason ) {
+	/**
+	 * SMS the customer about a status change or a rejection (Alpha SMS).
+	 *
+	 * @param string   $reason  rejection text, or the {changes} list for a parts update
+	 * @param string[] $detail  optional full-sentence version of $reason, as {detail}
+	 */
+	private function sms_customer( $id, $type, $status_key, $reason, $detail = array() ) {
 		global $wpdb;
 		$t_req = AUN_SP_Install::table( 'requests' );
 		$r     = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current, model, quote_total FROM $t_req WHERE id = %d", $id ) );
@@ -993,13 +1178,15 @@ class AUN_SP_Requests {
 			$vars['total'] = number_format_i18n( (float) $r->quote_total, 2 );
 			$msg           = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_QUOTE ), $vars );
 		} elseif ( 'parts' === $type ) {
-			// Per-part progress while the overall status stays put — {changes} lists
-			// e.g. "LCD screen: Arrived, Motherboard: Shipped".
+			// Per-part progress — the normal update. {changes} is the short form
+			// ("LCD screen: Arrived at AUN, Dhaka"); {detail} adds the explanation
+			// sentence for admins who prefer a fuller (longer, pricier) SMS.
 			$vars['changes'] = $reason;
-			$vars['status']  = self::overall_statuses()[ $status_key ] ?? $status_key;
+			$vars['detail']  = implode( ' ', (array) $detail );
+			$vars['status']  = AUN_SP_I18N::ov_label( $status_key );
 			$msg             = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PARTS ), $vars );
 		} else {
-			$vars['status']  = self::overall_statuses()[ $status_key ] ?? $status_key;
+			$vars['status']  = AUN_SP_I18N::ov_label( $status_key );
 			$vars['changes'] = $reason; // available if the admin adds {changes} to the template
 			$msg             = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_STATUS ), $vars );
 		}

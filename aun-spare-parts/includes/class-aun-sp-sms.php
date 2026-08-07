@@ -33,6 +33,7 @@ class AUN_SP_SMS {
 		if ( $to === '' ) {
 			return array( 'success' => false, 'message' => 'No valid phone number.' );
 		}
+		$message = self::gsm_safe( $message );
 
 		// Prefer the OTP helper's sender (already battle-tested) when available.
 		if ( class_exists( 'AUN_Alpha_OTP_SMS' ) ) {
@@ -61,6 +62,32 @@ class AUN_SP_SMS {
 			'success' => $ok,
 			'message' => ( is_object( $json ) && isset( $json->msg ) ) ? (string) $json->msg : '',
 		);
+	}
+
+	/**
+	 * Swap typographic characters for their plain ASCII equivalents.
+	 *
+	 * An English SMS is 160 characters per part ONLY while every character is in the
+	 * GSM-7 alphabet. A single em dash or curly quote — the sort of thing that lands
+	 * in a message from a status label or a pasted note — silently drops the whole
+	 * message to UCS-2, i.e. 70 characters per part, so a one-part SMS becomes three.
+	 * Bangla is UCS-2 either way and is left untouched.
+	 */
+	public static function gsm_safe( $message ) {
+		$message = strtr( (string) $message, array(
+			'—' => '-', '–' => '-', '‑' => '-', '…' => '...',
+			'‘' => "'", '’' => "'", '“' => '"', '”' => '"',
+			'·' => '-', '→' => '->',
+		) );
+		// ৳ and × are not GSM-7 either, but they read naturally in a Bangla message —
+		// which is UCS-2 regardless, so swapping them there would cost nothing and gain
+		// nothing. Only drop them when they are the ONLY thing standing between this
+		// message and the 160-character alphabet.
+		$stripped = strtr( $message, array( '৳' => '', '×' => '' ) );
+		if ( ! preg_match( '/[^\x20-\x7E\r\n]/', $stripped ) ) {
+			$message = strtr( $message, array( '৳' => 'Tk ', '×' => 'x' ) );
+		}
+		return $message;
 	}
 
 	/* ------------------------------------------------------- Tracked send + background retry */

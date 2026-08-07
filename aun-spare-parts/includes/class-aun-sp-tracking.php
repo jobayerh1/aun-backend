@@ -324,6 +324,14 @@ class AUN_SP_Tracking {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
 		}
 
+		// Paying is a stronger "yes" than pressing Approve, so a customer who goes
+		// straight to payment (e.g. from the pay link we texted) approves the quote
+		// implicitly — otherwise the request would stay stuck awaiting a decision
+		// even after their money arrived.
+		if ( 'quote_sent' === $req->overall_status ) {
+			AUN_SP_Requests::customer_decision( (int) $req->id, 'approve', 'payment' );
+		}
+
 		$order_id = AUN_SP_Woo::create_order( (int) $req->id );
 		if ( ! $order_id ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );

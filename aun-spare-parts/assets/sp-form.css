@@ -218,8 +218,13 @@
 .aun-sp-track-model{font-size:13px;color:var(--aun-muted);margin-bottom:12px;}
 .aun-sp-track-reason{background:rgba(255,188,0,0.10);border:1px solid rgba(255,188,0,0.4);border-radius:10px;padding:10px 12px;font-size:14px;color:#9a6700;margin-bottom:12px;}
 .aun-sp-track-parts{display:flex;flex-direction:column;gap:8px;}
-.aun-sp-track-part{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--aun-border);border-radius:10px;}
+/* wrap: the status labels now name a place ("Shipped from the factory — on its
+   way to Bangladesh"), which no longer fits beside the part name on a phone. */
+.aun-sp-track-part{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--aun-border);border-radius:10px;}
+.aun-sp-track-part .aun-sp-warranty{white-space:normal;text-align:right;}
 .aun-sp-track-pname{font-size:14px;font-weight:600;}
+/* Plain-language explanation of the part's status, under its chip. */
+.aun-sp-track-help{font-size:13px;line-height:1.55;color:var(--aun-muted);margin:-3px 2px 2px;padding-left:12px;border-left:2px solid var(--aun-border);}
 .aun-sp-track-courier{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#0166c8;text-decoration:none;background:rgba(1,136,254,0.06);border:1px solid var(--aun-border);border-radius:8px;padding:7px 12px;margin-top:-2px;}
 .aun-sp-track-courier:hover{border-color:var(--aun-blue);background:rgba(1,136,254,0.12);}
 .aun-sp-track-courier::after{content:"↗";font-size:12px;color:var(--aun-muted);}
@@ -239,17 +244,30 @@
 .aun-sp-quote-total{display:flex;justify-content:space-between;gap:12px;font-size:16px;font-weight:700;color:var(--aun-ink);padding:10px 0 2px;}
 .aun-sp-quote-note{font-size:13px;color:var(--aun-muted);margin-top:8px;}
 .aun-sp-quote-pay{font-size:13px;color:#9a6700;background:rgba(255,188,0,0.10);border:1px solid rgba(255,188,0,0.4);border-radius:8px;padding:8px 12px;margin-top:10px;}
-/* Pay online / cash-on-delivery choice */
-.aun-sp-paychoice{margin-top:14px;padding-top:12px;border-top:1px solid var(--aun-border);}
+/* Decision / payment area — exactly one stage is ever on screen */
+.aun-sp-act{margin-top:16px;}
+.aun-sp-stage{border-top:1px solid var(--aun-border);padding-top:16px;}
+.aun-sp-stage-h{font-size:16px;font-weight:700;color:var(--aun-ink);margin-bottom:4px;}
+.aun-sp-stage-sub{font-size:13.5px;color:var(--aun-muted);line-height:1.55;margin-bottom:14px;}
+.aun-sp-stage-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.aun-sp-stage-actions .aun-sp-btn{flex:1 1 190px;}
+/* Approve is the confident path; Decline stays quiet but findable. */
+.aun-sp-btn-approve{background:#16a34a;}
+.aun-sp-btn-approve:hover{background:#12833b;}
+.aun-sp-btn-ghost{background:#fff;color:var(--aun-muted);border:1px solid var(--aun-border);}
+.aun-sp-btn-ghost:hover{background:var(--aun-bg);color:var(--aun-ink);border-color:var(--aun-muted);}
 .aun-sp-pay-btn{display:flex;width:100%;text-decoration:none;background:#16a34a;}
 .aun-sp-pay-btn:hover{background:#12833b;}
 .aun-sp-pay-btn:disabled{opacity:.6;}
-.aun-sp-quote-payhint{font-size:13px;color:var(--aun-muted);margin-top:8px;text-align:center;line-height:1.5;}
+.aun-sp-quote-payhint{font-size:13px;color:var(--aun-muted);margin-top:10px;text-align:center;line-height:1.55;}
 .aun-sp-quote-payhint.is-error{color:#b3261e;}
+/* Settled states: paid / refunded / declined */
+.aun-sp-act-note{border-top:1px solid var(--aun-border);padding-top:14px;margin-top:2px;font-size:14.5px;color:var(--aun-muted);line-height:1.6;}
+.aun-sp-act-note.is-ok{color:#16a34a;font-weight:600;border-top:0;padding-top:0;}
+.aun-sp-act-note.is-paid{border:0;padding:12px 14px;border-radius:10px;background:rgba(22,163,74,0.10);color:#16a34a;font-weight:700;text-align:center;}
+.aun-sp-act-note.is-refund{border:0;padding:12px 14px;border-radius:10px;background:rgba(1,136,254,0.08);color:#0166c8;font-weight:600;text-align:center;}
 .aun-sp-quote-paid{margin-top:12px;padding:10px 12px;border-radius:9px;background:rgba(22,163,74,0.10);color:#16a34a;font-size:14px;font-weight:700;text-align:center;}
 
-.aun-sp-quote-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
-.aun-sp-quote-actions .aun-sp-btn{flex:1 1 150px;}
 .aun-sp-btn-ghost{background:#fff;color:var(--aun-muted);}
 .aun-sp-btn-ghost:hover{background:var(--aun-bg);color:var(--aun-ink);}
 .aun-sp-quote-msg{display:block;margin-top:10px;font-size:14px;color:#16a34a;font-weight:600;}

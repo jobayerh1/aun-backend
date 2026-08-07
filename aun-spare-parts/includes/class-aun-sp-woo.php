@@ -46,6 +46,8 @@ class AUN_SP_Woo {
 		} );
 
 		add_action( 'woocommerce_order_status_changed', array( __CLASS__, 'on_status_changed' ), 10, 4 );
+		// Piggy-backs the existing daily cron.
+		add_action( 'aun_sp_daily_digest', array( __CLASS__, 'cancel_abandoned' ) );
 
 		// Paying an AUN order always lands on "processing" — never "completed" and
 		// never a custom status another plugin might prefer. Only the spare-parts
@@ -273,12 +275,24 @@ class AUN_SP_Woo {
 		if ( ! $order ) {
 			return null;
 		}
+		global $wpdb;
+		$r = $wpdb->get_row( $wpdb->prepare(
+			'SELECT refunded_at, refund_amount FROM ' . AUN_SP_Install::table( 'requests' ) . ' WHERE id = %d',
+			(int) $request_id
+		) );
+		$refunded = ( $r && ! empty( $r->refunded_at ) );
 		return array(
 			'number'  => $order->get_order_number(),
 			'total'   => number_format( (float) $order->get_total(), 2 ),
 			'paid'    => (bool) $order->is_paid(),
 			'method'  => $order->get_payment_method_title(),
 			'pay_url' => $order->needs_payment() ? $order->get_checkout_payment_url() : '',
+			// Refund state, so a customer whose request was cancelled after paying can
+			// see the money coming back instead of having to chase us for it.
+			'refunded'      => $refunded,
+			'refund_amount' => $refunded ? number_format( (float) $r->refund_amount, 2 ) : '',
+			'refund_date'   => $refunded ? date_i18n( 'j M Y', strtotime( $r->refunded_at ) ) : '',
+			'refund_due'    => self::refund_due( $request_id ),
 		);
 	}
 
@@ -297,9 +311,106 @@ class AUN_SP_Woo {
 		if ( 'closed' === $sp_status && $order->is_paid() && ! $order->has_status( 'completed' ) ) {
 			$order->update_status( 'completed', 'Spare-parts request marked Completed.' );
 			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' marked Completed (request delivered)' );
-		} elseif ( in_array( $sp_status, array( 'rejected', 'declined' ), true ) && ! $order->is_paid() && ! $order->has_status( array( 'cancelled', 'refunded' ) ) ) {
-			$order->update_status( 'cancelled', 'Spare-parts request ' . $sp_status . '.' );
-			self::log( $request_id, 'wc_order', 'Unpaid order #' . $order->get_order_number() . ' cancelled (request ' . $sp_status . ')' );
+		} elseif ( in_array( $sp_status, array( 'rejected', 'declined' ), true ) ) {
+			if ( $order->is_paid() ) {
+				// Money already taken — cancelling here would hide that a refund is owed.
+				self::log( $request_id, 'refund', 'REFUND DUE — ৳' . number_format_i18n( (float) $order->get_total(), 2 )
+					. ' was paid online and the request is now ' . $sp_status . '.' );
+			} elseif ( ! $order->has_status( array( 'cancelled', 'refunded' ) ) ) {
+				$order->update_status( 'cancelled', 'Spare-parts request ' . $sp_status . '.' );
+				self::log( $request_id, 'wc_order', 'Unpaid order #' . $order->get_order_number() . ' cancelled (request ' . $sp_status . ')' );
+			}
+		}
+	}
+
+	/**
+	 * Is money owed back to this customer? True once a PAID request is rejected or
+	 * declined and no refund has been recorded yet.
+	 *
+	 * Their gateway cannot refund through WooCommerce's API, so refunds are made by
+	 * hand (bKash/bank) and recorded here — the record is what the customer sees, and
+	 * what stops a cancelled request looking like it swallowed their money.
+	 */
+	public static function refund_due( $request_id ) {
+		global $wpdb;
+		$r = $wpdb->get_row( $wpdb->prepare(
+			'SELECT overall_status, refunded_at FROM ' . AUN_SP_Install::table( 'requests' ) . ' WHERE id = %d',
+			(int) $request_id
+		) );
+		if ( ! $r || ! empty( $r->refunded_at ) ) {
+			return false;
+		}
+		if ( ! in_array( $r->overall_status, array( 'rejected', 'declined' ), true ) ) {
+			return false;
+		}
+		$order = self::order_for( $request_id );
+		return ( $order && $order->is_paid() );
+	}
+
+	/**
+	 * Record a refund the admin has already paid out by hand. Sets the WooCommerce
+	 * order to refunded (status only — no gateway call, which this gateway cannot do),
+	 * writes it to the activity trail the customer reads, and texts them.
+	 */
+	public static function record_refund( $request_id, $amount, $reference = '' ) {
+		global $wpdb;
+		$t_req  = AUN_SP_Install::table( 'requests' );
+		$order  = self::order_for( $request_id );
+		$amount = round( (float) $amount, 2 );
+		if ( $amount <= 0 && $order ) {
+			$amount = (float) $order->get_total();
+		}
+
+		$wpdb->update( $t_req, array(
+			'refunded_at'   => current_time( 'mysql' ),
+			'refund_amount' => $amount,
+			'refund_ref'    => sanitize_text_field( $reference ),
+			'updated_at'    => current_time( 'mysql' ),
+		), array( 'id' => (int) $request_id ) );
+
+		if ( $order && ! $order->has_status( 'refunded' ) ) {
+			$order->update_status( 'refunded', 'Refunded manually outside the gateway' . ( $reference ? ' (ref ' . $reference . ')' : '' ) . '.' );
+		}
+
+		self::log( $request_id, 'refund', 'Refund of ৳' . number_format_i18n( $amount, 2 ) . ' issued to the customer'
+			. ( $reference ? ' (reference ' . $reference . ')' : '' ) );
+
+		$r = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current FROM $t_req WHERE id = %d", (int) $request_id ) );
+		if ( $r && $r->phone_current !== '' && AUN_SP_SMS::is_configured() ) {
+			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REFUND ), array(
+				'ref'   => $r->ref,
+				'total' => number_format_i18n( $amount, 2 ),
+				'track' => AUN_SP_Messages::track_link( $r->ref ),
+			) );
+			AUN_SP_SMS::send_tracked( (int) $request_id, $r->phone_current, $msg, 'refund confirmation' );
+		}
+		return true;
+	}
+
+	/**
+	 * Daily tidy-up: cancel our own pending orders that were opened and abandoned.
+	 * WooCommerce's built-in unpaid-order cron only touches orders created via
+	 * checkout, so ours would otherwise sit "pending payment" for ever. Cancelling is
+	 * harmless — pressing "Pay online" again simply builds a fresh order.
+	 */
+	public static function cancel_abandoned() {
+		global $wpdb;
+		if ( ! self::is_active() ) {
+			return;
+		}
+		$hours = max( 1, (int) apply_filters( 'aun_sp_abandoned_pay_hours', 72 ) );
+		$cut   = time() - $hours * HOUR_IN_SECONDS;
+		$rows  = $wpdb->get_results( 'SELECT id, wc_order_id FROM ' . AUN_SP_Install::table( 'requests' ) . ' WHERE wc_order_id > 0' );
+		foreach ( (array) $rows as $row ) {
+			$order = wc_get_order( (int) $row->wc_order_id );
+			if ( ! $order || ! $order->has_status( 'pending' ) ) {
+				continue;
+			}
+			$modified = $order->get_date_modified();
+			if ( $modified && $modified->getTimestamp() < $cut ) {
+				$order->update_status( 'cancelled', 'Online payment not completed within ' . $hours . ' hours.' );
+				self::log( (int) $row->id, 'wc_order', 'Abandoned payment order #' . $order->get_order_number() . ' cancelled — the customer can start payment again any time.' );
+			}
 		}
 	}
 
