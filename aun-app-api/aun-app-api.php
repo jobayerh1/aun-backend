@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.69.0
+ * Version:           1.78.1
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.69.0' );
+define( 'AUN_APP_API_VERSION', '1.78.1' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -32,7 +32,9 @@ define( 'AUN_APP_API_VERSION', '1.69.0' );
 // an ineligible buyer cannot).
 // v17 = aun_app_tokens.fcm_build (which notification channels that
 // phone's app actually has — Android drops pushes naming unknown ones).
-define( 'AUN_APP_API_DB_VERSION', '17' );
+// v18 = aun_app_content.changelog ("what's new" in a firmware release —
+// the reason to install it, kept apart from the steps that say how).
+define( 'AUN_APP_API_DB_VERSION', '18' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -96,6 +98,20 @@ function aun_app_api_default_options() {
 	return array(
 		'whatsapp_number'     => '',          // e.g. 8801XXXXXXXXX (digits only, used in wa.me link).
 		'support_phone'       => '',          // Tap-to-call number shown in the app.
+		// Where a customer posts a projector once we approve their repair
+		// request. Until these are filled the app says "we will message you
+		// the address" rather than inventing one.
+		'repair_ship_name'    => '',
+		'repair_ship_phone'   => '',
+		'repair_ship_address' => '',
+		'repair_ship_note'    => '',          // Anything specific to your counter/hours.
+		// Pathao's booking form asks for City / Zone / Area as DROPDOWNS, and
+		// picking the wrong one is the single most common way a parcel goes to
+		// the wrong hub. These are the exact option names to choose, mirroring
+		// the same block already on the website.
+		'repair_ship_city'    => '',
+		'repair_ship_zone'    => '',
+		'repair_ship_area'    => '',
 		'support_hours'       => 'Sat–Thu, 10am–8pm',
 		'facebook_url'        => '',
 		'website_url'         => '',          // Blank = home_url().
@@ -104,6 +120,7 @@ function aun_app_api_default_options() {
 		'latest_version_code' => 1,           // Newest APK build number.
 		'latest_version_name' => '1.0.0',
 		'apk_url'             => '',          // Direct APK download (pre-Play-Store distribution).
+		'release_notes'       => '',          // "What's new" shown in the app's update sheet.
 		'min_version_code'    => 1,           // Builds older than this are forced to update.
 		'discount_note'       => '',          // e.g. "App-only discount: use code APP5"
 		'token_days'          => 180,         // Login token lifetime in days.
@@ -267,6 +284,7 @@ function aun_app_api_activate() {
 		model_id bigint(20) unsigned DEFAULT 0,
 		title varchar(191) NOT NULL,
 		description text,
+		changelog text,
 		url varchar(500) DEFAULT '',
 		version varchar(50) DEFAULT '',
 		file_size varchar(30) DEFAULT '',
@@ -540,6 +558,14 @@ function aun_app_api_activate() {
 		$wpdb->query( "ALTER TABLE $content ADD COLUMN app_downloadable tinyint(1) NOT NULL DEFAULT 1" );
 	}
 
+	// v18: "What's new" for a firmware release. Separate from `description`
+	// (the installation steps) because they answer different questions asked at
+	// different moments — "should I install this?" comes before "how?", and
+	// burying the reason under the instructions is why nobody reads it.
+	if ( ! in_array( 'changelog', $content_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $content ADD COLUMN changelog text NULL AFTER description" );
+	}
+
 	if ( false === get_option( AUN_APP_API_OPTION, false ) ) {
 		add_option( AUN_APP_API_OPTION, aun_app_api_default_options() );
 	}
@@ -647,6 +673,12 @@ add_action( 'aun_app_repair_poll', 'aun_app_api_repair_poll_cron' );
 // customer by SMS. This bridges its status changes into the app's notification
 // centre + push — above all "quote sent", which the customer must answer.
 add_action( 'aun_sp_status_changed', array( 'AUN_App_Services', 'on_parts_status_changed' ), 10, 2 );
+
+// Spare parts 0.31.0 chases an unanswered quote by SMS on two days before it
+// lapses. The app is where the customer can answer with one tap, so each nudge
+// is mirrored there too — and NOT on any other day, or the app would be adding
+// a chase the ladder was designed not to have.
+add_action( 'aun_sp_quote_reminder', array( 'AUN_App_Services', 'on_parts_quote_reminder' ), 10, 2 );
 
 // The planner catalogue is cached for hours, so editing a projector's throw
 // ratio would otherwise not reach the app until the cache expired — long enough

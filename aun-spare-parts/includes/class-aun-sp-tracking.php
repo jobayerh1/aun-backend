@@ -23,6 +23,36 @@ class AUN_SP_Tracking {
 		// page. Not choosing this simply leaves the request as cash on delivery.
 		add_action( 'wp_ajax_aun_sp_pay',             array( $this, 'ajax_pay' ) );
 		add_action( 'wp_ajax_nopriv_aun_sp_pay',      array( $this, 'ajax_pay' ) );
+		// "I still want this part" on an expired quote — asks us for a fresh price.
+		add_action( 'wp_ajax_aun_sp_revive',          array( $this, 'ajax_revive' ) );
+		add_action( 'wp_ajax_nopriv_aun_sp_revive',   array( $this, 'ajax_revive' ) );
+	}
+
+	/**
+	 * The customer asks us to re-quote an expired quote.
+	 *
+	 * Rate-limited and state-claimed inside revive_quote(), so repeat taps can't spam
+	 * the admin mailbox or reopen anything that isn't actually expired.
+	 */
+	public function ajax_revive() {
+		$this->check_nonce();
+		if ( ! $this->rate_ok( 'revive', 10 ) ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_busy' ) ), 429 );
+		}
+
+		global $wpdb;
+		$ref = strtoupper( sanitize_text_field( wp_unslash( $_POST['ref'] ?? '' ) ) );
+		$t   = AUN_SP_Install::table( 'requests' );
+		$id  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE ref = %s LIMIT 1", $ref ) );
+		if ( ! $id ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) ) );
+		}
+
+		$res = AUN_SP_Requests::revive_quote( $id, 'web' );
+		if ( empty( $res['ok'] ) ) {
+			wp_send_json_error( array( 'message' => $res['message'], 'code' => $res['code'] ) );
+		}
+		wp_send_json_success( array( 'message' => $res['message'] ) );
 	}
 
 	/** Render one string in the language the SITE is showing (TranslatePress-aware —
@@ -126,7 +156,10 @@ class AUN_SP_Tracking {
 					'tracking_url' => ( ! empty( $it->tracking_no ) ) ? 'https://merchant.pathao.com/public-tracking?consignment_id=' . rawurlencode( $it->tracking_no ) : '',
 				);
 			}
-			$ev       = $wpdb->get_results( $wpdb->prepare( "SELECT type, message, created_at FROM $t_event WHERE request_id = %d AND type NOT IN ('sms','contact_changed') ORDER BY id ASC LIMIT 40", $r->id ) );
+			// 'quote_reminder' is excluded like 'sms': it records that WE chased THEM,
+			// which reads as nagging on the customer's own progress list (and tells them
+			// nothing about the parts). The expiry and the re-quote request do show.
+			$ev       = $wpdb->get_results( $wpdb->prepare( "SELECT type, message, created_at FROM $t_event WHERE request_id = %d AND type NOT IN ('sms','contact_changed','quote_reminder') ORDER BY id ASC LIMIT 40", $r->id ) );
 			$timeline = array();
 			foreach ( (array) $ev as $e ) {
 				$timeline[] = array(
@@ -158,14 +191,27 @@ class AUN_SP_Tracking {
 				// is live, and WooCommerce is available. Cash on delivery is simply
 				// what happens when they don't take this option.
 				'can_pay'      => ( $money > 0 && AUN_SP_Woo::is_active()
-					&& ! in_array( $r->overall_status, array( 'rejected', 'declined' ), true ) ),
+					&& ! in_array( $r->overall_status, array( 'rejected', 'declined', 'expired' ), true ) ),
+				// An unanswered quote carries a deadline: the customer needs to see it
+				// next to the Approve button, not only in the SMS they may have lost.
+				'expires'      => ( 'quote_sent' === $r->overall_status && ! empty( $r->quote_expires_at ) )
+					? date_i18n( 'j M Y', strtotime( (string) $r->quote_expires_at ) ) : '',
+				'days_left'    => ( 'quote_sent' === $r->overall_status && ! empty( $r->quote_expires_at ) )
+					? max( 0, (int) ceil( ( strtotime( (string) $r->quote_expires_at ) - current_time( 'timestamp' ) ) / DAY_IN_SECONDS ) ) : null,
+				// Expired = they never answered (NOT declined). One tap puts it back in
+				// front of us for a fresh price, which is the whole point of expiring
+				// rather than rejecting.
+				'expired'      => ( 'expired' === $r->overall_status ),
+				// Declined = they said no. Also recoverable, because Decline is one tap
+				// away from Approve on a phone and was previously irreversible.
+				'declined'     => ( 'declined' === $r->overall_status ),
 				// Delivery is charged on the order, so it must appear here too —
 				// otherwise the block totals ৳3,400 while the Pay button says ৳3,520.
 				'delivery'     => ( isset( $r->delivery_charge ) && (float) $r->delivery_charge > 0 ) ? number_format( (float) $r->delivery_charge, 2 ) : '',
 				'quote'        => ( $money > 0 ) ? array(
 					'total'    => number_format( $money + ( isset( $r->delivery_charge ) ? (float) $r->delivery_charge : 0 ), 2 ),
 					'note'     => (string) $r->quote_note,
-					'pay'      => in_array( $r->overall_status, array( 'declined', 'rejected', 'closed' ), true ) ? '' : AUN_SP_Messages::pay_info(),
+					'pay'      => in_array( $r->overall_status, array( 'declined', 'rejected', 'closed', 'expired' ), true ) ? '' : AUN_SP_Messages::pay_info(),
 					'awaiting' => ( 'quote_sent' === $r->overall_status ),
 				) : null,
 				'timeline'     => $timeline,
@@ -319,8 +365,10 @@ class AUN_SP_Tracking {
 		if ( ! $req ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) ) );
 		}
-		// Nothing to pay on a request we've closed off.
-		if ( in_array( $req->overall_status, array( 'rejected', 'declined' ), true ) ) {
+		// Nothing to pay on a request we've closed off — including an EXPIRED quote,
+		// which was missing here: the pay button is hidden for it, but the customer
+		// still holds the pay link we texted, and this endpoint is the real gate.
+		if ( AUN_SP_Requests::is_cancelled( $req->overall_status ) ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
 		}
 

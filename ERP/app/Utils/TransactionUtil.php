@@ -5017,6 +5017,8 @@ class TransactionUtil extends Util
                         'transactions.payment_status',
                         'transactions.final_total',
                         'BS.name as location_name',
+                        //CUSTOM: human-readable Location ID (e.g. "AUN") for its own column
+                        'BS.location_id as business_location_id',
                         'transactions.pay_term_number',
                         'transactions.pay_term_type',
                         'PR.id as return_transaction_id',
@@ -5175,6 +5177,10 @@ class TransactionUtil extends Util
                     DB::raw('(SELECT SUM(IF(TP.is_return = 1,-1*TP.amount,TP.amount)) FROM transaction_payments AS TP WHERE
                         TP.transaction_id=transactions.id) as total_paid'),
                     'bl.name as business_location',
+                    //CUSTOM: human-readable Location ID (e.g. "AUN") shown as its
+                    //own column in the sales list so staff can identify the store
+                    //at a glance. Aliased to avoid clashing with transactions.location_id.
+                    'bl.location_id as business_location_id',
                     DB::raw('COUNT(SR.id) as return_exists'),
                     DB::raw('(SELECT SUM(TP2.amount) FROM transaction_payments AS TP2 WHERE
                         TP2.transaction_id=SR.id ) as return_paid'),

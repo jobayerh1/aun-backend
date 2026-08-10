@@ -2,14 +2,14 @@
 /**
  * Plugin Name: AUN Spare Parts
  * Description: Spare-parts request intake + per-part tracking for AUN Projector. Reads sales/warranty from the UltimatePOS ERP and a legacy inFlow sales archive; lets customers request parts (no device sent in) and track each part. Phase 1: legacy import + phone/order/serial lookup + warranty calc + image compression.
- * Version: 0.30.0
+ * Version: 0.32.0
  * Author: Smart Living Bangladesh
  * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SP_VERSION', '0.30.0' );
+define( 'AUN_SP_VERSION', '0.32.0' );
 define( 'AUN_SP_FILE', __FILE__ );
 define( 'AUN_SP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SP_URL', plugin_dir_url( __FILE__ ) );
@@ -97,6 +97,10 @@ register_activation_hook( __FILE__, array( 'AUN_SP_Install', 'activate' ) );
 
 // Daily digest email to the admin (open / waiting / overdue).
 add_action( 'aun_sp_daily_digest', array( 'AUN_SP_Requests', 'send_digest' ) );
+
+// Daily: chase unanswered quotes, then expire them. Runs BEFORE the digest is
+// composed (priority 5) so today's expiries are reflected in today's email.
+add_action( 'aun_sp_daily_digest', array( 'AUN_SP_Requests', 'process_quotes' ), 5 );
 
 // Background retry for failed customer SMS (Alpha busy/down) — scheduled by AUN_SP_SMS::send_tracked.
 add_action( 'aun_sp_sms_retry', array( 'AUN_SP_SMS', 'retry' ), 10, 5 );

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SP_Install {
 
-	const DB_VERSION = '9';
+	const DB_VERSION = '10';
 
 	/** Fully-qualified table name for a given short key. */
 	public static function table( $name ) {
@@ -82,6 +82,8 @@ class AUN_SP_Install {
 			refunded_at DATETIME NULL,
 			refund_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
 			refund_ref VARCHAR(96) NOT NULL DEFAULT '',
+			quote_expires_at DATETIME NULL,
+			quote_reminders TINYINT UNSIGNED NOT NULL DEFAULT 0,
 			created_at DATETIME NULL,
 			updated_at DATETIME NULL,
 			PRIMARY KEY  (id),
@@ -153,15 +155,79 @@ class AUN_SP_Install {
 			AUN_SP_Messages::seed();
 			// Push newer default reject reasons to sites that already have a saved set.
 			AUN_SP_Messages::ensure_reject_template( 'Duplicate request' );
+			// The quote SMS now states that nothing is ordered until they approve, and
+			// carries the validity date — the two things whose absence let a quote go
+			// unanswered. Only sites still on the old wording are updated.
+			AUN_SP_Messages::upgrade_default(
+				AUN_SP_Messages::OPT_SMS_QUOTE,
+				'AUN: your spare-parts quote for {ref} is ready - total Tk {total}. Please review and approve it here: {track}'
+			);
 		}
 
 		self::backfill_phones();
+		// Quotes sent before this version have no deadline: give each one a date
+		// counted from the day it was sent, so an old unanswered quote is chased and
+		// expired on the same clock as a new one instead of hanging for ever.
+		self::backfill_quote_expiry();
 
 		if ( ! wp_next_scheduled( 'aun_sp_daily_digest' ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'aun_sp_daily_digest' );
 		}
 
 		update_option( 'aun_sp_db_version', self::DB_VERSION );
+	}
+
+	/**
+	 * Give every already-sent, still-unanswered quote a deadline.
+	 *
+	 * Idempotent: only rows with no deadline are touched. A quote whose backfilled
+	 * date is already in the past is deliberately NOT expired here — the daily cron
+	 * does that, so the customer gets the "your quote has expired" text rather than
+	 * silently finding it dead the next time they open the link.
+	 */
+	public static function backfill_quote_expiry() {
+		global $wpdb;
+		$t    = self::table( 'requests' );
+		$days = (int) get_option( 'aun_sp_quote_valid_days', 7 );
+		if ( $days < 1 ) {
+			return 0;
+		}
+		$rows = $wpdb->get_results(
+			"SELECT id, quoted_at FROM $t
+			 WHERE overall_status = 'quote_sent' AND quoted_at IS NOT NULL AND quote_expires_at IS NULL"
+		);
+		$n = 0;
+		foreach ( (array) $rows as $r ) {
+			$ts = strtotime( (string) $r->quoted_at );
+			if ( ! $ts ) {
+				continue;
+			}
+			$wpdb->update( $t, array( 'quote_expires_at' => date( 'Y-m-d H:i:s', $ts + $days * DAY_IN_SECONDS ) ), array( 'id' => (int) $r->id ) );
+			$n++;
+		}
+		return $n;
+	}
+
+	/**
+	 * Give every still-unanswered quote a deadline of N days FROM NOW.
+	 *
+	 * Used when the validity setting changes (including 0 → N). Counting from the
+	 * original send date would be retroactive: quotes sent under "no deadline" terms
+	 * would all lapse on the next cron run and text every one of those customers.
+	 *
+	 * @return int rows re-dated
+	 */
+	public static function date_open_quotes( $days ) {
+		global $wpdb;
+		$days = (int) $days;
+		if ( $days < 1 ) {
+			return 0;
+		}
+		$t = self::table( 'requests' );
+		return (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $t SET quote_expires_at = %s WHERE overall_status = 'quote_sent'",
+			date( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS )
+		) );
 	}
 
 	/**

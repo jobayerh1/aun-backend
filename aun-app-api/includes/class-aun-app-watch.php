@@ -445,6 +445,147 @@ class AUN_App_Watch {
 	 *
 	 * @return array[]
 	 */
+	/** How long one linked title's TMDB metadata is kept. */
+	const LOCAL_META_TTL = 7 * DAY_IN_SECONDS;
+
+	/**
+	 * Search TMDB by title, for the admin's "find this film" box.
+	 *
+	 * Exists so nobody has to leave WordPress, open themoviedb.org, find the
+	 * film and copy a number out of its URL — a five-step errand where the only
+	 * hard part is not mistyping the id. `include_adult` is off, and the query
+	 * is not restricted by language: Bangladeshi titles are often filed under
+	 * their English name.
+	 *
+	 * @return array[] {id, type, title, year, poster, overview}
+	 */
+	public static function search( $query, $limit = 8 ) {
+		$query = trim( (string) $query );
+		if ( '' === $query ) {
+			return array();
+		}
+
+		$res = self::tmdb(
+			'/search/multi',
+			array( 'query' => $query, 'include_adult' => 'false' )
+		);
+
+		$out = array();
+		foreach ( (array) ( $res['results'] ?? array() ) as $r ) {
+			$type = (string) ( $r['media_type'] ?? '' );
+			// People come back from /search/multi too, and a director is not
+			// something you can put on the Home rail.
+			if ( 'movie' !== $type && 'tv' !== $type ) {
+				continue;
+			}
+			$date  = (string) ( $r['release_date'] ?? $r['first_air_date'] ?? '' );
+			$out[] = array(
+				'id'       => (int) ( $r['id'] ?? 0 ),
+				'type'     => $type,
+				'title'    => (string) ( $r['title'] ?? $r['name'] ?? '' ),
+				// The original title disambiguates the remakes and the
+				// same-name films that make picking the right row hard.
+				'original' => (string) ( $r['original_title'] ?? $r['original_name'] ?? '' ),
+				'year'     => '' !== $date ? substr( $date, 0, 4 ) : '',
+				'poster'   => empty( $r['poster_path'] ) ? '' : self::POSTER_BASE . (string) $r['poster_path'],
+				'overview' => (string) ( $r['overview'] ?? '' ),
+			);
+			if ( count( $out ) >= (int) $limit ) {
+				break;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Fill an admin-curated pick with the TMDB metadata for a linked title.
+	 *
+	 * @param array  $row  The curated row (platform + url are the admin's).
+	 * @param string $link "movie:1044789" or "tv:12345"; a bare number = movie.
+	 */
+	private static function hydrate_local( $row, $link ) {
+		if ( ! preg_match( '/^(?:(movie|tv):)?(\d+)$/i', $link, $m ) ) {
+			return $row;
+		}
+		$type = strtolower( $m[1] ?: 'movie' );
+		$id   = (int) $m[2];
+
+		// ⚠️ local_picks() is deliberately NEVER cached — end dates have to take
+		// effect the moment they pass. So the CACHE LIVES HERE, per title:
+		// without it every single app launch would spend a TMDB round trip per
+		// curated pick, on the customer's own request.
+		$key  = 'aun_app_watch_meta_' . $type . '_' . $id;
+		$meta = get_transient( $key );
+
+		if ( ! is_array( $meta ) ) {
+			$d = self::tmdb( "/$type/$id", array( 'append_to_response' => 'videos,credits' ) );
+			if ( ! is_array( $d ) || empty( $d['id'] ) ) {
+				// A dead id, a missing API key, TMDB down — the pick still works
+				// as the poster-and-link it was before. Cached briefly so a
+				// broken id cannot retry on every launch.
+				set_transient( $key, array( 'ok' => false ), HOUR_IN_SECONDS );
+				return $row;
+			}
+
+			$detail = self::title_detail( $type, $id );
+			$date   = (string) ( $d['release_date'] ?? $d['first_air_date'] ?? '' );
+
+			$meta = array(
+				'ok'       => true,
+				'title'    => (string) ( $d['title'] ?? $d['name'] ?? '' ),
+				'overview' => (string) ( $d['overview'] ?? '' ),
+				'poster'   => empty( $d['poster_path'] ) ? '' : self::POSTER_BASE . (string) $d['poster_path'],
+				'backdrop' => empty( $d['backdrop_path'] ) ? '' : self::BACKDROP_BASE . (string) $d['backdrop_path'],
+				'year'     => '' !== $date ? substr( $date, 0, 4 ) : '',
+				'rating'   => round( (float) ( $d['vote_average'] ?? 0 ), 1 ),
+				'kind'     => ( 'tv' === $type ) ? 'series' : 'movie',
+				'genres'   => $detail['genres'],
+				'runtime'  => $detail['runtime'],
+				'tagline'  => $detail['tagline'],
+				'cast'     => $detail['cast'],
+				'trailer'  => $detail['trailer'],
+			);
+			set_transient( $key, $meta, self::LOCAL_META_TTL );
+		}
+
+		if ( empty( $meta['ok'] ) ) {
+			return $row;
+		}
+
+		foreach ( array( 'overview', 'backdrop', 'year', 'rating', 'kind', 'genres', 'runtime', 'tagline', 'cast', 'trailer' ) as $f ) {
+			$row[ $f ] = $meta[ $f ];
+		}
+
+		// ⚠️ The admin's own title, platform and URL always win. TMDB knows the
+		// film; it does not know that WE are pointing people at Chorki, and an
+		// English TMDB title must not replace a Bangla one the admin typed.
+		// Their poster wins too when they set one — a local promo still beats a
+		// generic key art.
+		if ( '' === $row['poster'] ) {
+			$row['poster'] = (string) $meta['poster'];
+		}
+		if ( '' === trim( (string) $row['title'] ) ) {
+			$row['title'] = (string) $meta['title'];
+		}
+
+		return $row;
+	}
+
+	/**
+	 * Drop the cached metadata for every linked title.
+	 *
+	 * Called when the picks are saved, so correcting a wrong id shows the right
+	 * film immediately instead of a week later.
+	 */
+	public static function flush_local_meta() {
+		global $wpdb;
+		$wpdb->query(
+			"DELETE FROM {$wpdb->options}
+			 WHERE option_name LIKE '_transient_aun_app_watch_meta_%'
+			    OR option_name LIKE '_transient_timeout_aun_app_watch_meta_%'"
+		);
+	}
+
 	private static function local_picks() {
 		$raw   = (string) ( aun_app_api_get_options()['watch_local_picks'] ?? '' );
 		$today = current_time( 'Y-m-d' );
@@ -459,14 +600,14 @@ class AUN_App_Watch {
 			if ( '' !== $end && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end ) && $end < $today ) {
 				continue;
 			}
-			$out[] = array(
+			$row = array(
 				'title'    => $parts[0],
 				'platform' => $parts[1],
 				'url'      => esc_url_raw( $parts[2] ),
 				'poster'   => isset( $parts[3] ) && '' !== $parts[3] ? esc_url_raw( $parts[3] ) : '',
 				'local'    => true,
-				// Local picks have no TMDB metadata — the app opens them directly
-				// (no in-app detail screen).
+				// Filled in below when the admin linked a TMDB title. Without
+				// one the pick is a poster and a link, and the app opens it.
 				'overview' => '',
 				'backdrop' => '',
 				'year'     => '',
@@ -478,6 +619,18 @@ class AUN_App_Watch {
 				'cast'     => array(),
 				'trailer'  => '',
 			);
+
+			// The 6th field links this pick to a TMDB title ("movie:1044789").
+			// Bangladeshi cinema IS on TMDB — Hawa, Poran, Surongo and the rest
+			// — it simply is not in the trending feed, which is why these are
+			// curated. Linking one gives a Chorki or Bioscope title exactly the
+			// same screen a global pick gets: synopsis, cast, trailer, runtime.
+			$link = isset( $parts[5] ) ? trim( $parts[5] ) : '';
+			if ( '' !== $link ) {
+				$row = self::hydrate_local( $row, $link );
+			}
+
+			$out[] = $row;
 		}
 		return $out;
 	}

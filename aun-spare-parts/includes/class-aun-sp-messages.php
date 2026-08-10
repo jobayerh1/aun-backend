@@ -30,6 +30,10 @@ class AUN_SP_Messages {
 	const OPT_SMS_PAY      = 'aun_sp_sms_pay';
 	const OPT_SMS_PAID     = 'aun_sp_sms_paid';
 	const OPT_SMS_REFUND   = 'aun_sp_sms_refund';
+	const OPT_SMS_REMIND   = 'aun_sp_sms_remind';
+	const OPT_SMS_REMIND2  = 'aun_sp_sms_remind_final';
+	const OPT_SMS_EXPIRED  = 'aun_sp_sms_expired';
+	const OPT_SMS_DECLINED = 'aun_sp_sms_declined';
 	const OPT_REJECT_TPL   = 'aun_sp_reject_templates';
 	const OPT_PAY_INFO     = 'aun_sp_pay_info';
 
@@ -41,12 +45,47 @@ class AUN_SP_Messages {
 			self::OPT_SMS_PARTS    => 'AUN: update on your spare-parts request {ref} — {changes}. Track it: {track}',
 			self::OPT_SMS_REJECT   => 'AUN: update on your spare-parts request {ref}. {reason} {coupon}',
 			self::OPT_SMS_PHOTO    => 'AUN: the photo for request {ref} needs to be clearer. Please open the link, take it just like the example shown, and re-upload: {track}',
-			self::OPT_SMS_QUOTE    => 'AUN: your spare-parts quote for {ref} is ready - total Tk {total}. Please review and approve it here: {track}',
+			// "Nothing is ordered until you approve" is the sentence that stops a quote
+			// going quiet — customers assume asking for the part was the whole job.
+			self::OPT_SMS_QUOTE    => 'AUN: your spare-parts quote for {ref} is ready - total Tk {total}. Nothing is ordered until you approve it here: {track} (valid until {expires})',
 			self::OPT_SMS_APPROVED => 'AUN: thank you, your quote for {ref} is approved. We will now start sourcing your parts. {pay}',
 			self::OPT_SMS_PAY      => 'AUN: to pay online for {ref} (Tk {total}), open this link: {link}',
 			self::OPT_SMS_PAID     => 'AUN: payment of Tk {total} received for {ref} - thank you. Track it: {track}',
 			self::OPT_SMS_REFUND   => 'AUN: we have refunded Tk {total} for {ref}. It should reach your account shortly. Details: {track}',
+			// The nudges say the thing the quote itself did not: nothing is ordered
+			// until they answer. That misunderstanding is the usual reason a quote
+			// goes quiet — the customer thinks asking was enough.
+			self::OPT_SMS_REMIND   => 'AUN: reminder about your spare-parts quote {ref} - Tk {total}. We have NOT ordered your part yet; we start only after you approve. Approve here: {track} (valid until {expires})',
+			self::OPT_SMS_REMIND2  => 'AUN: last reminder - your spare-parts quote {ref} (Tk {total}) expires on {expires} and your part has not been ordered. Approve here: {track} - or reply to this number if you have a question.',
+			self::OPT_SMS_EXPIRED  => 'AUN: your spare-parts quote {ref} has expired as we did not hear back, so nothing was ordered. Still want the part? Tap here and we will re-quote: {track}',
+			// A decline gets a written acknowledgement too — partly courtesy, mostly
+			// because a mis-tap on a phone is otherwise silent and unrecoverable: this
+			// is the customer's only signal that it happened, and their way back.
+			self::OPT_SMS_DECLINED => 'AUN: we have cancelled your spare-parts quote {ref} as requested - nothing was ordered and nothing is owed. Tapped by mistake, or changed your mind? You can ask us for a new quote here: {track}',
 		);
+	}
+
+	/**
+	 * Replace a saved template ONLY if it still matches a superseded default.
+	 *
+	 * seed() writes defaults into options on first install, so a later improvement to
+	 * the default wording never reaches an existing site. This pushes it to sites that
+	 * never customised that message, and leaves an admin's own edit strictly alone.
+	 */
+	public static function upgrade_default( $key, $old_default ) {
+		$saved = get_option( $key, null );
+		if ( null === $saved ) {
+			return false; // never seeded — sms() already serves the current default
+		}
+		if ( trim( (string) $saved ) !== trim( (string) $old_default ) ) {
+			return false; // the admin rewrote it; never clobber that
+		}
+		$d = self::sms_defaults();
+		if ( ! isset( $d[ $key ] ) || $d[ $key ] === $saved ) {
+			return false;
+		}
+		update_option( $key, $d[ $key ] );
+		return true;
 	}
 
 	/** Payment instructions shown with the quote (admin-editable; may be empty). */

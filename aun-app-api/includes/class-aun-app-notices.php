@@ -82,6 +82,55 @@ class AUN_App_Notices {
 	}
 
 	/**
+	 * The first meaningful line of an HTML block, as plain text.
+	 *
+	 * Handles the shapes the WordPress editor produces for a short changelog —
+	 * a bullet list, a paragraph, or lines split by <br> — because the first
+	 * BULLET is what an admin writes as the headline, and the raw string would
+	 * put "<ul><li>" in a push notification.
+	 */
+	private static function first_line( $html ) {
+		$html = (string) $html;
+		if ( '' === trim( $html ) ) {
+			return '';
+		}
+		// Block boundaries become newlines BEFORE tags are stripped, or every
+		// bullet runs into the next one as a single sentence.
+		$txt = preg_replace( '~<(?:br\s*/?|/li|/p|/h[1-6]|/div)\s*>~i', "\n", $html );
+		$txt = wp_strip_all_tags( (string) $txt );
+		$txt = html_entity_decode( $txt, ENT_QUOTES, 'UTF-8' );
+		$txt = str_replace( "\xC2\xA0", ' ', $txt );
+
+		foreach ( preg_split( '/\R/u', $txt ) as $line ) {
+			// Drop a bullet character the admin may have typed themselves.
+			$line = trim( preg_replace( '/^[\s\-\*\x{2022}]+/u', '', trim( $line ) ) );
+			if ( '' !== $line ) {
+				// The OS truncates anyway, but doing it here keeps the stored
+				// notice body sane too.
+				//
+				// ⚠️ The mbstring fallback must still CUT. An earlier version
+				// returned the line untouched when mb_* was unavailable, so a
+				// server without the extension quietly stored a 500-character
+				// body — the one case the limit exists for. Bangla is
+				// multi-byte, so the byte-based fallback is generous and cuts
+				// on a space to avoid splitting a character mid-sequence.
+				if ( function_exists( 'mb_strlen' ) ) {
+					return mb_strlen( $line ) > 120
+						? rtrim( mb_substr( $line, 0, 117 ) ) . '...'
+						: $line;
+				}
+				if ( strlen( $line ) > 360 ) {
+					$cut = substr( $line, 0, 357 );
+					$sp  = strrpos( $cut, ' ' );
+					return rtrim( false !== $sp && $sp > 200 ? substr( $cut, 0, $sp ) : $cut ) . '...';
+				}
+				return $line;
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Broadcast notice when new content is published for a model.
 	 *
 	 * @param int    $content_id Content row id.
@@ -89,8 +138,9 @@ class AUN_App_Notices {
 	 * @param int    $model_id   0 = all models.
 	 * @param string $title      Content title.
 	 * @param string $model_name Resolved model name ('' when all models).
+	 * @param string $changelog  Firmware "what's new" HTML, for the body.
 	 */
-	public static function content_published( $content_id, $type, $model_id, $title, $model_name ) {
+	public static function content_published( $content_id, $type, $model_id, $title, $model_name, $changelog = '' ) {
 		$labels = array(
 			'firmware' => array( 'New firmware update', 'নতুন ফার্মওয়্যার আপডেট' ),
 			'manual'   => array( 'New user manual', 'নতুন ইউজার ম্যানুয়াল' ),
@@ -102,14 +152,24 @@ class AUN_App_Notices {
 		$suffix    = '' !== $model_name ? ' — ' . $model_name : '';
 		$suffix_bn = '' !== $model_name ? ' — ' . $model_name : '';
 
+		// A title is a name; the changelog is a REASON. "New firmware update"
+		// over "A45 Pro firmware 2.1.0" tells the customer only that a number
+		// changed — "Fixes no sound over HDMI on some TVs" is what makes
+		// someone go and install it. First line only: a notification is a
+		// headline, and the full list is one tap away.
+		$body = self::first_line( $changelog );
+		if ( '' === $body ) {
+			$body = (string) $title;
+		}
+
 		$id = self::create( array(
 			'user_id'   => 0,
 			'model_id'  => (int) $model_id,
 			'type'      => $type,
 			'title'     => $label[0] . $suffix,
 			'title_bn'  => $label[1] . $suffix_bn,
-			'body'      => (string) $title,
-			'body_bn'   => (string) $title,
+			'body'      => $body,
+			'body_bn'   => $body,
 			'data'      => array( 'content_id' => (int) $content_id, 'content_type' => $type, 'model_id' => (int) $model_id ),
 			'dedup_key' => 'content:' . (int) $content_id,
 		) );
@@ -123,8 +183,8 @@ class AUN_App_Notices {
 				array(
 					'title'    => $label[0] . $suffix,
 					'title_bn' => $label[1] . $suffix_bn,
-					'body'     => (string) $title,
-					'body_bn'  => (string) $title,
+					'body'     => $body,
+					'body_bn'  => $body,
 				),
 				// content_id + model_id let a tap on the notification open the
 				// actual firmware/manual/video/tip screen in the app.
@@ -297,8 +357,10 @@ class AUN_App_Notices {
 	 * @param string $status_key  Machine status (quote_sent, approved, …).
 	 * @param string $label       Human status label from the plugin.
 	 * @param float  $quote_total Quote total, for the quote_sent wording.
+	 * @param string $round       Distinguishes one quote round from the next — see
+	 *                            the dedup note below. Pass the row's `quoted_at`.
 	 */
-	public static function parts_status_changed( $user_id, $ref, $status_key, $label, $quote_total = 0 ) {
+	public static function parts_status_changed( $user_id, $ref, $status_key, $label, $quote_total = 0, $round = '' ) {
 		$user_id = (int) $user_id;
 		$ref     = (string) $ref;
 		if ( $user_id < 1 || '' === $ref || '' === $status_key ) {
@@ -346,6 +408,30 @@ class AUN_App_Notices {
 				(string) $label,
 				(string) $label,
 			),
+			// Expiry is NOT a rejection and must never be worded like one: the
+			// customer did nothing wrong, nothing was ordered, and one tap gets
+			// them a fresh price. Saying "nothing was ordered" is the whole
+			// point — the usual reason a quote goes quiet is someone believing
+			// that asking for the part already ordered it.
+			'expired'          => array(
+				"Quote for $ref has expired",
+				"$ref-এর কোটেশনের মেয়াদ শেষ",
+				'We did not hear back, so nothing was ordered. Tap if you still want the part.',
+				'উত্তর না পাওয়ায় কিছু অর্ডার করা হয়নি। পার্টটি এখনও প্রয়োজন হলে ট্যাপ করুন।',
+			),
+			// Yes, they did this themselves — and that is exactly why it is
+			// worth a notice. Decline is one tap on a phone, and a mis-tap is
+			// otherwise completely silent: no receipt, no way back, a request
+			// quietly dead. This is their record that it happened and their
+			// route to undo it. (Spare parts 0.32.0 texts them for the same
+			// reason.) Deduped per status, so declining in the app shows this
+			// once and never nags.
+			'declined'         => array(
+				"$ref cancelled as you asked",
+				"$ref আপনার অনুরোধে বাতিল করা হয়েছে",
+				'Nothing was ordered and nothing is owed. Changed your mind? Tap to ask for a new quote.',
+				'কিছু অর্ডার করা হয়নি, কোনো টাকাও বাকি নেই। মত পরিবর্তন হলে নতুন কোটেশন চাইতে ট্যাপ করুন।',
+			),
 		);
 
 		if ( ! isset( $copy[ $status_key ] ) ) {
@@ -362,7 +448,94 @@ class AUN_App_Notices {
 			'body_bn'   => $body_bn,
 			'data'      => array( 'ref' => $ref, 'status' => (string) $status_key ),
 			// One notice per distinct status for this request.
-			'dedup_key' => 'parts_status:' . $ref . ':' . $status_key,
+			//
+			// ⚠️ `$round` is why a SECOND quote still notifies. Spare parts 0.31.0
+			// can send a request round the quote loop more than once (expired →
+			// the customer taps "I still want this part" → a fresh quote), and
+			// without the round in this key the new quote would collide with the
+			// old notice and be dropped in silence — the one status the customer
+			// has to answer, arriving as nothing at all. Only the quote round
+			// carries it; every other status happens once per request.
+			'dedup_key' => 'parts_status:' . $ref . ':' . $status_key
+				. ( '' !== (string) $round ? ':' . md5( (string) $round ) : '' ),
+		) );
+
+		if ( $id && self::$last_was_new && class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {
+			AUN_App_Push::push_to_users(
+				array( $user_id ),
+				array(
+					'title'    => $title,
+					'title_bn' => $title_bn,
+					'body'     => $body,
+					'body_bn'  => $body_bn,
+				),
+				array( 'notice_id' => $id, 'type' => 'parts', 'ref' => $ref )
+			);
+		}
+	}
+
+	/**
+	 * The app's half of the spare-parts quote chase (spare parts 0.31.0).
+	 *
+	 * The plugin texts an unanswered quote on day N and again the day before it
+	 * lapses. An app customer would otherwise get the SMS and nothing in the
+	 * place where they can actually answer with one tap — so each nudge is
+	 * mirrored here as a notice + push.
+	 *
+	 * Two things this deliberately does NOT do:
+	 *  - It does not invent a third nudge. The SMS ladder is two, and the app
+	 *    matching it exactly is what keeps "three touches then stop" true. A
+	 *    push that arrives on a day the SMS does not would be a fourth chase
+	 *    wearing a different hat.
+	 *  - It never repeats. Deduped on (ref, quote round, which nudge), so a
+	 *    cron re-run, a manual "run now" or a re-sync cannot re-push a reminder
+	 *    the customer already dismissed.
+	 *
+	 * @param int    $user_id Customer.
+	 * @param string $ref     SP- reference.
+	 * @param int    $which   1 = first nudge, 2 = final one before expiry.
+	 * @param float  $total   Quote total.
+	 * @param string $expires Human date the quote lapses ('' when it never does).
+	 * @param string $round   The row's `quoted_at` — see parts_status_changed().
+	 */
+	public static function parts_quote_reminder( $user_id, $ref, $which, $total = 0, $expires = '', $round = '' ) {
+		$user_id = (int) $user_id;
+		$ref     = (string) $ref;
+		$which   = ( 2 === (int) $which ) ? 2 : 1;
+		if ( $user_id < 1 || '' === $ref ) {
+			return;
+		}
+
+		$amt = number_format_i18n( (float) $total, 0 );
+
+		if ( 2 === $which ) {
+			$title    = "Last day to answer — $ref";
+			$title_bn = "উত্তর দেওয়ার শেষ দিন — $ref";
+			// The deadline is the reason this one is urgent, so it goes in the
+			// body when we have it; without it the sentence still stands alone.
+			$body    = '' !== $expires
+				? "Your ৳$amt quote expires on $expires and your part has not been ordered. Tap to approve."
+				: "Your ৳$amt quote is still unanswered and your part has not been ordered. Tap to approve.";
+			$body_bn = '' !== $expires
+				? "৳$amt-এর কোটেশনের মেয়াদ $expires তারিখে শেষ হবে, আপনার পার্টটি এখনও অর্ডার করা হয়নি। অনুমোদন করতে ট্যাপ করুন।"
+				: "৳$amt-এর কোটেশনের উত্তর এখনও পাইনি, আপনার পার্টটি অর্ডার করা হয়নি। অনুমোদন করতে ট্যাপ করুন।";
+		} else {
+			$title    = "Your quote for $ref is waiting";
+			$title_bn = "$ref-এর কোটেশন অপেক্ষা করছে";
+			$body     = "We have NOT ordered your part yet — we start only once you approve the ৳$amt quote.";
+			$body_bn  = "আমরা এখনও আপনার পার্টটি অর্ডার করিনি — ৳$amt কোটেশন অনুমোদন করলেই আমরা শুরু করব।";
+		}
+
+		$id = self::create( array(
+			'user_id'   => $user_id,
+			'type'      => 'parts',
+			'title'     => $title,
+			'title_bn'  => $title_bn,
+			'body'      => $body,
+			'body_bn'   => $body_bn,
+			'data'      => array( 'ref' => $ref, 'status' => 'quote_sent', 'reminder' => $which ),
+			'dedup_key' => 'parts_remind:' . $ref . ':' . $which
+				. ( '' !== (string) $round ? ':' . md5( (string) $round ) : '' ),
 		) );
 
 		if ( $id && self::$last_was_new && class_exists( 'AUN_App_Push' ) && AUN_App_Push::configured() ) {

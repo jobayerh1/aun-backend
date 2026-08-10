@@ -36,6 +36,7 @@
 **Keywords:** warranty, ওয়ারেন্টি, গ্যারান্টি
 **Message:**
 সব প্রজেক্টরে অফিশিয়াল ১ বছরের ওয়ারেন্টি ✅ রেজিস্ট্রেশন: https://aun-projector.com.bd/warranty-register/ — রিপেয়ার স্ট্যাটাস: https://aun-projector.com.bd/repair-status/
+📱 চাইলে **AUN Care** অ্যাপে ওয়ারেন্টি ও রিপেয়ার স্ট্যাটাস সবসময় হাতের কাছে: https://aun-projector.com.bd/get-aun-care-app/
 
 ### `/location`
 **Keywords:** location, address, showroom, ঠিকানা, শোরুম
@@ -55,7 +56,29 @@
 ### `/thanks`
 **Keywords:** thanks, thank, ধন্যবাদ
 **Message:**
-ধন্যবাদ AUN Projector-এর সাথে থাকার জন্য 😊 আরও কোনো সাহায্য লাগলে যেকোনো সময় নক করুন।
+ধন্যবাদ AUN Projector-এর সাথে থাকার জন্য 😊 আরও কোনো সাহায্য লাগলে যেকোনো সময় নক করুন। 📱 আমাদের ফ্রি **AUN Care** অ্যাপ ফোনে রাখলে ভবিষ্যতে ওয়ারেন্টি, রিপেয়ার ও সাপোর্ট আরও সহজ: https://aun-projector.com.bd/get-aun-care-app/
+
+---
+
+## 📱 AUN Care app (after-sales)
+
+> `/app` = our **AUN Care customer mobile app** (download it on your phone). Don't mix up with `/apps`, which is about installing apps *on the projector* (Netflix etc.).
+
+### `/app`
+**Keywords:** aun care, care app, mobile app, download app, customer app, android app, কেয়ার অ্যাপ, মোবাইল অ্যাপ, অ্যাপ ডাউনলোড
+**Message:**
+আমাদের ফ্রি **AUN Care** অ্যাপে আপনার প্রজেক্টরের সব আফটার-সেলস এক জায়গায় 📱 — রিপেয়ার ও সাপোর্ট টিকিট লাইভ ট্র্যাক, ওয়ারেন্টির তথ্য, স্পেয়ার পার্টস রিকোয়েস্ট, ম্যানুয়াল/ফার্মওয়্যার/ভিডিও গাইড—আরও অনেক কিছু।
+👉 ডাউনলোড করুন: https://aun-projector.com.bd/get-aun-care-app/
+ফোন নম্বর + OTP দিয়ে সহজ লগইন—তারপর আপনার প্রজেক্টর যুক্ত করে নিন। ফ্রি · Android 7.0+ · বাংলা ও ইংরেজি।
+
+### `/appinstall`
+**Keywords:** install app, apk install, unknown source, kivabe install, অ্যাপ ইনস্টল, এপিকে, ইনস্টল হচ্ছে না
+**Message:**
+AUN Care ইনস্টল করবেন যেভাবে 👇
+১) লিংকে ট্যাপ করুন: https://aun-projector.com.bd/get-aun-care-app/ (ফাইল ডাউনলোড হবে)
+২) ডাউনলোড শেষে ফাইলটি ওপেন করুন → "Unknown sources / এই উৎস থেকে ইনস্টল"-এ Allow দিন (স্বাভাবিক—অ্যাপটি এখনো Play Store-এ আসছে)।
+৩) Install চাপুন → এরপর ফোন নম্বর ও OTP দিয়ে লগইন করুন।
+Play Store-এ শিগগিরই আসছে; ততদিন সরাসরি আমাদের সার্ভার থেকে নিরাপদে ডাউনলোড করুন। অ্যাপটি নিজে থেকেই আপডেট হয়ে যায় ✅
 
 ---
 
@@ -73,12 +96,12 @@
 AUN — 01787698268
 108 Golartek, Mazar Road, Mirpur, Dhaka
 City: Dhaka | Zone: Mazar road | Area: Mirpur Buddhijibi Koborsthan
-📦 ধাপে ধাপে গাইড: https://aun-projector.com.bd/send-projector/ — পৌঁছালে আমরা জব শিট খুলে রিপেয়ার শুরু করি, আর আপনি অনলাইনে স্ট্যাটাস ট্র্যাক করতে পারবেন।
+📦 ধাপে ধাপে গাইড: https://aun-projector.com.bd/send-projector/ — পৌঁছালে আমরা জব শিট খুলে রিপেয়ার শুরু করি, আর আপনি অনলাইনে বা **AUN Care** অ্যাপে রিপেয়ার স্ট্যাটাস লাইভ ট্র্যাক করতে পারবেন 📱।
 
 ### `/trackparts`
 **Keywords:** track parts, sp number, spare track, পার্টস ট্র্যাক
 **Message:**
-আপনার স্পেয়ার পার্টস রিকোয়েস্ট ট্র্যাক করুন: https://aun-projector.com.bd/spare-parts-status/ — SP- নম্বর বা ফোন নম্বর দিলেই প্রতিটি পার্টসের অবস্থা দেখতে পারবেন।
+আপনার স্পেয়ার পার্টস রিকোয়েস্ট ট্র্যাক করুন: https://aun-projector.com.bd/spare-parts-status/ — SP- নম্বর বা ফোন নম্বর দিলেই প্রতিটি পার্টসের অবস্থা দেখতে পারবেন। 📱 **AUN Care** অ্যাপেও একই ট্র্যাকিং পাবেন: https://aun-projector.com.bd/get-aun-care-app/
 
 ### `/repaircost`
 **Keywords:** cost, charge, out of warranty, খরচ, টাকা, রিপেয়ার দাম
@@ -175,3 +198,5 @@ HDMI কানেক্ট: ডিভাইসটি প্রজেক্টর
 ---
 
 *Source of truth: the Help Center plugin (`aun_hc_data`) + `aun-support-faq-corpus.md`. When you update an answer there, refresh the matching quick reply here too.*
+
+*App = **AUN Care** (Android, after-sales). Download: https://aun-projector.com.bd/get-aun-care-app/ — not on Google Play yet (direct APK). Keep app wording evergreen (no version/size — the APK grows each build and auto-updates).*
