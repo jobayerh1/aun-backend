@@ -22,9 +22,17 @@
 			approved_msg: 'Thank you — your quote is approved. We will start sourcing your parts.',
 			declined_msg: 'Your quote has been declined. Contact us any time if you change your mind.',
 			history: 'Progress history',
-			ov: { submitted: 'Submitted', in_progress: 'In progress', quote_sent: 'Quote — awaiting your approval', approved: 'Approved — sourcing parts', waiting_customer: 'Waiting on you', ready: 'Ready to dispatch', closed: 'Completed', declined: 'Quote declined', rejected: 'Rejected' },
-			it: { pending: 'Pending review', quoted: 'Price quoted', applied: 'Ordered from the factory', at_factory: 'Being prepared at the factory', shipped: 'Shipped from the factory — on its way to Bangladesh', arrived: 'Arrived at AUN, Dhaka', dispatched: 'Out for delivery to you', delivered: 'Delivered to you', unavailable: 'Unavailable' },
-			ith: { pending: 'We have your request and are checking the part and its availability.', quoted: 'We have sent you the price. We order the part once you approve it.', applied: 'We have placed the order with the factory and are waiting for them to confirm it.', at_factory: 'The factory has confirmed your part and is preparing it for shipment. This is usually the longest step.', shipped: 'Your part has left the factory and is in transit to Bangladesh. It has not reached us yet.', arrived: 'Your part has reached our Dhaka office. We will courier it to you next.', dispatched: 'We have handed your part to the courier. You can track the parcel with the link below.', delivered: 'The courier has delivered your part. Thank you for staying with AUN.', unavailable: 'We are unable to supply this part. See the note above for the reason.' }
+			reply_by: 'Please reply by {date}', days_left: '{n} day(s) left', last_day: 'Last day to reply',
+			nothing_yet: 'Nothing has been ordered yet — we start only after you approve.',
+			expired_h: 'This quote has expired',
+			expired_sub: 'We did not hear back, so nothing was ordered. Prices may have changed — if you still need the part, ask us for a new quote.',
+			revive: 'I still want this part', revive_wait: 'Sending…',
+			declined_h: 'You cancelled this quote',
+			declined_sub: 'Nothing was ordered and nothing is owed. If you tapped Decline by mistake, or you have changed your mind, ask us for a new quote.',
+			revive_declined: 'Changed my mind — quote me again',
+			ov: { submitted: 'Submitted', in_progress: 'In progress', quote_sent: 'Quote — awaiting your approval', approved: 'Approved — sourcing parts', waiting_customer: 'Waiting on you', ready: 'Ready to dispatch', closed: 'Completed', declined: 'Quote declined', expired: 'Quote expired', rejected: 'Rejected' },
+			it: { pending: 'Pending review', quoted: 'Price quoted', applied: 'Ordered from the factory', at_factory: 'Being prepared at the factory', shipped: 'Shipped from the factory — on its way to Bangladesh', arrived: 'Arrived at AUN, Dhaka', dispatched: 'Out for delivery to you', delivered: 'Delivered to you', unavailable: 'Unavailable', cancelled: 'Not going ahead' },
+			ith: { pending: 'We have your request and are checking the part and its availability.', quoted: 'We have sent you the price. We order the part once you approve it.', applied: 'We have placed the order with the factory and are waiting for them to confirm it.', at_factory: 'The factory has confirmed your part and is preparing it for shipment. This is usually the longest step.', shipped: 'Your part has left the factory and is in transit to Bangladesh. It has not reached us yet.', arrived: 'Your part has reached our Dhaka office. We will courier it to you next.', dispatched: 'We have handed your part to the courier. You can track the parcel with the link below.', delivered: 'The courier has delivered your part. Thank you for staying with AUN.', unavailable: 'We are unable to supply this part. See the note above for the reason.', cancelled: 'This part was not ordered. Ask us any time if you would like a new price.' }
 		},
 		bn: {
 			searching: 'খোঁজা হচ্ছে…',
@@ -46,15 +54,23 @@
 			approved_msg: 'ধন্যবাদ — আপনার কোটেশন অনুমোদিত হয়েছে। আমরা পার্টস সংগ্রহ শুরু করব।',
 			declined_msg: 'আপনার কোটেশন বাতিল করা হয়েছে। মত পরিবর্তন হলে যেকোনো সময় যোগাযোগ করুন।',
 			history: 'অগ্রগতির ইতিহাস',
-			ov: { submitted: 'জমা হয়েছে', in_progress: 'প্রক্রিয়াধীন', quote_sent: 'কোটেশন — আপনার অনুমোদনের অপেক্ষায়', approved: 'অনুমোদিত — পার্টস সংগ্রহ চলছে', waiting_customer: 'আপনার জন্য অপেক্ষমাণ', ready: 'পাঠানোর জন্য প্রস্তুত', closed: 'সম্পন্ন', declined: 'কোটেশন বাতিল', rejected: 'বাতিল' },
-			it: { pending: 'যাচাই চলছে', quoted: 'মূল্য জানানো হয়েছে', applied: 'ফ্যাক্টরিতে অর্ডার করা হয়েছে', at_factory: 'ফ্যাক্টরিতে প্রস্তুত হচ্ছে', shipped: 'ফ্যাক্টরি থেকে পাঠানো হয়েছে — বাংলাদেশের পথে', arrived: 'ঢাকায় AUN-এ পৌঁছেছে', dispatched: 'আপনার ঠিকানায় পাঠানো হয়েছে', delivered: 'আপনি বুঝে পেয়েছেন', unavailable: 'অনুপলব্ধ' },
-			ith: { pending: 'আমরা আপনার অনুরোধ পেয়েছি এবং পার্টটি ও তার প্রাপ্যতা যাচাই করছি।', quoted: 'আমরা আপনাকে মূল্য জানিয়েছি। আপনি অনুমোদন দিলেই আমরা পার্টটি অর্ডার করব।', applied: 'আমরা ফ্যাক্টরিতে অর্ডার দিয়েছি এবং তাদের নিশ্চিতকরণের অপেক্ষায় আছি।', at_factory: 'ফ্যাক্টরি আপনার পার্টটি নিশ্চিত করেছে এবং পাঠানোর জন্য প্রস্তুত করছে। সাধারণত এই ধাপেই সবচেয়ে বেশি সময় লাগে।', shipped: 'আপনার পার্টটি ফ্যাক্টরি থেকে রওনা হয়েছে এবং বাংলাদেশে আসছে। এটি এখনও আমাদের কাছে পৌঁছায়নি।', arrived: 'আপনার পার্টটি ঢাকায় আমাদের অফিসে পৌঁছেছে। এরপর আমরা কুরিয়ারে আপনার কাছে পাঠাব।', dispatched: 'আমরা আপনার পার্টটি কুরিয়ারে দিয়ে দিয়েছি। নিচের লিংক দিয়ে পার্সেলটি ট্র্যাক করতে পারবেন।', delivered: 'কুরিয়ার আপনার পার্টটি পৌঁছে দিয়েছে। AUN-এর সঙ্গে থাকার জন্য ধন্যবাদ।', unavailable: 'আমরা এই পার্টটি সরবরাহ করতে পারছি না। কারণ উপরে উল্লেখ করা হয়েছে।' }
+			reply_by: '{date} তারিখের মধ্যে জানান', days_left: 'আর {n} দিন বাকি', last_day: 'জানানোর শেষ দিন',
+			nothing_yet: 'এখনও কিছু অর্ডার করা হয়নি — আপনি অনুমোদন দিলেই আমরা শুরু করব।',
+			expired_h: 'এই কোটেশনের মেয়াদ শেষ হয়েছে',
+			expired_sub: 'আপনার উত্তর না পাওয়ায় কিছু অর্ডার করা হয়নি। দাম পরিবর্তন হতে পারে — পার্টটি এখনও প্রয়োজন হলে নতুন কোটেশন চান।',
+			revive: 'আমার এখনও এই পার্টটি প্রয়োজন', revive_wait: 'পাঠানো হচ্ছে…',
+			declined_h: 'আপনি এই কোটেশনটি বাতিল করেছেন',
+			declined_sub: 'কিছু অর্ডার করা হয়নি এবং কোনো টাকাও বাকি নেই। ভুল করে বাতিল করে থাকলে, বা মত পরিবর্তন হলে, আমাদের কাছে নতুন কোটেশন চান।',
+			revive_declined: 'মত পরিবর্তন হয়েছে — আবার কোটেশন দিন',
+			ov: { submitted: 'জমা হয়েছে', in_progress: 'প্রক্রিয়াধীন', quote_sent: 'কোটেশন — আপনার অনুমোদনের অপেক্ষায়', approved: 'অনুমোদিত — পার্টস সংগ্রহ চলছে', waiting_customer: 'আপনার জন্য অপেক্ষমাণ', ready: 'পাঠানোর জন্য প্রস্তুত', closed: 'সম্পন্ন', declined: 'কোটেশন বাতিল', expired: 'কোটেশনের মেয়াদ শেষ', rejected: 'বাতিল' },
+			it: { pending: 'যাচাই চলছে', quoted: 'মূল্য জানানো হয়েছে', applied: 'ফ্যাক্টরিতে অর্ডার করা হয়েছে', at_factory: 'ফ্যাক্টরিতে প্রস্তুত হচ্ছে', shipped: 'ফ্যাক্টরি থেকে পাঠানো হয়েছে — বাংলাদেশের পথে', arrived: 'ঢাকায় AUN-এ পৌঁছেছে', dispatched: 'আপনার ঠিকানায় পাঠানো হয়েছে', delivered: 'আপনি বুঝে পেয়েছেন', unavailable: 'অনুপলব্ধ', cancelled: 'এগোনো হচ্ছে না' },
+			ith: { pending: 'আমরা আপনার অনুরোধ পেয়েছি এবং পার্টটি ও তার প্রাপ্যতা যাচাই করছি।', quoted: 'আমরা আপনাকে মূল্য জানিয়েছি। আপনি অনুমোদন দিলেই আমরা পার্টটি অর্ডার করব।', applied: 'আমরা ফ্যাক্টরিতে অর্ডার দিয়েছি এবং তাদের নিশ্চিতকরণের অপেক্ষায় আছি।', at_factory: 'ফ্যাক্টরি আপনার পার্টটি নিশ্চিত করেছে এবং পাঠানোর জন্য প্রস্তুত করছে। সাধারণত এই ধাপেই সবচেয়ে বেশি সময় লাগে।', shipped: 'আপনার পার্টটি ফ্যাক্টরি থেকে রওনা হয়েছে এবং বাংলাদেশে আসছে। এটি এখনও আমাদের কাছে পৌঁছায়নি।', arrived: 'আপনার পার্টটি ঢাকায় আমাদের অফিসে পৌঁছেছে। এরপর আমরা কুরিয়ারে আপনার কাছে পাঠাব।', dispatched: 'আমরা আপনার পার্টটি কুরিয়ারে দিয়ে দিয়েছি। নিচের লিংক দিয়ে পার্সেলটি ট্র্যাক করতে পারবেন।', delivered: 'কুরিয়ার আপনার পার্টটি পৌঁছে দিয়েছে। AUN-এর সঙ্গে থাকার জন্য ধন্যবাদ।', unavailable: 'আমরা এই পার্টটি সরবরাহ করতে পারছি না। কারণ উপরে উল্লেখ করা হয়েছে।', cancelled: 'এই পার্টটি অর্ডার করা হয়নি। নতুন দাম জানতে চাইলে যেকোনো সময় আমাদের জানান।' }
 		}
 	};
 
 	function statusClass( key ) {
 		if ( key === 'delivered' || key === 'arrived' || key === 'dispatched' || key === 'ready' || key === 'approved' ) { return 'in'; }
-		if ( key === 'unavailable' || key === 'rejected' || key === 'declined' ) { return 'out'; }
+		if ( key === 'unavailable' || key === 'rejected' || key === 'declined' || key === 'expired' ) { return 'out'; }
 		return 'mid';
 	}
 	function el( tag, cls, txt ) { var e = document.createElement( tag ); if ( cls ) { e.className = cls; } if ( txt != null ) { e.textContent = txt; } return e; }
@@ -181,7 +197,12 @@
 		function render( reqs ) {
 			results.innerHTML = '';
 			if ( ! reqs || ! reqs.length ) { return; }
-			var done    = { closed: 1, declined: 1, rejected: 1 };
+			// Cards that need nothing from the customer start collapsed. 'expired' and
+			// 'declined' are deliberately NOT here: both still carry a button (ask us
+			// to quote again), and collapsing them hides the only way back — which for
+			// a decline is the whole point, since Decline is one mis-tap away from
+			// Approve on a phone.
+			var done    = { closed: 1, rejected: 1 };
 			var hideEta = { arrived: 1, dispatched: 1, delivered: 1, unavailable: 1 };
 
 			reqs.forEach( function ( r ) {
@@ -369,6 +390,12 @@
 				wrap.appendChild( el( 'div', 'aun-sp-act-note is-paid', '✓ ' + t( 'paid_msg' ) ) );
 				return wrap;
 			}
+			// 0. The quote lapsed with no answer, or they declined it. Neither is a
+			// dead end — both offer the way back to a fresh quote.
+			if ( r.expired || r.declined ) {
+				wrap.appendChild( expiredStage( r, chip, wrap ) );
+				return wrap;
+			}
 			// 1. A decision is pending — nothing else may appear.
 			if ( r.quote && r.quote.awaiting ) {
 				wrap.appendChild( decideStage( r, chip, wrap ) );
@@ -391,6 +418,22 @@
 			box.appendChild( el( 'div', 'aun-sp-stage-h', t( 'decide_h' ) ) );
 			box.appendChild( el( 'div', 'aun-sp-stage-sub', t( 'decide_sub' ) ) );
 
+			// The deadline, and the sentence customers most often miss: asking for the
+			// part is not the same as ordering it. This is the whole reason quotes go
+			// unanswered, so it sits directly above the buttons.
+			if ( r.expires ) {
+				var dl = el( 'div', 'aun-sp-deadline' );
+				var urgent = ( r.days_left !== null && r.days_left <= 1 );
+				if ( urgent ) { dl.className += ' is-urgent'; }
+				dl.appendChild( el( 'span', 'aun-sp-deadline-date', t( 'reply_by' ).replace( '{date}', r.expires ) ) );
+				if ( r.days_left !== null && r.days_left !== undefined ) {
+					dl.appendChild( el( 'span', 'aun-sp-deadline-left',
+						r.days_left <= 1 ? t( 'last_day' ) : t( 'days_left' ).replace( '{n}', r.days_left ) ) );
+				}
+				box.appendChild( dl );
+			}
+			box.appendChild( el( 'div', 'aun-sp-stage-warn', t( 'nothing_yet' ) ) );
+
 			var actions = el( 'div', 'aun-sp-stage-actions' );
 			var ok = el( 'button', 'aun-sp-btn aun-sp-btn-approve' );
 			ok.type = 'button';
@@ -404,6 +447,64 @@
 			no.addEventListener( 'click', function () { decide( r, 'decline', host, qm, chip ); } );
 			actions.appendChild( ok );
 			actions.appendChild( no );
+			box.appendChild( actions );
+			box.appendChild( qm );
+			return box;
+		}
+
+		/**
+		 * Stage 0 — the quote expired unanswered.
+		 *
+		 * Deliberately NOT a dead end: expiry means "we never heard back", so the only
+		 * action offered is the way back in. The old price is not re-offered, because
+		 * the point of a deadline is that the figure is no longer promised.
+		 */
+		function expiredStage( r, chip, host ) {
+			// Declined and expired share this stage but must NOT share its words:
+			// telling someone who chose "no" that "we did not hear back" is wrong,
+			// and nagging someone who declined is not the goal — the button is there
+			// for the mis-tap and the change of mind, nothing more.
+			var declined = !! r.declined;
+			var box = el( 'div', 'aun-sp-stage is-expired' );
+			box.appendChild( el( 'div', 'aun-sp-stage-h', t( declined ? 'declined_h' : 'expired_h' ) ) );
+			box.appendChild( el( 'div', 'aun-sp-stage-sub', t( declined ? 'declined_sub' : 'expired_sub' ) ) );
+
+			var actions = el( 'div', 'aun-sp-stage-actions' );
+			var again = el( 'button', 'aun-sp-btn ' + ( declined ? 'aun-sp-btn-ghost' : 'aun-sp-btn-approve' ) );
+			again.type = 'button';
+			again.textContent = t( declined ? 'revive_declined' : 'revive' );
+			var qm = el( 'div', 'aun-sp-quote-msg' );
+
+			again.addEventListener( 'click', function () {
+				again.disabled = true;
+				again.textContent = t( 'revive_wait' );
+				var fd = new FormData();
+				fd.append( 'ref', r.ref );
+				post( 'aun_sp_revive', fd ).then( function ( res ) {
+					if ( res && res.success ) {
+						// Replace the whole stage: there is nothing left to act on, and
+						// leaving a dead button there invites a second tap.
+						host.innerHTML = '';
+						host.appendChild( el( 'div', 'aun-sp-act-note is-paid', '✓ ' + ( res.data && res.data.message ? res.data.message : '' ) ) );
+						if ( chip ) {
+							chip.textContent = ovLabel( 'submitted' );
+							chip.className   = 'aun-sp-warranty ' + statusClass( 'submitted' );
+						}
+						r.expired = false;
+						r.status_key = 'submitted';
+					} else {
+						again.disabled = false;
+						again.textContent = t( declined ? 'revive_declined' : 'revive' );
+						qm.textContent = ( res && res.data && res.data.message ) ? res.data.message : t( 'net_err' );
+					}
+				} ).catch( function () {
+					again.disabled = false;
+					again.textContent = t( declined ? 'revive_declined' : 'revive' );
+					qm.textContent = t( 'net_err' );
+				} );
+			} );
+
+			actions.appendChild( again );
 			box.appendChild( actions );
 			box.appendChild( qm );
 			return box;

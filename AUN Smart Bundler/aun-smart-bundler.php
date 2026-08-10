@@ -4,7 +4,9 @@
  * Description: Smart accessory bundles that sync with WooCommerce Add to Cart & Buy Now.
  *              Features split discounts per accessory type, a live bundle-total bar, and savings badges.
  *              Screens are presented as a single "pick one" selector (with a View link; click the circle to clear); bags are optional add-ons.
- * Version:     2.4.1
+ *              (v2.5.0 — sold-out variations are now listed and greyed out instead of hidden, so the size
+ *              selector always appears and the shopper can always see which size/colour they are buying.)
+ * Version:     2.5.0
  * Author:      Smart Living Bangladesh
  * License:     GPLv2 or later
  */
@@ -229,22 +231,35 @@ class AUN_Smart_Bundler {
         $bundle_ids = self::get_bundle_ids( $projector_id );
 
         // Screens are ALTERNATIVES → a single "pick one" selector (type + size).
-        // Each screen becomes one entry with its in-stock variation options.
+        // EVERY variation is listed, sold-out ones flagged (stock=0) rather than dropped:
+        // filtering them out meant a screen with only one surviving size showed NO size
+        // control at all, so the shopper never saw which size they were buying.
         $screens = [];
         foreach ( $bundle_ids['screens'] as $sid ) {
             $s = self::is_product_available( $sid );
             if ( ! $s ) continue;
-            $opts = [];
-            if ( $s->is_type( 'variable' ) ) {
+            $opts      = [];
+            $is_var    = $s->is_type( 'variable' );
+            $has_stock = false;
+            if ( $is_var ) {
                 foreach ( $s->get_children() as $vid ) {
                     $v = wc_get_product( $vid );
-                    if ( ! $v || ! $v->is_in_stock() ) continue;
-                    $opts[] = [ 'vid' => (int) $vid, 'label' => self::variation_label( $v ), 'price' => (float) $v->get_price() ];
+                    if ( ! $v ) continue;
+                    $in = ( $v->is_in_stock() && $v->is_purchasable() );
+                    if ( $in ) $has_stock = true;
+                    $opts[] = [
+                        'vid'   => (int) $vid,
+                        'label' => self::variation_label( $v ),
+                        'price' => (float) $v->get_price(),
+                        'stock' => $in ? 1 : 0,
+                    ];
                 }
             } else {
-                $opts[] = [ 'vid' => 0, 'label' => '', 'price' => (float) $s->get_price() ];
+                $opts[]    = [ 'vid' => 0, 'label' => '', 'price' => (float) $s->get_price(), 'stock' => 1 ];
+                $has_stock = true;
             }
-            if ( empty( $opts ) ) continue;
+            // Nothing buyable in any size → don't offer the screen at all.
+            if ( empty( $opts ) || ! $has_stock ) continue;
             $img_id    = $s->get_image_id();
             $screens[] = [
                 'id'   => $s->get_id(),
@@ -252,6 +267,7 @@ class AUN_Smart_Bundler {
                 'url'  => $s->get_permalink(),
                 'pct'  => (float) $discounts['screen'],
                 'img'  => $img_id ? wp_get_attachment_image_url( $img_id, 'woocommerce_gallery_thumbnail' ) : wc_placeholder_img_src(),
+                'var'  => $is_var ? 1 : 0,
                 'opts' => $opts,
             ];
         }
@@ -326,6 +342,9 @@ class AUN_Smart_Bundler {
             .aun-screen-selects .aun-bundle-var-select{margin-top:0;}
             #aun-screen-type{flex:1 1 150px;max-width:none;min-width:0;}
             #aun-screen-size{flex:0 0 auto;max-width:130px;}
+            /* Sold-out sizes/colours stay listed but unselectable — browsers grey disabled
+               options natively; this just makes the "unavailable" read clearer. */
+            .aun-bundle-var-select option:disabled{color:#b6c2cf;}
             /* View / Remove actions (shown once a screen is selected) */
             .aun-screen-actions{display:flex;gap:16px;align-items:center;margin-top:8px;flex-wrap:wrap;}
             .aun-screen-link{font-size:12px;font-weight:600;color:#0188fe;text-decoration:none;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;cursor:pointer;font-family:inherit;line-height:1;}
@@ -406,11 +425,18 @@ class AUN_Smart_Bundler {
                            class="aun-bundle-title" onclick="event.stopPropagation()"><?php echo esc_html( $bag->get_name() ); ?></a>
                         <span class="aun-bundle-type-badge type-bag">Bag</span>
                         <?php if ( $bag->is_type( 'variable' ) ) : ?>
+                            <?php // Same rule as screens: list every variation, disable the sold-out
+                                  // ones (so the shopper sees the full range) and pre-select the first
+                                  // one that is actually buyable. ?>
                             <select id="var-select-<?php echo esc_attr( $bid ); ?>" class="aun-bundle-var-select">
-                                <?php foreach ( $bag->get_children() as $vid ) :
+                                <?php $picked = false;
+                                foreach ( $bag->get_children() as $vid ) :
                                     $v = wc_get_product( $vid );
-                                    if ( ! $v || ! $v->is_in_stock() ) continue; ?>
-                                    <option value="<?php echo esc_attr( $vid ); ?>" data-price="<?php echo esc_attr( (float) $v->get_price() ); ?>"><?php echo esc_html( self::variation_label( $v ) ); ?></option>
+                                    if ( ! $v ) continue;
+                                    $in  = ( $v->is_in_stock() && $v->is_purchasable() );
+                                    $sel = ( $in && ! $picked );
+                                    if ( $sel ) { $picked = true; } ?>
+                                    <option value="<?php echo esc_attr( $vid ); ?>" data-price="<?php echo esc_attr( (float) $v->get_price() ); ?>" <?php disabled( ! $in ); selected( $sel ); ?>><?php echo esc_html( self::variation_label( $v ) . ( $in ? '' : ' — Sold out' ) ); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         <?php endif; ?>
@@ -443,7 +469,7 @@ class AUN_Smart_Bundler {
         document.addEventListener('DOMContentLoaded', function () {
             var basePrice = <?php echo json_encode( $proj_price ); ?>;
             var SCREENS   = <?php echo wp_json_encode( array_values( array_map( function ( $s ) {
-                return [ 'id' => $s['id'], 'url' => $s['url'], 'pct' => $s['pct'], 'img' => $s['img'], 'opts' => $s['opts'] ];
+                return [ 'id' => $s['id'], 'url' => $s['url'], 'pct' => $s['pct'], 'img' => $s['img'], 'var' => $s['var'], 'opts' => $s['opts'] ];
             }, $screens ) ) ); ?>;
 
             function formatMoney(a){ return '৳' + Math.round(a).toLocaleString('en-IN', { minimumFractionDigits:0, maximumFractionDigits:0 }); }
@@ -469,12 +495,15 @@ class AUN_Smart_Bundler {
                 var s = SCREENS[parseInt(typeSel.value, 10)];
                 if (!s) return null;
                 var oi = 0;
-                if (s.opts.length > 1){
+                if (s.var){
                     if (!sizeSel || sizeSel.value === '') return null;
                     oi = parseInt(sizeSel.value, 10);
                 }
                 var opt = s.opts[oi];
-                return opt ? { s: s, opt: opt } : null;
+                // A sold-out size can never be priced or added (belt-and-braces: the
+                // option is disabled in the dropdown, so it shouldn't be selectable).
+                if (!opt || !opt.stock) return null;
+                return { s: s, opt: opt };
             }
 
             // When the screen TYPE changes: swap the thumbnail, (re)build the size dropdown, recalc.
@@ -490,11 +519,23 @@ class AUN_Smart_Bundler {
                     if (s && screenThumb) screenThumb.innerHTML = '<img src="' + s.img + '" alt="" style="width:100%;height:100%;object-fit:contain;">';
                     if (s && screenView) screenView.href = s.url;
                     if (screenActions) screenActions.style.display = '';
-                    if (s && s.opts.length > 1){
-                        var html = '';
-                        s.opts.forEach(function(o, idx){ html += '<option value="' + idx + '">' + o.label + '</option>'; });
-                        sizeSel.innerHTML = html;
-                        sizeSel.value = '0';            // auto-pick the first size so a price shows immediately
+                    // Show the size dropdown for ANY variable screen — even when only one
+                    // size is left in stock — so the shopper always sees which size they
+                    // are buying. Sold-out sizes stay listed but disabled (greyed by the
+                    // browser) so the range is visible and the choice is honest.
+                    if (s && s.var && sizeSel){
+                        sizeSel.innerHTML = '';
+                        var firstInStock = -1;
+                        s.opts.forEach(function(o, idx){
+                            if (o.stock && firstInStock < 0) firstInStock = idx;
+                            var op = document.createElement('option');
+                            op.value = String(idx);
+                            op.textContent = o.label + (o.stock ? '' : ' — Sold out');
+                            if (!o.stock) op.disabled = true;
+                            sizeSel.appendChild(op);
+                        });
+                        // Auto-pick the first AVAILABLE size (index 0 may be sold out).
+                        sizeSel.value = String(firstInStock < 0 ? 0 : firstInStock);
                         sizeSel.style.display = '';
                     } else if (sizeSel){
                         sizeSel.style.display = 'none'; sizeSel.innerHTML = '';

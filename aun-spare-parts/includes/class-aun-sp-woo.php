@@ -149,6 +149,14 @@ class AUN_SP_Woo {
 		if ( ! $r ) {
 			return 0;
 		}
+		// The last line of defence against billing for a request that is off. Every
+		// caller checks this too, but callers are where the gaps kept appearing (a
+		// stale admin tab POSTing "send payment link" at a request declined five
+		// minutes ago would have raised a real order). Money starts here, so the
+		// check belongs here as well.
+		if ( AUN_SP_Requests::is_cancelled( $r->overall_status ) ) {
+			return 0;
+		}
 
 		$items = $wpdb->get_results( $wpdb->prepare(
 			"SELECT part_label, qty, unit_price FROM $t_item WHERE request_id = %d AND unit_price > 0 ORDER BY id ASC",
@@ -311,7 +319,7 @@ class AUN_SP_Woo {
 		if ( 'closed' === $sp_status && $order->is_paid() && ! $order->has_status( 'completed' ) ) {
 			$order->update_status( 'completed', 'Spare-parts request marked Completed.' );
 			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' marked Completed (request delivered)' );
-		} elseif ( in_array( $sp_status, array( 'rejected', 'declined' ), true ) ) {
+		} elseif ( in_array( $sp_status, array( 'rejected', 'declined', 'expired' ), true ) ) {
 			if ( $order->is_paid() ) {
 				// Money already taken — cancelling here would hide that a refund is owed.
 				self::log( $request_id, 'refund', 'REFUND DUE — ৳' . number_format_i18n( (float) $order->get_total(), 2 )
@@ -340,7 +348,7 @@ class AUN_SP_Woo {
 		if ( ! $r || ! empty( $r->refunded_at ) ) {
 			return false;
 		}
-		if ( ! in_array( $r->overall_status, array( 'rejected', 'declined' ), true ) ) {
+		if ( ! AUN_SP_Requests::is_cancelled( $r->overall_status ) ) {
 			return false;
 		}
 		$order = self::order_for( $request_id );

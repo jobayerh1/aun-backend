@@ -250,6 +250,22 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		// The projector finder. Open to everyone — this is the one feature in the
+		// app aimed at someone who has not bought anything yet, and putting a
+		// login in front of "help me choose" would ask for a phone number before
+		// giving any reason to trust us with it.
+		register_rest_route( $ns, '/finder', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'finder' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( $ns, '/parts/revive', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'parts_revive' ),
+			'permission_callback' => $auth,
+		) );
+
 		register_rest_route( $ns, '/repairs/request', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'repairs_request' ),
@@ -995,6 +1011,13 @@ class AUN_App_REST {
 		if ( in_array( $row->overall_status, array( 'rejected', 'declined' ), true ) ) {
 			return $this->err( 'unavailable', 'This request is closed, so there is nothing to pay.', 400 );
 		}
+		// A lapsed quote is a price we stopped standing behind. Taking money
+		// against it would commit us to a figure we deliberately let expire —
+		// and it would also silently approve it, since paying counts as a yes
+		// further down. They ask for a fresh quote instead.
+		if ( 'expired' === $row->overall_status ) {
+			return $this->err( 'expired', 'This quote has expired. Ask us for a new one and we will re-check the price.', 409 );
+		}
 
 		// Reuse an order that is already correct.
 		//
@@ -1253,6 +1276,253 @@ class AUN_App_REST {
 		) );
 	}
 
+	/**
+	 * A product's price as PLAIN TEXT, fit to drop straight into the app.
+	 *
+	 * ⚠️ Do not go back to `wp_strip_all_tags( get_price_html() )`. Two things
+	 * went wrong with it, both visible on the customer's screen:
+	 *
+	 *  1. **Stripping tags does not decode entities.** WooCommerce writes the
+	 *     taka sign as `&#2547;` and its spacing as `&nbsp;`, so the app —
+	 *     which renders plain text, not HTML — displayed the literal
+	 *     "&#2547;&nbsp;14,500". A browser hid this bug; a Text widget cannot.
+	 *  2. **`get_price_html()` is a filtered free-for-all.** The EMI plugin
+	 *     appends "0% EMIs from ৳2,417/month" to it, so a field the app treats
+	 *     as one price arrived as a paragraph of someone else's marketing.
+	 *
+	 * Built from WooCommerce's own primitives instead: `wc_price()` for the
+	 * formatting (currency symbol, thousands separator and decimals all follow
+	 * the store's settings, so the app still never invents a format), and the
+	 * variable-product range handled explicitly. Then decoded, once, here.
+	 */
+	private static function price_text( $p ) {
+		if ( ! function_exists( 'wc_price' ) ) {
+			return '';
+		}
+
+		if ( $p->is_type( 'variable' ) ) {
+			$min = (float) $p->get_variation_price( 'min', true );
+			$max = (float) $p->get_variation_price( 'max', true );
+			$txt = ( $min < $max )
+				? wc_price( $min ) . ' – ' . wc_price( $max )
+				: wc_price( $min );
+		} else {
+			$price = $p->get_price();
+			if ( '' === $price || null === $price ) {
+				return '';
+			}
+			$txt = wc_price( (float) $price );
+		}
+
+		return self::plain( $txt );
+	}
+
+	/** The struck-through original, or '' when the product is not on sale. */
+	private static function sale_before_text( $p ) {
+		if ( ! function_exists( 'wc_price' ) || ! $p->is_on_sale() ) {
+			return '';
+		}
+		$regular = $p->is_type( 'variable' )
+			? (float) $p->get_variation_regular_price( 'max', true )
+			: (float) $p->get_regular_price();
+
+		return $regular > 0 ? self::plain( wc_price( $regular ) ) : '';
+	}
+
+	/**
+	 * HTML → the plain text a Flutter `Text` widget can actually render.
+	 *
+	 * Tags out, entities decoded, `&nbsp;` turned into a real space (it decodes
+	 * to U+00A0, which is invisible but not a normal space and breaks wrapping
+	 * in odd places), and runs of whitespace collapsed.
+	 */
+	private static function plain( $html ) {
+		$txt = html_entity_decode( wp_strip_all_tags( (string) $html ), ENT_QUOTES, 'UTF-8' );
+		$txt = str_replace( "\xC2\xA0", ' ', $txt );
+		return trim( preg_replace( '/\s+/u', ' ', $txt ) );
+	}
+
+	/**
+	 * Projector finder: five answers in, the two best matches out.
+	 *
+	 * ⚠️ The scoring is NOT reimplemented here. It calls the website's own
+	 * `AUN_Projector_Wizard::recommend()`, which reads the thresholds an admin
+	 * set in wp-admin (brightness cut-offs, budget bands, the portable weight
+	 * limit). A second copy in the app would drift the first time one of those
+	 * numbers moved, and the app and the website would be recommending
+	 * different projectors to the same customer with nobody watching.
+	 *
+	 * What this method owns is the SHAPE: the plugin's ajax handler answers in
+	 * HTML full of Font Awesome markup, which is useless to a Flutter client.
+	 */
+	public function finder( $request ) {
+		if ( ! class_exists( 'AUN_Projector_Wizard' )
+			|| ! method_exists( 'AUN_Projector_Wizard', 'recommend' ) ) {
+			return $this->err( 'unavailable', 'The projector finder is not available right now.', 503 );
+		}
+
+		$answers = $request->get_param( 'answers' );
+		$answers = is_array( $answers ) ? $answers : array();
+
+		$keys  = array( 'usage', 'lighting', 'size', 'throw', 'budget' );
+		$clean = array();
+		foreach ( $keys as $k ) {
+			$clean[ $k ] = sanitize_text_field( (string) ( $answers[ $k ] ?? '' ) );
+		}
+		// Every answer is required. A partial run scores against blanks and
+		// returns a confident-looking recommendation based on nothing.
+		foreach ( $clean as $k => $v ) {
+			if ( '' === $v ) {
+				return $this->err( 'incomplete', 'Please answer all five questions.', 400 );
+			}
+		}
+
+		$res = AUN_Projector_Wizard::recommend( $clean );
+		if ( empty( $res['ok'] ) ) {
+			return $this->ok( array(
+				'matches'      => array(),
+				'physics_warn' => false,
+			) );
+		}
+
+		$ctx     = $res['context'] ?? array();
+		$matches = array();
+
+		foreach ( (array) $res['matches'] as $i => $m ) {
+			$p = $m['product'];
+
+			// The reason list is the whole point of the finder: a bare product
+			// card is a shop, and a shop does not answer "will this work in my
+			// room?". Rendered as data (pass/fail + text) so the app styles it
+			// natively instead of parsing the website's markup.
+			$reasons = array();
+			if ( method_exists( 'AUN_Projector_Wizard', 'generate_reasons' ) ) {
+				foreach ( (array) AUN_Projector_Wizard::generate_reasons(
+					$ctx['usage'], $ctx['lighting'], $ctx['size'], $ctx['throw'],
+					$m['ansi'], $m['has_4k'], $m['is_short_throw'], $m['is_android_tv'],
+					$m['ram'], $m['weight'], $ctx['port_wt'],
+					$ctx['ansi_dim'], $ctx['ansi_bright'],
+					$m['price'], $ctx['budget'], $ctx['bgt_entry'], $ctx['bgt_mid']
+				) as $r ) {
+					$reasons[] = array(
+						'ok'   => ( 'pass' === ( $r[0] ?? '' ) ),
+						'text' => self::plain( (string) ( $r[2] ?? '' ) ),
+					);
+				}
+			}
+
+			$summary = method_exists( 'AUN_Projector_Wizard', 'generate_ai_summary' )
+				? self::plain( (string) AUN_Projector_Wizard::generate_ai_summary(
+					$ctx['usage'], $ctx['lighting'], $ctx['size'], $ctx['throw'],
+					$m['ansi'], $m['has_4k'], $m['is_short_throw'], $m['is_android_tv'],
+					$m['ram'], $m['weight'], $ctx['port_wt']
+				) )
+				: '';
+
+			// ⚠️ Brightness travels as a CHIP, never as a number. The store's
+			// public copy is deliberately qualitative (wizard 3.4.0) because the
+			// figures in the descriptions are not measured ANSI — shipping the
+			// raw number to the app would republish exactly the claim the site
+			// stopped making. See the ANSI-sync decision.
+			$chips = array();
+			if ( $m['ansi'] >= $ctx['ansi_bright'] ) { $chips[] = 'High brightness'; }
+			if ( $m['has_4k'] )        { $chips[] = '4K UHD'; }
+			if ( $m['is_short_throw'] ){ $chips[] = 'Short throw'; }
+			if ( $m['is_android_tv'] ) { $chips[] = 'Android TV'; }
+			elseif ( $m['is_smart'] )  { $chips[] = 'Android Smart'; }
+			if ( $m['ram'] > 0 )       { $chips[] = $m['ram'] . 'GB RAM'; }
+			if ( $m['weight'] > 0 )    { $chips[] = $m['weight'] . ' kg'; }
+
+			$img = wp_get_attachment_image_url( $p->get_image_id(), 'woocommerce_thumbnail' );
+
+			$matches[] = array(
+				'id'         => $p->get_id(),
+				// Product titles carry entities too — an "&amp;" in a name
+				// reaches a Text widget as the literal five characters.
+				'name'       => self::plain( $p->get_name() ),
+				'image'      => (string) ( $img ?: wc_placeholder_img_src() ),
+				'url'        => $p->get_permalink(),
+				'price'      => self::price_text( $p ),
+				// Only when it is genuinely on sale — the app strikes it out.
+				'price_before' => self::sale_before_text( $p ),
+				'match_pct'  => (int) AUN_Projector_Wizard::score_to_pct( $m['score'] ),
+				'best'       => ( 0 === $i ),
+				'summary'    => $summary,
+				'reasons'    => $reasons,
+				'chips'      => $chips,
+				'backorder'  => ( 'onbackorder' === ( $m['stock_status'] ?? '' ) ),
+			);
+		}
+
+		return $this->ok( array(
+			'matches'      => $matches,
+			'physics_warn' => (bool) $res['physics_warn'],
+		) );
+	}
+
+	/**
+	 * "I still want this part" on an expired quote.
+	 *
+	 * Mirrors the website's `aun_sp_revive` ajax action, with the authorisation
+	 * the website does not need: the ref must belong to the caller's phone. The
+	 * website reaches this from a link tied to one ref; here a guessed ref would
+	 * otherwise let anyone reopen a stranger's request and put our staff to work
+	 * re-pricing it.
+	 *
+	 * Everything else — the state claim, the price reset, the admin email — is
+	 * the plugin's, so the app and the website can never disagree about what
+	 * reviving means.
+	 */
+	public function parts_revive( $request ) {
+		$me  = $this->identity();
+		$ref = strtoupper( trim( (string) $request->get_param( 'ref' ) ) );
+
+		if ( '' === $ref ) {
+			return $this->err( 'invalid', 'Invalid request.', 400 );
+		}
+		// revive_quote() ships in AUN Spare Parts 0.31.0; the two plugins are
+		// updated separately, so fail cleanly rather than fataling.
+		if ( ! AUN_App_Services::parts_available()
+			|| ! method_exists( 'AUN_SP_Requests', 'revive_quote' ) ) {
+			return $this->err( 'unavailable', 'Spare parts service is temporarily unavailable.', 503 );
+		}
+		if ( '' === $me['phone'] ) {
+			return $this->err( 'no_phone', 'No phone number on your account.', 403 );
+		}
+
+		global $wpdb;
+		$t_req    = AUN_SP_Install::table( 'requests' );
+		$variants = AUN_App_Phone::variants( $me['phone'] );
+		$ph       = implode( ',', array_fill( 0, count( $variants ), '%s' ) );
+
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT id FROM $t_req
+			 WHERE ref = %s AND ( phone_current IN ($ph) OR phone_onfile IN ($ph) ) LIMIT 1",
+			array_merge( array( $ref ), $variants, $variants )
+		) );
+		if ( ! $row ) {
+			return $this->err( 'not_found', 'That request was not found on your account.', 404 );
+		}
+
+		$result = AUN_SP_Requests::revive_quote( (int) $row->id, 'app' );
+		if ( empty( $result['ok'] ) ) {
+			// not_expired is the common one: they already tapped this, or the
+			// admin re-quoted first. Neither is a failure worth alarming them
+			// about, so it carries its own code for the app to soften.
+			return $this->err(
+				(string) $result['code'],
+				(string) $result['message'],
+				'not_expired' === $result['code'] ? 409 : 400
+			);
+		}
+
+		return $this->ok( array(
+			'ref'     => $ref,
+			'status'  => 'submitted',
+			'message' => (string) $result['message'],
+		) );
+	}
+
 	public function my_service_requests() {
 		$me = $this->identity();
 		if ( '' === $me['phone'] ) {
@@ -1421,6 +1691,20 @@ class AUN_App_REST {
 				'website'  => '' !== $opts['website_url'] ? $opts['website_url'] : home_url( '/' ),
 				'facebook' => (string) $opts['facebook_url'],
 			),
+			// Where to post a projector once a repair is approved. The app
+			// shows the "how to send it" card only when there is an address
+			// here — a card that says "send it to (blank)" is worse than no
+			// card, and the customer would post it nowhere.
+			'repair_ship'   => array(
+				'name'    => (string) ( $opts['repair_ship_name'] ?? '' ),
+				'phone'   => (string) ( $opts['repair_ship_phone'] ?? '' ),
+				'address' => (string) ( $opts['repair_ship_address'] ?? '' ),
+				'note'    => (string) ( $opts['repair_ship_note'] ?? '' ),
+				// The three dropdown answers on Pathao's booking form.
+				'city'    => (string) ( $opts['repair_ship_city'] ?? '' ),
+				'zone'    => (string) ( $opts['repair_ship_zone'] ?? '' ),
+				'area'    => (string) ( $opts['repair_ship_area'] ?? '' ),
+			),
 			'announcement'  => (string) $opts['announcement'],
 			'discount_note' => (string) $opts['discount_note'],
 			'banners'       => $banners,
@@ -1430,6 +1714,9 @@ class AUN_App_REST {
 			'app'           => array(
 				'latest_version_code' => (int) $opts['latest_version_code'],
 				'latest_version_name' => (string) $opts['latest_version_name'],
+				// What changed, for the update sheet. A version number is a
+				// fact about us; this is a reason for the customer.
+				'release_notes'       => (string) ( $opts['release_notes'] ?? '' ),
 				'min_version_code'    => (int) $opts['min_version_code'],
 				'apk_url'             => (string) $opts['apk_url'],
 			),

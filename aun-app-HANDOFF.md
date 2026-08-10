@@ -23,7 +23,481 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.75.0+79**, **plugin 1.69.0 (DB v17)**, **spare-parts 0.29.0**.
+Current versions: **app 1.87.0+91**, **plugin 1.78.1 (DB v18)**, **spare-parts 0.32.0 (DB v10)**,
+**projector wizard 3.5.0**.
+
+## 2026-08-10 (7) — app 1.87.0+91 / app-api 1.78.1: an inline link stays inline
+
+Second correction, from a screenshot: the same two videos appeared as big cards under **both**
+"What's new" and "Installation steps", and the admin's inline link — *"formatted as FAT32
+(Video Tutorial)"* inside step 3 — had been ripped out of the sentence.
+
+**The rule now, and it is the point of `rich_note.dart`:**
+
+- **An `<a>` the admin wrote into a sentence STAYS THERE.** It keeps their wording, keeps the video
+  next to the step it explains, and `onTapUrl` opens the app's video window instead of a browser.
+  Lifting it out deletes text they wrote and moves the video away from what it is about.
+- **Only embeds with nothing to tap become cards** — `<iframe>`, an oEmbed `<figure>`, or a bare URL
+  on its own line. `standaloneYoutubeIds()` = ids remaining after every `<a>…</a>` is removed.
+  `htmlWithoutStandaloneYouTube()` strips only those; ⚠️ its bare-URL sweep carries a
+  **negative lookbehind for `="`** or it reaches inside `href` and shreds the very link being
+  protected.
+
+**The duplication** was `note_videos` covering the whole content item (steps AND changelog) being
+rendered wholesale in each block. `videos` is now a **lookup by id**, never a list to render — each
+block renders only the ids present in its own html.
+
+⚠️ **Regex bug found by the tests, in BOTH copies:** `watch\?[^"\s<]*[?&]v=` cannot match
+`watch?v=ID` — the `?` is already consumed by `watch\?`, so the separator must be optional
+(`[?&]?v=`). The Dart and PHP patterns are near-identical and must be changed together.
+
+**Tests:** `rich_note_test.dart` 25, built around the owner's REAL note — the anchor is never turned
+into a card, `href` and link text and "FAT32" all survive, the id is still recovered so the tap can
+open the player, an iframe and a bare URL still do become cards, and a note mixing both yields one
+card and one live link. Flutter suite **213**.
+
+## 2026-08-10 (6) — app 1.86.0+90 / app-api 1.78.0: a note's tutorial opens the REAL video window
+
+Correction to the previous round. The owner's ask was not "make the embed render" — it was **"give
+it the same window Video content gets"**: tap the tutorial in an installation note, get the full
+video screen with the player on top and the title and date beneath. I built an inline facade player
+instead, which fixed the blank box and missed the point.
+
+**Now:** `RichNote` renders each embedded tutorial as a **card** (thumbnail, title, date), and
+tapping it pushes `VideoPlayerScreen` — literally the screen a published video guide opens. One
+video window in the whole app, so there is no second player to keep in step with it, and the
+full-screen playback, back handling, embed workaround and "Watch on YouTube" fallback all come
+along. A tutorial should not look like a lesser thing because of where it happens to be filed.
+
+**The title and date come from the SERVER.** New `note_videos` on every non-video content item:
+the ids are extracted from `description` + `changelog` and each is run through the same
+`youtube_meta()` the video library uses. ⚠️ **The YouTube Data API key lives on the server** — the
+app cannot resolve a title, so without this it would have an id and nothing to put around the
+player. Falls back to the parent entry's title when no key is configured, never to an empty heading.
+
+The app still parses the ids locally as a fallback, so an older server means a working video with a
+generic heading rather than a blank rectangle.
+
+**Tests:** `rich_note_test.dart` 19 — titles and dates arrive, thumbnails derive from the id, and an
+older server with no `note_videos` still yields a playable id. Flutter suite **207**.
+
+## 2026-08-10 (5) — app 1.85.0+89 / app-api 1.77.0 (DB v18): firmware "What's new"
+
+Owner asked where to put a changelog. There was nowhere — so it would have gone at the top of the
+installation note, which is the wrong shape: a firmware entry answers two questions asked in ORDER,
+**"should I install this?"** then **"how?"**, and burying the reason under the instructions hides it
+from everyone who has not already decided. It matters most for OTA, where there is no download
+button — the customer must get up and open the projector's menu, so they need a reason worth it.
+
+**DB v18** adds `aun_app_content.changelog`. New "What's new" rich editor on the firmware form,
+above the (now renamed) **Installation steps**. Rendered in the app above the steps in its own
+tinted block, through `RichNote` — so a demo video pasted into the changelog plays too.
+
+**The notification now carries the reason, not just the name.** `content_published()` takes the
+changelog and uses `first_line()` for the body: previously it was the title, so a push said "New
+firmware update / A45 Pro firmware 2.1.0" — two ways of saying a number changed. Now it says "Fixes
+no sound over HDMI on some TVs". First line only; the full list is one tap away.
+
+⚠️ **Found by the bench, not by review:** `first_line()` guarded truncation with
+`function_exists( 'mb_strlen' )` and returned the line UNTOUCHED when mbstring was missing — so a
+server without the extension would store a 500-character notification body, the exact case the limit
+exists for. The fallback now cuts on a byte boundary at a space. The scratchpad PHP has no mbstring,
+which is the only reason this surfaced. **A capability guard must still do the job, not skip it.**
+
+**Tests:** bench `test-changelog-line.php` (11) — first bullet not the whole list, bullets never run
+together, `<br>` and `<p>` shapes, a typed bullet character stripped, entities decoded, empty falls
+back to the title, an empty first bullet skipped, long lines cut **without mbstring**, no markup ever
+reaching a lock screen. `rich_note_test.dart` 17 (changelog and steps stay distinct). Flutter **205**.
+
+## 2026-08-10 (4) — app 1.84.0+88 / app-api 1.76.0: video in a note, and OTA firmware
+
+### 1. The blank player in an installation note
+
+⚠️ **Two independent causes, and fixing either alone would still have left a blank rectangle:**
+
+1. **`HtmlWidget` does not render `<iframe>`.** It drops it silently, so the admin's embedded
+   tutorial became a gap.
+2. **Even rendered, a direct youtube.com iframe fails** — "Video unavailable, error 152-4" from an
+   anonymous WebView context. `VideoPlayerScreen` already knew this and loads
+   `${Env.baseUrl}/embed?v=ID` instead. **Anything showing YouTube in this app must go through that
+   page.**
+
+New `lib/src/screens/rich_note.dart`: `RichNote` lifts the videos OUT of the HTML, renders them with
+our own player, and gives `HtmlWidget` the remainder — otherwise the note keeps the dead hole where
+the iframe was. Used by the firmware installation note AND the generic content description.
+
+`youtubeIdsInHtml()` is deliberately greedy about WHERE it looks — iframe `src`, anchor `href`, a
+bare URL in a `wp-block-embed` figure — because which one you get depends on how the link was pasted
+into the editor, and **the commonest case is a bare link on its own line**. `htmlWithoutYouTube()`
+removes the WP wrappers too, or an empty bordered box replaces the old hole.
+
+`NoteVideo` is a **facade**: poster + play button, WebView built only on tap. A note can carry
+several videos, and nothing should autoplay at someone who opened a page to read steps.
+
+### 2. OTA firmware — publish it with no file
+
+**"No file" IS the definition.** An admin leaves the URL blank on a firmware entry and the server
+derives `ota => firmware && url === ''`. Derived rather than a separate checkbox on purpose: a flag
+that can disagree with whether a file exists eventually does, and then the app offers a download
+that 404s. The URL is also emptied rather than pointing at the redirect endpoint.
+
+The app replaces the download area with an **"installs over Wi-Fi"** card — no button, the admin's
+steps and video above it (via `RichNote`), and the warning every OTA needs: stay on Wi-Fi, do not
+switch off part-way. ⚠️ The `ota` branch must come **before** the `appDownloadable` check, or an OTA
+entry falls into "get it from the website" and sends people hunting for a zip that was never
+published. Everything else is unchanged: it still appears under the model, keeps its version number,
+and still fires the "new firmware" notification. Admin form explains it inline.
+
+**Tests:** NEW `rich_note_test.dart` (15) — all four editor shapes, order and de-duplication, a
+non-YouTube link ignored, a video-free note left byte-identical, wrappers removed, **the surrounding
+instructions always survive**, and OTA parsing including an older server that sends no flag (must
+never guess OTA and hide a real download). Suite **203**.
+
+## 2026-08-10 (3) — app 1.83.0+87 / app-api 1.75.0: the receiver block matches Pathao's form
+
+The owner pointed out the website already shows the return address laid out as **Pathao's own
+booking form** — Receiver Name, Receiver Phone, Delivery Address, then City / Zone / Area marked as
+DROPDOWNs. That is a better idea than the prose address block I shipped, for a reason worth writing
+down: **the customer is not reading an address, they are filling in a form.** Naming each field the
+way their screen names it turns transcription into matching, and picking the wrong Zone or Area is
+the commonest way a parcel reaches the wrong hub — a street address does not tell you which Zone
+Pathao files it under.
+
+New options `repair_ship_city` / `_zone` / `_area` (admin: "Pathao City / Zone / Area", typed
+exactly as they appear in Pathao's list), carried in `/config`, rendered as labelled rows with a
+DROPDOWN tag. Optional throughout — blank means a counter courier and the address alone.
+
+**Two things the app does that the website page does not, both because it is a phone:**
+- **Every row is individually tap-to-copy.** A single "copy everything" button is useless against a
+  dropdown — you cannot paste six lines into a `<select>` — and the dropdowns are exactly where
+  people go wrong. Tap "Mirpur Buddhijibi Koborsthan", paste it into Pathao's search box, done.
+  Copy-all is kept for sharing the block.
+- **`copyText` LABELS city/zone/area** rather than running them onto the street line. A dropdown
+  answer glued to an address reads as one long address and is then wrong in both fields.
+
+**Tests:** `repair_ship_test.dart` now 9 — carried through when set, optional when not, any one of
+the three shows the block, and the copy block labels them.
+
+## 2026-08-10 (2) — app-api 1.74.1: the local-picks form showed one character per field
+
+Owner screenshot: Title, Platform, URL and Poster had collapsed to about one visible character while
+the date picker sat there at full width.
+
+⚠️ **A `<table>` cannot lay out a form containing `<input type="date">` or a button.** Both have hard
+intrinsic minimum widths that table auto-layout will not shrink, so they take what they need and
+every free-text column absorbs the loss. The `width:22%` hints on `<th>` are only hints and lose to
+unshrinkable content every time. Adding the 7th column (TMDB) is what pushed it over.
+
+Replaced with **a card per pick** and a wrapping CSS grid
+(`repeat(auto-fit, minmax(240px, 1fr))`): every field declares a floor it will never go below, and
+the grid moves it to the next line instead of squeezing it. Fields are labelled above rather than by
+a distant column header, and the link — the longest value — spans the full width. The JS was written
+against `.aun-watch-row` / `.aun-watch-del` / `.aun-watch-find` class hooks, so it needed no changes.
+
+**Verified, not assumed:** rendered the real markup in the Browser pane and measured. At 1280px
+Title is **293px** (previously ~40) and the link field 910px; at a narrow width the grid drops to
+fewer columns with fields still ≥290px and `body.scrollWidth == innerWidth` — no horizontal
+overflow. **Measure a layout fix; a screenshot of the fixed version proves nothing about the widths
+that broke.**
+
+## 2026-08-10 — app 1.82.0+86 / app-api 1.74.0: sending a projector, and Bangla films with real detail
+
+### 1. "Send for repair" no longer ends at approval
+
+Approval used to be the end of the road: the admin pressed a button, the app said nothing further,
+and the customer sat holding a projector with nowhere to post it.
+
+New `_ShipItCard` on the repair detail, shown **only when `status == 'approved'` and no ERP job
+sheet exists yet** — before approval there is nothing to send (a request may still be refused, and a
+customer who posts a projector we then decline has paid courier fees for nothing); after it arrives,
+telling them how to post it is nonsense. Address in one copyable + selectable block, tap-to-call,
+four steps (write the ref on the box → what to pack → any courier counter → **keep the receipt**),
+and a WhatsApp button pre-filled to send us the consignment number.
+
+⚠️ **No address configured → no address shown.** `RepairShipTo.configured` is the single gate, and a
+name + phone with no street is NOT an address — a half-blank line on a courier form loses somebody's
+projector. The card degrades to "we will message you the address; do not send it yet", which is
+true. New admin fields under Support settings; new `repair_ship` block in `/config`.
+
+**Why not Pathao** (owner asked): their merchant API is pickup-from-us → deliver-to-customer, i.e.
+the RETURN leg only, and `courier.pathao.com/order` is a consumer form behind a session and a CSRF
+token with no contract — automating it breaks silently and pushes customer addresses through an
+unofficial channel. Worth asking Pathao whether reverse pickup is enabled on the merchant account;
+if it is, both legs come from the API we already have.
+
+### 2. Admin-curated Bangla films get the full TMDB screen
+
+**Bangladeshi cinema IS on TMDB** (Hawa, Poran, Surongo, Priyotoma…) — it simply never reaches the
+global trending feed, which is why those picks are curated by hand. They were opening a browser only
+because the app decided by ORIGIN, not by data: `hasDetail => !local && …`.
+
+- Local pick lines gained a 6th field: `Title|Platform|URL|Poster|End|movie:1044789`.
+- `AUN_App_Watch::hydrate_local()` fills overview, backdrop, year, rating, kind, genres, runtime,
+  tagline, cast and trailer from TMDB. ⚠️ **The admin's title, platform and URL always win** — TMDB
+  does not know we are pointing people at Chorki, and an English TMDB title must not replace a Bangla
+  one. Their poster wins too when set.
+- ⚠️ `local_picks()` is deliberately never cached (end dates must bite immediately), so the cache
+  lives **per title** (7-day transient) — otherwise every launch spends a TMDB round trip per pick on
+  the customer's own request. Flushed on save so a corrected id shows immediately. A dead id caches a
+  1-hour failure and the pick still works as the poster-and-link it was.
+- Admin: **Search TMDB** button per row → modal with poster/year/original title → click writes
+  `movie:1044789`. Only fills title/poster when they are still blank. Ajax is
+  `manage_options` + nonce (it spends the site's TMDB quota).
+- App: `hasDetail => overview.isNotEmpty || trailer.isNotEmpty` — **judge what arrived, never where
+  it came from.** The detail screen's pinned "Watch on {platform}" button already used `pick.url`,
+  so a linked Chorki title needed no other change.
+
+**Tests:** NEW `repair_ship_test.dart` (5) — a name+phone with no street is not an address, no stray
+blank lines in the copy block; NEW `watch_local_detail_test.dart` (6) — a linked local pick gets the
+screen, an unlinked one does not, a trailer alone is enough, identical metadata gets identical
+treatment regardless of origin. Suite **184**.
+
+## 2026-08-09 (4) — app 1.81.0+85: the image zoom-OUT that shrank from the corner
+
+Owner-reported: tapping a spare-part reference photo zoomed in beautifully, closing it glitched and
+collapsed toward the left.
+
+⚠️ **A Hero child must never carry its own fixed size.** The thumbnail was
+`Hero(child: ClipRRect(Stack(Image(width: 48, height: 48))))`. On the return flight Flutter uses the
+DESTINATION hero's child — that Stack — and lays it out inside a full-screen rect. A `Stack` sizes
+to its largest child and aligns top-left, so a 48 px image rendered in the corner of the screen and
+shrank from there. Push looked fine only because the destination was then the viewer's plain
+full-bleed image.
+
+**Three fixes, all needed:**
+- **Size moved OUTSIDE the Hero** (`SizedBox` wrapping it) plus `StackFit.expand` inside, so the
+  child adopts whatever rect the flight hands it.
+- **`flightShuttleBuilder` on both ends** — new shared `heroImageShuttle(url)` in `widgets.dart`,
+  one plain `BoxFit.contain` image for the whole flight so nothing re-lays-out mid-air. The residual
+  cover/contain mismatch is left at the 48 px end where it is invisible. **Any hero pair whose two
+  ends are not literally the same widget needs one.**
+- **No hero while pinched in.** The Hero sits inside the `InteractiveViewer`, so a zoomed transform
+  makes its rect several times the screen and often mostly off it; flying that to a thumbnail is a
+  smear. Zoomed → plain fade. Tapping a zoomed photo now zooms out instead of closing, which is what
+  every photo viewer does and guarantees the close starts untransformed.
+
+**The same bug was latent in the repair-photo strip** (fixed 128×96 inside its Hero) and is fixed
+too — it just had a less extreme size ratio, so it read as a small jump rather than a glitch.
+
+## 2026-08-09 (3) — app 1.80.0+84 / app-api 1.73.0: the ৳ that printed as `&#2547;`
+
+### 1. ⚠️ Stripping tags is not decoding entities
+
+Owner screenshot: the finder card read **"&#2547;&nbsp;14,500 0% EMIs from ৳2,417/month"**. Two
+separate mistakes in one line, `wp_strip_all_tags( $p->get_price_html() )`:
+
+- **Entities are not tags.** WooCommerce writes the taka sign as `&#2547;` and its spacing as
+  `&nbsp;`. Stripping tags leaves both, and the app renders **plain text** — a browser would have
+  hidden this bug, a `Text` widget cannot. **Anything crossing from WordPress into the app must be
+  entity-decoded server-side, not just tag-stripped.**
+- **`get_price_html()` is a filtered free-for-all.** The EMI plugin appends its own sentence to it,
+  so a field the app treats as one price arrived as a paragraph of a third party's marketing.
+
+Fixed with `price_text()` / `sale_before_text()` built from WooCommerce primitives (`wc_price()`,
+explicit variable-product range) plus one `plain()` helper — tags out, entities decoded, `&nbsp;`'s
+U+00A0 turned into a real space, whitespace collapsed. `plain()` also now covers the product NAME,
+the summary and every reason, which had the same latent bug. New `price_before` renders struck
+through when a product is genuinely on sale.
+
+**Tests:** `finder_test.dart` 10 — asserts no `&#`, no `&nbsp`, and no "EMI" survives in a price.
+
+### 2. Home strip: how a dead row goes away
+
+Answering the owner's question, and it needed a second answer. Automatic: the server drops expired
+and declined rows after **10 days** (`PARTS_RECOVERY_DAYS`). Manual: those rows are now
+**swipe-to-dismiss**, remembered in SharedPreferences (`aun_strip_dismissed`, capped at 40).
+
+⚠️ **Only ENDED rows are swipeable.** Hiding a repair still on our bench does not make it stop
+happening, and a quote still awaiting an answer is the customer's own deadline — letting them swipe
+that away is helping them miss it. The dismissal is **local to the phone**: "I have read this" is a
+fact about their screen, never about the request, so the admin's list never loses anything.
+
+### 3. Support → Services regrouped, and the finder renamed
+
+One card of five rows mixed "help me decide what to buy" with "my projector is broken" — different
+people, different moods, and a shopper had to read past three after-sales rows to reach the two
+meant for them. Now two cards: **"Thinking about buying one?"** (finder, planner) and **"Already
+have a projector?"** (parts, repair, my requests). Buying leads because someone who owns nothing has
+no other route in, while an owner is already pointed at their request by Home, Devices and push.
+Five near-identical hand-built ListTiles collapsed into one `_ServiceTile`.
+
+**"Find my projector" → "Help me choose"** (bn: "কোনটি নেব, সাহায্য করুন"). The old name reads like
+Find My iPhone — locate a projector you already own — which is the opposite of what it does.
+
+## 2026-08-09 (2) — app 1.79.0+83 / app-api 1.72.0 / wizard 3.5.0: the finder in the app, and Home's clock
+
+### 1. Spare parts 0.32.0 — a DECLINED quote can now be revived too
+
+`revive_quote()` accepts `expired` **and** `declined`; new `cancelled` line status; new declined SMS.
+The reasoning is right: Decline is one tap on a phone, and a mis-tap was previously silent and
+unrecoverable. So the app now offers a re-quote on both, with **different words** — telling someone
+who pressed Decline that "we did not hear back" calls them unresponsive when they answered, and
+telling someone who never replied that "you cancelled this" accuses them of a decision they never
+made. One card (`_ExpiredCard`), two faces, one button. `can_revive` covers both server-side.
+
+`declined` also gained notice + push copy, for the same reason the plugin texts it.
+
+### 2. ⚠️ Two Home-strip bugs, both live since the strip shipped
+
+`HomeStatusStrip._isDone()` decided whether something was finished by **searching the human status
+label** for "cancel", "reject", "complet"… Neither `declined`/"Quote declined" nor
+`expired`/"Quote expired — no reply" contains any of those words, so **both sat on the customer's
+Home for ever**. It would also have broken the moment a label was reworded — which just happened.
+
+Replaced by a server flag, `is_active` (`AUN_App_Services::parts_is_active()`), with three answers
+rather than two: live work → always; a real ending (completed/rejected) → gone immediately;
+**expired or declined → kept for `PARTS_RECOVERY_DAYS` (10)**, because both are undoable in one tap
+and the days right after are exactly when someone realises they still want the part. **Never decide
+lifecycle by string-matching a display label.**
+
+### 3. The countdown on Home (owner's request)
+
+A waiting quote is the only row in that strip with a clock on it, and the only one that ENDS if the
+customer does nothing — so it is the only one that gets urgency, or urgency stops meaning anything.
+Trailing pill (`3d left` → `Today`), the row and its icon turn amber inside 24 h, a 3 px hairline
+under the row shows the window closing, and the subtitle says **"Needs your answer · ৳3,400"**
+instead of "Quote sent — awaiting approval" (our filing vs their task). Expired rows show
+`Ended` + "Tap to ask for a new quote".
+
+### 4. Projector finder, native (`lib/src/screens/finder_screen.dart`)
+
+⚠️ **The scoring was NOT reimplemented in Dart, and must not be.** Wizard 3.5.0 splits
+`recommend( $answers )` (data) out of `process_recommendation()` (HTML); the ajax handler now renders
+from it, and new **`POST /finder`** returns the same result as JSON. Both front ends therefore read
+the same thresholds an admin set in wp-admin — a Dart copy would drift the first time one moved, and
+the app and the website would recommend different projectors to the same customer with nobody
+watching. `score_to_pct` / `generate_reasons` / `generate_ai_summary` became public for this.
+
+**The endpoint is unauthenticated on purpose**: this is the only feature in the app for someone who
+owns nothing yet, and asking for a phone number before answering "which one should I buy?" demands
+trust before giving any reason for it.
+
+⚠️ **Brightness travels as a chip ("High brightness"), never as a number** — the store's public copy
+is deliberately qualitative (wizard 3.4.0) and shipping the raw figure would republish exactly the
+claim the site stopped making. See the ANSI-sync decision. Failing reasons are shown beside passing
+ones: a finder that only ever agrees with you is a sales page. `physics_warn` renders **above** the
+cards.
+
+Entry: top of the Services list in the Support tab, above the planner — "which one should I buy?"
+comes before "how big will it be on my wall?".
+
+⚠️ **`FinderResult` collides with `flutter_test`'s own class** — the model is `FinderOutcome`.
+
+**Tests:** NEW `finder_test.dart` (7) — reasoning survives parsing, a compromise is never filtered
+out, the price is never re-derived, no numeric brightness reaches the app, the stretch warning
+survives, empty and malformed payloads degrade. `quote_expiry_test.dart` now 13 (both endings
+re-quotable, a real ending is not, Home visibility is the server's call). Suite **172**.
+
+**To deploy:** `aun-app-api.zip` (1.72.0) + `aun-projector-wizard.php` (3.5.0) + APK 1.79.0+83.
+Clear WP Rocket cache.
+
+## 2026-08-09 — app 1.78.0+82 / app-api 1.71.0: the app half of the quote chase (spare parts 0.31.0)
+
+Spare parts 0.31.0 gave an unanswered quote a life: **quote → reminder (day ~3) → final reminder
+(day 6) → expired (day 7)**, `quote_valid_days` configurable, reminder days derived from it so the
+ladder always fits inside the window. `expired` is a NEW terminal status and is emphatically **not
+`declined`** — nobody said no, nothing was ordered, and the customer can revive it in one tap. All
+of that talked only to SMS and the website tracker. This is the app's half.
+
+**Push / notification centre**
+- `aun_sp_quote_reminder` → `AUN_App_Services::on_parts_quote_reminder()` →
+  new `AUN_App_Notices::parts_quote_reminder()`. Reminder 1 leads with *"We have NOT ordered your
+  part yet"*; reminder 2 leads with the deadline, because on the last day the date IS the message.
+- `expired` added to `parts_status_changed()`'s copy — worded as "we did not hear back", never as a
+  refusal.
+- ⚠️ **The app mirrors the SMS ladder exactly and never adds a day of its own.** A push on a day the
+  SMS does not go out is a fourth chase wearing a different hat, and three touches is where chasing
+  stops working.
+
+⚠️ **Dedup bug found and fixed while adding this.** `dedup_key` was `parts_status:REF:quote_sent`,
+one per request for ever. 0.31.0 makes a request go round the quote loop more than once (expired →
+revive → fresh quote), so the SECOND quote would have collided with the first notice and been
+dropped in silence — the one status the customer must answer, arriving as nothing. The key now
+carries the quote round (`quoted_at`). **Any per-status dedup key needs the round when the status
+can recur.**
+
+**Payload** (`my_requests`): `expires` (ISO), `days_left`, `expired`, `can_revive`. `days_left` is
+computed **server-side** — the server owns the deadline and a phone with a wrong clock must not be
+able to show a customer a day they do not have. **null ≠ 0**: null is "never expires" (a supported
+setting), 0 is "expires today". `expired` excluded from `can_pay`, and `POST /parts/pay` now refuses
+it with code `expired` — paying would commit us to a withdrawn price AND implicitly approve it at
+that figure. `quote_reminder` excluded from the app timeline, as the website tracker does: it
+records that we chased them, which reads as nagging on their own progress list.
+
+**New `POST /parts/revive`** — mirrors the website's `aun_sp_revive`, plus the authorisation the
+website does not need (the ref must belong to the caller's phone, or a guessed ref puts our staff to
+work re-pricing a stranger's request). The state claim, price reset and admin email stay the
+plugin's, so app and website can never disagree about what reviving means.
+
+**App:** deadline line on the live quote card (`_DeadlineLine`) — the last day is a different
+*sentence*, not a smaller number ("Last day to reply", amber, timer icon), plus "Nothing has been
+ordered yet" above it. New `_ExpiredCard` with "I still want this part" and **no confirm dialog**
+(the tap commits them to nothing) — and the old amount appears nowhere on it, because re-quoting is
+the point. `not_expired` from the server is shown as the success it is. `statusChip` keeps `expired`
+**amber, not red**: red would tell them they were rejected. List rows get the expired line and a
+days-left line.
+
+**Tests:** NEW `test/quote_expiry_test.dart` (8) — deadline round-trip, **null vs 0**, expired is not
+awaiting a decision, expired is never payable, expiry inferred from the status on an older app-api,
+no revive button without the endpoint, expired ≠ declined. Flutter suite **161**. analyze clean.
+
+**To deploy:** `aun-app-api.zip` (1.71.0) + APK (1.78.0+82). Clear WP Rocket cache. Then check
+**Spare Parts → Settings → "Quote valid for (days)"** (7) and the three new templates under
+**Messages** (Quote reminder / Final quote reminder / Quote expired).
+
+## 2026-08-08 — app 1.77.0+81 / app-api 1.70.0: update prompt rebuilt the way real apps do it
+
+Fixing the broken layout left a worse problem in place: a **permanent, undismissable card in the
+middle of Home**, occupying the space belonging to the customer's projectors and requests, on every
+launch until they gave in.
+
+**Now:** `lib/src/screens/update_sheet.dart` — a dismissible bottom sheet shown **once per version
+code** (`aun_update_seen_<code>` in SharedPreferences), on the first Home load after a new version
+appears. The Home card is gone; Settings keeps the on-demand check.
+
+The four rules it follows, which is what established apps do:
+- **Ask once.** Nagging teaches people to dismiss without reading — the exact habit you do not want
+  when a genuinely important release lands.
+- **Always dismissible.** Blocking is reserved for `min_version_code` + the force-update screen: a
+  separate, deliberate admin decision, never the default for every release.
+- **Leave a way back.** "Later" says where it went; Settings still has the check.
+- **Say what changed.** New admin field **What's new** (`release_notes` → `/config`), shown in the
+  sheet. A version number is a fact about us; one line about what improved is a reason for them.
+
+⚠️ The dismissal is remembered **before** the sheet is shown — force-closing the app mid-sheet
+still counts as asked, or the next launch re-asks and we are back to nagging.
+
+**Tests:** NEW `update_sheet_test.dart` (3) — asked once then remembered, a NEW version asks again,
+an older version is not resurrected by a newer dismissal. `update_banner_test.dart` retained for
+the layout rule. Flutter suite **153**.
+
+**When the Play listing goes live, delete this file.** Play's in-app update API does the same job
+natively with a background download, and is the right answer for a Play-distributed app. This
+exists because the APK is currently side-loaded.
+
+## 2026-08-08 — app 1.76.0+80: the update banner rendered one character per line
+
+The banner APPEARING was correct: `/config` carries `latest_version_code`, the app compares it to
+its own build on every launch, and shows the card automatically. No "check for update" tap needed —
+that button is only for checking on demand. Raising the version code in admin is what triggered it.
+
+**The layout was the bug.** The banner was a `ListTile` with `trailing: FilledButton`. A ListTile
+gives its trailing widget that widget's own intrinsic width and the title/subtitle only what is
+left; after the leading icon and the tile's padding there were a few pixels of text column on a
+narrow phone, so the text wrapped to **one character per line** and the card grew past the screen.
+
+Rebuilt as title row → body → full-width button. Nothing can squeeze a `Column`, and the button is
+easier to hit. The same pattern in `widgets.dart`'s content tile (short labels, so lower risk) was
+hardened with `maxLines: 2` + ellipsis.
+
+⚠️ **Never put a wide button in a ListTile's `trailing` next to text that must wrap.**
+
+**Tests:** NEW `test/update_banner_test.dart` (2) at **320dp**, asserting the card stays under 240px
+and the title keeps real width. **The test was verified against the OLD layout first** — it produced
+a **1444px** card on a 640px screen and both assertions failed, so the test genuinely catches this
+rather than merely passing. Flutter suite now **150**.
+
+`flutter analyze` cannot see a layout bug like this; only a widget test at a real width can.
 
 ## 2026-08-07 — app-api 1.69.0: a reward worth more than the cart was silently burned
 

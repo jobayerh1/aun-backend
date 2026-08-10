@@ -14,7 +14,31 @@ class AUN_SP_Requests {
 	 * NOT IN ('closed','rejected') filters, so a declined quote counted as "open"
 	 * forever — it kept the daily digest firing and sat in the Open list for good.
 	 */
-	const TERMINAL_STATES = array( 'closed', 'rejected', 'declined' );
+	/**
+	 * 'expired' is terminal in the same sense as 'declined' — it leaves your active
+	 * list and stops the digest — but it is NOT the same thing and must never be
+	 * recorded as one: declined means the customer said no, expired means they never
+	 * answered. The customer can revive an expired quote in one tap (ajax_revive).
+	 */
+	const TERMINAL_STATES = array( 'closed', 'rejected', 'declined', 'expired' );
+
+	/**
+	 * States where the deal is OFF: no money may be taken, no payment link offered,
+	 * and any money already taken is owed back.
+	 *
+	 * This exists as one constant because it kept being written out by hand — and
+	 * every time a new state joined the family it was missed somewhere. 'expired'
+	 * was absent from three of these lists (the pay endpoint, the admin's "send
+	 * payment link" button, and the refund-due check), which meant a customer
+	 * holding an old pay link could still pay a lapsed price. Add a state here, not
+	 * to an array literal somewhere.
+	 */
+	const CANCELLED_STATES = array( 'rejected', 'declined', 'expired' );
+
+	/** True when no payment should be possible on this request. */
+	public static function is_cancelled( $status ) {
+		return in_array( (string) $status, self::CANCELLED_STATES, true );
+	}
 
 	/** SQL fragment matching open (non-terminal) requests. $col e.g. 'r.overall_status'. */
 	private static function open_sql( $col = 'overall_status' ) {
@@ -69,7 +93,8 @@ class AUN_SP_Requests {
 			'arrived'     => 'Arrived at AUN (Dhaka)',
 			'dispatched'  => 'Dispatched to customer (courier)',
 			'delivered'   => 'Delivered to customer',
-			'unavailable' => 'Unavailable',
+			'unavailable' => 'Unavailable (we cannot supply it)',
+			'cancelled'   => 'Not going ahead (declined / expired)',
 		);
 	}
 
@@ -83,8 +108,35 @@ class AUN_SP_Requests {
 			'ready'            => 'Ready to dispatch',
 			'closed'           => 'Completed',
 			'declined'         => 'Quote declined',
+			'expired'          => 'Quote expired — no reply',
 			'rejected'         => 'Rejected',
 		);
+	}
+
+	/** How long a quote stays valid, in days. 0 = never expires (reminders only). */
+	public static function quote_valid_days() {
+		return max( 0, (int) get_option( 'aun_sp_quote_valid_days', 7 ) );
+	}
+
+	/**
+	 * When the two reminders go out, in days after the quote was sent.
+	 *
+	 * Derived from the validity period rather than configured separately, so the
+	 * ladder always fits inside the window: one nudge around the middle, one final
+	 * one the day before it lapses. Three touches total (quote + 2) is the point at
+	 * which chasing stops working and starts annoying — and each one costs money.
+	 */
+	public static function reminder_days() {
+		$days = self::quote_valid_days();
+		if ( $days < 1 ) {
+			return array( 3, 7 ); // no expiry: a fixed, still-finite ladder
+		}
+		if ( $days < 4 ) {
+			return array( 1, max( 2, $days - 1 ) );
+		}
+		$first  = max( 1, (int) round( $days * 0.45 ) );
+		$second = max( $first + 1, $days - 1 );
+		return array( $first, $second );
 	}
 
 	/** Entry point from the menu callback. Routes list vs detail and handles POST. */
@@ -171,7 +223,7 @@ class AUN_SP_Requests {
 		echo '</div>';
 
 		// Filter tabs.
-		$tabs = array( 'open' => 'Open', 'waiting_customer' => 'Waiting on customer', 'ready' => 'Ready', 'rejected' => 'Rejected', 'declined' => 'Declined', 'all' => 'All' );
+		$tabs = array( 'open' => 'Open', 'quote_sent' => 'Awaiting reply', 'waiting_customer' => 'Waiting on customer', 'ready' => 'Ready', 'expired' => 'Expired', 'rejected' => 'Rejected', 'declined' => 'Declined', 'all' => 'All' );
 		echo '<ul class="subsubsub">';
 		$i = 0;
 		foreach ( $tabs as $key => $label ) {
@@ -212,7 +264,21 @@ class AUN_SP_Requests {
 			echo '<td>' . esc_html( $r->phone_current ) . '</td>';
 			echo '<td>' . $this->parts_progress( $parts_by[ (int) $r->id ] ?? array() ) . '</td>';
 			echo '<td>' . esc_html( $wlbl ) . '</td>';
-			echo '<td>' . $this->status_badge( $r->overall_status ) . '</td>';
+			echo '<td>' . $this->status_badge( $r->overall_status );
+			// An unanswered quote is the one state where the WAIT is the information:
+			// how long the customer has been sitting on it, and when it lapses.
+			if ( 'quote_sent' === $r->overall_status && ! empty( $r->quoted_at ) ) {
+				$waited = $this->age_days( $r->quoted_at );
+				$left   = ! empty( $r->quote_expires_at )
+					? (int) ceil( ( strtotime( (string) $r->quote_expires_at ) - current_time( 'timestamp' ) ) / DAY_IN_SECONDS )
+					: null;
+				$col    = ( null !== $left && $left <= 1 ) ? '#b32d2e' : '#646970';
+				echo '<div style="font-size:11px;color:' . esc_attr( $col ) . ';margin-top:3px;">waiting ' . (int) $waited . 'd'
+					. ( null !== $left ? ( $left > 0 ? ' · expires in ' . $left . 'd' : ' · expiring' ) : '' )
+					. ( (int) $r->quote_reminders > 0 ? ' · ' . (int) $r->quote_reminders . ' reminder(s) sent' : '' )
+					. '</div>';
+			}
+			echo '</td>';
 			echo '<td>' . esc_html( $age ) . 'd</td>';
 			echo '</tr>';
 		}
@@ -254,6 +320,7 @@ class AUN_SP_Requests {
 			'pending'     => '#646970', 'quoted'     => '#8250df', 'applied'   => '#bf6a02',
 			'at_factory'  => '#bf6a02', 'shipped'    => '#2271b1', 'arrived'   => '#1a7f37',
 			'dispatched'  => '#1a7f37', 'delivered'  => '#1a7f37', 'unavailable' => '#b32d2e',
+			'cancelled'   => '#646970',
 		);
 		$labels = self::item_statuses();
 		$out    = '';
@@ -484,8 +551,15 @@ class AUN_SP_Requests {
 				$state = '<span style="color:#b32d2e;font-weight:600;">declined by the customer</span>';
 			} elseif ( $r->approved_at ) {
 				$state = '<span style="color:#1a7f37;font-weight:600;">approved ' . esc_html( $r->approved_at ) . '</span>';
+			} elseif ( 'expired' === $r->overall_status ) {
+				$state = '<span style="color:#bf6a02;font-weight:600;">expired &mdash; the customer never answered</span>';
 			} elseif ( 'quote_sent' === $r->overall_status ) {
-				$state = '<span style="color:#8250df;font-weight:600;">awaiting the customer&rsquo;s decision</span>';
+				$waited = $this->age_days( $r->quoted_at );
+				$state  = '<span style="color:#8250df;font-weight:600;">awaiting the customer&rsquo;s decision</span>'
+					. ' <span style="color:#646970;">(' . (int) $waited . ' day(s) so far'
+					. ( (int) $r->quote_reminders > 0 ? ', ' . (int) $r->quote_reminders . ' reminder(s) sent' : '' )
+					. ( ! empty( $r->quote_expires_at ) ? ', expires ' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( (string) $r->quote_expires_at ) ) ) : '' )
+					. ')</span>';
 			} else {
 				$state = '<span style="color:#646970;font-weight:600;">no longer awaiting approval &mdash; request is &ldquo;'
 					. esc_html( self::overall_statuses()[ $r->overall_status ] ?? $r->overall_status ) . '&rdquo;</span>';
@@ -493,8 +567,31 @@ class AUN_SP_Requests {
 			echo '<p>Quote total: <strong>৳' . esc_html( number_format_i18n( (float) $r->quote_total, 2 ) ) . '</strong> · sent ' . esc_html( $r->quoted_at ) . ' · ' . $state . '</p>';
 		}
 
+		// An unanswered quote: the automatic ladder is running, and a personal message
+		// converts far better than a fourth automated text — so make that one click.
+		if ( in_array( $r->overall_status, array( 'quote_sent', 'expired' ), true ) && $r->phone_current !== '' ) {
+			$days = self::quote_valid_days();
+			list( $rd1, $rd2 ) = self::reminder_days();
+			$wa_text = 'Assalamu alaikum ' . $r->customer_name . ', this is AUN. Your spare-parts quote ' . $r->ref
+				. ' is Tk ' . number_format_i18n( (float) $r->quote_total, 2 )
+				. '. We have not ordered the part yet — we start only once you confirm. Would you like us to go ahead? You can also approve here: '
+				. AUN_SP_Messages::track_link( $r->ref );
+			echo '<div style="background:#f6f7f7;border-left:3px solid #25D366;border-radius:6px;padding:10px 14px;margin:12px 0;max-width:780px;">';
+			echo '<p style="margin:0 0 6px;"><strong>Chasing this quote:</strong> ';
+			echo 'the customer is texted a reminder on day ' . (int) $rd1 . ' and day ' . (int) $rd2
+				. ( $days > 0 ? ', then the quote expires on day ' . (int) $days . '.' : ' (this quote never expires — see Settings).' );
+			echo '</p>';
+			echo '<p style="margin:0;"><a class="button" target="_blank" rel="noopener" href="'
+				. esc_url( 'https://wa.me/' . AUN_SP_SMS::to_intl( $r->phone_current ) . '?text=' . rawurlencode( $wa_text ) ) . '">Chase on WhatsApp</a> '
+				. '<span style="color:#646970;">a personal message converts far better than another automated text.</span></p>';
+			echo '</div>';
+		}
+
 		// Label the button for what it will actually do right now.
-		if ( 'declined' === $r->overall_status ) {
+		if ( 'expired' === $r->overall_status ) {
+			$btn  = 'Send a fresh quote';
+			$hint = 'The quote lapsed with no reply. Check the prices are still right, then send it again — the deadline and reminders restart.';
+		} elseif ( 'declined' === $r->overall_status ) {
 			$btn  = 'Send a revised quote';
 			$hint = 'The customer declined. Change the prices above, then send a new quote to ask again.';
 		} elseif ( $r->quoted_at ) {
@@ -629,7 +726,7 @@ class AUN_SP_Requests {
 			// payment bridge existed, or creation failed. Offer to raise it by hand
 			// rather than leaving the customer with nothing to pay.
 			$owed = $this->quote_total( (int) $r->id );
-			if ( $owed > 0 && ! in_array( $r->overall_status, array( 'rejected', 'declined' ), true ) ) {
+			if ( $owed > 0 && ! self::is_cancelled( $r->overall_status ) ) {
 				echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;">';
 				wp_nonce_field( 'aun_sp_mkorder', 'aun_sp_mkorder_nonce' );
 				echo '<h2 style="margin-top:0;">Payment</h2>';
@@ -850,7 +947,18 @@ class AUN_SP_Requests {
 			}
 
 			$extra = '';
-			if ( ! empty( $_POST['notify'] ) ) {
+			// Never text the customer about a request that was ALREADY finished before
+			// this save. Tidying the parts on a declined, rejected, expired or
+			// completed request is bookkeeping — texting "LCD screen: Delivered to you"
+			// to someone who declined weeks ago (the notify box is checked by default)
+			// is the kind of message that makes people distrust every other one.
+			// A request that BECOMES terminal in this save still texts: that transition
+			// is the news.
+			$was_finished = in_array( $current, self::TERMINAL_STATES, true );
+			if ( $was_finished && ! empty( $_POST['notify'] ) ) {
+				$extra = ' This request is already ' . esc_html( self::overall_statuses()[ $current ] ?? $current )
+					. ', so the customer was not texted.';
+			} elseif ( ! empty( $_POST['notify'] ) ) {
 				if ( ! empty( $changes ) ) {
 					// THE PART YOU MOVED IS THE NEWS. The overall status is a coarse
 					// internal bucket — six different part stages (ordered / at factory /
@@ -994,15 +1102,22 @@ class AUN_SP_Requests {
 		$t_req  = AUN_SP_Install::table( 'requests' );
 		$t_item = AUN_SP_Install::table( 'request_items' );
 
+		// The clock starts now — including on a re-send, which is a NEW offer and
+		// therefore a new deadline and a fresh reminder ladder.
+		$days    = self::quote_valid_days();
+		$expires = $days > 0 ? date( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS ) : null;
+
 		$wpdb->update(
 			$t_req,
 			array(
-				'overall_status' => 'quote_sent',
-				'quote_total'    => $total,
-				'quote_note'     => $quote_note,
-				'quoted_at'      => current_time( 'mysql' ),
-				'approved_at'    => null,
-				'updated_at'     => current_time( 'mysql' ),
+				'overall_status'   => 'quote_sent',
+				'quote_total'      => $total,
+				'quote_note'       => $quote_note,
+				'quoted_at'        => current_time( 'mysql' ),
+				'quote_expires_at' => $expires,
+				'quote_reminders'  => 0,
+				'approved_at'      => null,
+				'updated_at'       => current_time( 'mysql' ),
 			),
 			array( 'id' => $id )
 		);
@@ -1010,13 +1125,18 @@ class AUN_SP_Requests {
 		// Reflect the quote on the parts themselves: every priced part still sitting
 		// at "Pending" moves to "Quoted" (free / in-warranty parts at ৳0 are left
 		// alone). Without this the line items kept showing "Pending" after a quote.
+		// 'cancelled' is included so a FRESH quote after a decline or an expiry brings
+		// those lines back to life — otherwise the re-quote would leave every part
+		// reading "Not going ahead" while the request sits at "awaiting approval".
 		$quoted = (int) $wpdb->query( $wpdb->prepare(
 			"UPDATE $t_item SET line_status = 'quoted', updated_at = %s
-			 WHERE request_id = %d AND line_status = 'pending' AND unit_price > 0",
+			 WHERE request_id = %d AND line_status IN ('pending','cancelled') AND unit_price > 0",
 			current_time( 'mysql' ), $id
 		) );
 
-		$this->log( $id, 0, 'quote_sent', 'Quote sent — total ৳' . number_format_i18n( $total, 2 ) . ( $quoted ? ' (' . $quoted . ' part(s) marked Quoted)' : '' ) );
+		$this->log( $id, 0, 'quote_sent', 'Quote sent — total ৳' . number_format_i18n( $total, 2 )
+			. ( $expires ? ', valid until ' . date_i18n( get_option( 'date_format' ), strtotime( $expires ) ) : '' )
+			. ( $quoted ? ' (' . $quoted . ' part(s) marked Quoted)' : '' ) );
 		$extra = $this->sms_customer( $id, 'quote', 'quote_sent', '' );
 
 		// Real-time push to the app: this is the one status the customer has to ACT
@@ -1031,6 +1151,198 @@ class AUN_SP_Requests {
 		return '<div class="notice notice-success is-dismissible"><p>' . $lead
 			. ( $quoted ? ' ' . $quoted . ' other part(s) marked &ldquo;Quoted&rdquo;.' : '' )
 			. ' The customer can now Approve or Decline on their tracking page.' . $extra . '</p></div>';
+	}
+
+	/* ------------------------------------------------- Quote chasing & expiry */
+
+	/**
+	 * Daily: nudge customers sitting on an unanswered quote, then expire it.
+	 *
+	 * A quote with no deadline and no follow-up is the one place this system used to
+	 * simply stall — the request sat at "awaiting approval" for ever, and the most
+	 * likely reason (the customer not realising a reply was needed at all) was never
+	 * addressed. Three touches, then stop:
+	 *
+	 *   quote sent  →  reminder 1  →  reminder 2 (final)  →  expired
+	 *
+	 * Every reminder says the thing the original quote did not: nothing has been
+	 * ordered and nothing will happen until they answer. Expiry is not a rejection —
+	 * the customer can revive it in one tap, which is why we say so in the same text.
+	 *
+	 * Safe to run repeatedly: the reminder counter and the conditional UPDATE mean a
+	 * double cron run (or a manual "run now") cannot double-text anyone.
+	 */
+	public static function process_quotes() {
+		global $wpdb;
+		$t_req = AUN_SP_Install::table( 'requests' );
+		$days  = self::quote_valid_days();
+		list( $r1, $r2 ) = self::reminder_days();
+
+		$rows = $wpdb->get_results(
+			"SELECT id, ref, quoted_at, quote_expires_at, quote_reminders, phone_current
+			 FROM $t_req WHERE overall_status = 'quote_sent' AND quoted_at IS NOT NULL"
+		);
+
+		$now      = current_time( 'timestamp' );
+		$reminded = 0;
+		$expired  = 0;
+
+		foreach ( (array) $rows as $r ) {
+			$sent_ts = strtotime( (string) $r->quoted_at );
+			if ( ! $sent_ts ) {
+				continue;
+			}
+			$age  = (int) floor( ( $now - $sent_ts ) / DAY_IN_SECONDS );
+			$done = (int) $r->quote_reminders;
+
+			// 1. Expire first — a quote past its date must not also be nudged today.
+			if ( $days > 0 ) {
+				$exp_ts = $r->quote_expires_at ? strtotime( (string) $r->quote_expires_at ) : ( $sent_ts + $days * DAY_IN_SECONDS );
+				if ( $exp_ts && $now >= $exp_ts ) {
+					if ( self::expire_quote( (int) $r->id ) ) {
+						$expired++;
+					}
+					continue;
+				}
+			}
+
+			// 2. Otherwise, is a nudge due? Only ever one per run, never a repeat.
+			$due = 0;
+			if ( $done < 1 && $age >= $r1 ) {
+				$due = 1;
+			} elseif ( $done < 2 && $age >= $r2 ) {
+				$due = 2;
+			}
+			if ( $due ) {
+				$claimed = (int) $wpdb->query( $wpdb->prepare(
+					"UPDATE $t_req SET quote_reminders = %d WHERE id = %d AND overall_status = 'quote_sent' AND quote_reminders = %d",
+					$due, (int) $r->id, $done
+				) );
+				if ( $claimed ) {
+					self::send_quote_reminder( (int) $r->id, $due );
+					$reminded++;
+				}
+			}
+		}
+
+		return array( 'reminded' => $reminded, 'expired' => $expired );
+	}
+
+	/**
+	 * Move ONE unanswered quote to 'expired'. Conditional on it still being
+	 * 'quote_sent', so a customer who approves in the same minute always wins.
+	 */
+	public static function expire_quote( $id ) {
+		global $wpdb;
+		$t_req  = AUN_SP_Install::table( 'requests' );
+		$t_item = AUN_SP_Install::table( 'request_items' );
+
+		$claimed = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $t_req SET overall_status = 'expired', updated_at = %s WHERE id = %d AND overall_status = 'quote_sent'",
+			current_time( 'mysql' ), (int) $id
+		) );
+		if ( ! $claimed ) {
+			return false;
+		}
+
+		// Same reasoning as a decline: the parts must not keep telling the customer
+		// "we order this once you approve" after the offer has lapsed.
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE $t_item SET line_status = 'cancelled', updated_at = %s
+			 WHERE request_id = %d AND line_status <> 'delivered'",
+			current_time( 'mysql' ), (int) $id
+		) );
+
+		$inst = new self();
+		$inst->log( $id, 0, 'quote_expired', 'Quote expired — no reply from the customer. Nothing was ordered.' );
+		$inst->sms_customer( $id, 'expired', 'expired', '' );
+
+		// An unpaid order can exist if they opened the pay page and walked away.
+		if ( AUN_SP_Woo::is_active() ) {
+			AUN_SP_Woo::sync_from_request( $id, 'expired' );
+		}
+		do_action( 'aun_sp_status_changed', $id, 'expired', '' );
+		return true;
+	}
+
+	/** The nudge itself. $which is 1 (first) or 2 (final). */
+	private static function send_quote_reminder( $id, $which ) {
+		global $wpdb;
+		// Re-read between claiming the reminder slot and actually sending: a customer
+		// who approves in that window must not receive "we have NOT ordered your part
+		// yet" seconds after being told we had started.
+		$still = (string) $wpdb->get_var( $wpdb->prepare(
+			"SELECT overall_status FROM " . AUN_SP_Install::table( 'requests' ) . " WHERE id = %d",
+			(int) $id
+		) );
+		if ( 'quote_sent' !== $still ) {
+			return;
+		}
+
+		$inst = new self();
+		$inst->log( $id, 0, 'quote_reminder', ( 2 === (int) $which ? 'Final reminder' : 'Reminder' ) . ' sent — quote still unanswered' );
+		$inst->sms_customer( $id, ( 2 === (int) $which ? 'remind_final' : 'remind' ), 'quote_sent', '' );
+		do_action( 'aun_sp_quote_reminder', $id, $which );
+	}
+
+	/**
+	 * The customer asks us to quote again — "I still want this part" on an expired
+	 * quote, or "I changed my mind" on one they declined.
+	 *
+	 * Puts the request back in front of the admin as if it were new work (prices are
+	 * cleared back to Pending, because the whole point of a deadline is that the old
+	 * price is no longer promised).
+	 *
+	 * DECLINED is accepted as well as EXPIRED, and the reason is a real one: Decline
+	 * is a single tap on a phone next to Approve, it is instant and irreversible, and
+	 * until now the customer had no way back at all — they had to find another
+	 * channel and hope. 'rejected' is NOT accepted: that is OUR decision (we cannot
+	 * supply the part), and a customer must not be able to overturn it.
+	 *
+	 * @return array{ok:bool,code:string,message:string}
+	 */
+	public static function revive_quote( $id, $source = 'web' ) {
+		global $wpdb;
+		$t_req  = AUN_SP_Install::table( 'requests' );
+		$t_item = AUN_SP_Install::table( 'request_items' );
+		$id     = (int) $id;
+
+		$was = (string) $wpdb->get_var( $wpdb->prepare( "SELECT overall_status FROM $t_req WHERE id = %d", $id ) );
+
+		$claimed = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $t_req SET overall_status = 'submitted', quoted_at = NULL, quote_expires_at = NULL,
+			 quote_reminders = 0, updated_at = %s WHERE id = %d AND overall_status IN ('expired','declined')",
+			current_time( 'mysql' ), $id
+		) );
+		if ( ! $claimed ) {
+			return array( 'ok' => false, 'code' => 'not_expired', 'message' => AUN_SP_I18N::msg( 'srv_revive_no' ) );
+		}
+
+		// Back to Pending: the old figure was a quote, not a standing price.
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE $t_item SET line_status = 'pending', updated_at = %s
+			 WHERE request_id = %d AND line_status IN ('quoted','cancelled')",
+			current_time( 'mysql' ), $id
+		) );
+
+		$why  = ( 'declined' === $was ) ? 'after declining it' : 'after the quote expired';
+		$inst = new self();
+		$inst->log( $id, 0, 'quote_revived', 'Customer asked us to re-quote ' . $why . ' (' . $source . ')' );
+
+		$r = $wpdb->get_row( $wpdb->prepare( "SELECT ref, customer_name, phone_current FROM $t_req WHERE id = %d", $id ) );
+		$to = trim( (string) get_option( 'aun_sp_alert_email', get_option( 'admin_email' ) ) );
+		if ( $to !== '' && $r ) {
+			wp_mail(
+				$to,
+				'[AUN spare parts] Re-quote requested — ' . $r->ref,
+				$r->customer_name . ' (' . $r->phone_current . ") still wants the parts on request " . $r->ref
+					. ', ' . $why . ".\n\nRe-price the parts and send a new quote:\n"
+					. admin_url( 'admin.php?page=aun-sp&request=' . $id ) . "\n"
+			);
+		}
+		do_action( 'aun_sp_status_changed', $id, 'submitted', '' );
+
+		return array( 'ok' => true, 'code' => 'revived', 'message' => AUN_SP_I18N::msg( 'srv_revive_ok' ) );
 	}
 
 	/* ------------------------------------------------------- Customer decision */
@@ -1091,6 +1403,20 @@ class AUN_SP_Requests {
 			return array( 'ok' => false, 'code' => 'already_answered', 'message' => AUN_SP_I18N::msg( 'srv_quote_gone' ) );
 		}
 
+		// Keep the PARTS consistent with the answer. A declined request used to leave
+		// every line at "Price quoted", whose customer-facing explanation reads "we
+		// order the part once you approve it" — directly contradicting the decline
+		// they just made, on the same screen. (Same class of bug as the rejection
+		// flow had before v0.8.0.)
+		if ( ! $approved ) {
+			$wpdb->query( $wpdb->prepare(
+				"UPDATE " . AUN_SP_Install::table( 'request_items' ) . "
+				 SET line_status = 'cancelled', updated_at = %s
+				 WHERE request_id = %d AND line_status <> 'delivered'",
+				current_time( 'mysql' ), $request_id
+			) );
+		}
+
 		$wpdb->insert( AUN_SP_Install::table( 'events' ), array(
 			'request_id' => $request_id,
 			'type'       => $approved ? 'approved' : 'declined',
@@ -1121,6 +1447,18 @@ class AUN_SP_Requests {
 		// A declined quote must not leave a payable order behind.
 		if ( ! $approved && AUN_SP_Woo::is_active() ) {
 			AUN_SP_Woo::sync_from_request( $request_id, 'declined' );
+		}
+
+		// Acknowledge a decline in writing. Approving was already confirmed by SMS;
+		// declining sent NOTHING, so a customer who mis-tapped on a phone had no
+		// record that it happened and no way back — the request simply went quiet.
+		if ( ! $approved && AUN_SP_SMS::is_configured() && $req->phone_current !== '' ) {
+			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_DECLINED ), array(
+				'ref'   => $req->ref,
+				'total' => number_format_i18n( (float) $req->quote_total, 2 ),
+				'track' => AUN_SP_Messages::track_link( $req->ref ),
+			) );
+			AUN_SP_SMS::send_tracked( $request_id, $req->phone_current, $msg, 'decline confirmation' );
 		}
 
 		$to = get_option( 'aun_sp_alert_email', get_option( 'admin_email' ) );
@@ -1156,7 +1494,7 @@ class AUN_SP_Requests {
 	private function sms_customer( $id, $type, $status_key, $reason, $detail = array() ) {
 		global $wpdb;
 		$t_req = AUN_SP_Install::table( 'requests' );
-		$r     = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current, model, quote_total FROM $t_req WHERE id = %d", $id ) );
+		$r     = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current, model, quote_total, quote_expires_at FROM $t_req WHERE id = %d", $id ) );
 
 		if ( ! $r || $r->phone_current === '' ) {
 			return ' (no phone on file — SMS skipped)';
@@ -1166,6 +1504,10 @@ class AUN_SP_Requests {
 		}
 
 		$vars = array( 'ref' => $r->ref, 'model' => $r->model, 'track' => AUN_SP_Messages::track_link( $r->ref ) );
+		// Available to every quote-related template.
+		$vars['expires'] = ! empty( $r->quote_expires_at )
+			? date_i18n( get_option( 'date_format' ), strtotime( (string) $r->quote_expires_at ) )
+			: '';
 
 		if ( 'rejected' === $type ) {
 			$code           = trim( (string) get_option( 'aun_sp_goodwill_coupon', '' ) );
@@ -1174,9 +1516,21 @@ class AUN_SP_Requests {
 			$msg            = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REJECT ), $vars );
 		} elseif ( 'photo' === $type ) {
 			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO ), $vars );
-		} elseif ( 'quote' === $type ) {
+		} elseif ( 'quote' === $type || 'remind' === $type || 'remind_final' === $type || 'expired' === $type ) {
 			$vars['total'] = number_format_i18n( (float) $r->quote_total, 2 );
-			$msg           = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_QUOTE ), $vars );
+			$tpl_map       = array(
+				'quote'        => AUN_SP_Messages::OPT_SMS_QUOTE,
+				'remind'       => AUN_SP_Messages::OPT_SMS_REMIND,
+				'remind_final' => AUN_SP_Messages::OPT_SMS_REMIND2,
+				'expired'      => AUN_SP_Messages::OPT_SMS_EXPIRED,
+			);
+			// A quote with no deadline (validity set to 0) must not text a dangling
+			// "valid until" — fill() strips the token, so drop the wrapper words too.
+			$body = AUN_SP_Messages::sms( $tpl_map[ $type ] );
+			if ( '' === $vars['expires'] ) {
+				$body = preg_replace( '/\s*\(valid until \{expires\}\)/i', '', $body );
+			}
+			$msg = AUN_SP_Messages::fill( $body, $vars );
 		} elseif ( 'parts' === $type ) {
 			// Per-part progress — the normal update. {changes} is the short form
 			// ("LCD screen: Arrived at AUN, Dhaka"); {detail} adds the explanation
@@ -1191,7 +1545,11 @@ class AUN_SP_Requests {
 			$msg             = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_STATUS ), $vars );
 		}
 
-		$labels = array( 'rejected' => 'rejection', 'photo' => 'better-photo request', 'quote' => 'quote', 'parts' => 'parts update' );
+		$labels = array(
+			'rejected' => 'rejection', 'photo' => 'better-photo request', 'quote' => 'quote',
+			'parts' => 'parts update', 'remind' => 'quote reminder', 'remind_final' => 'final quote reminder',
+			'expired' => 'quote expiry',
+		);
 		$label  = isset( $labels[ $type ] ) ? $labels[ $type ] : 'status update';
 		$res    = AUN_SP_SMS::send_tracked( $id, $r->phone_current, $msg, $label );
 		return $res['success']
@@ -1273,7 +1631,28 @@ class AUN_SP_Requests {
 			}
 		}
 
-		if ( $action === 0 && empty( $stale ) && empty( $late ) && empty( $unpaid ) ) {
+		// Quotes the customer hasn't answered. The automatic reminders handle the
+		// routine chase; this list is here so a quote about to lapse can still get a
+		// human WhatsApp message — which converts far better — before it does.
+		$pending_quotes = $wpdb->get_results(
+			"SELECT ref, customer_name, quote_total, quoted_at, quote_expires_at, quote_reminders
+			 FROM $t WHERE overall_status = 'quote_sent' ORDER BY quoted_at ASC LIMIT 30"
+		);
+		// …but they must not TRIGGER a mail on their own, or the digest is back to
+		// arriving every single day while a quote sits there being chased perfectly
+		// well by the automation — exactly the noise the v0.15 rewrite removed. Only
+		// a quote about to lapse (≤2 days, or already fully reminded) earns the email.
+		$quotes_urgent = 0;
+		foreach ( (array) $pending_quotes as $q ) {
+			$left = ! empty( $q->quote_expires_at )
+				? ( strtotime( (string) $q->quote_expires_at ) - current_time( 'timestamp' ) ) / DAY_IN_SECONDS
+				: null;
+			if ( ( null !== $left && $left <= 2 ) || (int) $q->quote_reminders >= 2 ) {
+				$quotes_urgent++;
+			}
+		}
+
+		if ( $action === 0 && empty( $stale ) && empty( $late ) && empty( $unpaid ) && 0 === $quotes_urgent ) {
 			return; // nothing needs the admin today — no email
 		}
 
@@ -1299,6 +1678,21 @@ class AUN_SP_Requests {
 			foreach ( $late as $l ) {
 				$lines[] = '  - ' . $l->part_label . ' (' . $l->ref . ') — expected ' . $l->eta;
 			}
+		}
+		if ( $pending_quotes ) {
+			$lines[] = '';
+			$lines[] = 'QUOTES AWAITING A REPLY:';
+			foreach ( $pending_quotes as $q ) {
+				$waited = $q->quoted_at ? (int) floor( ( current_time( 'timestamp' ) - strtotime( (string) $q->quoted_at ) ) / DAY_IN_SECONDS ) : 0;
+				$left   = ! empty( $q->quote_expires_at )
+					? (int) ceil( ( strtotime( (string) $q->quote_expires_at ) - current_time( 'timestamp' ) ) / DAY_IN_SECONDS )
+					: null;
+				$lines[] = '  - ' . $q->ref . ' (' . $q->customer_name . ') — Tk ' . number_format_i18n( (float) $q->quote_total, 2 )
+					. ', waiting ' . $waited . 'd'
+					. ( (int) $q->quote_reminders > 0 ? ', ' . (int) $q->quote_reminders . ' reminder(s) sent' : '' )
+					. ( null !== $left ? ( $left > 0 ? ', expires in ' . $left . 'd' : ', EXPIRING TODAY' ) : '' );
+			}
+			$lines[] = '  (reminders are automatic — a WhatsApp message converts better if one is about to lapse)';
 		}
 		if ( $unpaid ) {
 			$lines[] = '';
@@ -1327,6 +1721,9 @@ class AUN_SP_Requests {
 		if ( $unpaid ) {
 			$subject .= ', ' . count( $unpaid ) . ' unpaid';
 		}
+		if ( $quotes_urgent ) {
+			$subject .= ', ' . $quotes_urgent . ' quote(s) about to lapse';
+		}
 		wp_mail( $to, $subject, implode( "\n", $lines ) );
 	}
 
@@ -1345,7 +1742,7 @@ class AUN_SP_Requests {
 	public static function compute_overall( array $line_statuses, $current, $has_approved ) {
 		$started_states = array( 'applied', 'at_factory', 'shipped', 'arrived', 'dispatched', 'delivered' );
 
-		if ( in_array( $current, array( 'quote_sent', 'waiting_customer', 'declined', 'rejected' ), true ) ) {
+		if ( in_array( $current, array( 'quote_sent', 'waiting_customer', 'declined', 'rejected', 'expired' ), true ) ) {
 			// One exception to "a state waiting on the customer is sticky": once a part
 			// has actually been ordered, the admin has decided to proceed regardless of
 			// the quote, so let the status follow the work. Without this a request whose
@@ -1364,14 +1761,18 @@ class AUN_SP_Requests {
 		$delivered = 0;
 		$at_least_arrived = 0;
 		$started = 0;
+		// 'cancelled' counts exactly like 'unavailable': the part is resolved and will
+		// never move again, we simply aren't supplying it. Leaving it out would strand
+		// a mixed request (one part delivered, one cancelled) at "In progress" for
+		// ever, because it could never reach "all parts resolved".
 		foreach ( $line_statuses as $s ) {
-			if ( in_array( $s, array( 'delivered', 'unavailable' ), true ) ) {
+			if ( in_array( $s, array( 'delivered', 'unavailable', 'cancelled' ), true ) ) {
 				$done++;
 			}
 			if ( 'delivered' === $s ) {
 				$delivered++;
 			}
-			if ( in_array( $s, array( 'arrived', 'dispatched', 'delivered', 'unavailable' ), true ) ) {
+			if ( in_array( $s, array( 'arrived', 'dispatched', 'delivered', 'unavailable', 'cancelled' ), true ) ) {
 				$at_least_arrived++;
 			}
 			if ( in_array( $s, array( 'applied', 'at_factory', 'shipped', 'arrived', 'dispatched', 'delivered' ), true ) ) {
@@ -1443,6 +1844,7 @@ class AUN_SP_Requests {
 			'submitted' => '#2271b1', 'in_progress' => '#2271b1', 'quote_sent' => '#8250df',
 			'approved' => '#1a7f37', 'waiting_customer' => '#bf6a02', 'ready' => '#1a7f37',
 			'closed' => '#646970', 'declined' => '#b32d2e', 'rejected' => '#b32d2e',
+			'expired' => '#bf6a02',
 		);
 		$labels = self::overall_statuses();
 		$c      = $colors[ $status ] ?? '#646970';

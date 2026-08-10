@@ -41,6 +41,69 @@ class AUN_App_Content {
 	}
 
 	/**
+	 * Every YouTube id embedded in a block of admin HTML, in order, no repeats.
+	 *
+	 * The WordPress editor turns a pasted link into whichever shape it feels
+	 * like — an `<iframe>`, an oEmbed `<figure>`, an `<a>`, or a bare URL on its
+	 * own line — so all of them count as "play this here". Matching only
+	 * iframes would miss the commonest case.
+	 *
+	 * @param string $html Admin-written HTML.
+	 * @return string[]
+	 */
+	public static function youtube_ids_in_html( $html ) {
+		$html = (string) $html;
+		if ( '' === trim( $html ) ) {
+			return array();
+		}
+		$out = array();
+		$re  = '~(?:youtube(?:-nocookie)?\.com/(?:embed/|shorts/|live/|v/|watch\?[^"\s<]*[?&]?v=)|youtu\.be/)([A-Za-z0-9_-]{6,20})~i';
+		if ( preg_match_all( $re, $html, $m ) ) {
+			foreach ( $m[1] as $id ) {
+				if ( '' !== $id && ! in_array( $id, $out, true ) ) {
+					$out[] = $id;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * The videos embedded in a firmware/manual note, with their real YouTube
+	 * titles and upload dates.
+	 *
+	 * ⚠️ Resolved HERE, not in the app. The YouTube Data API key lives on the
+	 * server, and this is the same `youtube_meta()` the video library uses — so
+	 * a tutorial embedded in an installation note opens the SAME window as a
+	 * video published as its own content item, with the same title and date
+	 * underneath. Without this the app would have an id and nothing to show
+	 * around the player.
+	 *
+	 * @param object $r Content row.
+	 * @return array[] {youtube_id, title, published_at}
+	 */
+	private static function note_videos( $r ) {
+		$html = (string) $r->description . ' ' . (string) ( $r->changelog ?? '' );
+		$ids  = self::youtube_ids_in_html( $html );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( $ids as $id ) {
+			$meta  = self::youtube_meta( $id );
+			$out[] = array(
+				'youtube_id'   => $id,
+				// Falls back to the parent entry's title, so the window is
+				// never headed by an empty string when no API key is set.
+				'title'        => '' !== (string) $meta['title'] ? (string) $meta['title'] : (string) $r->title,
+				'published_at' => (string) $meta['published_at'],
+			);
+		}
+		return $out;
+	}
+
+	/**
 	 * Shape a row for the app.
 	 *
 	 * @param object $r          Content row.
@@ -58,12 +121,24 @@ class AUN_App_Content {
 			'model'       => $model_name,
 			'title'       => (string) $r->title,
 			'description' => (string) $r->description,
+			// What changed in this release, and therefore why anyone should
+			// bother installing it. Kept apart from the steps: a customer
+			// deciding whether to update has not yet agreed to follow
+			// instructions, and putting the reason under them hides it.
+			'changelog'   => (string) ( $r->changelog ?? '' ),
 			// Firmware/manual downloads go through OUR redirect endpoint, which
 			// resolves the real download URL at request time (authenticated
 			// OneDrive via WP File Download's connector, else a direct link) — so
 			// the app always hits a stable URL and cloud quirks are fixed
 			// server-side with no app rebuild. Video URLs are left as-is.
-			'url'         => $is_video ? (string) $r->url : rest_url( 'aun-app/v1/content/' . (int) $r->id . '/file' ),
+			// An OTA entry has no stored file, so it must NOT be given the
+			// redirect URL — that endpoint would resolve to nothing and the
+			// app would offer a download that 404s.
+			'url'         => $is_video
+				? (string) $r->url
+				: ( '' === trim( (string) $r->url )
+					? ''
+					: rest_url( 'aun-app/v1/content/' . (int) $r->id . '/file' ) ),
 			// The REAL file extension, taken from the stored (original) URL — the
 			// redirect URL above has no extension, so the app must not guess the
 			// file kind from it. Drives "open the PDF in the in-app reader" vs
@@ -71,6 +146,19 @@ class AUN_App_Content {
 			'file_ext'    => $is_video ? '' : self::file_extension( $r->url ),
 			// Whether the app should offer the download button (admin toggle).
 			'app_downloadable' => $is_video || ! isset( $r->app_downloadable ) || (int) $r->app_downloadable === 1,
+			// OTA: firmware the projector fetches over Wi-Fi by itself. There
+			// is no zip to publish, so "no file" IS the definition — an admin
+			// leaves the URL blank and writes the steps instead.
+			//
+			// Derived rather than a separate flag on purpose: a checkbox that
+			// can disagree with the presence of a file eventually does, and
+			// then the app shows a download button for a file that is not
+			// there, or hides one for a file that is. This cannot drift.
+			'ota'         => ( 'firmware' === (string) $r->type && '' === trim( (string) $r->url ) ),
+			// Tutorials embedded in the notes above, ready to open in the app's
+			// normal video window. Empty for a video item — its own url IS the
+			// video.
+			'note_videos' => $is_video ? array() : self::note_videos( $r ),
 			'version'     => (string) $r->version,
 			'file_size'   => (string) $r->file_size,
 			'youtube_id'  => $yt_id,
@@ -675,6 +763,7 @@ class AUN_App_Content {
 			'model_id'    => max( 0, (int) $data['model_id'] ),
 			'title'       => substr( sanitize_text_field( $data['title'] ), 0, 191 ),
 			'description' => wp_kses_post( $data['description'] ),
+			'changelog'   => wp_kses_post( $data['changelog'] ?? '' ),
 			'url'         => esc_url_raw( $data['url'] ),
 			'version'     => substr( sanitize_text_field( $data['version'] ), 0, 50 ),
 			'file_size'   => substr( sanitize_text_field( $data['file_size'] ), 0, 30 ),
@@ -708,7 +797,7 @@ class AUN_App_Content {
 					$wpdb->prepare( "SELECT name FROM $t_prods WHERE id = %d", $row['model_id'] )
 				);
 			}
-			AUN_App_Notices::content_published( $new_id, $row['type'], $row['model_id'], $row['title'], $model_name );
+			AUN_App_Notices::content_published( $new_id, $row['type'], $row['model_id'], $row['title'], $model_name, $row['changelog'] );
 		}
 
 		return $new_id;

@@ -343,6 +343,10 @@ class AUN_SP_Admin {
 			update_option( AUN_SP_Messages::OPT_SMS_PAY, sanitize_textarea_field( wp_unslash( $_POST['sms_pay'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_PAID, sanitize_textarea_field( wp_unslash( $_POST['sms_paid'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_REFUND, sanitize_textarea_field( wp_unslash( $_POST['sms_refund'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_REMIND, sanitize_textarea_field( wp_unslash( $_POST['sms_remind'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_REMIND2, sanitize_textarea_field( wp_unslash( $_POST['sms_remind_final'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_EXPIRED, sanitize_textarea_field( wp_unslash( $_POST['sms_expired'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_DECLINED, sanitize_textarea_field( wp_unslash( $_POST['sms_declined'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_PAY_INFO, sanitize_textarea_field( wp_unslash( $_POST['pay_info'] ?? '' ) ) );
 
 			$count = (int) ( $_POST['r_count'] ?? 0 );
@@ -372,11 +376,15 @@ class AUN_SP_Admin {
 		$smspay   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAY );
 		$smspaid  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PAID );
 		$smsref   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REFUND );
+		$smsrem   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REMIND );
+		$smsrem2  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REMIND2 );
+		$smsexp   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_EXPIRED );
+		$smsdec   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_DECLINED );
 		$pay      = AUN_SP_Messages::pay_info();
 		$tpls     = AUN_SP_Messages::reject_templates();
 
 		echo '<div class="wrap"><h1>Messages</h1>';
-		echo '<p style="color:#646970;max-width:740px;">Reword any customer message. Placeholders are filled in automatically: <code>{ref}</code> <code>{model}</code> <code>{status}</code> <code>{changes}</code> <code>{track}</code> <code>{reason}</code> <code>{coupon}</code> <code>{parts}</code> <code>{date}</code> <code>{age}</code> <code>{detail}</code>. You can write these in Bangla if you prefer.</p>';
+		echo '<p style="color:#646970;max-width:740px;">Reword any customer message. Placeholders are filled in automatically: <code>{ref}</code> <code>{model}</code> <code>{status}</code> <code>{changes}</code> <code>{track}</code> <code>{reason}</code> <code>{coupon}</code> <code>{parts}</code> <code>{date}</code> <code>{age}</code> <code>{detail}</code> <code>{expires}</code>. You can write these in Bangla if you prefer.</p>';
 		echo $notice;
 		echo '<form method="post">';
 		wp_nonce_field( 'aun_sp_messages', 'aun_sp_messages_nonce' );
@@ -389,6 +397,14 @@ class AUN_SP_Admin {
 		echo '<tr><th>Rejection</th><td><textarea name="sms_reject" rows="2" class="large-text">' . esc_textarea( $reject ) . '</textarea><p class="description"><code>{coupon}</code> becomes your goodwill line when a coupon code is set in Settings.</p></td></tr>';
 		echo '<tr><th>Better-photo request</th><td><textarea name="sms_photo" rows="2" class="large-text">' . esc_textarea( $photo ) . '</textarea><p class="description">Sent when you click &ldquo;Ask customer for a better photo&rdquo; on a request.</p></td></tr>';
 		echo '<tr><th>Quote ready</th><td><textarea name="sms_quote" rows="2" class="large-text">' . esc_textarea( $quote ) . '</textarea><p class="description">Sent when you click &ldquo;Send quote for approval&rdquo;. <code>{total}</code> is the quoted amount.</p></td></tr>';
+		// The chase ladder. Every one of these says the sentence customers miss:
+		// asking for the part is not the same as ordering it.
+		$qd = AUN_SP_Requests::quote_valid_days();
+		list( $qr1, $qr2 ) = AUN_SP_Requests::reminder_days();
+		echo '<tr><th>Quote reminder</th><td><textarea name="sms_remind" rows="2" class="large-text">' . esc_textarea( $smsrem ) . '</textarea><p class="description">Sent automatically on <strong>day ' . (int) $qr1 . '</strong> if the customer has not answered the quote. <code>{expires}</code> is the date it lapses.</p></td></tr>';
+		echo '<tr><th>Final quote reminder</th><td><textarea name="sms_remind_final" rows="2" class="large-text">' . esc_textarea( $smsrem2 ) . '</textarea><p class="description">Sent on <strong>day ' . (int) $qr2 . '</strong> — the last nudge before the quote expires. Chasing beyond three messages stops working and costs money.</p></td></tr>';
+		echo '<tr><th>Quote expired</th><td><textarea name="sms_expired" rows="2" class="large-text">' . esc_textarea( $smsexp ) . '</textarea><p class="description">Sent when the quote lapses' . ( $qd > 0 ? ' (day ' . (int) $qd . ')' : '' ) . '. Say clearly that nothing was ordered and that they can ask for a new quote &mdash; their tracking page shows an &ldquo;I still want this part&rdquo; button.</p></td></tr>';
+		echo '<tr><th>Quote declined</th><td><textarea name="sms_declined" rows="2" class="large-text">' . esc_textarea( $smsdec ) . '</textarea><p class="description">Sent when the customer declines. Declining used to send <em>nothing</em>, so a customer who tapped Decline by mistake had no record it happened and no way back &mdash; this is both the receipt and the invitation to ask for a new quote.</p></td></tr>';
 		echo '<tr><th>Quote approved</th><td><textarea name="sms_approved" rows="2" class="large-text">' . esc_textarea( $approved ) . '</textarea><p class="description">Sent to the customer when they approve the quote. <code>{pay}</code> inserts your payment instructions below.</p></td></tr>';
 		echo '<tr><th>Online payment link</th><td><textarea name="sms_pay" rows="2" class="large-text">' . esc_textarea( $smspay ) . '</textarea><p class="description">Sent when you press <strong>Send online payment link</strong> on a request. <code>{link}</code> is the payment page, <code>{total}</code> the amount. (Approving a quote does <em>not</em> send this &mdash; cash on delivery is the default.)</p></td></tr>';
 		echo '<tr><th>Payment received</th><td><textarea name="sms_paid" rows="2" class="large-text">' . esc_textarea( $smspaid ) . '</textarea><p class="description">Sent by <strong>this plugin</strong> the moment an online payment succeeds, and written to the request&rsquo;s activity log. WooCommerce&rsquo;s own emails/SMS are not used.</p></td></tr>';
@@ -498,7 +514,20 @@ class AUN_SP_Admin {
 			update_option( 'aun_sp_tracking_url', esc_url_raw( wp_unslash( $_POST['tracking_url'] ?? '' ) ) );
 			update_option( 'aun_sp_service_url', esc_url_raw( wp_unslash( $_POST['service_url'] ?? '' ) ) );
 			update_option( 'aun_sp_goodwill_coupon', sanitize_text_field( wp_unslash( $_POST['goodwill_coupon'] ?? '' ) ) );
+			// Turning expiry ON must not retroactively lapse quotes that were sent
+			// under "no deadline" terms — that would expire a pile of live quotes (and
+			// text every one of those customers) the very next morning. They get the
+			// new window counted from today instead.
+			$was_days = (int) get_option( 'aun_sp_quote_valid_days', 7 );
+			$new_days = max( 0, (int) ( $_POST['quote_valid_days'] ?? 7 ) );
+			update_option( 'aun_sp_quote_valid_days', $new_days );
 			$notice = $this->notice( 'Settings saved.', 'success' );
+			if ( $new_days > 0 && $was_days !== $new_days ) {
+				$dated = AUN_SP_Install::date_open_quotes( $new_days );
+				if ( $dated ) {
+					$notice .= $this->notice( $dated . ' quote(s) already awaiting a reply were given a new deadline ' . $new_days . ' day(s) from today, rather than being expired retroactively.', 'info' );
+				}
+			}
 		}
 
 		$months = (int) get_option( 'aun_sp_warranty_months', 12 );
@@ -522,6 +551,16 @@ class AUN_SP_Admin {
 		echo '<tr><th>Tracking page URL</th><td><input type="url" name="tracking_url" value="' . esc_attr( $track ) . '" class="regular-text" placeholder="https://aun-projector.com.bd/spare-parts-status/"> <span style="color:#646970;">included in customer status SMS</span></td></tr>';
 		echo '<tr><th>Send-projector page URL</th><td><input type="url" name="service_url" value="' . esc_attr( $service ) . '" class="regular-text" placeholder="https://aun-projector.com.bd/send-projector/"> <span style="color:#646970;">where the &ldquo;Send my projector&rdquo; choice links (defaults to /send-projector/)</span></td></tr>';
 		echo '<tr><th>Goodwill coupon code</th><td><input type="text" name="goodwill_coupon" value="' . esc_attr( $coupon ) . '" class="regular-text" placeholder="e.g. UPGRADE10"> <span style="color:#646970;">added to rejection SMS as an apology</span></td></tr>';
+		$qdays = AUN_SP_Requests::quote_valid_days();
+		list( $qr1, $qr2 ) = AUN_SP_Requests::reminder_days();
+		echo '<tr><th>Quote valid for (days)</th><td><input type="number" name="quote_valid_days" value="' . esc_attr( $qdays ) . '" min="0" max="365" class="small-text"> ';
+		if ( $qdays > 0 ) {
+			echo '<span style="color:#646970;">the customer is reminded on day <strong>' . (int) $qr1 . '</strong> and day <strong>' . (int) $qr2
+				. '</strong>, then the quote expires on day <strong>' . (int) $qdays . '</strong>.</span>';
+		} else {
+			echo '<span style="color:#646970;">0 = quotes never expire; the customer is still reminded on day ' . (int) $qr1 . ' and day ' . (int) $qr2 . '.</span>';
+		}
+		echo '<p class="description" style="margin:6px 0 0;">An expired quote is <strong>not</strong> a rejection: it means the customer never answered. They keep a &ldquo;I still want this part&rdquo; button on their tracking page, which puts the request back in front of you for a fresh price.</p></td></tr>';
 		echo '</tbody></table>';
 		echo '<p><button type="submit" class="button button-primary">Save settings</button></p>';
 		echo '</form>';

@@ -884,7 +884,7 @@ class AUN_App_Services {
 		global $wpdb;
 		$t_req = AUN_SP_Install::table( 'requests' );
 		$r     = $wpdb->get_row( $wpdb->prepare(
-			"SELECT ref, phone_current, quote_total FROM $t_req WHERE id = %d",
+			"SELECT ref, phone_current, quote_total, quoted_at FROM $t_req WHERE id = %d",
 			(int) $request_id
 		) );
 		if ( ! $r || '' === (string) $r->phone_current ) {
@@ -904,8 +904,91 @@ class AUN_App_Services {
 			(string) $r->ref,
 			(string) $status,
 			(string) ( $labels[ $status ] ?? $status ),
-			(float) $r->quote_total
+			(float) $r->quote_total,
+			(string) ( $r->quoted_at ?? '' )
 		);
+	}
+
+	/**
+	 * Mirror a spare-parts quote reminder into the app (spare parts 0.31.0).
+	 *
+	 * Hooked to `aun_sp_quote_reminder`, fired by the plugin's daily chase at the
+	 * same moment it texts the customer. The SMS points at the tracking page; the
+	 * app can take the answer with one tap, so the nudge belongs in both.
+	 *
+	 * @param int $request_id Spare-parts request id.
+	 * @param int $which      1 = first reminder, 2 = final one.
+	 */
+	public static function on_parts_quote_reminder( $request_id, $which ) {
+		if ( ! self::parts_available() || ! class_exists( 'AUN_App_Phone' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$t_req = AUN_SP_Install::table( 'requests' );
+		$r     = $wpdb->get_row( $wpdb->prepare(
+			"SELECT ref, phone_current, quote_total, quoted_at, quote_expires_at FROM $t_req WHERE id = %d",
+			(int) $request_id
+		) );
+		if ( ! $r || '' === (string) $r->phone_current ) {
+			return;
+		}
+
+		$users = AUN_App_Phone::find_users( AUN_App_Phone::normalize( (string) $r->phone_current ) );
+		if ( empty( $users ) ) {
+			return;
+		}
+
+		AUN_App_Notices::parts_quote_reminder(
+			(int) $users[0]->ID,
+			(string) $r->ref,
+			(int) $which,
+			(float) $r->quote_total,
+			! empty( $r->quote_expires_at )
+				? date_i18n( get_option( 'date_format' ), strtotime( (string) $r->quote_expires_at ) )
+				: '',
+			(string) ( $r->quoted_at ?? '' )
+		);
+	}
+
+	/** How long a recoverable dead end stays on the Home strip. */
+	const PARTS_RECOVERY_DAYS = 10;
+
+	/**
+	 * Should Home still be showing this spare-parts request?
+	 *
+	 * Three answers, not two:
+	 *  - live work (anything not terminal) → yes, always;
+	 *  - a real ending (completed, rejected) → no, immediately. There is
+	 *    nothing left for the customer to do and Home is for what is live;
+	 *  - expired or declined → yes, but only for PARTS_RECOVERY_DAYS. Both are
+	 *    undoable in one tap, and the days right after are when someone
+	 *    realises they do want the part. Leaving them for ever would turn the
+	 *    strip into a graveyard; dropping them instantly would hide the one
+	 *    action that rescues the request.
+	 *
+	 * @param object $r A row from the requests table.
+	 */
+	public static function parts_is_active( $r ) {
+		$status = (string) $r->overall_status;
+
+		$terminal = class_exists( 'AUN_SP_Requests' ) && defined( 'AUN_SP_Requests::TERMINAL_STATES' )
+			? AUN_SP_Requests::TERMINAL_STATES
+			: array( 'closed', 'rejected', 'declined', 'expired' );
+		if ( ! in_array( $status, $terminal, true ) ) {
+			return true;
+		}
+
+		if ( ! in_array( $status, array( 'expired', 'declined' ), true ) ) {
+			return false;
+		}
+
+		// No timestamp is not a reason to hide something recoverable.
+		$touched = strtotime( (string) ( $r->updated_at ?: $r->created_at ) );
+		if ( ! $touched ) {
+			return true;
+		}
+		return ( current_time( 'timestamp' ) - $touched ) < ( self::PARTS_RECOVERY_DAYS * DAY_IN_SECONDS );
 	}
 
 	/**
@@ -948,7 +1031,8 @@ class AUN_App_Services {
 						(string) $r->ref,
 						(string) $r->overall_status,
 						(string) ( $ov[ $r->overall_status ] ?? $r->overall_status ),
-						(float) $r->quote_total
+						(float) $r->quote_total,
+						(string) ( $r->quoted_at ?? '' )
 					);
 				}
 
@@ -965,9 +1049,15 @@ class AUN_App_Services {
 				// they tapped Pay twice and got three lines of accounting for
 				// it. The money events they DO need ('payment', 'refund') carry
 				// their own types and still come through.
+				//
+				// 'quote_reminder' is excluded for a different reason, and the
+				// website tracker excludes it too: it records that WE chased
+				// THEM. On the customer's own progress list that reads as
+				// nagging, and it says nothing about their parts. The expiry
+				// and their re-quote request are real events and do show.
 				$events   = $wpdb->get_results( $wpdb->prepare(
 					"SELECT message, created_at FROM $t_event
-					 WHERE request_id = %d AND type NOT IN ('sms','contact_changed','wc_order')
+					 WHERE request_id = %d AND type NOT IN ('sms','contact_changed','wc_order','quote_reminder')
 					 ORDER BY id ASC LIMIT 40",
 					$r->id
 				) );
@@ -996,6 +1086,53 @@ class AUN_App_Services {
 					'delivery'     => $delivery,
 					// What the Pay button will actually charge.
 					'payable'      => (float) $r->quote_total + $delivery,
+					// ── The quote deadline (spare parts 0.31.0) ──
+					//
+					// An unanswered quote now lapses, and the customer is told
+					// so by SMS. The app must show the SAME deadline next to
+					// the Approve button, or the one place they can answer in
+					// a single tap is the one place that never mentions the
+					// clock. Sent as an ISO date and formatted per locale on
+					// the phone; `days_left` is computed HERE because the
+					// server owns the deadline and a phone with a wrong clock
+					// must not be able to move it.
+					//
+					// null (not 0) when there is no deadline: quotes never
+					// expiring is a supported setting, and 0 would render
+					// "expires today" on a quote that never will.
+					'expires'      => isset( $r->quote_expires_at ) && ! empty( $r->quote_expires_at )
+						&& 'quote_sent' === $r->overall_status
+						? substr( (string) $r->quote_expires_at, 0, 10 ) : '',
+					'days_left'    => isset( $r->quote_expires_at ) && ! empty( $r->quote_expires_at )
+						&& 'quote_sent' === $r->overall_status
+						? max( 0, (int) ceil( ( strtotime( (string) $r->quote_expires_at ) - current_time( 'timestamp' ) ) / DAY_IN_SECONDS ) )
+						: null,
+					// Expired means they never answered — NOT that they said
+					// no. The difference is the whole reason the status exists,
+					// and it is why the app offers "I still want this part"
+					// rather than treating the request as closed.
+					'expired'      => ( 'expired' === $r->overall_status ),
+					// Spare parts 0.32.0 lets a DECLINED quote be revived too:
+					// Decline is a single tap on a phone and a mis-tap is
+					// otherwise silent and unrecoverable. Same endpoint, and
+					// the plugin's own claim decides — so the app never has to
+					// know which statuses qualify.
+					'can_revive'   => ( in_array( $r->overall_status, array( 'expired', 'declined' ), true )
+						&& method_exists( 'AUN_SP_Requests', 'revive_quote' ) ),
+					// Whether Home should still be showing this at all.
+					//
+					// Decided HERE rather than in the app, which used to sniff
+					// the human status LABEL for words like "cancel" — a rule
+					// that missed 'declined' and 'expired' entirely (neither
+					// label contains any of the words it looked for), so those
+					// sat on the customer's Home strip for ever.
+					//
+					// Expired and declined stay for a WINDOW rather than
+					// vanishing: both are recoverable in one tap, and the days
+					// right after are exactly when someone realises they still
+					// want the part. After that they are old news and Home
+					// belongs to what is live.
+					'is_active'    => self::parts_is_active( $r ),
 					// Live order + payment state, or null when they have not
 					// chosen to pay online — cash on delivery creates no order.
 					'payment'      => self::payment_summary( (int) $r->id ),
@@ -1011,12 +1148,17 @@ class AUN_App_Services {
 					//
 					// So 'quote_sent' is excluded here as well as the closed
 					// statuses. Approving flips this to true on the next load.
+					//
+					// 'expired' is excluded for a stronger reason than the
+					// others: that price is no longer promised. Taking money
+					// against a lapsed quote would commit us to a figure we
+					// deliberately let go stale.
 					'can_pay'      => (
 						( (float) $r->quote_total + $delivery ) > 0
 						&& class_exists( 'AUN_SP_Woo' ) && AUN_SP_Woo::is_active()
 						&& ! in_array(
 							$r->overall_status,
-							array( 'quote_sent', 'rejected', 'declined' ),
+							array( 'quote_sent', 'rejected', 'declined', 'expired' ),
 							true
 						)
 					),

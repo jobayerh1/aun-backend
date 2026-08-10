@@ -18,6 +18,7 @@ class AUN_App_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 		// Inline "Test download" check (no page reload).
 		add_action( 'wp_ajax_aun_app_test_download', array( $this, 'ajax_test_download' ) );
+		add_action( 'wp_ajax_aun_app_tmdb_search', array( $this, 'ajax_tmdb_search' ) );
 	}
 
 	/**
@@ -845,6 +846,7 @@ class AUN_App_Admin {
 					'model_id'    => (int) ( $_POST['model_id'] ?? 0 ),
 					'title'       => (string) ( $_POST['title'] ?? '' ),
 					'description' => (string) ( $_POST['description'] ?? '' ),
+					'changelog'   => (string) ( $_POST['changelog'] ?? '' ),
 					'url'         => (string) ( $_POST['url'] ?? '' ),
 					'version'     => (string) ( $_POST['version'] ?? '' ),
 					'file_size'   => (string) ( $_POST['file_size'] ?? '' ),
@@ -1040,8 +1042,34 @@ class AUN_App_Admin {
 						<p class="description">Model list comes from SLB Warranty → Products.<?php echo ( ! $editing && $f_model > 0 ) ? ' <strong>Pre-selected from your filter.</strong>' : ''; ?></p>
 					</td></tr>
 					<tr><th id="aun-title-label">Title</th><td><input name="title" id="aun-title" required style="width:100%" value="<?php echo $v( 'title' ); ?>" placeholder="e.g. Firmware v2.1 — fixes HDMI sound" /></td></tr>
-					<tr class="aun-crow" data-types="firmware"><th id="aun-desc-label">Description</th><td>
-					<p class="description" id="aun-desc-help" style="margin-top:0">Use the toolbar for <b>bold</b>, lists and headings — it shows formatted in the app.</p>
+					<tr class="aun-crow" data-types="firmware"><th>What&rsquo;s new</th><td>
+					<p class="description" style="margin-top:0;max-width:780px">
+						What changed in this release &mdash; the reason a customer should bother installing
+						it. Shown <strong>above</strong> the installation steps, in its own highlighted block,
+						and the first line becomes the body of the &ldquo;new firmware&rdquo; notification.
+						<br />
+						Write it as short bullets in the customer&rsquo;s language: <em>&ldquo;Fixes no sound
+						over HDMI on some TVs&rdquo;</em>, not <em>&ldquo;patched audio driver&rdquo;</em>.
+						Leave blank and the block simply does not appear.
+					</p>
+				<?php
+				wp_editor(
+					$editing->changelog ?? '',
+					'aun_content_changelog',
+					array(
+						'textarea_name' => 'changelog',
+						'textarea_rows' => 5,
+						'media_buttons' => false,
+						'teeny'         => true,
+						'quicktags'     => true,
+					)
+				);
+				?>
+				</td></tr>
+					<tr class="aun-crow" data-types="firmware"><th id="aun-desc-label">Installation steps</th><td>
+					<p class="description" id="aun-desc-help" style="margin-top:0"><strong>How</strong> to install it — the steps the customer follows. (What CHANGED goes in
+					&ldquo;What&rsquo;s new&rdquo; above.) Use the toolbar for <b>bold</b>, lists and headings; paste a
+					YouTube link on its own line and it plays inside the app.</p>
 				<?php
 				wp_editor(
 					$editing->description ?? '',
@@ -1060,6 +1088,15 @@ class AUN_App_Admin {
 						<input name="url" id="aun-url" style="width:78%" value="<?php echo $v( 'url' ); ?>" placeholder="File URL or YouTube link" />
 						<button type="button" class="button" id="aun-media-btn">Choose file</button>
 						<p class="description" id="aun-url-help">Firmware/manual: pick an uploaded file. Video: paste a YouTube link.</p>
+						<p class="description aun-crow" data-types="firmware" style="max-width:780px;background:#f0f6fc;border-left:3px solid #0188fe;padding:10px 14px;border-radius:6px;margin-top:8px">
+							<strong>Over-the-air (OTA) update? Leave this blank.</strong>
+							Some models fetch the update themselves over Wi-Fi, so there is no zip to publish.
+							Leave the file empty and the app replaces the download button with an
+							<strong>&ldquo;updates over Wi-Fi&rdquo;</strong> card showing your instructions below
+							&mdash; and any YouTube link in the installation note plays inside the app.
+							Everything else works normally: it still appears under the model, still carries a
+							version number, and still sends the &ldquo;new firmware&rdquo; notification.
+						</p>
 					</td></tr>
 					<tr class="aun-crow" data-types="firmware"><th>Version</th><td><input name="version" value="<?php echo $v( 'version' ); ?>" placeholder="e.g. 2.1.0" /></td></tr>
 					<tr class="aun-crow" data-types="firmware,manual"><th>File size</th><td><input name="file_size" id="aun-file-size" value="<?php echo $v( 'file_size' ); ?>" placeholder="e.g. 48 MB" /></td></tr>
@@ -1157,7 +1194,7 @@ class AUN_App_Admin {
 			// uses, with its own title/URL/description wording. Plain DOM so it always
 			// runs regardless of jQuery / TinyMCE timing.
 			var PRESET = {
-				firmware: { title: 'e.g. Firmware v2.1 — fixes HDMI sound', urlLabel: 'Firmware file', urlHelp: 'Choose the uploaded firmware file (.zip / .bin).', urlPh: 'Firmware file URL', descLabel: 'Install steps / notes', media: true },
+				firmware: { title: 'e.g. Firmware v2.1 — fixes HDMI sound', urlLabel: 'Firmware file', urlHelp: 'Choose the uploaded firmware file (.zip / .bin).', urlPh: 'Firmware file URL', descLabel: 'Installation steps', media: true },
 				manual:   { title: 'e.g. A005 User Manual (English)', urlLabel: 'Manual file (PDF)', urlHelp: 'Choose the uploaded PDF manual.', urlPh: 'PDF file URL', descLabel: 'Description (optional)', media: true },
 				video:    { title: 'e.g. How to connect your projector to WiFi', urlLabel: 'YouTube / video link', urlHelp: 'Paste the YouTube link (or a direct .mp4 / .m3u8 URL).', urlPh: 'https://youtu.be/…', descLabel: 'Description (optional)', media: false }
 			};
@@ -1236,6 +1273,26 @@ class AUN_App_Admin {
 	 * @param mixed $rows $_POST['watch_pick'] (array of associative arrays).
 	 * @return string One pick per line.
 	 */
+	/**
+	 * Title search behind the "Search TMDB" button on a local pick.
+	 *
+	 * Admin-only and nonce-checked: it spends the site's TMDB quota, so it is
+	 * not something any logged-in subscriber should be able to run in a loop.
+	 */
+	public function ajax_tmdb_search() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array(), 403 );
+		}
+		check_ajax_referer( 'aun_app_tmdb_search', 'nonce' );
+
+		if ( ! class_exists( 'AUN_App_Watch' ) || ! method_exists( 'AUN_App_Watch', 'search' ) ) {
+			wp_send_json_error( array(), 503 );
+		}
+		wp_send_json_success(
+			AUN_App_Watch::search( wp_unslash( $_POST['q'] ?? '' ) )
+		);
+	}
+
 	private static function collect_local_picks( $rows ) {
 		if ( ! is_array( $rows ) ) {
 			return '';
@@ -1253,6 +1310,13 @@ class AUN_App_Admin {
 			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $end ) ) {
 				$end = '';
 			}
+			// Link to a TMDB title: "movie:1044789" / "tv:12345". Anything
+			// else is dropped rather than stored, so a typo cannot become a
+			// silently dead pick that still LOOKS linked in the table.
+			$tmdb = trim( sanitize_text_field( wp_unslash( $row['tmdb'] ?? '' ) ) );
+			if ( ! preg_match( '/^(movie|tv):\d+$/', $tmdb ) ) {
+				$tmdb = preg_match( '/^\d+$/', $tmdb ) ? 'movie:' . $tmdb : '';
+			}
 			// A pick needs at least a title and a URL to be useful.
 			if ( '' === $title || '' === $url ) {
 				continue;
@@ -1260,7 +1324,7 @@ class AUN_App_Admin {
 			// The '|' is the field separator — never let it leak in from a value.
 			$cols = array_map(
 				function ( $v ) { return str_replace( '|', '/', $v ); },
-				array( $title, $platform, $url, $poster, $end )
+				array( $title, $platform, $url, $poster, $end, $tmdb )
 			);
 			// Trim empty trailing columns so we don't store "a|b|c||".
 			while ( count( $cols ) > 3 && '' === end( $cols ) ) {
@@ -1413,6 +1477,13 @@ class AUN_App_Admin {
 			$opts['whatsapp_number']     = preg_replace( '/[^\d+]/', '', (string) ( $_POST['whatsapp_number'] ?? '' ) );
 			$opts['support_phone']       = sanitize_text_field( $_POST['support_phone'] ?? '' );
 			$opts['support_hours']       = sanitize_text_field( $_POST['support_hours'] ?? '' );
+			$opts['repair_ship_name']    = sanitize_text_field( $_POST['repair_ship_name'] ?? '' );
+			$opts['repair_ship_phone']   = sanitize_text_field( $_POST['repair_ship_phone'] ?? '' );
+			$opts['repair_ship_address'] = sanitize_textarea_field( wp_unslash( $_POST['repair_ship_address'] ?? '' ) );
+			$opts['repair_ship_note']    = sanitize_textarea_field( wp_unslash( $_POST['repair_ship_note'] ?? '' ) );
+			$opts['repair_ship_city']    = sanitize_text_field( $_POST['repair_ship_city'] ?? '' );
+			$opts['repair_ship_zone']    = sanitize_text_field( $_POST['repair_ship_zone'] ?? '' );
+			$opts['repair_ship_area']    = sanitize_text_field( $_POST['repair_ship_area'] ?? '' );
 			$opts['facebook_url']        = esc_url_raw( $_POST['facebook_url'] ?? '' );
 			$opts['website_url']         = esc_url_raw( $_POST['website_url'] ?? '' );
 			$opts['announcement']        = sanitize_textarea_field( $_POST['announcement'] ?? '' );
@@ -1422,6 +1493,7 @@ class AUN_App_Admin {
 			$opts['latest_version_name'] = sanitize_text_field( $_POST['latest_version_name'] ?? '1.0.0' );
 			$opts['min_version_code']    = max( 1, (int) ( $_POST['min_version_code'] ?? 1 ) );
 			$opts['apk_url']             = esc_url_raw( $_POST['apk_url'] ?? '' );
+			$opts['release_notes']       = sanitize_textarea_field( wp_unslash( $_POST['release_notes'] ?? '' ) );
 			$opts['token_days']          = max( 1, min( 730, (int) ( $_POST['token_days'] ?? 180 ) ) );
 			$opts['login_video_url']     = esc_url_raw( $_POST['login_video_url'] ?? '' );
 			$opts['repair_api_key']      = sanitize_text_field( $_POST['repair_api_key'] ?? '' );
@@ -1432,6 +1504,11 @@ class AUN_App_Admin {
 			$opts['tickets_field_map']   = sanitize_textarea_field( wp_unslash( $_POST['tickets_field_map'] ?? '' ) );
 			$opts['tmdb_api_key']        = trim( sanitize_text_field( $_POST['tmdb_api_key'] ?? '' ) );
 			$opts['watch_local_picks']   = self::collect_local_picks( $_POST['watch_pick'] ?? array() );
+			// Correcting a wrong TMDB id must show the right film NOW, not when
+			// a week-long cache expires.
+			if ( method_exists( 'AUN_App_Watch', 'flush_local_meta' ) ) {
+				AUN_App_Watch::flush_local_meta();
+			}
 			$opts['watch_limit']         = max( 1, min( AUN_App_Watch::MAX_LIMIT, (int) ( $_POST['watch_limit'] ?? AUN_App_Watch::GLOBAL_LIMIT ) ) );
 			$opts['youtube_api_key']     = trim( sanitize_text_field( $_POST['youtube_api_key'] ?? '' ) );
 			// Our own OneDrive app registration (makes firmware downloads
@@ -1512,6 +1589,35 @@ class AUN_App_Admin {
 					<tr><th>WhatsApp number</th><td><input name="whatsapp_number" value="<?php echo esc_attr( $opts['whatsapp_number'] ); ?>" placeholder="8801XXXXXXXXX" /><p class="description">Digits only, international format — used for the wa.me chat button.</p></td></tr>
 					<tr><th>Support phone</th><td><input name="support_phone" value="<?php echo esc_attr( $opts['support_phone'] ); ?>" placeholder="09XXXXXXXX" /><p class="description">Tap-to-call number.</p></td></tr>
 					<tr><th>Support hours</th><td><input name="support_hours" style="width:320px" value="<?php echo esc_attr( $opts['support_hours'] ); ?>" /></td></tr>
+					<tr><th colspan="2" style="padding-top:18px"><h3 style="margin:0">Where customers post a projector for repair</h3></th></tr>
+					<tr><th>Send-to name</th><td><input name="repair_ship_name" style="width:320px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_name'] ?? '' ) ); ?>" placeholder="AUN Care Service Centre" /></td></tr>
+					<tr><th>Send-to phone</th><td><input name="repair_ship_phone" style="width:220px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_phone'] ?? '' ) ); ?>" placeholder="01XXXXXXXXX" /> <span class="description">every courier form asks for a receiver's number</span></td></tr>
+					<tr><th>Send-to address</th><td>
+						<textarea name="repair_ship_address" rows="3" style="width:100%;max-width:640px" placeholder="House 00, Road 00, Area, Dhaka 1200"><?php echo esc_textarea( (string) ( $opts['repair_ship_address'] ?? '' ) ); ?></textarea>
+						<p class="description" style="max-width:640px">
+							Shown in the app the moment you <strong>approve</strong> a repair request, with a
+							Copy button and step-by-step instructions. <strong>Leave this blank and the card
+							does not appear at all</strong> — the app then tells the customer we will message
+							them the address, which is the truth. It never invents one.
+						</p>
+					</td></tr>
+					<tr><th>Pathao City / Zone / Area</th><td>
+						<input name="repair_ship_city" style="width:180px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_city'] ?? '' ) ); ?>" placeholder="Dhaka" />
+						<input name="repair_ship_zone" style="width:200px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_zone'] ?? '' ) ); ?>" placeholder="Mazar road" />
+						<input name="repair_ship_area" style="width:260px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_area'] ?? '' ) ); ?>" placeholder="Mirpur Buddhijibi Koborsthan" />
+						<p class="description" style="max-width:640px">
+							Pathao's booking form asks for these three as <strong>dropdowns</strong>, and
+							choosing the wrong Zone or Area is the commonest way a parcel reaches the wrong
+							hub. Type them <strong>exactly as they appear in Pathao's own list</strong> — the
+							app shows each one as a separate tap-to-copy row, mirroring the block already on
+							the website so a customer sees the same thing in both places.
+						</p>
+						<p class="description" style="max-width:640px">Leave blank if you do not use Pathao; the address above is enough for every counter-based courier.</p>
+					</td></tr>
+					<tr><th>Extra instructions</th><td>
+						<textarea name="repair_ship_note" rows="2" style="width:100%;max-width:640px" placeholder="Counter open 10am–8pm, closed Friday."><?php echo esc_textarea( (string) ( $opts['repair_ship_note'] ?? '' ) ); ?></textarea>
+						<p class="description">Optional. Anything specific to your counter — opening hours, a landmark, which gate.</p>
+					</td></tr>
 					<tr><th>Facebook page</th><td><input name="facebook_url" style="width:100%" value="<?php echo esc_attr( $opts['facebook_url'] ); ?>" placeholder="https://facebook.com/..." /></td></tr>
 					<tr><th>Website URL</th><td><input name="website_url" style="width:100%" value="<?php echo esc_attr( $opts['website_url'] ); ?>" placeholder="Blank = this site" /></td></tr>
 				</table>
@@ -1965,46 +2071,195 @@ class AUN_App_Admin {
 								'url'      => $p[2] ?? '',
 								'poster'   => $p[3] ?? '',
 								'end'      => $p[4] ?? '',
+								'tmdb'     => $p[5] ?? '',
 							);
 						}
-						$saved_rows[] = array( 'title' => '', 'platform' => '', 'url' => '', 'poster' => '', 'end' => '' ); // one blank row
+						$saved_rows[] = array( 'title' => '', 'platform' => '', 'url' => '', 'poster' => '', 'end' => '', 'tmdb' => '' ); // one blank row
 						?>
-						<table class="widefat aun-watch-rows" style="max-width:900px">
-							<thead><tr>
-								<th style="width:22%">Title</th>
-								<th style="width:16%">Platform</th>
-								<th style="width:26%">URL</th>
-								<th style="width:22%">Poster URL <span style="font-weight:400;color:#787c82">(optional)</span></th>
-								<th style="width:12%">Show until <span style="font-weight:400;color:#787c82">(optional)</span></th>
-								<th></th>
-							</tr></thead>
-							<tbody id="aun-watch-body">
-								<?php foreach ( $saved_rows as $i => $r ) : ?>
-								<tr class="aun-watch-row">
-									<td><input type="text" name="watch_pick[<?php echo (int) $i; ?>][title]" value="<?php echo esc_attr( $r['title'] ); ?>" style="width:100%" placeholder="Mohanagar S2" /></td>
-									<td><input type="text" name="watch_pick[<?php echo (int) $i; ?>][platform]" value="<?php echo esc_attr( $r['platform'] ); ?>" style="width:100%" placeholder="Hoichoi" /></td>
-									<td><input type="url" name="watch_pick[<?php echo (int) $i; ?>][url]" value="<?php echo esc_attr( $r['url'] ); ?>" style="width:100%" placeholder="https://www.hoichoi.tv/..." /></td>
-									<td><input type="url" name="watch_pick[<?php echo (int) $i; ?>][poster]" value="<?php echo esc_attr( $r['poster'] ); ?>" style="width:100%" placeholder="https://.../poster.jpg" /></td>
-									<td><input type="date" name="watch_pick[<?php echo (int) $i; ?>][end]" value="<?php echo esc_attr( $r['end'] ); ?>" style="width:100%" /></td>
-									<td style="text-align:center"><button type="button" class="button-link aun-watch-del" title="Remove" style="color:#b32d2e;text-decoration:none;font-size:18px">&times;</button></td>
-								</tr>
-								<?php endforeach; ?>
-							</tbody>
-						</table>
+						<style>
+						/* ⚠️ This was a 7-column <table> and it could not work.
+						 * `<input type="date">` and the Search button have hard
+						 * minimum widths that a table cannot shrink, so under
+						 * auto layout they took the space and the free-text
+						 * columns collapsed to about one visible character.
+						 * Percentage widths on <th> are only hints and lose to
+						 * unshrinkable content every time.
+						 *
+						 * A card per pick with a wrapping grid cannot collapse:
+						 * each field declares a minimum it will never go below,
+						 * and the grid moves it to the next line instead. */
+						.aun-watch-card{border:1px solid #dcdcde;border-radius:8px;padding:14px 14px 6px;margin-bottom:12px;background:#fff;position:relative}
+						.aun-watch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 16px}
+						.aun-watch-f{display:flex;flex-direction:column;min-width:0}
+						.aun-watch-f label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:#646970;margin-bottom:4px}
+						.aun-watch-f input{width:100%;box-sizing:border-box}
+						.aun-watch-f .opt{font-weight:400;text-transform:none;letter-spacing:0;color:#8c8f94}
+						.aun-watch-wide{grid-column:1/-1}
+						.aun-watch-del{position:absolute;top:8px;right:10px;color:#b32d2e;text-decoration:none;font-size:20px;line-height:1;cursor:pointer}
+						.aun-watch-tmdb-row{display:flex;gap:8px;align-items:center}
+						.aun-watch-tmdb-row input{flex:1;min-width:0}
+						</style>
+						<div id="aun-watch-body" style="max-width:940px">
+							<?php foreach ( $saved_rows as $i => $r ) : ?>
+							<div class="aun-watch-card aun-watch-row">
+								<button type="button" class="button-link aun-watch-del" title="Remove this pick">&times;</button>
+								<div class="aun-watch-grid">
+									<div class="aun-watch-f">
+										<label>Title</label>
+										<input type="text" name="watch_pick[<?php echo (int) $i; ?>][title]" value="<?php echo esc_attr( $r['title'] ); ?>" placeholder="Hawa" />
+									</div>
+									<div class="aun-watch-f">
+										<label>Platform</label>
+										<input type="text" name="watch_pick[<?php echo (int) $i; ?>][platform]" value="<?php echo esc_attr( $r['platform'] ); ?>" placeholder="Chorki" />
+									</div>
+									<div class="aun-watch-f">
+										<label>Show until <span class="opt">(optional)</span></label>
+										<input type="date" name="watch_pick[<?php echo (int) $i; ?>][end]" value="<?php echo esc_attr( $r['end'] ); ?>" />
+									</div>
+									<div class="aun-watch-f aun-watch-wide">
+										<label>Link the customer opens</label>
+										<input type="url" name="watch_pick[<?php echo (int) $i; ?>][url]" value="<?php echo esc_attr( $r['url'] ); ?>" placeholder="https://www.chorki.com/..." />
+									</div>
+									<div class="aun-watch-f">
+										<label>TMDB title <span class="opt">(recommended)</span></label>
+										<div class="aun-watch-tmdb-row">
+											<input type="text" class="aun-watch-tmdb" name="watch_pick[<?php echo (int) $i; ?>][tmdb]" value="<?php echo esc_attr( $r['tmdb'] ); ?>" placeholder="movie:1044789" />
+											<button type="button" class="button aun-watch-find">Search</button>
+										</div>
+									</div>
+									<div class="aun-watch-f">
+										<label>Poster URL <span class="opt">(optional)</span></label>
+										<input type="url" name="watch_pick[<?php echo (int) $i; ?>][poster]" value="<?php echo esc_attr( $r['poster'] ); ?>" placeholder="leave blank to use TMDB's" />
+									</div>
+								</div>
+							</div>
+							<?php endforeach; ?>
+						</div>
 						<p><button type="button" class="button" id="aun-watch-add">+ Add a pick</button></p>
 						<p class="description">
-							Fill a row and press <strong>Save Settings</strong>. Local platforms (Chorki,
+							Fill in a pick and press <strong>Save Settings</strong>. Local platforms (Chorki,
 							Bioscope, Hoichoi…) have no public APIs, so these are curated by you and show
 							FIRST in the app. <strong>Title</strong> and <strong>URL</strong> are required;
 							poster and end date are optional. A pick past its <strong>Show until</strong>
 							date disappears automatically. Leave every row blank (and no TMDB key) = the
 							whole card is hidden in the app.
 						</p>
+						<p class="description" style="max-width:900px;background:#f0f6fc;border-left:3px solid #0188fe;padding:10px 14px;border-radius:6px">
+							<strong>TMDB title — do this for every pick you can.</strong>
+							Press <strong>Search</strong> beside it, type the film's name, click the right one
+							&mdash; the id is filled in for you, so it can never be mistyped.
+							Bangladeshi films <em>are</em> on TMDB (Hawa, Poran, Surongo, Priyotoma…) —
+							they just never reach the global trending list, which is why you curate them
+							here. Linking one gives it the <strong>same in-app screen</strong> as a global
+							pick: synopsis, cast with photos, trailer, runtime and rating — instead of
+							throwing the customer out to a browser.
+							<br />
+							Your <strong>Title</strong>, <strong>Platform</strong> and <strong>URL</strong>
+							always win over TMDB's, so a Bangla title stays Bangla and the button still
+							says &ldquo;Watch on Chorki&rdquo;. Your poster wins too when you set one.
+							<br />
+							Nothing on TMDB? Leave it blank — the pick works exactly as it does today.
+						</p>
+						<div id="aun-tmdb-modal" style="display:none;position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.55)">
+							<div style="background:#fff;max-width:620px;margin:6vh auto;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+								<div style="padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;gap:10px;align-items:center">
+									<strong style="flex:1">Find the title on TMDB</strong>
+									<button type="button" class="button-link" id="aun-tmdb-close" style="font-size:20px;text-decoration:none;color:#646970">&times;</button>
+								</div>
+								<div style="padding:14px 18px">
+									<input type="text" id="aun-tmdb-q" class="regular-text" style="width:100%" placeholder="e.g. Hawa, Surongo, Priyotoma" />
+									<p class="description" style="margin:6px 0 0">Try the English spelling too &mdash; many Bangladeshi films are filed under it.</p>
+									<div id="aun-tmdb-results" style="margin-top:12px;max-height:46vh;overflow:auto"></div>
+								</div>
+							</div>
+						</div>
 						<script>
 						( function () {
 							var body = document.getElementById( 'aun-watch-body' );
 							var addBtn = document.getElementById( 'aun-watch-add' );
 							if ( ! body || ! addBtn ) { return; }
+
+							/* ── TMDB picker ──────────────────────────────────
+							 * Nobody should have to leave WordPress, find the
+							 * film on themoviedb.org and copy a number out of
+							 * its URL. The only hard part of that errand is not
+							 * mistyping the id, so the id is never typed here:
+							 * clicking a result writes it.
+							 */
+							var modal   = document.getElementById( 'aun-tmdb-modal' );
+							var qInput  = document.getElementById( 'aun-tmdb-q' );
+							var results = document.getElementById( 'aun-tmdb-results' );
+							var target  = null;   // the row being filled
+							var timer   = null;
+
+							function closeModal() { modal.style.display = 'none'; target = null; }
+							document.getElementById( 'aun-tmdb-close' ).addEventListener( 'click', closeModal );
+							modal.addEventListener( 'click', function ( e ) { if ( e.target === modal ) { closeModal(); } } );
+							document.addEventListener( 'keydown', function ( e ) {
+								if ( 'Escape' === e.key && 'none' !== modal.style.display ) { closeModal(); }
+							} );
+
+							function search() {
+								var q = qInput.value.trim();
+								if ( q.length < 2 ) { results.innerHTML = ''; return; }
+								results.innerHTML = '<p style="color:#646970">Searching…</p>';
+								var fd = new FormData();
+								fd.append( 'action', 'aun_app_tmdb_search' );
+								fd.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'aun_app_tmdb_search' ) ); ?>' );
+								fd.append( 'q', q );
+								fetch( ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' } )
+									.then( function ( r ) { return r.json(); } )
+									.then( function ( r ) {
+										var rows = ( r && r.data ) || [];
+										if ( ! rows.length ) {
+											results.innerHTML = '<p style="color:#646970">Nothing found. Check the spelling, or leave the field blank &mdash; the pick still works without it.</p>';
+											return;
+										}
+										results.innerHTML = '';
+										rows.forEach( function ( m ) {
+											var el = document.createElement( 'div' );
+											el.style.cssText = 'display:flex;gap:10px;padding:8px;border-bottom:1px solid #f0f0f1;cursor:pointer;align-items:flex-start';
+											el.innerHTML =
+												( m.poster ? '<img src="' + m.poster + '" style="width:46px;border-radius:4px;flex-shrink:0" />' : '<div style="width:46px;height:69px;background:#f0f0f1;border-radius:4px;flex-shrink:0"></div>' ) +
+												'<div style="min-width:0"><strong>' + m.title + '</strong>' +
+												( m.year ? ' <span style="color:#646970">(' + m.year + ')</span>' : '' ) +
+												' <span style="color:#787c82;font-size:11px;text-transform:uppercase">' + ( 'tv' === m.type ? 'series' : 'movie' ) + '</span>' +
+												( m.original && m.original !== m.title ? '<div style="color:#646970;font-size:12px">' + m.original + '</div>' : '' ) +
+												'<div style="color:#646970;font-size:12px;margin-top:2px">' + ( m.overview || '' ).slice( 0, 140 ) + '</div></div>';
+											el.addEventListener( 'click', function () {
+												if ( ! target ) { return; }
+												target.querySelector( '.aun-watch-tmdb' ).value = m.type + ':' + m.id;
+												// Only fill what is still empty — an admin's own
+												// Bangla title and local poster must never be
+												// overwritten by TMDB's English ones.
+												var t = target.querySelector( 'input[name$="[title]"]' );
+												if ( t && ! t.value.trim() ) { t.value = m.title; }
+												var p = target.querySelector( 'input[name$="[poster]"]' );
+												if ( p && ! p.value.trim() && m.poster ) { p.value = m.poster; }
+												closeModal();
+											} );
+											results.appendChild( el );
+										} );
+									} )
+									.catch( function () {
+										results.innerHTML = '<p style="color:#b32d2e">Search failed. Check the TMDB API key above.</p>';
+									} );
+							}
+							qInput.addEventListener( 'input', function () {
+								clearTimeout( timer );
+								timer = setTimeout( search, 350 );
+							} );
+
+							body.addEventListener( 'click', function ( e ) {
+								if ( ! e.target.classList.contains( 'aun-watch-find' ) ) { return; }
+								target = e.target.closest( '.aun-watch-row' );
+								var t = target.querySelector( 'input[name$="[title]"]' );
+								qInput.value = t ? t.value.trim() : '';
+								results.innerHTML = '';
+								modal.style.display = 'block';
+								qInput.focus();
+								if ( qInput.value.length > 1 ) { search(); }
+							} );
 							var seq = body.querySelectorAll( '.aun-watch-row' ).length;
 							addBtn.addEventListener( 'click', function () {
 								var tpl = body.querySelector( '.aun-watch-row' );
@@ -2349,6 +2604,14 @@ class AUN_App_Admin {
 					<tr><th>Latest version name</th><td><input name="latest_version_name" value="<?php echo esc_attr( $opts['latest_version_name'] ); ?>" style="width:110px" /></td></tr>
 					<tr><th>Minimum version code</th><td><input name="min_version_code" type="number" min="1" value="<?php echo (int) $opts['min_version_code']; ?>" style="width:110px" /> <span class="description">Older builds are forced to update before use.</span></td></tr>
 					<tr><th>APK download URL</th><td><input name="apk_url" id="aun-apk-url" style="width:78%" value="<?php echo esc_attr( $opts['apk_url'] ); ?>" placeholder="https://.../aun-app.apk" /> <button type="button" class="button" id="aun-apk-btn">Choose file</button></td></tr>
+					<tr><th>What's new</th><td>
+						<textarea name="release_notes" rows="3" style="width:100%" placeholder="Faster checkout. Spare-part payments now work inside the app."><?php echo esc_textarea( (string) ( $opts['release_notes'] ?? '' ) ); ?></textarea>
+						<p class="description" style="max-width:780px">
+							Shown in the app's update sheet, once per version. A version number tells the
+							customer nothing — one line about what actually improved is what makes someone
+							bother to update. Leave blank to show just the version.
+						</p>
+					</td></tr>
 					<tr><th>Login token lifetime</th><td><input name="token_days" type="number" min="1" max="730" value="<?php echo (int) $opts['token_days']; ?>" style="width:90px" /> days</td></tr>
 				</table>
 			</div>
