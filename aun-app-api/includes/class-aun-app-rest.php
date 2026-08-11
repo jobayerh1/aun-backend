@@ -254,6 +254,15 @@ class AUN_App_REST {
 		// app aimed at someone who has not bought anything yet, and putting a
 		// login in front of "help me choose" would ask for a phone number before
 		// giving any reason to trust us with it.
+		// Product analytics. Open to everyone: the finder and the content
+		// library work logged-out, and their usage is exactly what we need to
+		// see. The handler still records the account id when there is one.
+		register_rest_route( $ns, '/events', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'events' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		register_rest_route( $ns, '/finder', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'finder' ),
@@ -1343,6 +1352,32 @@ class AUN_App_REST {
 	}
 
 	/**
+	 * Record a batch of app events.
+	 *
+	 * Answers 202 whatever happens. Analytics is OUR convenience and must never
+	 * become the customer's problem: a full disk or a bad batch cannot be
+	 * allowed to surface as an error in the app, and the app is written to
+	 * forget the batch either way rather than retrying for ever.
+	 */
+	public function events( $request ) {
+		if ( ! class_exists( 'AUN_App_Events' ) ) {
+			return new WP_REST_Response( array( 'success' => true ), 202 );
+		}
+
+		$me      = $this->identity();
+		$batch   = $request->get_param( 'events' );
+		$version = (string) $request->get_param( 'app_version' );
+
+		AUN_App_Events::record(
+			is_array( $batch ) ? $batch : array(),
+			(int) ( $me['user_id'] ?? 0 ),
+			$version
+		);
+
+		return new WP_REST_Response( array( 'success' => true ), 202 );
+	}
+
+	/**
 	 * Projector finder: five answers in, the two best matches out.
 	 *
 	 * ⚠️ The scoring is NOT reimplemented here. It calls the website's own
@@ -1705,6 +1740,8 @@ class AUN_App_REST {
 				'zone'    => (string) ( $opts['repair_ship_zone'] ?? '' ),
 				'area'    => (string) ( $opts['repair_ship_area'] ?? '' ),
 			),
+			// Server-side off switch for analytics + crash reporting.
+			'analytics_enabled' => ! isset( $opts['analytics_enabled'] ) || (int) $opts['analytics_enabled'] === 1,
 			'announcement'  => (string) $opts['announcement'],
 			'discount_note' => (string) $opts['discount_note'],
 			'banners'       => $banners,

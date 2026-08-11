@@ -23,8 +23,128 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.87.0+91**, **plugin 1.78.1 (DB v18)**, **spare-parts 0.32.0 (DB v10)**,
+Current versions: **app 1.90.0+94**, **plugin 1.80.0 (DB v19)**, **spare-parts 0.32.0 (DB v10)**,
 **projector wizard 3.5.0**.
+
+📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
+answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-08-12 — app 1.90.0+94: admin HTML could paint invisible text in dark mode
+
+Owner-reported: the first line of a firmware note — `<span style="color: #333333">Please follow the
+steps below carefully:</span>` — was **completely invisible in dark mode**. Near-black text on a
+near-black card. They asked whether they were doing something wrong. They were not.
+
+⚠️ **The WordPress editor adds `color:#333333` to almost anything pasted into it** (from Word, from
+a browser, from another page). Those colours were chosen against a white page, and the app was
+letting them decide what to paint on a dark one. This will keep happening with every note anyone
+pastes, so telling the admin to strip the span would have fixed one note and left the trap.
+
+New `lib/src/ui/html_colors.dart` — `stripUnreadableColors( html, background: … )`, applied in
+`RichNote` to every admin note. **The rule: keep colour that carries meaning, drop colour that
+carries none**, decided by **WCAG contrast ratio against the real surface** (≥ 4.5:1, the AA
+threshold for body text — a published number, not one invented here).
+
+Why measured rather than "strip all colours in dark mode": stripping everything flattens a
+deliberate red warning, stripping nothing leaves invisible text. **Contrast is the only thing that
+tells those two apart.** A red warning passes on both themes and survives untouched; a decorative
+grey fails and is dropped so the text inherits the theme colour, which is readable because we chose
+it.
+
+⚠️ The background comes from `context.findAncestorWidgetOfExactType<Material>()`, not
+`colorScheme.surface` — these notes sit inside Cards and tinted containers, and the contrast that
+matters is against what is actually behind the text.
+
+Handles the formats the editor really emits (`#333`, `#333333`, `rgb()`, named colours, single or
+double quotes), leaves `background-color` alone (removing it changes layout, not legibility), and
+**keeps an unparseable colour** (`var(--brand)`) rather than guessing — at worst that looks the same
+as before this existed.
+
+**Tests:** NEW `html_colors_test.dart` (14) built around the owner's exact note — invisible grey
+dropped in dark, **the same grey KEPT in light**, font-size and letter-spacing survive, a red
+warning survives, white-on-light dropped (the mirror bug), every colour format, background-color
+untouched, list/link/text intact, no dangling `style=""`. Flutter suite **227**.
+
+⚠️ **Caught before release, and it would have been bad.** The live privacy policy at
+`/app-privacy-policy/` promises customers: *"no third-party analytics or tracking SDKs"*. Shipping
+Firebase Analytics (the previous round) would have made that a public lie. **Always read what the
+policy already promises before adding an SDK.**
+
+Owner chose to keep the promise. **Usage counting is now first-party** — `POST /events` → new
+`wp_aun_app_events` (DB v19), purged after 180 days by cron, erased with the account via
+`aun_app_account_deleted`. `firebase_analytics` is removed from the app. **Crashlytics stays**: a
+stack trace is diagnostics not tracking, there is no realistic first-party equivalent, and it is now
+disclosed on exactly those terms.
+
+**Two locks on personal data.** The app never sends phone/name/address/serial/ref; the server's
+`clean_params()` drops anything phone- or email-shaped and any string over 40 chars (prose is not a
+category). Event names are an **allow-list** — a future app version cannot invent new ones, and that
+list doubles as the readable answer to "what does the app collect?".
+
+**The client is a batching queue**, not a per-tap request: flush at 12 events or 20s after a burst,
+persisted to SharedPreferences so events survive a close, capped at 60 so an unreachable server
+cannot grow it without bound. ⚠️ **The batch is cleared BEFORE the request and restored only on
+failure** — the reverse order double-counts every event whenever a response is slow enough for a
+second flush to start.
+
+⚠️ `Analytics.init()` takes **callbacks** for version and token, not values: it runs before AppState
+has read the package info or the stored token, so capturing values records an empty version for the
+whole session and loses the account id on every event.
+
+**Admin: AUN App → Usage.** Opens with the standing questions answered *in words* ("nobody is
+finding it", "38% submitted") rather than a wall of charts — a dashboard nobody opens twice answers
+nothing. Same on/off switch as crash reports.
+
+**Tests:** NEW bench `test-events.php` (13) — the allow-list rejects unknown names, phone numbers in
+both formats and emails are dropped, long strings dropped, params capped, malformed input degrades,
+retention bounded. One test documents a real limitation rather than hiding it: **a short ref like
+`SP-2026-0042` would pass the scrubber**, which is why the app is the first lock. Flutter 213.
+
+**Also this round:** keystore backed up to `Downloads\AUN-KEYSTORE-BACKUP\` (outside any git repo,
+with a plain-language README); `privacy-policy-update.html` written with the exact edits to paste.
+
+⚠️ **Correction to `PLAY-STORE-READINESS.md`:** an earlier draft called account deletion the biggest
+blocker. **It was already fully built** — backend, `POST /me/delete`, the Settings flow, and a live
+public page at `/delete-account/`. Verified before writing anything new. The remaining pre-flight
+work is now about 1–2 days, not a week.
+
+## 2026-08-11 — app 1.88.0+92 / app-api 1.79.0: analytics + crash reporting
+
+For apps, "Google Analytics" **is** Firebase Analytics (GA4) — Universal Analytics for mobile is
+gone. `firebase_core` + `firebase_messaging` + `google-services.json` were already here for push, so
+this was mostly wiring.
+
+**Crashlytics matters more than the analytics.** Until now an app that crashed on a customer's phone
+taught us nothing at all — they just stopped opening it. `FlutterError.onError` and
+`PlatformDispatcher.instance.onError` are both wired, collection is off in debug builds, and the
+**Crashlytics Gradle plugin** is added in `settings.gradle.kts` + `app/build.gradle.kts` — without
+it release stack traces are unreadable obfuscated line numbers.
+
+**`lib/src/services/analytics.dart` is the ONE place** the app touches Firebase; nothing else
+imports it. Same rule as `Haptics`: one file to tune, one file to switch off, one fixed vocabulary.
+
+⚠️ **Never pass personal data as an event parameter** — no phone, name, address, serial or `ref`.
+Parameters are categories and counts. `_clean()` truncates to Firebase's 100 chars and **drops
+anything phone-shaped** as a last line of defence, but the rule is not to send it at all.
+
+**~16 events, each attached to a decision** (full table in the readiness doc §11). The one that
+matters most: `quote_answered` finally says whether customers answer quotes **in the app** or still
+through the SMS link — which is the justification for the entire reminder/countdown feature.
+
+**Server kill switch:** `analytics_enabled` in `/config`, admin checkbox under Support settings.
+Applied on every config load and it calls `setAnalyticsCollectionEnabled` — so it stops collection
+inside the SDK, not merely our calls, with no APK rebuild. Defaults ON so an older server still
+reports crashes.
+
+**Verified facts for the readiness doc** (checked, not assumed): package is
+`bd.com.aunprojector.aun_app`; the keystore exists and `key.properties`/`*.jks` are gitignored; the
+manifest declares exactly **three** permissions — INTERNET, CAMERA, POST_NOTIFICATIONS — with no
+storage, media, location or `QUERY_ALL_PACKAGES`. That last one is worth protecting: photo picking
+uses Android's system picker and downloads are app-scoped, which is why it is clean.
+
+⚠️ **Biggest non-D-U-N-S blocker: account deletion** (in-app + a public web URL) is mandatory for
+any app with accounts and is **not built**. Deletion must anonymise rather than destroy — warranty
+and paid-order records are business records.
 
 ## 2026-08-10 (7) — app 1.87.0+91 / app-api 1.78.1: an inline link stays inline
 
