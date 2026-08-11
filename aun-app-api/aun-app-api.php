@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.78.1
+ * Version:           1.80.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.78.1' );
+define( 'AUN_APP_API_VERSION', '1.80.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -34,7 +34,10 @@ define( 'AUN_APP_API_VERSION', '1.78.1' );
 // phone's app actually has — Android drops pushes naming unknown ones).
 // v18 = aun_app_content.changelog ("what's new" in a firmware release —
 // the reason to install it, kept apart from the steps that say how).
-define( 'AUN_APP_API_DB_VERSION', '18' );
+// v19 = aun_app_events. FIRST-PARTY product analytics: the app's privacy
+// policy promises no third-party analytics SDK, so the counts live on our
+// own server instead of Firebase.
+define( 'AUN_APP_API_DB_VERSION', '19' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -66,6 +69,7 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-erp.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-profile.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-warranty.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-content.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-events.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-services.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-notices.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-account.php';
@@ -101,6 +105,10 @@ function aun_app_api_default_options() {
 		// Where a customer posts a projector once we approve their repair
 		// request. Until these are filled the app says "we will message you
 		// the address" rather than inventing one.
+		// Kill switch for in-app analytics + crash reporting. ON by default;
+		// turning it off stops collection in the SDK itself, not merely our
+		// calls, and takes effect on the next config load with no APK rebuild.
+		'analytics_enabled'   => 1,
 		'repair_ship_name'    => '',
 		'repair_ship_phone'   => '',
 		'repair_ship_address' => '',
@@ -558,6 +566,22 @@ function aun_app_api_activate() {
 		$wpdb->query( "ALTER TABLE $content ADD COLUMN app_downloadable tinyint(1) NOT NULL DEFAULT 1" );
 	}
 
+	// v19: first-party analytics. Small, append-only, purged after 180 days.
+	// `event_day_idx` is what makes the dashboard's GROUP BY cheap on a table
+	// that only ever grows between purges.
+	$events = $wpdb->prefix . 'aun_app_events';
+	dbDelta( "CREATE TABLE $events (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		event varchar(40) NOT NULL DEFAULT '',
+		params text,
+		app_version varchar(20) NOT NULL DEFAULT '',
+		created_at datetime DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id),
+		KEY event_day_idx (event, created_at),
+		KEY created_idx (created_at)
+	) $charset;" );
+
 	// v18: "What's new" for a firmware release. Separate from `description`
 	// (the installation steps) because they answer different questions asked at
 	// different moments — "should I install this?" comes before "how?", and
@@ -598,6 +622,12 @@ function aun_app_api_activate() {
 	// Repair-status poll: the ERP has no webhooks, so every 10 minutes we check
 	// active job sheets for a status change and push it to the owner. No-op
 	// until the ERP repair API is configured.
+	// Analytics never outlives its usefulness: the questions are all about the
+	// last month, so rows past the retention window are deleted daily.
+	if ( ! wp_next_scheduled( 'aun_app_events_purge' ) ) {
+		wp_schedule_event( time() + 2 * HOUR_IN_SECONDS, 'daily', 'aun_app_events_purge' );
+	}
+
 	if ( ! wp_next_scheduled( 'aun_app_repair_poll' ) ) {
 		wp_schedule_event( time() + 420, 'aun_app_ten_minutes', 'aun_app_repair_poll' );
 	}
@@ -668,6 +698,16 @@ function aun_app_api_repair_poll_cron() {
 	AUN_App_Services::poll_repair_statuses();
 }
 add_action( 'aun_app_repair_poll', 'aun_app_api_repair_poll_cron' );
+
+add_action( 'aun_app_events_purge', array( 'AUN_App_Events', 'purge' ) );
+
+// Deleting an account erases what it recorded too — otherwise "delete my
+// account" would leave a trail of that person's behaviour behind.
+add_action( 'aun_app_account_deleted', function ( $user_id ) {
+	if ( class_exists( 'AUN_App_Events' ) ) {
+		AUN_App_Events::delete_for_user( $user_id );
+	}
+}, 10, 1 );
 
 // Spare-parts requests live in their own plugin and only ever spoke to the
 // customer by SMS. This bridges its status changes into the app's notification

@@ -1,12 +1,29 @@
 PAGE: "AUN Care App — Privacy Policy"
 SITE: aun-projector.com.bd
 SUGGESTED SLUG: /app-privacy-policy/   → https://aun-projector.com.bd/app-privacy-policy/
-HOW TO ADD: Pages → Add New → title "AUN Care App Privacy Policy" → switch the editor to
-            Text/Code view (or UX Builder → add a Section → HTML element) → paste everything
-            below the ===== line. Publish. Then WP Rocket → Advanced Rules → "Never Cache URL(s)"
-            is NOT needed (this page is static), but DO purge the cache after publishing.
-NOTE:       This is written to match exactly what the app really does (checked against the
-            source). It is not legal advice — have your own counsel skim it before launch.
+HOW TO ADD: Pages → edit the existing "AUN Care App Privacy Policy" page → switch the editor to
+            Text/Code view (or UX Builder → the HTML element) → SELECT ALL, DELETE, then paste
+            everything below the ===== line. Update. Then purge the WP Rocket cache.
+
+UPDATED 11 Aug 2026 — this version corrects THREE claims that had become untrue as the app grew.
+            If you are comparing against the old page, these are the changes:
+
+            1. ANALYTICS + CRASH REPORTS (new in app 1.89.0). The old page promised "no
+               third-party analytics or tracking SDKs". That is still true of analytics — usage
+               counting is on OUR OWN server, not Google's — but crash reporting now uses Google
+               Crashlytics, so the page says so plainly. Sections: At a glance, 1, 2, 3, 4, 5.
+
+            2. PAYMENTS. The old page said "No payments in the app". The app now takes spare-parts
+               payments through SSLCommerz. Corrected, with the important part stated: the card
+               details are entered on SSLCommerz's own page and we never see or store them.
+
+            3. CAMERA. The old page said the camera is "used only to scan the barcode". It is now
+               also used for photos you attach and for the on-wall size preview. Corrected, keeping
+               the true distinction: scanning and the preview never leave your phone; a photo you
+               deliberately attach is uploaded.
+
+NOTE:       Written to match exactly what the app really does (checked against the source). It is
+            not legal advice — have your own counsel skim it before launch.
 
 =====================================================================================
 
@@ -57,7 +74,7 @@ NOTE:       This is written to match exactly what the app really does (checked a
 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
 <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(22,163,74,0.10);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-ban"></i></div>
 <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">No ads, no tracking, no selling</h3>
-<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">No advertising, no advertising ID, no third-party analytics or tracking SDKs, and no location access. We never sell your data.</p>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">No advertising, no advertising ID, no location access, and <strong>no third-party analytics SDK</strong> — we count how features are used on our own server, not through Google Analytics. We never sell your data.</p>
 </div>
 [/col]
 
@@ -116,14 +133,29 @@ NOTE:       This is written to match exactly what the app really does (checked a
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">To answer you, collect and return your projector, and deliver spare parts.</td>
 </tr>
 <tr style="background:#fafbfc;">
+<td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Order and payment records</strong> — what you ordered, the amount, and whether it was paid</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">If you pay for spare parts online</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">To fulfil the order, issue a receipt, and handle any refund. <strong>We never see or store your card, bKash or Nagad details</strong> — those are entered on the payment provider's own secure page, not in our app.</td>
+</tr>
+<tr>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Notification token</strong> and your language choice</td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">If you allow notifications</td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">To send you the alerts you asked for, in Bangla or English. Nothing else uses it.</td>
 </tr>
-<tr>
+<tr style="background:#fafbfc;">
 <td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>App version and a device name</strong></td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">While you are signed in</td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">So you can tell your own sessions apart, so support can reproduce a problem, and so we can offer you an update.</td>
+</tr>
+<tr>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>How the app's features are used</strong> — for example that the projector finder was opened, or that a price quote was answered</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">While you use the app</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">So we can tell which parts of the app are worth improving. These are <strong>counts and categories only</strong> — the name of a screen or button, and a number. <strong>Your phone number, name, address, projector serial and request references are never included</strong>, and there is no advertising ID or device fingerprint. If you are signed in, a count is linked to your account number only so that forty visits by one person can be told apart from forty people; we do not build a profile of you. This is stored on <strong>our own server</strong>, is <strong>not shared with anyone</strong>, and is <strong>deleted automatically after 180 days</strong>.</td>
+</tr>
+<tr style="background:#fafbfc;">
+<td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Crash reports</strong> — where in our code the app failed, your phone model, its Android version and free memory</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">Only if the app closes unexpectedly</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">So we can find and fix the fault. Without this, an app that fails on your phone tells us nothing at all and the problem is never fixed. It contains <strong>no phone number, no name, and nothing you typed</strong>. This is the one part handled by an outside service — Google Firebase Crashlytics (see section 3).</td>
 </tr>
 </tbody>
 </table>
@@ -133,9 +165,9 @@ NOTE:       This is written to match exactly what the app really does (checked a
 <ul style="font-size:14.5px;color:#475569;line-height:1.9;margin:0;padding-left:20px;">
 <li><strong>No location.</strong> The app never requests or reads your location. Weather shown on the home screen is for Dhaka generally, worked out on our server — your phone is never asked where it is.</li>
 <li><strong>No contacts, no call logs, no SMS reading.</strong> When Android auto-fills your one-time code, it hands the app only that single message, using Google's SMS Retriever. We cannot read your other messages.</li>
-<li><strong>No advertising, no advertising ID, no third-party analytics or tracking SDKs.</strong></li>
-<li><strong>Camera stays on your phone.</strong> The camera is used only to scan the barcode on your projector box. The picture is processed on the device and is never uploaded or stored.</li>
-<li><strong>No payments in the app.</strong> The current version does not take payments and does not handle card details.</li>
+<li><strong>No advertising, no advertising ID, and no third-party analytics or tracking SDK.</strong> We do not use Google Analytics or anything like it. The counts described above are recorded on our own server and are never shared. The only outside service the app reports to is crash reporting, described in section 3.</li>
+<li><strong>No card details.</strong> If you pay online, the card, bKash or Nagad details are entered on the payment provider's own secure page. They never pass through our app or our servers, and we never store them.</li>
+<li><strong>Camera pictures are not taken behind your back.</strong> The camera is used for three things: scanning the barcode on your projector box, previewing how big the picture will be on your wall, and taking a photo you choose to attach. <strong>Barcode scanning and the wall preview are processed live on your phone and never uploaded or saved.</strong> A photo is only uploaded when you deliberately attach it to a request.</li>
 </ul>
 
 <h2 style="font-size:22px;margin:34px 0 8px;color:#0f172a;"><i class="fa-solid fa-share-nodes" style="color:#0188fe;margin-right:8px;"></i>3. Who else sees your information</h2>
@@ -162,11 +194,26 @@ NOTE:       This is written to match exactly what the app really does (checked a
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">To deliver push notifications to your phone. Only if you turn notifications on.</td>
 </tr>
 <tr>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Google Firebase Crashlytics</strong></td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">Automatic crash reports only — the technical details of a failure, your phone model and Android version. No phone number, no name, nothing you typed.</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">So we can find and fix faults that make the app close unexpectedly. Google acts as our processor and does not use this to identify you. <strong>Your usage counts are NOT sent here</strong> — they stay on our own server.</td>
+</tr>
+<tr style="background:#fafbfc;">
+<td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>SSLCommerz</strong> (Bangladesh)</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">The amount, an order reference, and the name and number you give at checkout</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">To take an online payment for spare parts. You enter card, bKash or Nagad details on <strong>their</strong> secure page — we never receive or store them.</td>
+</tr>
+<tr>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Courier companies</strong> — such as Pathao, Steadfast or Sundarban</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">The delivery name, address and phone number for a parcel</td>
+<td style="padding:12px 14px;border:1px solid #e2e8f0;">To deliver spare parts to you, or return your projector after a repair. Only when something is actually being sent.</td>
+</tr>
+<tr style="background:#fafbfc;">
 <td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Our own systems</strong> — website, support desk and business software, all operated by us</td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">Everything described in section 1</td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">These are ours, not a third party's product. Your data stays inside our systems.</td>
 </tr>
-<tr style="background:#fafbfc;">
+<tr>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;"><strong>Our hosting provider</strong></td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">Stores our databases and files</td>
 <td style="padding:12px 14px;border:1px solid #e2e8f0;">To run the service. They do not use your data for their own purposes.</td>
@@ -181,7 +228,10 @@ NOTE:       This is written to match exactly what the app really does (checked a
 <ul style="font-size:14.5px;color:#475569;line-height:1.9;margin:0;padding-left:20px;">
 <li><strong>Your app profile and sign-in</strong> — until you delete your account. A sign-in session expires by itself after 180 days.</li>
 <li><strong>One-time codes</strong> — a few minutes, and they are stored hashed, never as plain numbers.</li>
+<li><strong>Feature usage counts</strong> — deleted automatically after 180 days, and erased immediately if you delete your account.</li>
+<li><strong>Crash reports</strong> — kept by Google Crashlytics under their retention policy, normally around 90 days.</li>
 <li><strong>Warranty registrations and sales records</strong> — kept for as long as the warranty and our accounting obligations require, because they are your proof of purchase and our transaction record. These survive account deletion (see section 5).</li>
+<li><strong>Order and payment records</strong> — kept as required by accounting and tax rules, and so a refund can be traced.</li>
 <li><strong>Repair and spare-parts records</strong> — kept as service history; after account deletion they are detached from your account.</li>
 <li><strong>Support tickets</strong> — kept in our support system as a record of the conversation.</li>
 </ul>
@@ -190,13 +240,14 @@ NOTE:       This is written to match exactly what the app really does (checked a
 <ul style="font-size:14.5px;color:#475569;line-height:1.9;margin:0;padding-left:20px;">
 <li><strong>See and correct your information</strong> — your profile is editable in the app at any time (tap your photo on the home screen, or Settings).</li>
 <li><strong>Delete your account and personal data</strong> — in the app: <strong>Settings → Delete my account</strong>. Full details, including exactly what is deleted and what we must keep, are on our <a href="/delete-account/" style="color:#0188fe;font-weight:600;">Delete your account</a> page. You can also ask us to do it for you.</li>
+<li><strong>Ask us to stop counting your usage</strong> — email or message us and we will switch it off. Deleting your account also erases everything already counted for it.</li>
 <li><strong>Turn notifications off</strong> — in the app, or in your phone's Android settings. Nothing else stops working.</li>
 <li><strong>Remove a projector</strong> — remove it in My Devices; we remember the choice so it is not added back automatically.</li>
 <li><strong>Ask us a question or complain</strong> — use any contact route below. We answer in Bangla or English.</li>
 </ul>
 
 <h2 style="font-size:22px;margin:34px 0 8px;color:#0f172a;"><i class="fa-solid fa-lock" style="color:#0188fe;margin-right:8px;"></i>6. How we protect it</h2>
-<p style="font-size:14.5px;color:#475569;line-height:1.7;margin:0;">All traffic between the app and our servers uses HTTPS. One-time codes are stored hashed, never in readable form, and are rate-limited against guessing. Sign-in tokens are stored hashed, are tied to the phone that signed in, expire after 180 days, and are destroyed the moment you log out or delete your account. Access to customer data inside our systems is limited to staff who need it for support, service and warranty work. No system is perfectly secure, but we take this seriously and fix problems quickly when they are reported.</p>
+<p style="font-size:14.5px;color:#475569;line-height:1.7;margin:0;">All traffic between the app and our servers uses HTTPS. One-time codes are stored hashed, never in readable form, and are rate-limited against guessing. Sign-in tokens are stored hashed, are tied to the phone that signed in, expire after 180 days, and are destroyed the moment you log out or delete your account. Online payments are handled on the payment provider's own secure page, so card details never reach us. Access to customer data inside our systems is limited to staff who need it for support, service and warranty work. No system is perfectly secure, but we take this seriously and fix problems quickly when they are reported.</p>
 
 <h2 style="font-size:22px;margin:34px 0 8px;color:#0f172a;"><i class="fa-solid fa-child-reaching" style="color:#0188fe;margin-right:8px;"></i>7. Children</h2>
 <p style="font-size:14.5px;color:#475569;line-height:1.7;margin:0;">The app is intended for customers who own an AUN projector — that is, adults making a purchase. It is not directed at children, and we do not knowingly collect personal information from children. If you believe a child has given us personal information, contact us and we will delete it.</p>
@@ -252,7 +303,7 @@ NOTE:       This is written to match exactly what the app really does (checked a
 [section bg_color="rgb(246, 248, 251)" padding="18px" label="App Policy Last Updated"]
 
 [ux_text text_align="center"]
-<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>30 July, 2026</strong> · Applies to AUN Care Bangladesh for Android (bd.com.aunprojector.aun_app)</p>
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>11 August, 2026</strong> · Applies to AUN Care Bangladesh for Android (bd.com.aunprojector.aun_app)</p>
 [/ux_text]
 
 [/section]

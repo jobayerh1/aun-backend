@@ -319,6 +319,7 @@ class AUN_App_Admin {
 		add_submenu_page( 'aun-app', 'AUN App Content', 'App Content', self::CAP, 'aun-app-content', array( $this, 'page_content' ) );
 		add_submenu_page( 'aun-app', 'AUN App Repairs', 'Repairs', self::CAP, 'aun-app-repairs', array( $this, 'page_repairs' ) );
 		add_submenu_page( 'aun-app', 'AUN App Bug Reports', 'Bug Reports', self::CAP, 'aun-app-feedback', array( $this, 'page_feedback' ) );
+		add_submenu_page( 'aun-app', 'AUN App Usage', 'Usage', self::CAP, 'aun-app-usage', array( $this, 'page_usage' ) );
 		add_submenu_page( 'aun-app', 'AUN App Settings', 'Settings', self::CAP, 'aun-app-settings', array( $this, 'page_settings' ) );
 	}
 
@@ -1335,6 +1336,154 @@ class AUN_App_Admin {
 		return implode( "\n", $lines );
 	}
 
+	/**
+	 * What people actually do in the app.
+	 *
+	 * Deliberately a short page. The point of these numbers is to answer a few
+	 * standing questions — which services justify their upkeep, does the finder
+	 * work, do customers answer quotes in the app — and a dashboard with fifty
+	 * charts is one nobody opens twice.
+	 */
+	public function page_usage() {
+		if ( ! current_user_can( self::CAP ) ) {
+			wp_die( 'Nope.' );
+		}
+		$days = isset( $_GET['days'] ) ? max( 1, min( 180, (int) $_GET['days'] ) ) : 30;
+
+		echo '<div class="wrap"><h1>App usage</h1>';
+
+		if ( ! AUN_App_Events::enabled() ) {
+			echo '<div class="notice notice-warning"><p><strong>Collection is switched off.</strong> '
+				. 'Turn on <em>App analytics</em> in Settings to start recording again. '
+				. 'Anything already recorded is still shown below.</p></div>';
+		}
+
+		echo '<p style="max-width:820px;color:#646970">'
+			. 'These counts are recorded by the app on <strong>our own server</strong> &mdash; no Google '
+			. 'Analytics, no third-party tracking SDK, which is what the app&rsquo;s privacy policy '
+			. 'promises customers. No phone numbers, names or request references are ever stored here: '
+			. 'only counts and categories, deleted automatically after '
+			. (int) AUN_App_Events::RETENTION_DAYS . ' days.'
+			. '</p>';
+
+		echo '<p>';
+		foreach ( array( 7, 30, 90 ) as $d ) {
+			$url = admin_url( 'admin.php?page=aun-app-usage&days=' . $d );
+			echo $d === $days
+				? '<strong style="margin-right:12px">Last ' . $d . ' days</strong>'
+				: '<a href="' . esc_url( $url ) . '" style="margin-right:12px">Last ' . $d . ' days</a>';
+		}
+		echo '</p>';
+
+		$totals = AUN_App_Events::totals( $days );
+		if ( empty( $totals ) ) {
+			echo '<div class="notice notice-info"><p>Nothing recorded yet. Events arrive in small '
+				. 'batches while people use the app, so give it a day after releasing a build.</p></div></div>';
+			return;
+		}
+
+		$by = array();
+		foreach ( $totals as $r ) {
+			$by[ $r->event ] = $r;
+		}
+		$hits = function ( $name ) use ( $by ) {
+			return isset( $by[ $name ] ) ? (int) $by[ $name ]->hits : 0;
+		};
+
+		// ── The standing questions, answered in words ──
+		echo '<h2>The questions we built this to answer</h2>';
+		echo '<table class="widefat striped" style="max-width:920px"><tbody>';
+
+		$fs = $hits( 'finder_started' );
+		$fr = $hits( 'finder_result' );
+		$fp = $hits( 'finder_product_opened' );
+		echo '<tr><td style="width:38%"><strong>Does the projector finder get used?</strong></td><td>'
+			. $fs . ' opened &middot; ' . $fr . ' reached a result &middot; <strong>' . $fp . '</strong> opened a product'
+			. ( $fs > 0 && $fp === 0 ? ' &mdash; <span style="color:#b32d2e">people finish it but never open a projector</span>' : '' )
+			. ( 0 === $fs ? ' &mdash; <span style="color:#b32d2e">nobody is finding it</span>' : '' )
+			. '</td></tr>';
+
+		$po = $hits( 'parts_form_opened' );
+		$ps = $hits( 'parts_submitted' );
+		echo '<tr><td><strong>Do people finish the parts request form?</strong></td><td>'
+			. $po . ' opened &rarr; <strong>' . $ps . '</strong> submitted'
+			. ( $po > 0 ? ' (' . round( $ps / $po * 100 ) . '%)' : '' )
+			. '</td></tr>';
+
+		$qa = $hits( 'quote_answered' );
+		echo '<tr><td><strong>Are quotes answered in the app?</strong></td><td>'
+			. '<strong>' . $qa . '</strong> answered in-app over this period. '
+			. '<span style="color:#646970">Compare with the total decisions in Spare Parts &rarr; Requests: '
+			. 'the difference is how many still reply by SMS link.</span></td></tr>';
+
+		echo '<tr><td><strong>Does Home&rsquo;s status strip get tapped?</strong></td><td>'
+			. $hits( 'home_strip_tap' ) . ' taps</td></tr>';
+
+		echo '<tr><td><strong>Is published content read?</strong></td><td>'
+			. $hits( 'content_opened' ) . ' opened</td></tr>';
+
+		echo '<tr><td><strong>Does &ldquo;what to watch&rdquo; earn its place?</strong></td><td>'
+			. $hits( 'watch_opened' ) . ' opened</td></tr>';
+
+		$np = AUN_App_Events::breakdown( 'notifications_prompted', 'granted', $days );
+		$yes = 0; $no = 0;
+		foreach ( $np as $row ) {
+			if ( '1' === (string) $row['value'] ) { $yes = (int) $row['hits']; }
+			elseif ( '0' === (string) $row['value'] ) { $no = (int) $row['hits']; }
+		}
+		echo '<tr><td><strong>Do people allow notifications?</strong></td><td>'
+			. ( $yes + $no > 0
+				? '<strong>' . round( $yes / max( 1, $yes + $no ) * 100 ) . '%</strong> allowed (' . $yes . ' of ' . ( $yes + $no ) . ')'
+					. ' <span style="color:#646970">&mdash; this is the ceiling on every push feature.</span>'
+				: 'no one has been asked yet' )
+			. '</td></tr>';
+		echo '</tbody></table>';
+
+		// ── Breakdowns worth having ──
+		$cuts = array(
+			array( 'service_opened', 'service', 'Which service people open' ),
+			array( 'quote_answered', 'decision', 'Quote decisions' ),
+			array( 'content_opened', 'type', 'Which content type' ),
+			array( 'home_strip_tap', 'kind', 'Home strip taps' ),
+			array( 'finder_step', 'step', 'Finder: how far people get' ),
+			array( 'app_problem', 'where', 'Handled failures' ),
+		);
+		echo '<h2>Breakdowns</h2><div style="display:flex;flex-wrap:wrap;gap:18px">';
+		foreach ( $cuts as $c ) {
+			$rows = AUN_App_Events::breakdown( $c[0], $c[1], $days );
+			if ( empty( $rows ) ) {
+				continue;
+			}
+			echo '<table class="widefat striped" style="width:300px"><thead><tr><th colspan="2">'
+				. esc_html( $c[2] ) . '</th></tr></thead><tbody>';
+			foreach ( array_slice( $rows, 0, 8 ) as $r ) {
+				echo '<tr><td>' . esc_html( $r['value'] ) . '</td><td style="text-align:right"><strong>'
+					. (int) $r['hits'] . '</strong></td></tr>';
+			}
+			echo '</tbody></table>';
+		}
+		echo '</div>';
+
+		// ── Everything, for completeness ──
+		echo '<h2>All events</h2>';
+		echo '<table class="widefat striped" style="max-width:620px"><thead><tr>'
+			. '<th>Event</th><th style="text-align:right">Times</th><th style="text-align:right">People</th>'
+			. '</tr></thead><tbody>';
+		foreach ( $totals as $r ) {
+			echo '<tr><td><code>' . esc_html( $r->event ) . '</code></td>'
+				. '<td style="text-align:right">' . (int) $r->hits . '</td>'
+				. '<td style="text-align:right">' . (int) $r->people . '</td></tr>';
+		}
+		echo '</tbody></table>';
+
+		echo '<p class="description" style="max-width:820px;margin-top:14px">'
+			. '<strong>People</strong> counts logged-in accounts only, so it is always lower than '
+			. '<strong>Times</strong> &mdash; the finder and the content library work without logging in, '
+			. 'and those visits are counted but cannot be attributed to anyone.</p>';
+
+		echo '</div>';
+	}
+
 	public function page_settings() {
 		if ( ! current_user_can( self::CAP ) ) {
 			wp_die( 'No permission' );
@@ -1477,6 +1626,7 @@ class AUN_App_Admin {
 			$opts['whatsapp_number']     = preg_replace( '/[^\d+]/', '', (string) ( $_POST['whatsapp_number'] ?? '' ) );
 			$opts['support_phone']       = sanitize_text_field( $_POST['support_phone'] ?? '' );
 			$opts['support_hours']       = sanitize_text_field( $_POST['support_hours'] ?? '' );
+			$opts['analytics_enabled']   = ! empty( $_POST['analytics_enabled'] ) ? 1 : 0;
 			$opts['repair_ship_name']    = sanitize_text_field( $_POST['repair_ship_name'] ?? '' );
 			$opts['repair_ship_phone']   = sanitize_text_field( $_POST['repair_ship_phone'] ?? '' );
 			$opts['repair_ship_address'] = sanitize_textarea_field( wp_unslash( $_POST['repair_ship_address'] ?? '' ) );
@@ -1589,6 +1739,18 @@ class AUN_App_Admin {
 					<tr><th>WhatsApp number</th><td><input name="whatsapp_number" value="<?php echo esc_attr( $opts['whatsapp_number'] ); ?>" placeholder="8801XXXXXXXXX" /><p class="description">Digits only, international format — used for the wa.me chat button.</p></td></tr>
 					<tr><th>Support phone</th><td><input name="support_phone" value="<?php echo esc_attr( $opts['support_phone'] ); ?>" placeholder="09XXXXXXXX" /><p class="description">Tap-to-call number.</p></td></tr>
 					<tr><th>Support hours</th><td><input name="support_hours" style="width:320px" value="<?php echo esc_attr( $opts['support_hours'] ); ?>" /></td></tr>
+					<tr><th>App analytics</th><td>
+						<label><input type="checkbox" name="analytics_enabled" <?php checked( ! isset( $opts['analytics_enabled'] ) || (int) $opts['analytics_enabled'] === 1, true ); ?> /> Collect anonymous usage &amp; crash reports</label>
+						<p class="description" style="max-width:780px">
+							Firebase Analytics + Crashlytics. <strong>Crash reports are the important half</strong>
+							&mdash; without them an app that crashes on a customer's phone tells us nothing at all.
+							Usage events are counts and categories only: <strong>no phone numbers, names,
+							addresses, serials or request references are ever sent</strong>.
+							<br />
+							Unticking this stops collection inside the app itself on the next launch, with no new
+							APK. If you turn it off, update the Play Store <em>Data safety</em> declaration to match.
+						</p>
+					</td></tr>
 					<tr><th colspan="2" style="padding-top:18px"><h3 style="margin:0">Where customers post a projector for repair</h3></th></tr>
 					<tr><th>Send-to name</th><td><input name="repair_ship_name" style="width:320px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_name'] ?? '' ) ); ?>" placeholder="AUN Care Service Centre" /></td></tr>
 					<tr><th>Send-to phone</th><td><input name="repair_ship_phone" style="width:220px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_phone'] ?? '' ) ); ?>" placeholder="01XXXXXXXXX" /> <span class="description">every courier form asks for a receiver's number</span></td></tr>
