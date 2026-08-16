@@ -10,6 +10,28 @@ use Illuminate\Support\Facades\Schema;
 class MaintenanceSmsService
 {
     /**
+     * SINGLE SOURCE OF TRUTH for the maintenance reminder messages,
+     * keyed by the number of days after the sale date.
+     *
+     * Used by BOTH paths, so they can never drift apart:
+     *   - handleTransactionIfPaid() : stored into the `message` column when scheduling
+     *   - messageByDayOffset()      : fallback at send time if that column/value is missing
+     *
+     * ⚠️ Edit the wording HERE ONLY. Previously these three messages were
+     * written out twice in this file; changing one copy and not the other
+     * would silently send different text depending on which path ran.
+     *
+     * To change the timing, change the keys (e.g. 30 => 45). Existing rows
+     * already scheduled in maintenance_sms_schedules are NOT affected —
+     * only sales paid after the change use the new values.
+     */
+    private const REMINDER_MESSAGES = [
+        30 => "AUN Care Tip:\nPlease clean your projector's dust filter regularly to ensure proper airflow and smooth performance. This helps extend product life.",
+        60 => "AUN Reminder:\nDust buildup can block airflow and cause overheating. Clean the dust filter regularly to protect your projector's internal components.",
+        90 => "AUN Important Notice:\nDamage from overheating due to blocked ventilation or dust buildup is not covered under warranty. Regular filter cleaning is essential.",
+    ];
+
+    /**
      * Call this AFTER a transaction becomes PAID.
      * This ONLY inserts rows into maintenance_sms_schedules (no API call here).
      */
@@ -70,11 +92,7 @@ class MaintenanceSmsService
         $baseDate = Carbon::parse($txn->transaction_date ?? now())
             ->setTimezone(config('app.timezone'));
 
-        $templates = [
-            30  => "AUN Care Tip:\nPlease clean your projector's dust filter regularly to ensure proper airflow and smooth performance. This helps extend product life.",
-            60  => "AUN Reminder:\nDust buildup can block airflow and cause overheating. Clean the dust filter regularly to protect your projector's internal components.",
-            90 => "AUN Important Notice:\nDamage from overheating due to blocked ventilation or dust buildup is not covered under warranty. Regular filter cleaning is essential.",
-        ];
+        $templates = self::REMINDER_MESSAGES;
 
         $hasMessageCol = Schema::hasColumn('maintenance_sms_schedules', 'message');
         $hasSentAtCol  = Schema::hasColumn('maintenance_sms_schedules', 'sent_at');
@@ -256,13 +274,7 @@ class MaintenanceSmsService
 
     private function messageByDayOffset(int $day): string
     {
-        $map = [
-            30  => "AUN Care Tip:\nPlease clean your projector's dust filter regularly to ensure proper airflow and smooth performance. This helps extend product life.",
-            60  => "AUN Reminder:\nDust buildup can block airflow and cause overheating. Clean the dust filter regularly to protect your projector's internal components.",
-            90 => "AUN Important Notice:\nDamage from overheating due to blocked ventilation or dust buildup is not covered under warranty. Regular filter cleaning is essential.",
-        ];
-
-        return $map[$day] ?? '';
+        return self::REMINDER_MESSAGES[$day] ?? '';
     }
 
     private function isAlphaSuccess(string $resp): bool

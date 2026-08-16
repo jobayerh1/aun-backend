@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.80.0
+ * Version:           1.90.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.80.0' );
+define( 'AUN_APP_API_VERSION', '1.90.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -37,7 +37,15 @@ define( 'AUN_APP_API_VERSION', '1.80.0' );
 // v19 = aun_app_events. FIRST-PARTY product analytics: the app's privacy
 // policy promises no third-party analytics SDK, so the counts live on our
 // own server instead of Firebase.
-define( 'AUN_APP_API_DB_VERSION', '19' );
+// v20 = aun_app_repairs.courier_name/courier_tracking/courier_at — the
+// customer tells us the parcel is on its way from inside the app, instead of
+// through a WhatsApp message nobody can attach to the request.
+// v21 = aun_app_repairs.erp_missing_since — when the linked ERP job sheet
+// first came back as a definite "no such record". A DELETED job sheet used to
+// be indistinguishable from an ERP outage (both just skipped the row), so the
+// repair froze on the customer's screen for ever and could never adopt a
+// replacement sheet.
+define( 'AUN_APP_API_DB_VERSION', '21' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -109,6 +117,22 @@ function aun_app_api_default_options() {
 		// turning it off stops collection in the SDK itself, not merely our
 		// calls, and takes effect on the next config load with no APK rebuild.
 		'analytics_enabled'   => 1,
+		// Customer SMS for the repair flow. Editable in AUN App -> Settings.
+		//
+		// ⚠️ These were hardcoded in PHP until 1.84.0, which meant the owner had
+		// to ask a developer to change a full stop. Every other customer-facing
+		// message in the system is admin-editable; these were the exception, and
+		// they also said "SmartLiving:" while the spare-parts plugin says "AUN:"
+		// — the same company introducing itself two different ways.
+		'repair_sms_received' => 'AUN: we received your repair request {ref} for {model}. We will confirm by SMS before you send the projector. Please do NOT ship it yet.',
+		'repair_sms_approved' => 'AUN: your repair {ref} is approved. Please send the projector to us — the address is in the AUN Care app. {note}',
+		'repair_sms_rejected' => 'AUN: we could not accept repair request {ref}. {note}',
+		// ⚠️ Cancelling AFTER approval is NOT the same event as refusing a new
+		// request, and must not borrow its words. By this point we have already
+		// told the customer "approved, please send it" — they may be holding a
+		// courier receipt. "We could not accept your request" would read as if
+		// they had done something wrong.
+		'repair_sms_cancelled' => 'AUN: we are very sorry — we have had to cancel repair {ref} after approving it. {note} If you have already posted the projector, please contact us and we will sort it out.',
 		'repair_ship_name'    => '',
 		'repair_ship_phone'   => '',
 		'repair_ship_address' => '',
@@ -375,6 +399,10 @@ function aun_app_api_activate() {
 		photos text,
 		status varchar(30) DEFAULT 'submitted',
 		job_sheet_no varchar(30) NOT NULL DEFAULT '',
+		courier_name varchar(60) NOT NULL DEFAULT '',
+		courier_tracking varchar(80) NOT NULL DEFAULT '',
+		courier_at datetime NULL,
+		erp_missing_since datetime NULL,
 		admin_note text,
 		created_at datetime DEFAULT CURRENT_TIMESTAMP,
 		updated_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -582,6 +610,24 @@ function aun_app_api_activate() {
 		KEY created_idx (created_at)
 	) $charset;" );
 
+	// v20: the customer's own courier tracking number. Three columns rather
+	// than one free-text note, because the number is the thing staff will
+	// search for when a parcel goes missing and a note cannot be searched.
+	$repair_cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM $repairs" );
+	if ( ! in_array( 'courier_tracking', $repair_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $repairs ADD COLUMN courier_name varchar(60) NOT NULL DEFAULT ''" );
+		$wpdb->query( "ALTER TABLE $repairs ADD COLUMN courier_tracking varchar(80) NOT NULL DEFAULT ''" );
+		$wpdb->query( "ALTER TABLE $repairs ADD COLUMN courier_at datetime NULL" );
+	}
+
+	// v21: when the linked job sheet first read as a definite "not found".
+	// ⚠️ Column added separately from the v20 block — the v20 guard checks for
+	// courier_tracking, so a site already on v20 would skip this one entirely
+	// if it were bundled in there.
+	if ( ! in_array( 'erp_missing_since', $repair_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $repairs ADD COLUMN erp_missing_since datetime NULL" );
+	}
+
 	// v18: "What's new" for a firmware release. Separate from `description`
 	// (the installation steps) because they answer different questions asked at
 	// different moments — "should I install this?" comes before "how?", and
@@ -692,6 +738,17 @@ function aun_app_api_tickets_poll_cron() {
 	AUN_App_Tickets::refresh_queue();
 }
 add_action( 'aun_app_tickets_poll', 'aun_app_api_tickets_poll_cron' );
+
+/*
+ * The same poll, on its own hook, so opening the notification centre can ask
+ * for a fresh check WITHOUT waiting for it.
+ *
+ * ⚠️ It must be a DIFFERENT hook name from the recurring one: with identical
+ * hook + args, wp_schedule_single_event() treats anything already scheduled
+ * within 10 minutes as a duplicate and silently drops the request — which for
+ * a 10-minute recurring event is almost always.
+ */
+add_action( 'aun_app_tickets_poll_now', 'aun_app_api_tickets_poll_cron' );
 
 /** Poll the ERP for repair-status changes → notification centre + push. */
 function aun_app_api_repair_poll_cron() {

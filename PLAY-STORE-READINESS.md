@@ -223,8 +223,10 @@ matters commercially in this market.
 | `minSdkVersion` sanity check | Lower = more of the market. Confirm what the plugins force. |
 | `targetSdkVersion` current | Play enforces a minimum target each August–November. Check before upload. |
 | ProGuard/R8 + Crashlytics mapping upload | Already handled by the Crashlytics Gradle plugin added in 1.87.0 — without it release stack traces are unreadable. |
-| **Delete `update_sheet.dart`** | Play's in-app update API replaces it. Our own "new version" prompt alongside Play's is two apps arguing. See the handoff note. |
+| ~~Delete `update_sheet.dart`~~ **DONE differently, 1.95.0 — do not delete it** | The real problem was not the prompt, it was the DESTINATION: sending a Play install to a website APK breaks Play's Device and Network Abuse policy. Deleting the sheet would also have stripped the update path from every side-loaded copy the website still distributes. `AppState.updateUrl` now routes by `PackageInfo.installerStore` — Play listing for a Play install, APK for a side-loaded one — so one binary serves both. Three call sites (update sheet, force-update screen, **Settings**) all go through it. |
 | Remove/repoint the APK-download band on the website | Once the listing is live it should point at Play, not a direct APK. |
+| **Backups ✅ done, 1.95.0** | `allowBackup="false"` + `aun_backup_rules.xml` (≤11) + `aun_data_extraction_rules.xml` (12+). The login token's Keystore key is never backed up, so a restored copy is undecryptable ciphertext and the customer looks signed in while being signed out. ⚠️ `allowBackup="false"` alone does NOT stop `<device-transfer>` — the new-phone copy people actually use. |
+| **Verify the AAB is signed with the upload key** | `key.properties` absent ⇒ the build silently falls back to the DEBUG key. Check before upload: `keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab`. |
 
 ---
 

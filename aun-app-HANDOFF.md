@@ -23,11 +23,575 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.90.0+94**, **plugin 1.80.0 (DB v19)**, **spare-parts 0.32.0 (DB v10)**,
+Current versions: **app 1.94.0+98**, **plugin 1.87.0 (DB v20)**, **spare-parts 0.32.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-08-16 (2) — app 1.96.0+100 / app-api 1.89.0 (DB v21): how a repair ENDS
+
+Owner asked how the repair cycle closes, given their ERP has 16 statuses of which only 2 are flagged
+completed — and what happens if a job sheet is deleted. Tracing it found three defects.
+
+### The closing path itself is correct
+
+`poll_repair_statuses()` (10-min cron) → `maybe_close()` reads **`$erp['completed']`**, i.e. the
+ERP's own `repair_statuses.is_completed_status`. Set "Delivered / Collected" and within ten minutes
+the row goes `closed`, the customer gets a final notification, and the poll query (which excludes
+final rows) stops touching it forever.
+
+### ✅ "Repair Deferred – Awaiting Parts" as a COMPLETED status is CORRECT — do not undo it
+
+⚠️ **An earlier draft of this entry told the owner to untick it. That advice was WRONG and would
+have created a dead end.** When parts are 4–5 weeks out, customers often ask for the projector back;
+AUN returns it and the customer re-contacts them later. The device is out of our hands and nothing
+further happens on that job sheet — it IS an ending.
+
+And the tick is not merely acceptable, it is **required**: closing the app request is what releases
+`open_repair_for()`'s duplicate lock. Untick it and the customer keeps a permanently open repair, so
+when the parts arrive and they try to book again they are refused with "you already have a repair in
+progress" — with no way out.
+
+**The lesson, and it is the same one as the bug this release fixes:** the workflow was inferred from
+the STATUS NAME instead of asking. A status label is not a specification of the business.
+
+Worth changing (owner, ERP only): the label is the last thing that customer sees, and *"Repair
+Deferred – Awaiting Parts"* reads as in-progress while the app closes the card. Something like
+**"Returned – Awaiting Parts (contact us when ready)"** makes the words and the behaviour agree.
+
+### 1. ⚠️ The app decided "finished" by matching ENGLISH WORDS in the status label
+
+`home_status_strip.dart` had `_isDone()` testing the label for `deliver|collect|complet|closed|
+cancel|reject`. Against the real 16 statuses it failed in both directions:
+
+- **"Ready for Delivery / Collection" contains BOTH "deliver" and "collect"** → the Home card
+  vanished at the single moment it mattered most: the projector was repaired and waiting to be
+  collected.
+- "Unrepairable – Parts Not Available" and "Repair Not Authorized – Customer Unresponsive" match
+  nothing → they sat on Home forever.
+
+**A status name is prose a staff member typed into an admin screen. It is not an API.** The ERP has
+a real boolean and `class-aun-app-erp.php` even carries the comment *"never inferred from names"* —
+the server had it right and only ever sent the LABEL, leaving the app to guess.
+
+Fixed: `repair_entry()` now sends **`erp_completed`**; `RepairEntry.isFinished` (app final states OR
+that flag) is the single definition; `_isDone()` is deleted with a tombstone comment where it stood.
+
+⚠️ **`OngoingRequestNotice.repairFor()` deliberately still uses ONLY the app-status set.** It must
+stay aligned with the server's duplicate guard — if the app used the looser test the form would
+open and the server would then 409, which is exactly the "prevent, don't correct" defect fixed on
+2026-08-13.
+
+### 2. ⚠️ A DELETED job sheet froze the repair forever — and the fix was already in the code
+
+The poll did `if ( ! is_array( $erp ) ) { skip; }`, collapsing two different failures. But
+`repair_get()` **already distinguishes them and we were discarding it**:
+
+| Return | Meaning |
+|---|---|
+| `WP_Error` | transport/config failure — the ERP is unreachable |
+| `false` | HTTP 404 / `success:false` — there is no such record |
+
+So a deleted job sheet was indistinguishable from an outage: the row was skipped for ever, the
+customer's repair froze on "Projector received" with a "see the progress" button that could never
+progress, and because `link_pending_repairs()` only considers rows with an EMPTY `job_sheet_no`, a
+replacement sheet could never be adopted either. Nobody would ever have found out.
+
+New `handle_missing_job_sheet()` + **DB v21 `erp_missing_since`**: an outage still touches nothing
+(not even the clock); a definite 404 starts a clock and, after **24 h of UNBROKEN misses**, unlinks
+and emails STAFF (never the customer — "our records lost your repair" is not actionable by them).
+
+⚠️ **A 404 is only judged AFTER the whole poll run, and only when `$stats['checked'] > 0`.** The
+first draft acted on each 404 as it arrived, which meant a broken deploy or a proxy 404-ing
+everything could age healthy repairs into being unlinked. At least one OTHER job sheet resolving in
+the same run is the proof that the ERP is answering and that "no such record" means what it says.
+
+Sizing this correctly came from the owner: **job sheets are essentially never deleted here.** So the
+cost of being slow is nil and the cost of being wrong is a live repair detached from its job sheet —
+bias hard towards doing nothing. Known and accepted: if the ONLY active repair is the deleted one,
+nothing can prove the ERP is up, so it is never unlinked and no email fires. **This is a safety net,
+not a guarantee**, and that is the safe direction to fail.
+
+⚠️ **Unlinking clears `job_sheet_no` but deliberately does NOT touch `status`.** Every status a
+linked repair can hold is already in `REPAIR_LINKABLE`, so an empty job sheet number is all that
+`link_pending_repairs()` needs to adopt a replacement — while winding the customer back from
+"ready" to "received" would be a visible lie about where their projector is. Being wrong is cheap
+and self-correcting: the next linking run re-matches by phone + serial.
+
+⚠️ The v21 column is added in its OWN guard, not inside the v20 block — the v20 guard tests for
+`courier_tracking`, so any site already on v20 would have skipped a bundled column entirely.
+
+## 2026-08-16 — PRE-PUBLISH AUDIT: app 1.95.0+99 / app-api 1.88.0
+
+Owner asked for a full audit before the Play Store listing — outdated code, bugs, loopholes,
+security, UX. **Four real findings, all fixed. One recommendation deliberately NOT applied.**
+
+### 1. ⛔ PLAY POLICY BLOCKER — the app updated itself from our website
+
+`update_sheet.dart`, `force_update_screen.dart` **and** `settings_tab.dart` all sent the customer to
+`config.apkUrl` — a direct APK download. **Google Play's Device and Network Abuse policy forbids an
+app distributed through Play from updating by any route other than Play.** This is a rejection or
+suspension risk, not a style point, and it was in three separate places (the third one, Settings,
+was nearly missed — grep for the FIELD, not the screen).
+
+⚠️ **Deleting the feature was not the answer**: the same binary still serves the side-loaded copies
+the website distributes today, which genuinely need the APK link. New `AppState.installedFromPlay`
+reads `PackageInfo.installerStore` (`com.android.vending` = Play), and **`AppState.updateUrl` is now
+the ONE place** that decides — Play listing for a Play install, website APK for a side-loaded one.
+`updateAvailable` follows the same rule: a Play install always has somewhere to go even when the
+server sends no `apk_url`.
+
+### 2. 🔐 The login token was being backed up to Google Drive
+
+`android:allowBackup` was undeclared, which means **true**. The bearer token lives in
+flutter_secure_storage, whose key stays in the Android Keystore and is **never** backed up — so a
+restored copy is ciphertext nobody can decrypt, and the customer lands in a session that looks
+signed in and is not. The local bookkeeping (dismissed rows, queued usage events) was travelling to
+Drive too.
+
+Now `allowBackup="false"` **plus two rule files**, because one is not enough:
+`aun_backup_rules.xml` (Android ≤11) and `aun_data_extraction_rules.xml` (12+).
+⚠️ **`allowBackup="false"` does NOT stop `<device-transfer>`** — the phone-to-phone copy during new
+device setup — which is the case people actually hit. That needs the 12+ file.
+
+### 3. 🔐 `/events` was an unauthenticated, unthrottled INSERT
+
+`permission_callback => '__return_true'`, correctly (it records `app_open` and the login funnel,
+which happen before anyone has a token) — but nothing capped how many REQUESTS could arrive. The
+allow-list bounds what a row can say and `MAX_BATCH` bounds one request; a script could still grow
+`wp_aun_app_events` without end, which on shared hosting is an availability problem as much as a
+storage one. Now 60 requests per IP per 10 minutes (transient, same pattern as the OTP limiter). A
+real phone flushes at most every 20 s, so it never comes close. **Over the cap it still answers
+202** — the client is fire-and-forget, and announcing the limit only tells a flooder what to route
+around.
+
+### Verified clean (do not re-audit from scratch)
+
+`targetSdk 36 / minSdk 24 / compileSdk 36` — meets Play's 2026 requirement. No cleartext HTTP
+anywhere. No `print`/`debugPrint` leaking anything. Every `$wpdb` call with a variable in it goes
+through `prepare()`. Every ref-based endpoint scopes to the caller's phone variants, and notice
+actions to `user_id` — no IDOR found. Ticket attachments are auth-gated and ownership is re-checked
+at the bridge. OTP uses `wp_rand`, stores an HMAC, compares with `hash_equals`, and rate-limits per
+phone AND per IP.
+
+### ⚠️ Recommended, NOT applied: narrow the FileProvider paths
+
+`aun_file_paths.xml` exposes `files-path path="."` (the whole internal files dir) where only
+`aun-ticket-files/` is ever used. The provider is `exported="false"` and only hands out URIs we
+build, so there is no reachable vulnerability — this is defence in depth against a future bug.
+**Left alone on purpose:** narrowing it can only be validated by opening a real attachment on a real
+phone, and this is the wrong week to change a working path on an unverifiable hunch. Do it with a
+device in hand.
+
+## 2026-08-15 — CONNECTION AUDIT: the client was never the bottleneck (app 1.94.0+98)
+
+Owner asked for an audit of how the app talks to the backend, and for it to be made faster.
+**Measured the live server rather than reading code alone — and the answer was somewhere else.**
+
+| Request | TTFB (measured, live) |
+|---|---|
+| `robots.txt` (no PHP) | **0.10 s** |
+| `/wp-json/aun-app/v1/ping` (trivial handler) | **1.13 s** |
+| `/wp-json/aun-app/v1/config` (real work) | **1.14 s** |
+
+⚠️ **`/ping` returns almost nothing and costs the same as a real endpoint**, while a static file on
+the same host answers in 0.10 s. So ~1.0 s of EVERY app request is WordPress bootstrap, before any
+of our code runs. **Our plugin's handler time is negligible; the platform is the cost.** Any future
+"make the app faster" work should start here, not in Dart.
+
+**Verified healthy, do not "optimise" these again:** one shared `http.Client` (TLS kept alive — a
+per-call `http.get()` would add a DNS+TCP+TLS handshake to every request); the token is held in
+memory and read from secure storage once at boot (no keystore hit per call); auth is ONE query
+against a UNIQUE `token_hash` index with `last_used` writes throttled to hourly; gzip is on
+(927 → 535 bytes); no redirects.
+
+**The one real client defect, fixed:** `init()` awaited `/config` and THEN `/me`, though they are
+independent (`/me` needs only the token, already in hand) — two full round trips before the first
+screen could draw, ~1.1 s wasted at the measured TTFB. Now one `Future.wait`. ⚠️ The 401 token-clear
+runs AFTER the wait, never inside it, so it cannot race the other branch.
+
+**Two findings worth the owner's attention (server side, not ours):** the `/wp-json/` route index is
+**1.44 MB**, which means a lot of plugins register routes; and a **Facebook pixel cookie (`_fbp`) is
+set on app API responses**, so a tracking plugin executes on calls that have nothing to do with it.
+
+**Capacity question (Namecheap Stellar Business, shared, 2×Woo + static + ERP + app):** at ~1.1 s
+per PHP request one worker serves <1 req/s, and shared hosting caps concurrent entry processes at
+tens. Cached pages are nearly free, but **checkout, the ERP and the whole app API are uncacheable by
+nature**. Advice given: fix the TTFB first (it multiplies capacity on the same plan), then move the
+**ERP** off shared hosting — it is pure PHP and business-critical, and today a shop traffic spike
+can starve it. 1,000 concurrent across all properties is not achievable on this plan.
+
+## 2026-08-15 — DECISION (no code change): referral coupons stack on WooCommerce sale items
+
+Owner tested the referral programme, found it working, and asked whether a friend + referrer should
+both be able to discount an item that is ALREADY on a scheduled WooCommerce sale — and what other
+platforms do. **Decision: leave both coupons stacking.** Margin is controlled by the sale price and
+the existing minimum-spend setting, not by an exclusion.
+
+The reasoning, because it will come up again:
+
+- **The two coupons are different in kind, and the code already says so** — the reward coupon's own
+  comment reads *"An EARNED reward is not a promotion."* The friend's WELCOME coupon is a marketing
+  offer; the referrer's THANKS coupon is money they earned by bringing us a customer. Credit-based
+  referral programmes (Uber, Airbnb) stack for exactly this reason; it is marketplace flash-sale
+  vouchers that exclude. Telling someone their earned reward is void this week is how a referral
+  programme loses trust — and we already have the "coupon nobody could spend" scar.
+- **Carts here are usually ONE projector**, so "exclude sale items" does not shrink the discount,
+  it kills the coupon outright during any sale.
+
+⚠️ **VERIFIED IN THE WOOCOMMERCE SOURCE — do not "fix" this by ticking Exclude sale items:**
+
+- **The checkbox is a NO-OP on a `fixed_cart` coupon.** `WC_Discounts::get_items_to_apply_coupon()`
+  keeps an item when `is_valid_for_product() || is_valid_for_cart()`, and `fixed_cart` is a *cart*
+  coupon type (`wc_get_cart_coupon_types()`), so the second test always passes and the sale-item
+  check is never reached. **The referrer's reward is ALWAYS `fixed_cart`** — the setting would look
+  configured in admin and do nothing.
+- **On a `percent` coupon it does not reduce the discount, it REJECTS the coupon** —
+  `validate_coupon_excluded_items()` throws "not applicable to selected products" (code 109) when no
+  cart item qualifies. The friend's coupon is `percent` whenever the admin expressed the welcome
+  discount as a percentage.
+
+So real exclusion would need our own `woocommerce_coupon_is_valid_for_cart` / validation filter, not
+a checkbox. If it is ever wanted, build it as an **admin switch defaulting to allow**.
+
+## 2026-08-14 (4) — app 1.94.0+98 / app-api 1.87.0: the status-bar icon, and the 4–6 s bell
+
+### Home settled in jerks — sections popping in and shoving the page down
+
+Owner: *"the bottom content appears first, then the middle, then the top pushes everything down."*
+Accurate, and it was **layout shift**, not dropped frames. Four separate sections rendered
+`SizedBox.shrink()` (or were simply absent from the list) while their data loaded, then appeared at
+full height in ONE frame:
+
+| Section | Why it landed late |
+|---|---|
+| `HomeMaintenanceCard` | notices cache — and it is the FIRST thing on Home |
+| `HomeStatusStrip` | requests cache, which reaches the **ERP** — usually last to arrive |
+| announcement / banners / discount note | `/config`, which lands after the first paint |
+| projector rail | skeleton and real rail are **different heights**, so even the three-state
+loading jumped at the swap |
+
+⚠️ **`AunReveal` was not enough, and this is the subtle part.** It cross-fades, but it adopts the new
+child's height on the swap frame — so the *fade* was smooth while the *layout* still jumped. The
+video rail already used it and still shifted. **Animating opacity does not animate size.**
+
+New **`AunSectionReveal`** (motion.dart) = `AnimatedSize(alignment: topCenter)` wrapped around
+`AunReveal`, now used by all four. Sections grow into place over 260 ms and what is below slides
+instead of teleporting. It works in reverse too: completing a maintenance task shrinks the card away
+instead of snapping the page up under the customer's finger.
+
+⚠️ **Height does NOT get a spatial spring.** The M3 Expressive spatial springs are under-damped, and
+an overshooting height lays a card out briefly shorter or taller than its natural size — clipped
+content or a flashed overflow stripe. `Curves.easeOutCubic`. This is the one place in the app where
+bounce is a bug.
+
+**Known limit, accepted:** on the *reverse* transition the outgoing child is `Positioned.fill`ed
+inside a Stack that is already collapsing, so it squashes rather than fading out cleanly. The
+dominant direction (nothing → card) is the one that was hurting, and it is correct.
+
+**Not done on purpose:** truly removing the shift means holding the whole page blank until the
+slowest section (the ERP request) answers — trading a smooth 2 s wait for a jerky 0.5 s one.
+
+### The notification centre took 4–6 seconds to open. Two causes, both ours.
+
+Owner asked why, and whether that was normal. It is not, and neither cause was network weather.
+
+⚠️ **1 — the server did an HTTP call to the osTicket bridge inside the request.**
+`notifications_feed()` called `AUN_App_Tickets::poll_replies()` **inline** — a round-trip to the
+bridge with a **20-second timeout** (the same bridge Cloudflare's geo-WAF is known to block
+outright), and then one FCM post per reply it found. Throttled to once every 3 minutes, which is
+exactly why it felt random: most opens were quick, then one sat there for seconds. Now it
+`wp_schedule_single_event()`s a queued poll and returns immediately.
+
+⚠️ **It needs its OWN hook (`aun_app_tickets_poll_now`), not the recurring `aun_app_tickets_poll`.**
+`wp_schedule_single_event()` drops a request as a duplicate when the same hook+args is already
+scheduled within 10 minutes — and the recurring poll runs every 10 minutes, so it would have been
+silently dropped nearly every time.
+
+**The general rule: a freshness optimisation must never sit on the critical path of the thing it is
+keeping fresh.**
+
+**2 — the app threw away data it already had.** `notifications_screen` called `api.notifications()`
+directly and showed a spinner until it answered — while the **bell that opens it draws its counter
+from `data.notices`**, so the list was already in memory. It now paints the cached feed on the first
+frame and refreshes quietly behind it (stale-while-revalidate, the store.dart rule). This is what
+makes other apps' notification lists feel instant: they are not fetching, they are rendering.
+
+Details: `_freshIds` is a **union** across the refresh, so an item highlighted on open stays
+highlighted after the server reports it read; an error screen appears **only** when there is no
+cached feed AND the fetch failed; and `_dismiss` now removes the notice from the shared cache too —
+without that, painting from the cache would resurrect a swiped-away item on the next open.
+
+**Tests:** Flutter 227, PHP lints clean.
+
+### The white square in the status bar
+
+Owner: *"the logo looks fine when I pull the shade down, but the icon in the status bar looks bad."*
+Exactly right, and it is not a matter of taste — it is a platform rule we were breaking.
+
+⚠️ **Android 5+ throws away every colour in a status-bar (small) icon and keeps only the ALPHA
+channel**, painting the silhouette white. Our logo is a full-bleed opaque square, so its alpha *is* a
+square: the system was faithfully drawing a white rectangle. No amount of redrawing the logo fixes
+this; the icon has to be a transparent-background silhouette in the first place.
+
+**The cause was in TWO places, and the server one overrode the app one.**
+`class-aun-app-push.php` explicitly sent `'icon' => 'ic_launcher'` in the FCM payload, and the
+manifest declared no `default_notification_icon` at all — so even a correct drawable would have been
+ignored. **Check what the sender names before assuming the app decides.**
+
+- New `android/app/src/main/res/drawable/ic_stat_aun.xml` — a vector silhouette of the same
+  front-view projector the app already draws in My Devices (`ProjectorIcon`, `widgets.dart`): body,
+  vent slot, lens ring, pupil, feet. Holes are punched with `fillType="evenOdd"`, **not** painted in
+  a background colour — an opaque "background" is opaque alpha and would fill itself back in.
+- Manifest now declares `default_notification_icon` + `default_notification_color`
+  (`@color/aun_notification` = #0188FE, the brand blue Android tints the icon and the app-name line
+  with), and the push payload sends `ic_stat_aun` + `color`.
+
+⚠️ **Safe for phones still on 1.93.0.** An icon name the installed APK does not have falls back to
+the launcher icon — this is **not** the channel-id case from the brand-sound round, where an unknown
+id makes the notification vanish silently. Old installs keep today's behaviour; new ones get the
+projector. So the plugin can be deployed before anyone updates.
+
+**The two icons are meant to differ, and that is what leading apps do.** Gmail, Maps and WhatsApp all
+put a flat monochrome glyph in the status bar and let the shade show the full-colour app icon
+beside the name. The shade icon is drawn by Android from the launcher icon — nothing to change, and
+the owner already likes it.
+
+## 2026-08-14 (3) — app 1.93.0+97 / app-api 1.86.0: a Messages page, and two tracking-form bugs
+
+Owner: *"where are the message templates? I can't find them."* They were rendering — buried in the
+middle of the **Support & contact** card, on a Settings page twelve cards long. Rendering and being
+findable are not the same thing, and the sibling plugin already trained them to look for a
+**Messages** page.
+
+⚠️ **And the audit two rounds ago missed one.** I reported the OTP SMS as fine because it reads
+`$cfg['sms_template']` from the options. It does — but **nothing in the admin could ever write that
+option**. The most-sent message in the entire system (every single login) was, from the owner's
+side, hardcoded. Reading an option is not the same as being editable; check for the EDITOR, not the
+getter.
+
+**New: AUN App → Messages**, its own submenu beside Content/Repairs/Usage, holding:
+- **Login code SMS** (new — previously uneditable). ⚠️ Refuses to save without `[otp]` in it: a
+  login SMS with no code in it means nobody can sign in, and that is worse than an unsaved edit.
+- The four repair templates, moved out of Settings. Settings keeps a button pointing here.
+
+### Two bugs in the tracking form, both owner-reported
+
+**A) The keyboard hid the Courier field.** `autofocus` was on the tracking number, which is the
+SECOND field — so the keyboard rose over the courier box above it and people never saw it. Moved the
+autofocus to the first field. **Autofocus anything but the first field and you hide what is above
+it.**
+
+**B) The number could be sent over and over.** `trackingSent` was local screen state, so it forgot
+the moment the screen closed and the button came back on every visit — each submission silently
+overwriting the last. ⚠️ **The server was never asked.** `repair_entry()` now returns `tracking` and
+`courier`, and the card reads `entry.trackingSent || _trackingSent` — the server's answer, OR'd with
+this session's so the card still updates instantly. A successful send also re-reads the row.
+
+**Tests:** `test-request-guards.php` now 46 — the payload carries the tracking number back so the
+button can hide, and a repair without one reports an empty string so it still shows. Flutter 227.
+
+## 2026-08-14 (2) — app-api 1.85.0: "Reject" on an APPROVED repair said the wrong thing
+
+Owner spotted a Reject button on an already-approved repair and asked whether the logic was right.
+**The permission is right; the presentation was wrong, in a way that could land badly on a
+customer.**
+
+Keeping the ability to cancel after approving is correct — an approval can be a mistake, or the
+model turns out to be unserviceable. What was wrong:
+
+⚠️ **It reused the rejection wording.** By that point we have already told the customer *"approved,
+please send us your projector"*. Sending "we could not accept repair request RP-…" reads as if
+**they** did something wrong, when what actually happened is that **we changed our mind after
+telling them to ship**. Different event, same words.
+
+⚠️ **It ignored the fact that the projector may already be in transit.** Since 1.81.0 the customer
+can send us their courier tracking number — so we often *know* a parcel is on its way — and the
+screen still offered a bare one-click "Reject".
+
+**Fixed:**
+- The button at `approved` is now **"Cancel this repair"**, in red, with a confirm that explains the
+  customer will get an apology rather than a rejection.
+- ⚠️ When `courier_tracking` is present the row shows an amber **"The customer has already posted
+  it"** panel with the courier, the number and the date, and the confirm says so too: *"Please make
+  sure someone has spoken to them first."*
+- New 4th template **`repair_sms_cancelled`** (Settings → "Repair cancelled after approval"), which
+  apologises and tells them what to do if the parcel is already on its way. The handler picks it
+  automatically based on the status it is cancelling FROM.
+- The note placeholder changed from "Optional note" to **"Why? This is shown to the customer"** — at
+  this point a reason is not optional in any sense that matters.
+
+**Tests:** `test-repair-sms.php` now 15 — refusing and cancelling produce different messages, the
+cancellation apologises, and it never contains "could not accept".
+
+## 2026-08-14 — app-api 1.84.0: SMS audit — four hardcoded messages moved to admin
+
+Owner asked for a careful audit of hardcoded SMS. Swept every send path across **all** plugins
+(`AUN_App_SMS::send`, `AUN_SP_SMS::send_tracked`, `AUN_Alpha_OTP_SMS::send`) plus the Flutter app.
+
+**Result: four hardcoded, all in `aun-app-api`. Everything else was already admin-editable.**
+
+| Was hardcoded | Now |
+|---|---|
+| Spare-parts request received (APP path) | Uses the **plugin's own** `OPT_SMS_RECEIVED` template |
+| Repair request received | `repair_sms_received` option |
+| Repair approved | `repair_sms_approved` option |
+| Repair rejected | `repair_sms_rejected` option |
+
+⚠️ **The spare-parts one was the worst of the four**, and not just because it was hardcoded: the
+website form sends the admin's "Request received" template while the app sent its own sentence, so
+**one event produced two different texts depending on which door the customer came through**, and
+editing the admin template changed only half of them. Now both use the plugin's template.
+
+⚠️ All four also said **"SmartLiving:"** while every spare-parts message says **"AUN:"** — the same
+company introducing itself two different ways in the same customer's inbox. New defaults say "AUN:".
+
+**New: AUN App → Settings → "Repair SMS to the customer"** — three boxes, placeholders `{ref}`
+`{model}` `{status}` `{note}`. **An emptied box means send nothing for that event**, which is a
+legitimate choice (the change still appears in the app's notification centre).
+
+⚠️ **Found in my own change while writing the test:** `create_repair()` called
+`AUN_App_SMS::send()` with whatever `repair_sms()` returned, including an empty string — a blank
+body handed to the gateway is a wasted send and, on some gateways, a billed one. Guarded. The admin
+approve/reject path already checked.
+
+**Verified clean:** spare-parts has 14 SMS templates and **all 14 are both saved and rendered** in
+its Messages page (counted, not assumed); the OTP plugins read their template from an option with a
+fallback only when blank; and the **Flutter app has no SMS path at all** — no permission, no
+`sms:` intent, nothing.
+
+**Tests:** NEW bench `test-repair-sms.php` (12) — placeholders fill, no placeholder left showing, an
+empty `{note}` leaves no double space or trailing space, **an emptied template sends nothing rather
+than falling back to a default**, Bangla text and placeholders survive together, a template with no
+placeholders passes through, an unknown event returns empty instead of erroring.
+
+## 2026-08-13 (2) — app 1.92.0+96 / app-api 1.83.0: prevent, don't correct
+
+Owner: *"I can still see the form, no ongoing request visible, and only on Submit do I get 'you
+already have one in progress'. Is this the best design?"* No, and it was my mistake in the round
+before: I built the guard as **validation** when it should have been **prevention**.
+
+⚠️ **The app knew the answer before it drew the first field.** Letting someone choose parts, type an
+address and attach photos, then refusing on Submit, throws away everything they just did. New
+`OngoingRequestNotice` appears the MOMENT a projector is picked, above the form, with the existing
+ref, its live status and a button into it. The server guard stays as the backstop — the app is a UI,
+never a security boundary — but it should now be unreachable in normal use.
+
+**The two cases differ on purpose:**
+- **Repairs — a wall.** Two open repairs for one projector is one box in one van, described twice.
+  The form is replaced by the card; the way forward is "see where mine is".
+- **Spare parts — a warning.** ⚠️ The owner spotted the real defect here: **the website has always
+  let a second request through** (warn + continue), so the app refusing outright was both a dead end
+  AND an inconsistency between two doors to the same business. Now matches the website: "I need
+  different parts — request anyway" sets `confirm`, which the server already honours.
+
+**Implementation notes:** the notice reads the SHARED `data.requests` cache — no new endpoint, and
+the form draws on the first frame. ⚠️ It force-refreshes that cache on open, because a request filed
+on the WEBSITE ten minutes ago must appear here or the customer hits the server refusal this screen
+exists to prevent. `serial` added to the spare-parts payload so a request can be matched to a
+device; falls back to model for rows raised before that existed. Choosing a different projector
+clears the "request anyway" flag — a different projector is a different question.
+
+### Scroll consistency (owner observation 3)
+
+Looked at it. Home has **no** app bar (its greeting is personalised *content*, so it scrolls away);
+Devices/Support/Settings have a pinned title. That split is deliberate and standard — Gmail, Files
+and Settings all do it, because a signpost that leaves when you walk past it is no use.
+
+Added `scrolledUnderElevation` so the bar separates itself from the page only once there is content
+behind it, and sits flat when there is not.
+
+⚠️ **Not done, and worth knowing why:** the M3 way to truly unify these is a LARGE title that
+collapses on scroll, which needs `SliverAppBar.large` inside a `CustomScrollView`. `devices_tab` has
+three separate `ListView`s in conditional branches, so that is a real restructure of three files
+rather than a tweak — a deliberate piece of work, not something to bolt on at the end of a session.
+**An earlier draft of this change carried a comment claiming the bar collapsed, which it did not.**
+Corrected before commit.
+
+## 2026-08-13 — app 1.91.0+95 / app-api 1.81.0 (DB v20): duplicate guards + tracking in-system
+
+Four owner findings, three of them real defects. **Two genuine loopholes confirmed by reading the
+code, not assumed.**
+
+### 1. The call button is gone; tracking numbers come into the system
+
+Owner: *"why is a call button there? all customers will call for no reason."* Correct — the whole
+card exists so nothing needs a phone call, and offering one invites calls with no question behind
+them. Removed. The receiver's number stays in the copy block, where a courier form asks for it.
+
+The WhatsApp "send us the tracking number" button is replaced by an **in-app form** →
+`POST /repairs/tracking` → stored on the repair row (DB v20: `courier_name`, `courier_tracking`,
+`courier_at`) → shown as a 📦 badge **beside the request in AUN App → Repairs**, plus an email so
+somebody knows a parcel is coming. ⚠️ The old route put the number in a *different system from the
+request it belongs to* — findable only by scrolling a chat, invisible to whoever receives parcels,
+unsearchable when one goes missing. Courier is free text, not a dropdown: people use a dozen local
+firms and a list that omits theirs is a dead end.
+
+### 2. ⚠️ LOOPHOLE — unlimited repair requests for the same projector
+
+`create_repair()` had **no duplicate check at all**. One customer could file the same repair ten
+times; the Repairs list filled with copies of one physical projector, and each copy independently
+tried to adopt the same ERP job sheet.
+
+New `open_repair_for( user_id, serial )` → 409 `already_open` carrying the **existing ref**, so the
+app can show that request's progress instead of only refusing. ⚠️ **Matched on SERIAL, not on the
+customer** — someone with three projectors may legitimately have three repairs open. It is the same
+*device* twice that is the mistake.
+
+### 3. ⚠️ LOOPHOLE — the app walked past the parts guard the WEBSITE already had
+
+The spare-parts **website** form has always guarded this (`AUN_SP_Form::open_requests()` + a "you
+already have a request in progress" dialog). The **app path** (`create_part_request()`) had none —
+so the protection existed and the app simply bypassed it. This is the more interesting bug: not a
+missing feature, a missing *enforcement point*.
+
+New `open_parts_request( phone, serial )` reads **`AUN_SP_Requests::TERMINAL_STATES` rather than
+restating it** — the plugin has added statuses twice already (`declined`, then `expired`) and a
+second copy here would have silently gone stale both times. Scoped to the device; `confirm: true`
+lets a genuinely different need through.
+
+### 4. How the ERP job sheet links (answer, no change needed)
+
+**By serial, not by scanning.** `repair_erp_sync()` tries `repair_by_phone( phone, serial )` then
+`repair_by_serial( serial )`, with two guards that matter: a job sheet created >3 days *before* the
+request is an older repair of the same device, and one already completed before the request existed
+is a finished past repair. Without those, every new request re-adopted the customer's last
+delivered job.
+
+### 5. Bench tests found TWO more holes in the guards I had just written
+
+`test-request-guards.php` (43 assertions, run under `wp eval-file` against the real DB). Both holes
+were in code that read correctly and had passed review:
+
+- ⚠️ **A repair with a BLANK SERIAL was never matched — no guard at all.** `open_repair_for()`
+  returned null on an empty serial, so every serial-less request was unlimited. That is exactly the
+  customer whose sticker has worn off, and the one most likely to submit twice. Now falls back to
+  **model** (which a repair always carries), then to the customer. Slightly over-strict for someone
+  sending two identical models at once; they get the existing ref and can ask us. No protection at
+  all was the alternative.
+- ⚠️ **A CLOSED repair still accepted a tracking number**, overwriting the one that actually tracked
+  the parcel we received — destroying the only record of it. Now refused with `already_finished`,
+  and a test asserts the original value survives the attempt.
+
+Also fixed in the harness itself: ⚠️ **`wp eval-file` runs the file inside a FUNCTION scope**, so
+top-level `$pass`/`$fail` are not globals and `global $pass` in a helper binds to an empty variable.
+The first run printed a screen of PASS lines and then "0 passed, 0 failed". **Use `$GLOBALS`
+explicitly in any bench file run this way** — a counter that silently reads zero makes a green run
+meaningless.
+
+Confirmed sound by the same run: terminal statuses release the lock and in-flight ones hold it (all
+of them, enumerated); another customer with the same serial is unaffected; case and whitespace
+differences in a serial do not defeat it; **a request filed on the WEBSITE (01…) is seen by the app
+guard (8801…)**, so the duplicate cannot be created across channels; and another customer cannot
+attach a tracking number to someone else's repair.
+
+**Tests:** bench 43, Flutter 227, PHP lints clean.
+
+⚠️ **Known and accepted:** the guards are SELECT-then-INSERT, so two genuinely simultaneous
+submissions could both pass. The app disables its own button while submitting, which covers the
+double-tap that actually happens; a database-level constraint is not possible while "open" depends
+on a status list.
 
 ## 2026-08-12 — app 1.90.0+94: admin HTML could paint invisible text in dark mode
 

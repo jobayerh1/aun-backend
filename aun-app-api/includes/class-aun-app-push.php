@@ -211,7 +211,18 @@ class AUN_App_Push {
 							'priority'     => 'high',
 							'notification' => array(
 								'channel_id' => $channel,
-								'icon'       => 'ic_launcher',
+								// Status-bar icon. Android keeps only the ALPHA
+								// channel here and paints it white, so the
+								// full-bleed square launcher icon we used to name
+								// arrived as a white square. ic_stat_aun is a
+								// transparent-background projector silhouette.
+								//
+								// Safe for older installs: an icon name the APK
+								// does not have falls back to the launcher icon
+								// (this is NOT the channel case, where an unknown
+								// id makes the notification vanish silently).
+								'icon'       => 'ic_stat_aun',
+								'color'      => '#0188FE',
 							),
 						),
 					),

@@ -30,6 +30,40 @@ class AUN_App_Services {
 		'rejected'  => 'Rejected',
 	);
 
+	/**
+	 * One admin-editable repair SMS, with its placeholders filled.
+	 *
+	 * Kept beside the repair code rather than in a messages class of its own:
+	 * there are three of them and they all belong to this one flow. If a fourth
+	 * arrives, move them out.
+	 *
+	 * @param string $which received|approved|rejected
+	 * @param array  $vars  ref, model, status, note
+	 */
+	public static function repair_sms( $which, $vars = array() ) {
+		$opts = aun_app_api_get_options();
+		$key  = 'repair_sms_' . $which;
+
+		$tpl = trim( (string) ( $opts[ $key ] ?? '' ) );
+		if ( '' === $tpl ) {
+			// An admin who empties the box means "send nothing" for that event,
+			// which is a legitimate choice — the app still shows the change in
+			// its notification centre either way.
+			return '';
+		}
+
+		$out = strtr( $tpl, array(
+			'{ref}'    => (string) ( $vars['ref'] ?? '' ),
+			'{model}'  => (string) ( $vars['model'] ?? '' ),
+			'{status}' => (string) ( $vars['status'] ?? '' ),
+			'{note}'   => (string) ( $vars['note'] ?? '' ),
+		) );
+
+		// An unused {note} leaves a double space and a dangling gap before the
+		// full stop; collapse it so the message reads properly either way.
+		return trim( preg_replace( '/\s+/u', ' ', $out ) );
+	}
+
 	public static function repairs_table() {
 		global $wpdb;
 		return $wpdb->prefix . 'aun_app_repairs';
@@ -321,6 +355,29 @@ class AUN_App_Services {
 		$now    = current_time( 'mysql' );
 		$phone  = (string) $args['phone'];
 
+		// ⚠️ The WEBSITE form has always guarded against this (AUN_SP_Form's
+		// open_requests() + a "you already have a request in progress" dialog).
+		// The APP had no such check, so it was the one route that could pile up
+		// duplicate requests for the same projector — the protection existed and
+		// the app simply walked past it.
+		//
+		// Unlike the website, which warns and lets the customer continue, this
+		// REFUSES and hands back the existing ref: the app can show them the
+		// live progress of the request they already have, which is what they
+		// actually wanted. `confirm` lets a genuinely different need through.
+		if ( empty( $args['confirm_duplicate'] ) ) {
+			$open = self::open_parts_request( $phone, (string) $args['serial'] );
+			if ( $open ) {
+				return array(
+					'ok'      => false,
+					'code'    => 'already_open',
+					'ref'     => (string) $open->ref,
+					'status'  => (string) $open->overall_status,
+					'message' => 'You already have a spare-parts request in progress for this projector.',
+				);
+			}
+		}
+
 		$ok = $wpdb->insert( $t_req, array(
 			'ref'             => '',
 			'source_type'     => 'app',
@@ -405,10 +462,26 @@ class AUN_App_Services {
 			'created_at' => $now,
 		) );
 
-		AUN_App_SMS::send(
-			$phone,
-			"SmartLiving: We received your spare parts request {$ref} for {$model}. We will send a price quote by SMS soon."
-		);
+		// ⚠️ The spare-parts plugin ALREADY owns this message
+		// (Spare Parts -> Messages -> "Request received"), and the website form
+		// sends exactly that. The app used to send its own hardcoded sentence,
+		// so one event produced two different texts depending on which door the
+		// customer came through, and editing the admin template changed only
+		// half of them. Use the plugin's template; fall back only if an older
+		// copy of it is installed.
+		if ( class_exists( 'AUN_SP_Messages' ) ) {
+			$msg = AUN_SP_Messages::fill(
+				AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_RECEIVED ),
+				array(
+					'ref'   => $ref,
+					'model' => $model,
+					'track' => AUN_SP_Messages::track_link( $ref ),
+				)
+			);
+		} else {
+			$msg = 'AUN: we received your spare-parts request ' . $ref . '. We will send a price quote by SMS soon.';
+		}
+		AUN_App_SMS::send( $phone, $msg );
 
 		return array(
 			'ok'      => true,
@@ -428,8 +501,190 @@ class AUN_App_Services {
 	 * @param array $args {user_id, customer_name, phone, address, serial, model, issue, photos $_FILES[]}
 	 * @return array{ok:bool,code:string,message:string,ref?:string}
 	 */
+	/**
+	 * An unfinished spare-parts request for this projector, if any.
+	 *
+	 * Matches the plugin's own definition of "open" by reading
+	 * AUN_SP_Requests::TERMINAL_STATES rather than restating the list — the
+	 * plugin has added statuses twice already (declined, then expired), and a
+	 * second copy of that list here would have silently gone out of date both
+	 * times.
+	 *
+	 * Phone matching is format-tolerant for the same reason the plugin's is: the
+	 * app stores 8801XXXXXXXXX and the web form 01XXXXXXXXX.
+	 */
+	public static function open_parts_request( $phone, $serial = '' ) {
+		global $wpdb;
+		if ( ! self::parts_available() || '' === trim( (string) $phone ) ) {
+			return null;
+		}
+
+		$terminal = class_exists( 'AUN_SP_Requests' ) && defined( 'AUN_SP_Requests::TERMINAL_STATES' )
+			? AUN_SP_Requests::TERMINAL_STATES
+			: array( 'closed', 'rejected', 'declined', 'expired' );
+
+		$t        = AUN_SP_Install::table( 'requests' );
+		$variants = AUN_App_Phone::variants( AUN_App_Phone::normalize( (string) $phone ) );
+		$ph_ph    = implode( ',', array_fill( 0, count( $variants ), '%s' ) );
+		$ph_t     = implode( ',', array_fill( 0, count( $terminal ), '%s' ) );
+
+		$params = array_merge( $variants, $variants, $terminal );
+		$sql    = "SELECT id, ref, overall_status, source_order FROM $t
+		           WHERE ( phone_current IN ($ph_ph) OR phone_onfile IN ($ph_ph) )
+		             AND overall_status NOT IN ($ph_t)";
+
+		// Scoped to the DEVICE when we know which one: a customer with two
+		// projectors may legitimately need parts for both at once. `source_order`
+		// is where the app stores the serial it was raised against.
+		$serial = trim( (string) $serial );
+		if ( '' !== $serial ) {
+			$sql     .= ' AND source_order = %s';
+			$params[] = $serial;
+		}
+		$sql .= ' ORDER BY created_at DESC LIMIT 1';
+
+		return $wpdb->get_row( $wpdb->prepare( $sql, $params ) );
+	}
+
+	/**
+	 * The repair this customer already has open for this projector, if any.
+	 *
+	 * ⚠️ Without this, one customer could file the same repair ten times: every
+	 * submission created a fresh row, our Repairs list filled with duplicates of
+	 * one physical projector, and each duplicate independently tried to adopt
+	 * the ERP job sheet. The customer was not being difficult — the app gave
+	 * them no way to see they had already asked, so asking again was the only
+	 * sensible thing to do.
+	 *
+	 * Matched on SERIAL, not on the customer: someone with three projectors may
+	 * legitimately have three repairs open at once. It is the same *device*
+	 * twice that is the mistake.
+	 *
+	 * @return object|null The open row, newest first.
+	 */
+	public static function open_repair_for( $user_id, $serial, $model = '' ) {
+		global $wpdb;
+		$serial  = trim( (string) $serial );
+		$user_id = (int) $user_id;
+		if ( $user_id < 1 ) {
+			return null;
+		}
+
+		$t  = self::repairs_table();
+		$ph = implode( ',', array_fill( 0, count( self::REPAIR_FINAL ), '%s' ) );
+
+		// ⚠️ A blank serial used to return null, which meant NO GUARD AT ALL for
+		// any request whose serial was left empty — the exact case a customer
+		// hits when their projector's label is worn off, and the one where they
+		// are most likely to submit twice. Found by the bench, not by review.
+		//
+		// With no serial we cannot tell two of the customer's projectors apart,
+		// so we fall back to the MODEL, which a repair request always carries.
+		// Slightly over-strict for someone sending two identical models at once
+		// — rare, and they get the existing ref and can ask us — where the
+		// alternative is no protection at all.
+		if ( '' === $serial ) {
+			$model = trim( (string) $model );
+			$sql   = "SELECT * FROM $t
+			          WHERE user_id = %d AND ( serial = '' OR serial IS NULL ) AND status NOT IN ($ph)";
+			$args  = array_merge( array( $user_id ), self::REPAIR_FINAL );
+			if ( '' !== $model ) {
+				$sql   .= ' AND model = %s';
+				$args[] = $model;
+			}
+			$sql .= ' ORDER BY created_at DESC LIMIT 1';
+			return $wpdb->get_row( $wpdb->prepare( $sql, $args ) );
+		}
+
+		$sql = "SELECT * FROM $t
+		        WHERE user_id = %d AND serial = %s AND status NOT IN ($ph)
+		        ORDER BY created_at DESC LIMIT 1";
+		return $wpdb->get_row( $wpdb->prepare( $sql, array_merge( array( $user_id, $serial ), self::REPAIR_FINAL ) ) );
+	}
+
+	/**
+	 * Record the courier tracking number the customer sends us.
+	 *
+	 * Kept ON THE REPAIR ROW so it shows next to the request in admin. The old
+	 * route was a pre-filled WhatsApp message, which put the number in a
+	 * different system from the request it belongs to — findable only by
+	 * scrolling a chat, and invisible to whoever is actually receiving parcels.
+	 */
+	public static function set_repair_tracking( $user_id, $ref, $courier, $tracking ) {
+		global $wpdb;
+		$t   = self::repairs_table();
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT id, status FROM $t WHERE ref = %s AND user_id = %d LIMIT 1",
+			strtoupper( trim( (string) $ref ) ),
+			(int) $user_id
+		) );
+		if ( ! $row ) {
+			return array( 'ok' => false, 'code' => 'not_found', 'message' => 'That repair was not found on your account.' );
+		}
+
+		// ⚠️ A finished repair must not accept one. The projector is already
+		// back with the customer, so a number arriving now is either a mistake
+		// or a stale retry — and it would OVERWRITE the number that actually
+		// tracked the parcel we received, destroying the only record of it.
+		if ( in_array( (string) $row->status, self::REPAIR_FINAL, true ) ) {
+			return array(
+				'ok'      => false,
+				'code'    => 'already_finished',
+				'message' => 'This repair is already finished, so we are no longer expecting a parcel for it.',
+			);
+		}
+
+		$tracking = trim( sanitize_text_field( (string) $tracking ) );
+		if ( strlen( $tracking ) < 4 ) {
+			return array( 'ok' => false, 'code' => 'invalid', 'message' => 'Please enter the tracking number from your courier receipt.' );
+		}
+
+		$wpdb->update(
+			$t,
+			array(
+				'courier_name'     => substr( sanitize_text_field( (string) $courier ), 0, 60 ),
+				'courier_tracking' => substr( $tracking, 0, 80 ),
+				'courier_at'       => current_time( 'mysql' ),
+				'updated_at'       => current_time( 'mysql' ),
+			),
+			array( 'id' => (int) $row->id )
+		);
+
+		// Tell the admin: a parcel is now in transit and somebody should expect
+		// it. Without this the number sits in a database column nobody opens.
+		$to = trim( (string) get_option( 'admin_email' ) );
+		if ( '' !== $to ) {
+			wp_mail(
+				$to,
+				'[AUN app] Projector on its way — ' . $ref,
+				"The customer has sent their projector for repair {$ref}.\n\n"
+					. "Courier: " . ( $courier !== '' ? $courier : '(not stated)' ) . "\n"
+					. "Tracking: {$tracking}\n\n"
+					. admin_url( 'admin.php?page=aun-app-repairs' ) . "\n"
+			);
+		}
+
+		return array( 'ok' => true, 'code' => 'saved' );
+	}
+
 	public static function create_repair( $args ) {
 		global $wpdb;
+
+		// ⚠️ One open repair per PROJECTOR. See open_repair_for().
+		$existing = self::open_repair_for(
+			(int) $args['user_id'],
+			(string) ( $args['serial'] ?? '' ),
+			(string) ( $args['model'] ?? '' )
+		);
+		if ( $existing ) {
+			return array(
+				'ok'      => false,
+				'code'    => 'already_open',
+				'ref'     => (string) $existing->ref,
+				'status'  => (string) $existing->status,
+				'message' => 'You already have a repair in progress for this projector.',
+			);
+		}
 
 		$issue = sanitize_textarea_field( (string) $args['issue'] );
 		if ( strlen( $issue ) < 10 ) {
@@ -492,10 +747,13 @@ class AUN_App_Services {
 		// surface this in the admin bar immediately rather than up to a minute late.
 		delete_transient( 'aun_app_pending_repairs_count' );
 
-		AUN_App_SMS::send(
-			(string) $args['phone'],
-			"SmartLiving: We received your repair request {$ref} for {$model}. We will confirm by SMS before you send the projector. Do NOT ship it yet."
-		);
+		// ⚠️ An emptied template means "send nothing for this event", which is a
+		// legitimate choice. Handing a blank body to the gateway is a wasted
+		// send and, on some gateways, a billed one.
+		$sms = self::repair_sms( 'received', array( 'ref' => $ref, 'model' => $model ) );
+		if ( '' !== $sms ) {
+			AUN_App_SMS::send( (string) $args['phone'], $sms );
+		}
 
 		return array(
 			'ok'      => true,
@@ -606,6 +864,91 @@ class AUN_App_Services {
 		$row->job_sheet_no = $erp['job_sheet_no'];
 
 		return $erp;
+	}
+
+	/** How long a job sheet must read as "definitely not there" before we
+	 *  accept that it is gone. Polls run every 10 minutes, so this is ~144
+	 *  consecutive misses — deliberately patient, because an admin who deletes
+	 *  and immediately recreates a job sheet should cause no churn at all. */
+	const ERP_MISSING_GRACE = 24 * HOUR_IN_SECONDS;
+
+	/**
+	 * The linked job sheet came back as a definite "no such record".
+	 *
+	 * Start a clock on the first miss; only after [ERP_MISSING_GRACE] of
+	 * UNBROKEN misses do we accept the deletion and unlink.
+	 *
+	 * ⚠️ Unlinking clears `job_sheet_no` but deliberately does NOT touch
+	 * `status`. Every status a linked repair can be in is already in
+	 * REPAIR_LINKABLE, so an empty job_sheet_no is all link_pending_repairs()
+	 * needs to adopt a replacement — and winding the customer's status back
+	 * from "ready" to "received" would be a visible lie about where their
+	 * projector is.
+	 *
+	 * Being wrong here is cheap and self-correcting: if we unlink and the sheet
+	 * turns out to exist after all, the next linking run matches it again by
+	 * phone + serial. Being wrong the OTHER way — never noticing — is what we
+	 * had.
+	 *
+	 * @param object $row aun_app_repairs row (mutated in place).
+	 */
+	private static function handle_missing_job_sheet( $row ) {
+		global $wpdb;
+		$table = self::repairs_table();
+		$now   = current_time( 'timestamp' );
+
+		if ( empty( $row->erp_missing_since ) ) {
+			$wpdb->update(
+				$table,
+				array( 'erp_missing_since' => current_time( 'mysql' ) ),
+				array( 'id' => (int) $row->id )
+			);
+			$row->erp_missing_since = current_time( 'mysql' );
+			return;
+		}
+
+		if ( ( $now - strtotime( (string) $row->erp_missing_since ) ) < self::ERP_MISSING_GRACE ) {
+			return; // still inside the grace window
+		}
+
+		// Captured BEFORE the update below blanks them — the email is the only
+		// record anyone will have of what was lost.
+		$lost_job    = (string) $row->job_sheet_no;
+		$last_status = (string) $row->last_erp_status;
+
+		$wpdb->update( $table, array(
+			'job_sheet_no'      => '',
+			'last_erp_status'   => '',
+			'erp_missing_since' => null,
+			'updated_at'        => current_time( 'mysql' ),
+		), array( 'id' => (int) $row->id ) );
+		$row->job_sheet_no      = '';
+		$row->last_erp_status   = '';
+		$row->erp_missing_since = null;
+
+		// STAFF, not the customer. "Our records lost your repair" is not a
+		// message a customer can act on, and the app keeps showing them the
+		// last real status while somebody sorts it out.
+		$to = get_option( 'admin_email' );
+		if ( $to ) {
+			wp_mail(
+				$to,
+				sprintf( '[AUN App] Job sheet %s has disappeared from the ERP', $lost_job ),
+				sprintf(
+					"Repair request: %s\nCustomer phone: %s\nSerial: %s\nModel: %s\nLast known ERP status: %s\n\n"
+					. "Job sheet %s returned \"no such record\" continuously for over 24 hours, so the app has "
+					. "unlinked it. The request is NOT closed and the customer still sees their last known status.\n\n"
+					. "If you create a new job sheet for this phone + serial the app will adopt it automatically "
+					. "within 10 minutes. If the repair is genuinely finished, close it in AUN App -> Repairs.\n",
+					(string) $row->ref,
+					(string) $row->phone,
+					(string) $row->serial,
+					(string) $row->model,
+					$last_status,
+					$lost_job
+				)
+			);
+		}
 	}
 
 	/**
@@ -746,11 +1089,50 @@ class AUN_App_Services {
 			array_merge( $final, array( (int) $limit ) )
 		) );
 
+		// Rows whose job sheet answered "no such record" this run. Nothing is
+		// decided about them until the loop ends — see the note after it.
+		$missing = array();
+
 		foreach ( $rows as $row ) {
 			$erp = AUN_App_ERP::repair_by_job_sheet( (string) $row->job_sheet_no );
+
+			// ⚠️ THESE TWO FAILURES ARE NOT THE SAME, and treating them alike
+			// was a real hole: `! is_array( $erp )` collapsed them, so a job
+			// sheet DELETED in the ERP looked exactly like the ERP being down.
+			// The row was skipped for ever — the customer's repair froze on
+			// "Projector received" with a "see the progress" button that could
+			// never progress, and because link_pending_repairs() only considers
+			// rows with an EMPTY job_sheet_no, a replacement job sheet could
+			// never be adopted either. Nobody would have found out.
+			//
+			// repair_get() already tells them apart and we were discarding it:
+			//   WP_Error → transport/config failure  → the ERP is unreachable
+			//   false    → HTTP 404 / success:false  → there is no such record
+			if ( is_wp_error( $erp ) ) {
+				$stats['skipped']++;
+				continue; // outage — touch nothing, not even the missing clock
+			}
+			if ( false === $erp ) {
+				// ⚠️ DEFERRED, not acted on here. A 404 only means "deleted" if
+				// the ERP is actually answering — and we cannot know that until
+				// the whole run is done. Held until after the loop; see below.
+				$missing[] = $row;
+				$stats['skipped']++;
+				continue;
+			}
 			if ( ! is_array( $erp ) ) {
 				$stats['skipped']++;
-				continue; // ERP down / job not found — retry next run, no state change
+				continue; // unexpected shape — stay conservative
+			}
+
+			// Found. Clear any missing-clock a previous run started.
+			if ( ! empty( $row->erp_missing_since ) ) {
+				$wpdb->update(
+					$table,
+					array( 'erp_missing_since' => null ),
+					array( 'id' => (int) $row->id )
+				);
+				$row->erp_missing_since = null;
 			}
 			$stats['checked']++;
 
@@ -785,6 +1167,34 @@ class AUN_App_Services {
 			}
 
 			$wpdb->update( $table, array( 'last_erp_status' => $status ), array( 'id' => (int) $row->id ) );
+		}
+
+		// ── Only now do we judge the 404s ────────────────────────────────────
+		//
+		// ⚠️ A 404 is only evidence of DELETION if the ERP is demonstrably
+		// answering. `$stats['checked'] > 0` means at least one other job sheet
+		// resolved in this same run, so the service is up and a "no such
+		// record" means what it says.
+		//
+		// If NOTHING resolved, the ERP is having a bad day — a broken deploy,
+		// a half-restored database, a proxy answering 404 for everything — and
+		// its 404s carry no information. We do not even start the clock, so a
+		// long outage cannot age a healthy repair into being unlinked.
+		//
+		// The owner's own words on this: job sheets are essentially never
+		// deleted. So the cost of being slow here is nil, and the cost of being
+		// wrong is a customer's live repair silently detached from its job
+		// sheet. Bias hard towards doing nothing.
+		//
+		// Consequence worth knowing: if the ONLY active repair is the one whose
+		// sheet was deleted, nothing else can prove the ERP is up, so it is
+		// never unlinked and no email goes out. That is the safe direction to
+		// fail, and it is why this feature is a safety net rather than a
+		// guarantee.
+		if ( $missing && $stats['checked'] > 0 ) {
+			foreach ( $missing as $gone ) {
+				self::handle_missing_job_sheet( $gone );
+			}
 		}
 
 		return $stats;
@@ -857,7 +1267,22 @@ class AUN_App_Services {
 			'note'         => (string) $r->admin_note,
 			'created_at'   => substr( (string) $r->created_at, 0, 10 ),
 			'job_sheet_no' => (string) $r->job_sheet_no,
+			// ⚠️ The app needs this to know it has ALREADY had the tracking
+			// number. Without it the "send us the tracking number" button came
+			// back every time the screen was reopened, and the customer could
+			// send it over and over — each one overwriting the last.
+			'tracking'     => (string) ( $r->courier_tracking ?? '' ),
+			'courier'      => (string) ( $r->courier_name ?? '' ),
 			'erp_status'   => is_array( $erp ) ? (string) $erp['status'] : '',
+			// ⚠️ The ERP's OWN is_completed_status flag, not a guess.
+			//
+			// We used to send only the status LABEL, so the app decided whether
+			// a repair was finished by matching English words in it — and
+			// "Ready for Delivery / Collection" contains both "deliver" and
+			// "collect", so the customer's Home card vanished at the exact
+			// moment their projector was ready to be picked up. A human-edited
+			// label is not an API. This is.
+			'erp_completed' => is_array( $erp ) && ! empty( $erp['completed'] ),
 			'erp_cost'     => is_array( $erp ) ? (string) $erp['estimated_cost'] : '',
 		);
 	}
@@ -1077,6 +1502,10 @@ class AUN_App_Services {
 				$spare[] = array(
 					'ref'          => (string) $r->ref,
 					'model'        => (string) $r->model,
+					// The projector this was raised against. The app needs it to
+					// tell the customer "you already have a request for THIS
+					// one" before they fill the form in, rather than after.
+					'serial'       => (string) ( $r->source_order ?? '' ),
 					'status'       => (string) $r->overall_status,
 					'status_label' => (string) ( $ov[ $r->overall_status ] ?? $r->overall_status ),
 					'warranty_in'  => (bool) $r->warranty_in,
