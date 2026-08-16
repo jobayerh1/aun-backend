@@ -34,6 +34,8 @@ class AUN_SP_Messages {
 	const OPT_SMS_REMIND2  = 'aun_sp_sms_remind_final';
 	const OPT_SMS_EXPIRED  = 'aun_sp_sms_expired';
 	const OPT_SMS_DECLINED = 'aun_sp_sms_declined';
+	const OPT_SMS_COUPON   = 'aun_sp_sms_coupon';
+	const OPT_WA_CHASE     = 'aun_sp_wa_chase';
 	const OPT_REJECT_TPL   = 'aun_sp_reject_templates';
 	const OPT_PAY_INFO     = 'aun_sp_pay_info';
 
@@ -62,7 +64,37 @@ class AUN_SP_Messages {
 			// because a mis-tap on a phone is otherwise silent and unrecoverable: this
 			// is the customer's only signal that it happened, and their way back.
 			self::OPT_SMS_DECLINED => 'AUN: we have cancelled your spare-parts quote {ref} as requested - nothing was ordered and nothing is owed. Tapped by mistake, or changed your mind? You can ask us for a new quote here: {track}',
+			// The goodwill line that fills {coupon} in the rejection SMS. It used to be
+			// an English sentence hardcoded in the PHP, so it could not be reworded or
+			// written in Bangla like every other message. Empty coupon code = no line.
+			self::OPT_SMS_COUPON   => 'As an apology, use code {code} for a discount on an upgrade.',
+			// Not an SMS: the message pre-written for the "Chase on WhatsApp" button on
+			// a request. It is still text a customer reads, so it belongs here.
+			self::OPT_WA_CHASE     => "Assalamu alaikum {name}, this is AUN. Your spare-parts quote {ref} is Tk {total}. We have not ordered the part yet - we start only once you confirm. Would you like us to go ahead? You can also approve here: {track}",
 		);
+	}
+
+	/**
+	 * Remove bracketed groups whose only content of interest is an EMPTY placeholder.
+	 *
+	 * "…approve it here: {track} (valid until {expires})" must not ship as "(valid
+	 * until )" when quotes are set never to expire. This used to be a regex matching
+	 * the literal English words "(valid until {expires})" — which silently stopped
+	 * working the moment the admin reworded the template, and never worked at all for
+	 * a Bangla one. Matching on the BRACKETS instead is language-agnostic.
+	 *
+	 * Only bracketed groups are removed: deleting a bare clause mid-sentence would
+	 * take neighbouring placeholders with it, which is worse than a missing word.
+	 */
+	public static function drop_empty_brackets( $template, $vars ) {
+		foreach ( $vars as $k => $v ) {
+			if ( trim( (string) $v ) !== '' ) {
+				continue;
+			}
+			$tok      = preg_quote( '{' . $k . '}', '/' );
+			$template = preg_replace( '/\s*[\(\[][^\(\)\[\]]*' . $tok . '[^\(\)\[\]]*[\)\]]/u', '', $template );
+		}
+		return (string) $template;
 	}
 
 	/**

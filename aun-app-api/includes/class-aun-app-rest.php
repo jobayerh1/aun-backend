@@ -275,6 +275,12 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		register_rest_route( $ns, '/repairs/tracking', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'repair_tracking' ),
+			'permission_callback' => $auth,
+		) );
+
 		register_rest_route( $ns, '/repairs/request', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'repairs_request' ),
@@ -590,10 +596,18 @@ class AUN_App_REST {
 		// (and push to the customer's other devices) stays fresh even when the
 		// site's WP-Cron is idle between visits. Globally throttled so it never
 		// hammers the bridge — the 10-minute cron remains the primary driver.
+		//
+		// ⚠️ QUEUED, never awaited. This used to call poll_replies() inline, so
+		// the customer's notification list waited on an HTTP round-trip to the
+		// osTicket bridge (20 s timeout, and that bridge is the one Cloudflare's
+		// geo-WAF can block outright) plus one FCM post per reply found. Every
+		// third minute somebody opened the bell and sat watching a spinner for
+		// seconds. A freshness optimisation must never be on the critical path
+		// of the thing it is trying to keep fresh.
 		if ( class_exists( 'AUN_App_Tickets' ) && AUN_App_Tickets::configured()
 			&& ! get_transient( 'aun_app_tickets_poll_lock' ) ) {
 			set_transient( 'aun_app_tickets_poll_lock', 1, 3 * MINUTE_IN_SECONDS );
-			AUN_App_Tickets::poll_replies();
+			wp_schedule_single_event( time(), 'aun_app_tickets_poll_now' );
 		}
 		return $this->ok( AUN_App_Notices::feed( $me['user_id'], $me['phone'] ) );
 	}
@@ -884,9 +898,20 @@ class AUN_App_REST {
 			'parts'         => array_filter( explode( ',', $parts_raw ) ),
 			'qty'           => $qty,
 			'photos'        => $photos,
+			// Lets a customer who genuinely needs a second, different request
+			// through after the app has shown them the one they already have.
+			'confirm_duplicate' => (bool) $request->get_param( 'confirm' ),
 		) );
 
 		if ( ! $result['ok'] ) {
+			// Same shape as the repair guard: hand back the existing ref so the
+			// app can show its progress rather than only saying no.
+			if ( 'already_open' === $result['code'] ) {
+				return $this->err( 'already_open', $result['message'], 409, array(
+					'ref'    => (string) ( $result['ref'] ?? '' ),
+					'status' => (string) ( $result['status'] ?? '' ),
+				) );
+			}
 			$status = 'db_error' === $result['code'] ? 500 : ( 'parts_unavailable' === $result['code'] ? 503 : 400 );
 			return $this->err( $result['code'], $result['message'], $status );
 		}
@@ -925,6 +950,15 @@ class AUN_App_REST {
 		) );
 
 		if ( ! $result['ok'] ) {
+			// 'already_open' carries the ref of the request they ALREADY have, so
+			// the app can offer to show its progress instead of just refusing.
+			// 409 rather than 400: nothing they typed was wrong.
+			if ( 'already_open' === $result['code'] ) {
+				return $this->err( 'already_open', $result['message'], 409, array(
+					'ref'    => (string) ( $result['ref'] ?? '' ),
+					'status' => (string) ( $result['status'] ?? '' ),
+				) );
+			}
 			$status = 'db_error' === $result['code'] ? 500 : 400;
 			return $this->err( $result['code'], $result['message'], $status );
 		}
@@ -1364,6 +1398,31 @@ class AUN_App_REST {
 			return new WP_REST_Response( array( 'success' => true ), 202 );
 		}
 
+		// ⚠️ THROTTLE — this route is deliberately PUBLIC (it has to record
+		// app_open and the login funnel, which happen before anyone has a
+		// token), so without a cap it is an unauthenticated, unlimited INSERT
+		// into our database. The allow-list bounds what a row can SAY and
+		// MAX_BATCH bounds one request, but nothing bounded how many requests
+		// could arrive — a single script could grow the table without end, and
+		// on shared hosting that is an availability problem as much as a
+		// storage one.
+		//
+		// 60 requests per IP per 10 minutes. The client flushes at most every
+		// 20 s (12 events or a 20 s idle burst), so a real phone never comes
+		// close; a flood stops immediately. Same transient pattern the OTP
+		// limiter already uses. Over the cap we still answer 202 — the app
+		// treats this endpoint as fire-and-forget, and telling a flooder that
+		// their limit exists just tells them what to work around.
+		$ip = class_exists( 'AUN_App_OTP' ) ? AUN_App_OTP::client_ip() : '';
+		if ( '' !== $ip ) {
+			$key = 'aun_app_ev_' . md5( $ip );
+			$hit = (int) get_transient( $key );
+			if ( $hit >= 60 ) {
+				return new WP_REST_Response( array( 'success' => true ), 202 );
+			}
+			set_transient( $key, $hit + 1, 10 * MINUTE_IN_SECONDS );
+		}
+
 		$me      = $this->identity();
 		$batch   = $request->get_param( 'events' );
 		$version = (string) $request->get_param( 'app_version' );
@@ -1556,6 +1615,36 @@ class AUN_App_REST {
 			'status'  => 'submitted',
 			'message' => (string) $result['message'],
 		) );
+	}
+
+	/**
+	 * "I have posted it" — the courier tracking number, from inside the app.
+	 *
+	 * Replaces a pre-filled WhatsApp message. The number now lands on the repair
+	 * row itself, so whoever is receiving parcels sees it beside the request
+	 * instead of having to find it in a chat thread.
+	 */
+	public function repair_tracking( $request ) {
+		$me = $this->identity();
+		if ( (int) $me['user_id'] < 1 ) {
+			return $this->err( 'unauthorized', 'Please sign in again.', 401 );
+		}
+
+		$result = AUN_App_Services::set_repair_tracking(
+			(int) $me['user_id'],
+			(string) $request->get_param( 'ref' ),
+			(string) $request->get_param( 'courier' ),
+			(string) $request->get_param( 'tracking' )
+		);
+
+		if ( empty( $result['ok'] ) ) {
+			return $this->err(
+				(string) $result['code'],
+				(string) $result['message'],
+				'not_found' === $result['code'] ? 404 : 400
+			);
+		}
+		return $this->ok( array( 'saved' => true ) );
 	}
 
 	public function my_service_requests() {

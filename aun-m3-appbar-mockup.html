@@ -1,0 +1,479 @@
+<title>AUN Care — large app bar, before &amp; after</title>
+<style>
+  /* ── Tokens ───────────────────────────────────────────────────────────
+     Neutrals are pulled toward the AUN blue rather than being pure grey, so
+     the chrome around the phones belongs to the same family as the app inside
+     them. Dark ground reuses #0B1220 — the exact value the app's own video
+     screen already paints. */
+  :root {
+    --brand:        #0188FE;
+    --brand-soft:   rgba(1, 136, 254, .12);
+    --ink:          #0D1626;
+    --ink-2:        #55637A;
+    --ink-3:        #8A96AB;
+    --ground:       #EDF1F7;
+    --surface:      #FFFFFF;
+    --surface-2:    #F5F8FC;
+    --line:         #DCE3EE;
+    --amber:        #B45309;
+    --amber-soft:   #FEF3C7;
+    --shadow:       0 1px 2px rgba(13, 22, 38, .06), 0 8px 24px rgba(13, 22, 38, .07);
+    --frame:        #0D1626;
+
+    --ui: "Roboto", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --brand:      #4FA9FF;
+      --brand-soft: rgba(79, 169, 255, .16);
+      --ink:        #E8EDF5;
+      --ink-2:      #A3B0C4;
+      --ink-3:      #6F7D93;
+      --ground:     #070B12;
+      --surface:    #0B1220;
+      --surface-2:  #131C2C;
+      --line:       #1E293B;
+      --amber:      #FBBF24;
+      --amber-soft: #2A2312;
+      --shadow:     0 1px 2px rgba(0, 0, 0, .5), 0 10px 30px rgba(0, 0, 0, .45);
+      --frame:      #1B2537;
+    }
+  }
+  :root[data-theme="dark"] {
+    --brand:      #4FA9FF;
+    --brand-soft: rgba(79, 169, 255, .16);
+    --ink:        #E8EDF5;
+    --ink-2:      #A3B0C4;
+    --ink-3:      #6F7D93;
+    --ground:     #070B12;
+    --surface:    #0B1220;
+    --surface-2:  #131C2C;
+    --line:       #1E293B;
+    --amber:      #FBBF24;
+    --amber-soft: #2A2312;
+    --shadow:     0 1px 2px rgba(0, 0, 0, .5), 0 10px 30px rgba(0, 0, 0, .45);
+    --frame:      #1B2537;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--ui);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 24px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+  }
+
+  /* ── Page head ── */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(24px, 3.4vw, 33px);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    margin: 8px 0 0;
+    text-wrap: balance;
+    font-weight: 800;
+  }
+  .lede {
+    margin: 12px 0 0;
+    max-width: 62ch;
+    color: var(--ink-2);
+    font-size: 15.5px;
+  }
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 13px;
+    font-weight: 700;
+    width: fit-content;
+  }
+
+  /* ── The two phones ── */
+  .stage {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+    align-items: start;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 14px; }
+
+  .col-head { display: flex; align-items: baseline; gap: 10px; }
+  .col-head h2 {
+    font-size: 16px;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -.01em;
+  }
+  .tag {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+  .tag.now  { background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line); }
+  .tag.next { background: var(--brand-soft); color: var(--brand); }
+
+  .phone {
+    background: var(--frame);
+    border-radius: 30px;
+    padding: 9px;
+    box-shadow: var(--shadow);
+  }
+  .screen {
+    position: relative;
+    height: 560px;
+    overflow: hidden;
+    border-radius: 22px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Android status bar — small honesty detail: the app really does sit under
+     one, and it changes how much room the large title has. */
+  .status {
+    height: 26px;
+    flex: 0 0 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 16px;
+    background: var(--surface);
+    z-index: 2;
+    transition: box-shadow .18s ease, background-color .18s ease;
+  }
+  .bar.lifted {
+    box-shadow: 0 2px 10px rgba(13, 22, 38, .10);
+    background: var(--surface-2);
+  }
+  .bar h3 {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .scroller {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 16px 28px;
+  }
+  .scroller::-webkit-scrollbar { width: 0; }
+
+  /* ── Real AUN content ── */
+  .group-label {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink-2);
+    margin: 16px 0 8px;
+    letter-spacing: -.005em;
+  }
+  .card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 13px;
+  }
+  .row + .row { border-top: 1px solid var(--line); }
+  .ic {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+  }
+  .row-txt { min-width: 0; }
+  .row-txt b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -.005em;
+  }
+  .row-txt span {
+    display: block;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    margin-top: 1px;
+  }
+  .chev { margin-left: auto; color: var(--ink-3); font-size: 15px; }
+
+  /* ── Readout: makes the mechanism visible ── */
+  .meter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .meter .track {
+    position: relative;
+    flex: 1;
+    height: 6px;
+    border-radius: 99px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .meter .fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--brand);
+    border-radius: 99px;
+  }
+  .meter b {
+    font-weight: 800;
+    color: var(--ink);
+    min-width: 74px;
+    text-align: right;
+    font-size: 12px;
+  }
+
+  .caption {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 0;
+    min-height: 3.4em;
+  }
+  .caption strong { color: var(--ink); font-weight: 700; }
+
+  /* ── Verdict ── */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--amber);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .verdict h2 { margin: 0; font-size: 15px; font-weight: 800; }
+  .verdict p { margin: 0; font-size: 14px; color: var(--ink-2); max-width: 74ch; }
+  .verdict ul { margin: 2px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 14px; }
+  .verdict li { margin-bottom: 5px; }
+  .verdict li strong { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">AUN Care Bangladesh · Support tab</p>
+    <h1>Large collapsing title — what it would actually feel like</h1>
+    <p class="lede">
+      Both phones show the real Support tab. The only difference is the title
+      area. Scroll inside each screen and watch the readout underneath: it shows
+      exactly how much vertical space the title is taking as you read.
+    </p>
+    <p class="hint">↕ Scroll inside a phone screen</p>
+  </header>
+
+  <section class="stage">
+
+    <!-- ── Current ── -->
+    <div class="col">
+      <div class="col-head">
+        <h2>Today</h2>
+        <span class="tag now">Shipping now</span>
+      </div>
+
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>▮▮▯ ⌁ 77</span></div>
+          <div class="bar" id="barA" style="height:56px; align-items:center;">
+            <h3 style="font-size:19px;">Support</h3>
+          </div>
+          <div class="scroller" id="scrollA"></div>
+        </div>
+      </div>
+
+      <div class="meter">
+        <span>Title uses</span>
+        <span class="track"><span class="fill" id="fillA" style="width:32%"></span></span>
+        <b id="readA">56 px</b>
+      </div>
+      <p class="caption">
+        The title never moves. <strong>Always 56&nbsp;px</strong>, whether you
+        are at the top of the page or the bottom of it.
+      </p>
+    </div>
+
+    <!-- ── Proposed ── -->
+    <div class="col">
+      <div class="col-head">
+        <h2>Material 3 large title</h2>
+        <span class="tag next">Proposed</span>
+      </div>
+
+      <div class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>▮▮▯ ⌁ 77</span></div>
+          <div class="bar" id="barB" style="height:112px;">
+            <h3 id="titleB" style="font-size:28px; padding-bottom:14px;">Support</h3>
+          </div>
+          <div class="scroller" id="scrollB"></div>
+        </div>
+      </div>
+
+      <div class="meter">
+        <span>Title uses</span>
+        <span class="track"><span class="fill" id="fillB" style="width:64%"></span></span>
+        <b id="readB">112 px</b>
+      </div>
+      <p class="caption">
+        Opens large, then shrinks to <strong>56&nbsp;px</strong> as you scroll —
+        the page keeps a signpost, the content gets the screen back.
+      </p>
+    </div>
+
+  </section>
+
+  <div class="verdict">
+    <h2>What it costs, honestly</h2>
+    <p>
+      This is a real restructure, not a setting. Each tab's content has to move
+      from a plain list into slivers so the title can react to the scroll.
+    </p>
+    <ul>
+      <li><strong>Settings and Support</strong> — one list each. Straightforward.</li>
+      <li><strong>My Devices</strong> — three separate lists behind loading, empty and error states. All three have to move, and all three need re-checking.</li>
+      <li><strong>Home stays exactly as it is.</strong> Its greeting is content, not a label, so it should keep scrolling away entirely.</li>
+    </ul>
+    <p>
+      Worth doing if you want the three tabs to feel like one app. Not worth
+      rushing before the Play Store submission — nothing about it is a fix.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  // The Support tab's real rows, so the comparison is about the title area and
+  // not about invented filler.
+  const ROWS = [
+    ['Thinking about buying one?', [
+      ['✦', '#EA580C', 'Help me choose', 'Five questions, then a recommendation with reasons'],
+      ['⤢', '#7C3AED', 'Projector planner', 'How big the picture will be on your wall'],
+    ]],
+    ['Already have a projector?', [
+      ['⚙', '#0188FE', 'Request spare parts', 'LCD, motherboard, remote & more — free under warranty'],
+      ['⛨', '#D97706', 'Send for repair', 'Ship your projector to us, we fix and return it'],
+      ['≡', '#7C3AED', 'My service requests', 'Track parts orders and repairs'],
+    ]],
+    ['Get in touch', [
+      ['✆', '#16A34A', 'WhatsApp chat', 'Fastest way to reach a real person'],
+      ['☎', '#0188FE', 'Call support', '10am – 8pm, Saturday to Thursday'],
+      ['✉', '#55637A', 'Open a support ticket', 'Tracked, with photos both ways'],
+    ]],
+  ];
+
+  function fill(el) {
+    ROWS.forEach(([label, rows]) => {
+      const h = document.createElement('div');
+      h.className = 'group-label';
+      h.textContent = label;
+      el.appendChild(h);
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      rows.forEach(([glyph, color, title, sub]) => {
+        const r = document.createElement('div');
+        r.className = 'row';
+        r.innerHTML =
+          '<div class="ic" style="background:' + color + '1f;color:' + color + '">' + glyph + '</div>' +
+          '<div class="row-txt"><b></b><span></span></div>' +
+          '<div class="chev">›</div>';
+        r.querySelector('b').textContent = title;
+        r.querySelector('span').textContent = sub;
+        card.appendChild(r);
+      });
+      el.appendChild(card);
+    });
+    // Enough runway that the collapse completes well before the list ends.
+    const tail = document.createElement('div');
+    tail.style.height = '160px';
+    el.appendChild(tail);
+  }
+
+  const A = document.getElementById('scrollA');
+  const B = document.getElementById('scrollB');
+  fill(A);
+  fill(B);
+
+  const LARGE = 112, SMALL = 56, RANGE = LARGE - SMALL;
+
+  // Current build: height is constant; only the "scrolled under" tint changes.
+  A.addEventListener('scroll', () => {
+    document.getElementById('barA').classList.toggle('lifted', A.scrollTop > 4);
+  }, { passive: true });
+
+  // Proposed: height and type size interpolate with scroll position, exactly as
+  // SliverAppBar.large does — the title shrinks in place rather than sliding off.
+  const barB = document.getElementById('barB');
+  const titleB = document.getElementById('titleB');
+  const fillB = document.getElementById('fillB');
+  const readB = document.getElementById('readB');
+
+  B.addEventListener('scroll', () => {
+    const t = Math.min(1, Math.max(0, B.scrollTop / RANGE)); // 0 → 1
+    const h = LARGE - RANGE * t;
+    barB.style.height = h + 'px';
+    barB.style.alignItems = t > .92 ? 'center' : 'flex-end';
+    titleB.style.fontSize = (28 - 9 * t).toFixed(1) + 'px';
+    titleB.style.paddingBottom = (14 - 14 * t).toFixed(1) + 'px';
+    barB.classList.toggle('lifted', B.scrollTop > 4);
+    readB.textContent = Math.round(h) + ' px';
+    fillB.style.width = (h / 175 * 100) + '%';
+  }, { passive: true });
+</script>

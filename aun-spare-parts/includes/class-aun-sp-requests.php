@@ -572,10 +572,14 @@ class AUN_SP_Requests {
 		if ( in_array( $r->overall_status, array( 'quote_sent', 'expired' ), true ) && $r->phone_current !== '' ) {
 			$days = self::quote_valid_days();
 			list( $rd1, $rd2 ) = self::reminder_days();
-			$wa_text = 'Assalamu alaikum ' . $r->customer_name . ', this is AUN. Your spare-parts quote ' . $r->ref
-				. ' is Tk ' . number_format_i18n( (float) $r->quote_total, 2 )
-				. '. We have not ordered the part yet — we start only once you confirm. Would you like us to go ahead? You can also approve here: '
-				. AUN_SP_Messages::track_link( $r->ref );
+			// Editable like every other customer-facing message (Messages → WhatsApp
+			// chase), rather than a sentence baked into this file.
+			$wa_text = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_WA_CHASE ), array(
+				'name'  => $r->customer_name,
+				'ref'   => $r->ref,
+				'total' => number_format_i18n( (float) $r->quote_total, 2 ),
+				'track' => AUN_SP_Messages::track_link( $r->ref ),
+			) );
 			echo '<div style="background:#f6f7f7;border-left:3px solid #25D366;border-radius:6px;padding:10px 14px;margin:12px 0;max-width:780px;">';
 			echo '<p style="margin:0 0 6px;"><strong>Chasing this quote:</strong> ';
 			echo 'the customer is texted a reminder on day ' . (int) $rd1 . ' and day ' . (int) $rd2
@@ -1512,7 +1516,12 @@ class AUN_SP_Requests {
 		if ( 'rejected' === $type ) {
 			$code           = trim( (string) get_option( 'aun_sp_goodwill_coupon', '' ) );
 			$vars['reason'] = $reason;
-			$vars['coupon'] = $code !== '' ? ( 'As an apology, use code ' . $code . ' for a discount on an upgrade.' ) : '';
+			// The goodwill line is its own editable message (it used to be an English
+			// sentence baked into this file, so it could never be reworded or written
+			// in Bangla). No coupon code configured = no line at all.
+			$vars['coupon'] = ( '' !== $code )
+				? AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_COUPON ), array( 'code' => $code ) )
+				: '';
 			$msg            = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REJECT ), $vars );
 		} elseif ( 'photo' === $type ) {
 			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO ), $vars );
@@ -1524,13 +1533,19 @@ class AUN_SP_Requests {
 				'remind_final' => AUN_SP_Messages::OPT_SMS_REMIND2,
 				'expired'      => AUN_SP_Messages::OPT_SMS_EXPIRED,
 			);
-			// A quote with no deadline (validity set to 0) must not text a dangling
-			// "valid until" — fill() strips the token, so drop the wrapper words too.
-			$body = AUN_SP_Messages::sms( $tpl_map[ $type ] );
-			if ( '' === $vars['expires'] ) {
-				$body = preg_replace( '/\s*\(valid until \{expires\}\)/i', '', $body );
+			$key = $tpl_map[ $type ];
+			// With no deadline configured there is no "last chance before it expires",
+			// so the final reminder falls back to the ordinary reminder wording — whose
+			// only mention of the date sits inside brackets we can safely drop. Sending
+			// the expiry-flavoured text would read "expires on  and your part…".
+			if ( 'remind_final' === $type && '' === $vars['expires'] ) {
+				$key = AUN_SP_Messages::OPT_SMS_REMIND;
 			}
-			$msg = AUN_SP_Messages::fill( $body, $vars );
+			// Then drop any bracketed "(valid until …)" style aside around an empty
+			// placeholder — matched on the brackets, not on English words, so it keeps
+			// working after the admin rewords or translates the template.
+			$body = AUN_SP_Messages::drop_empty_brackets( AUN_SP_Messages::sms( $key ), $vars );
+			$msg  = AUN_SP_Messages::fill( $body, $vars );
 		} elseif ( 'parts' === $type ) {
 			// Per-part progress — the normal update. {changes} is the short form
 			// ("LCD screen: Arrived at AUN, Dhaka"); {detail} adds the explanation

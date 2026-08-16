@@ -319,6 +319,7 @@ class AUN_App_Admin {
 		add_submenu_page( 'aun-app', 'AUN App Content', 'App Content', self::CAP, 'aun-app-content', array( $this, 'page_content' ) );
 		add_submenu_page( 'aun-app', 'AUN App Repairs', 'Repairs', self::CAP, 'aun-app-repairs', array( $this, 'page_repairs' ) );
 		add_submenu_page( 'aun-app', 'AUN App Bug Reports', 'Bug Reports', self::CAP, 'aun-app-feedback', array( $this, 'page_feedback' ) );
+		add_submenu_page( 'aun-app', 'AUN App Messages', 'Messages', self::CAP, 'aun-app-messages', array( $this, 'page_messages' ) );
 		add_submenu_page( 'aun-app', 'AUN App Usage', 'Usage', self::CAP, 'aun-app-usage', array( $this, 'page_usage' ) );
 		add_submenu_page( 'aun-app', 'AUN App Settings', 'Settings', self::CAP, 'aun-app-settings', array( $this, 'page_settings' ) );
 	}
@@ -442,13 +443,27 @@ class AUN_App_Admin {
 				$sms = '';
 				if ( 'approve' === $action && 'submitted' === $row->status ) {
 					$update['status'] = 'approved';
-					$sms = 'SmartLiving: Repair ' . $row->ref . ' update — ' . AUN_App_Services::REPAIR_STATUSES['approved']
-						. ( '' !== $note ? '. ' . $note : '.' );
+					$sms = AUN_App_Services::repair_sms( 'approved', array(
+						'ref'    => $row->ref,
+						'model'  => $row->model,
+						'status' => AUN_App_Services::REPAIR_STATUSES['approved'],
+						'note'   => $note,
+					) );
 					AUN_App_Notices::repair_decision( (int) $row->user_id, (string) $row->ref, true, $note );
 				} elseif ( 'reject' === $action && in_array( $row->status, array( 'submitted', 'approved' ), true ) ) {
 					$update['status'] = 'rejected';
-					$sms = 'SmartLiving: Repair ' . $row->ref . ' update — ' . AUN_App_Services::REPAIR_STATUSES['rejected']
-						. ( '' !== $note ? '. ' . $note : '.' );
+					// Refusing a NEW request and cancelling one we already
+					// approved are different events for the customer, so they
+					// get different words. See repair_sms_cancelled.
+					$sms = AUN_App_Services::repair_sms(
+						'approved' === $row->status ? 'cancelled' : 'rejected',
+						array(
+							'ref'    => $row->ref,
+							'model'  => $row->model,
+							'status' => AUN_App_Services::REPAIR_STATUSES['rejected'],
+							'note'   => $note,
+						)
+					);
 					AUN_App_Notices::repair_decision( (int) $row->user_id, (string) $row->ref, false, $note );
 				}
 				$wpdb->update( $table, $update, array( 'id' => $id ) );
@@ -518,6 +533,17 @@ class AUN_App_Admin {
 						<?php if ( '' !== (string) $r->job_sheet_no ) : ?>
 							<br><span class="aun-badge aun-badge-green" title="Linked to the ERP job sheet — the app shows the live ERP status">JS <?php echo esc_html( $r->job_sheet_no ); ?></span>
 						<?php endif; ?>
+						<?php
+						// The customer's own courier tracking number, sent from the
+						// app once they posted the projector. Shown right here
+						// because the person watching this list is the person
+						// waiting for the parcel.
+						if ( ! empty( $r->courier_tracking ) ) :
+							?>
+							<br><span class="aun-badge" style="background:#e7f5ff;color:#0b6bcb;border:1px solid #b6dcff" title="Sent by the customer from the app<?php echo ! empty( $r->courier_at ) ? ' on ' . esc_attr( substr( (string) $r->courier_at, 0, 16 ) ) : ''; ?>">
+								📦 <?php echo esc_html( trim( (string) $r->courier_name . ' ' . (string) $r->courier_tracking ) ); ?>
+							</span>
+						<?php endif; ?>
 					</td>
 					<td>
 						<?php echo esc_html( $r->customer_name ); ?><br>
@@ -572,10 +598,28 @@ class AUN_App_Admin {
 									When it arrives, create the job sheet in UltimatePOS with serial
 									<strong><?php echo esc_html( $r->serial ); ?></strong> — it links here automatically.
 								</p>
-								<textarea name="admin_note" rows="2" style="width:100%;margin-top:6px" placeholder="Optional note shown to the customer in the app"><?php echo esc_textarea( $r->admin_note ); ?></textarea>
-								<label style="display:block;margin:6px 0"><input type="checkbox" name="notify_sms" value="1" checked /> SMS the customer (on reject)</label>
+								<?php
+								// ⚠️ If they have sent us their courier tracking number, a
+								// projector is physically in transit to us RIGHT NOW.
+								// Cancelling at this point is sometimes still the right
+								// call, but it must never be a one-click action taken
+								// without knowing that.
+								$in_transit = ! empty( $r->courier_tracking );
+								if ( $in_transit ) :
+									?>
+									<p style="margin:8px 0 0;padding:8px 10px;border-radius:6px;background:#FEF3C7;color:#7C2D12;font-size:12px;line-height:1.5">
+										<strong>The customer has already posted it.</strong>
+										<?php echo esc_html( trim( (string) $r->courier_name . ' ' . (string) $r->courier_tracking ) ); ?><?php
+										echo ! empty( $r->courier_at ) ? ' &middot; sent ' . esc_html( substr( (string) $r->courier_at, 0, 10 ) ) : ''; ?>.
+										Call them before cancelling.
+									</p>
+								<?php endif; ?>
+								<textarea name="admin_note" rows="2" style="width:100%;margin-top:6px" placeholder="Why? This is shown to the customer, in the app and the SMS"><?php echo esc_textarea( $r->admin_note ); ?></textarea>
+								<label style="display:block;margin:6px 0"><input type="checkbox" name="notify_sms" value="1" checked /> SMS the customer (on cancel)</label>
 								<button class="button button-small" name="repair_action" value="note">Save note</button>
-								<button class="button button-small" name="repair_action" value="reject" onclick="return confirm('Reject this repair request?')">Reject</button>
+								<button class="button button-small" name="repair_action" value="reject" style="color:#b32d2e" onclick="return confirm(<?php echo $in_transit
+									? esc_attr( wp_json_encode( "This customer has already posted their projector (tracking " . trim( (string) $r->courier_name . ' ' . (string) $r->courier_tracking ) . ").\n\nCancel anyway? Please make sure someone has spoken to them first." ) )
+									: esc_attr( wp_json_encode( "Cancel this repair after approving it?\n\nThe customer has already been asked to send the projector, so they will get an apology SMS, not a rejection." ) ); ?>)">Cancel this repair</button>
 
 							<?php else : ?>
 								<span class="aun-badge <?php echo 'rejected' === $r->status ? 'aun-badge-grey' : 'aun-badge-green'; ?>">
@@ -1344,6 +1388,100 @@ class AUN_App_Admin {
 	 * work, do customers answer quotes in the app — and a dashboard with fifty
 	 * charts is one nobody opens twice.
 	 */
+	/**
+	 * Every SMS this plugin sends the customer, in one place.
+	 *
+	 * ⚠️ Two reasons this is its own page rather than a section of Settings.
+	 * The sibling plugin already puts its fourteen templates under
+	 * **Spare Parts -> Messages**, so an owner looking for wording looks for a
+	 * Messages page and does not find one here. And Settings is twelve cards
+	 * long — a message buried in the middle of it is, in practice, not editable
+	 * at all: the owner reported exactly that.
+	 */
+	public function page_messages() {
+		if ( ! current_user_can( self::CAP ) ) {
+			wp_die( 'Nope.' );
+		}
+
+		$notice = '';
+		if ( isset( $_POST['aun_msg_nonce'] ) && wp_verify_nonce( $_POST['aun_msg_nonce'], 'aun_app_messages' ) ) {
+			$opts = aun_app_api_get_options();
+
+			$otp = sanitize_textarea_field( wp_unslash( $_POST['sms_template'] ?? '' ) );
+			// ⚠️ The login code is the one message that CANNOT be blank: without
+			// [otp] in it the customer receives a text with no code in it and
+			// simply cannot sign in. Refuse rather than save something broken.
+			if ( '' === trim( $otp ) || false === strpos( $otp, '[otp]' ) ) {
+				$notice = '<div class="notice notice-error"><p><strong>Login code SMS not saved.</strong> '
+					. 'It must contain <code>[otp]</code>, or the customer gets a message with no code in it '
+					. 'and cannot sign in. Everything else was saved.</p></div>';
+			} else {
+				$opts['sms_template'] = $otp;
+			}
+
+			foreach ( array( 'received', 'approved', 'rejected', 'cancelled' ) as $ev ) {
+				$opts[ 'repair_sms_' . $ev ] = sanitize_textarea_field( wp_unslash( $_POST[ 'repair_sms_' . $ev ] ?? '' ) );
+			}
+
+			update_option( AUN_APP_API_OPTION, $opts );
+			if ( '' === $notice ) {
+				$notice = '<div class="notice notice-success is-dismissible"><p>Messages saved.</p></div>';
+			}
+		}
+
+		$opts = aun_app_api_get_options();
+		$sp   = admin_url( 'admin.php?page=aun-sp-messages' );
+
+		echo '<div class="wrap"><h1>Customer messages</h1>';
+		echo $notice;
+		echo '<p style="max-width:820px;color:#646970">Every SMS this app sends. Write them in Bangla if you '
+			. 'prefer &mdash; the placeholders work either way. Spare-parts messages (quotes, reminders, '
+			. 'payments) are separate: <a href="' . esc_url( $sp ) . '">Spare Parts &rarr; Messages</a>.</p>';
+
+		echo '<form method="post">';
+		wp_nonce_field( 'aun_app_messages', 'aun_msg_nonce' );
+		echo '<table class="form-table">';
+
+		// ── Login ──
+		echo '<tr><th colspan="2"><h3 style="margin:0">Signing in</h3></th></tr>';
+		echo '<tr><th>Login code SMS</th><td>'
+			. '<textarea name="sms_template" rows="2" style="width:100%;max-width:780px">'
+			. esc_textarea( (string) ( $opts['sms_template'] ?? '' ) ) . '</textarea>'
+			. '<p class="description" style="max-width:780px">Sent every time someone signs in &mdash; '
+			. '<strong>the most-sent message in the system</strong>. Placeholders: <code>[otp]</code> the code, '
+			. '<code>[site]</code> your site name, <code>[min]</code> how many minutes it lasts. '
+			. '<strong><code>[otp]</code> is required.</strong><br />'
+			. 'Keep it short: one SMS is 160 characters, and Bangla text costs far fewer characters per part.</p>'
+			. '</td></tr>';
+
+		// ── Repairs ──
+		$repairs = array(
+			'received'  => array( 'Repair request received', 'Sent the moment a customer submits a repair request from the app. Tell them <strong>not</strong> to ship yet.' ),
+			'approved'  => array( 'Repair approved', 'Sent when you press <strong>Approve</strong> on the Repairs screen, if &ldquo;SMS the customer&rdquo; is ticked.' ),
+			'rejected'  => array( 'Repair refused', 'Sent when you refuse a <strong>new</strong> request, before the customer has been told to send anything.' ),
+			'cancelled' => array( 'Repair cancelled after approval', 'A different message on purpose: by now they have been told &ldquo;please send it&rdquo; and may have posted it already, so this apologises instead of refusing.' ),
+		);
+		echo '<tr><th colspan="2"><h3 style="margin:0">Repairs</h3></th></tr>';
+		echo '<tr><th colspan="2"><p class="description" style="font-weight:400;margin:0 0 8px;max-width:820px">'
+			. 'Placeholders: <code>{ref}</code> <code>{model}</code> <code>{status}</code> '
+			. '<code>{note}</code> (your note to the customer, when you write one). '
+			. '<strong>Leave a box empty to send no SMS for that event</strong> &mdash; the change still '
+			. 'appears in the customer&rsquo;s app either way.</p></th></tr>';
+
+		foreach ( $repairs as $key => $meta ) {
+			echo '<tr><th>' . esc_html( $meta[0] ) . '</th><td>'
+				. '<textarea name="repair_sms_' . esc_attr( $key ) . '" rows="3" style="width:100%;max-width:780px">'
+				. esc_textarea( (string) ( $opts[ 'repair_sms_' . $key ] ?? '' ) ) . '</textarea>'
+				. '<p class="description" style="max-width:780px">' . $meta[1] . '</p>'
+				. '</td></tr>';
+		}
+
+		echo '</table>';
+		echo '<p><button type="submit" class="button button-primary">Save messages</button></p>';
+		echo '</form></div>';
+	}
+
+
 	public function page_usage() {
 		if ( ! current_user_can( self::CAP ) ) {
 			wp_die( 'Nope.' );
@@ -1750,6 +1888,11 @@ class AUN_App_Admin {
 							Unticking this stops collection inside the app itself on the next launch, with no new
 							APK. If you turn it off, update the Play Store <em>Data safety</em> declaration to match.
 						</p>
+					</td></tr>
+					<tr><th colspan="2" style="padding-top:18px"><h3 style="margin:0">Customer messages</h3></th></tr>
+					<tr><th>SMS wording</th><td>
+						<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=aun-app-messages' ) ); ?>">Edit customer messages</a>
+						<p class="description">Login code and repair SMS live on their own page &mdash; <strong>AUN App &rarr; Messages</strong>.</p>
 					</td></tr>
 					<tr><th colspan="2" style="padding-top:18px"><h3 style="margin:0">Where customers post a projector for repair</h3></th></tr>
 					<tr><th>Send-to name</th><td><input name="repair_ship_name" style="width:320px" value="<?php echo esc_attr( (string) ( $opts['repair_ship_name'] ?? '' ) ); ?>" placeholder="AUN Care Service Centre" /></td></tr>
