@@ -334,6 +334,9 @@
 			box.appendChild( el( 'div', 'aun-sp-quote-h', head ) );
 			( r.parts || [] ).forEach( function ( p ) {
 				if ( ! p.price || p.price === '0.00' ) { return; }
+				// A part we can't supply (or that isn't going ahead) keeps its price in
+				// the history but must not appear in what they are asked to pay.
+				if ( p.chargeable === false ) { return; }
 				var line = el( 'div', 'aun-sp-quote-line' );
 				var name = ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
 				var qty  = p.qty && p.qty > 1 ? p.qty : 1;

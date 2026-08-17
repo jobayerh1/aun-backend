@@ -35,6 +35,7 @@ class AUN_SP_Messages {
 	const OPT_SMS_EXPIRED  = 'aun_sp_sms_expired';
 	const OPT_SMS_DECLINED = 'aun_sp_sms_declined';
 	const OPT_SMS_COUPON   = 'aun_sp_sms_coupon';
+	const OPT_SMS_DONE     = 'aun_sp_sms_done';
 	const OPT_WA_CHASE     = 'aun_sp_wa_chase';
 	const OPT_REJECT_TPL   = 'aun_sp_reject_templates';
 	const OPT_PAY_INFO     = 'aun_sp_pay_info';
@@ -68,6 +69,10 @@ class AUN_SP_Messages {
 			// an English sentence hardcoded in the PHP, so it could not be reworded or
 			// written in Bangla like every other message. Empty coupon code = no line.
 			self::OPT_SMS_COUPON   => 'As an apology, use code {code} for a discount on an upgrade.',
+			// The last message of the job. Deliberately carries NO tracking link: there
+			// is nothing left to track, and a "track it" link on a completed request
+			// invites the customer back to a page that can only repeat itself.
+			self::OPT_SMS_DONE     => 'AUN: your spare parts for {ref} have been delivered - thank you for staying with AUN. If anything is wrong with the part, contact us within 3 days. {phone}',
 			// Not an SMS: the message pre-written for the "Chase on WhatsApp" button on
 			// a request. It is still text a customer reads, so it belongs here.
 			self::OPT_WA_CHASE     => "Assalamu alaikum {name}, this is AUN. Your spare-parts quote {ref} is Tk {total}. We have not ordered the part yet - we start only once you confirm. Would you like us to go ahead? You can also approve here: {track}",

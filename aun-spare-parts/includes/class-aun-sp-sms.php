@@ -28,6 +28,17 @@ class AUN_SP_SMS {
 	 *
 	 * @return array{success:bool,message:string}
 	 */
+	/**
+	 * True while THIS plugin is sending. The WooCommerce guard blocks other plugins'
+	 * SMS during our order transitions (see AUN_SP_Woo::block_foreign_sms) and uses
+	 * this to tell "someone else's duplicate" from "the message we meant to send".
+	 */
+	private static $sending = false;
+
+	public static function is_sending() {
+		return self::$sending;
+	}
+
 	public static function send( $phone, $message ) {
 		$to = self::to_intl( $phone );
 		if ( $to === '' ) {
@@ -35,6 +46,16 @@ class AUN_SP_SMS {
 		}
 		$message = self::gsm_safe( $message );
 
+		self::$sending = true;
+		try {
+			return self::dispatch( $to, $message );
+		} finally {
+			self::$sending = false;
+		}
+	}
+
+	/** The actual transport. Always call through send(), never directly. */
+	private static function dispatch( $to, $message ) {
 		// Prefer the OTP helper's sender (already battle-tested) when available.
 		if ( class_exists( 'AUN_Alpha_OTP_SMS' ) ) {
 			return AUN_Alpha_OTP_SMS::send( $to, $message );

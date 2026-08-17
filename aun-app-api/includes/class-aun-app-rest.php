@@ -705,6 +705,19 @@ class AUN_App_REST {
 		return $this->ok( AUN_App_Content::for_models( $model_ids, $type ) );
 	}
 
+	/**
+	 * The language this phone is showing, from the X-AUN-Lang header.
+	 *
+	 * A HEADER rather than a query parameter on purpose: it is a property of the
+	 * caller, not of any one request, so the client sets it once and every
+	 * endpoint can read it without each call site remembering to pass it.
+	 * Defaults to Bangla — the app's own default, and the majority of customers.
+	 */
+	private function app_lang( $request ) {
+		$raw = strtolower( trim( (string) $request->get_header( 'x-aun-lang' ) ) );
+		return 'en' === $raw ? 'en' : 'bn';
+	}
+
 	/** Common identity bundle for the service endpoints (app profile, not WP account). */
 	private function identity() {
 		$user      = wp_get_current_user();
@@ -1062,6 +1075,25 @@ class AUN_App_REST {
 			return $this->err( 'expired', 'This quote has expired. Ask us for a new one and we will re-check the price.', 409 );
 		}
 
+		// ⚠️ THE PLUGIN'S OWN GATE — the button in the app is only a hint.
+		//
+		// Spare parts 0.36.0 added payable_state(), which refuses payment on a
+		// COMPLETED request and on one whose priced parts have all been handed to
+		// the courier. That second case is the dangerous one: on cash on delivery
+		// the courier collects the money, so an order minted here takes it a
+		// SECOND time. A screen left open before dispatch, a back button, or a
+		// replayed POST all reach this without the button ever being visible.
+		$pay_state = method_exists( 'AUN_SP_Requests', 'payable_state' )
+			? AUN_SP_Requests::payable_state( (int) $row->id )
+			: null;
+		if ( is_array( $pay_state ) && empty( $pay_state['can_pay'] ) ) {
+			return $this->err(
+				'unavailable',
+				'There is nothing left to pay online for this request. If your parts are on their way, please pay the courier on delivery.',
+				400
+			);
+		}
+
 		// Reuse an order that is already correct.
 		//
 		// create_order() REBUILDS an unpaid order from current prices and logs
@@ -1073,7 +1105,12 @@ class AUN_App_REST {
 		// Compared against the CURRENT payable, never assumed: if the admin has
 		// edited a quantity or a price since, the totals differ and we fall
 		// through to the rebuild, which is exactly when it earns its keep.
-		$payable = (float) $row->quote_total
+		// Live figure from the lines, not the stored quote_total — that column only
+		// refreshes when an admin saves, so it still carries the price of a part
+		// since marked Unavailable. Comparing a stale total against the existing
+		// order would call them "the same" and skip the rebuild that fixes it.
+		$owed    = is_array( $pay_state ) ? (float) $pay_state['money'] : (float) $row->quote_total;
+		$payable = $owed
 			+ ( isset( $row->delivery_charge ) ? (float) $row->delivery_charge : 0.0 );
 
 		$existing = AUN_App_Services::payment_summary( (int) $row->id );
@@ -1647,7 +1684,7 @@ class AUN_App_REST {
 		return $this->ok( array( 'saved' => true ) );
 	}
 
-	public function my_service_requests() {
+	public function my_service_requests( $request ) {
 		$me = $this->identity();
 		if ( '' === $me['phone'] ) {
 			return $this->ok( array(
@@ -1655,7 +1692,11 @@ class AUN_App_REST {
 				'repairs'     => array(),
 			) );
 		}
-		return $this->ok( AUN_App_Services::my_requests( $me['phone'], $me['user_id'] ) );
+		return $this->ok( AUN_App_Services::my_requests(
+			$me['phone'],
+			$me['user_id'],
+			$this->app_lang( $request )
+		) );
 	}
 
 	/* --------------------------------------------------------------------- *

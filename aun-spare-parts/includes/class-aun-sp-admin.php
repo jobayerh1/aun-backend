@@ -348,6 +348,7 @@ class AUN_SP_Admin {
 			update_option( AUN_SP_Messages::OPT_SMS_EXPIRED, sanitize_textarea_field( wp_unslash( $_POST['sms_expired'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_DECLINED, sanitize_textarea_field( wp_unslash( $_POST['sms_declined'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_SMS_COUPON, sanitize_textarea_field( wp_unslash( $_POST['sms_coupon'] ?? '' ) ) );
+			update_option( AUN_SP_Messages::OPT_SMS_DONE, sanitize_textarea_field( wp_unslash( $_POST['sms_done'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_WA_CHASE, sanitize_textarea_field( wp_unslash( $_POST['wa_chase'] ?? '' ) ) );
 			update_option( AUN_SP_Messages::OPT_PAY_INFO, sanitize_textarea_field( wp_unslash( $_POST['pay_info'] ?? '' ) ) );
 
@@ -383,6 +384,7 @@ class AUN_SP_Admin {
 		$smsexp   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_EXPIRED );
 		$smsdec   = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_DECLINED );
 		$smscoup  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_COUPON );
+		$smsdone  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_DONE );
 		$wachase  = AUN_SP_Messages::sms( AUN_SP_Messages::OPT_WA_CHASE );
 		$pay      = AUN_SP_Messages::pay_info();
 		$tpls     = AUN_SP_Messages::reject_templates();
@@ -398,6 +400,7 @@ class AUN_SP_Admin {
 		echo '<tr><th>Request received</th><td><textarea name="sms_received" rows="2" class="large-text">' . esc_textarea( $received ) . '</textarea><p class="description">Sent automatically the moment a customer submits a request &mdash; gives them their reference number + direct link.</p></td></tr>';
 		echo '<tr><th>Status update</th><td><textarea name="sms_status" rows="2" class="large-text">' . esc_textarea( $status ) . '</textarea><p class="description">Sent when you tick &ldquo;Text the customer&rdquo; and the request as a whole moves <em>without</em> any individual part changing. When a part <em>does</em> move, the Parts update below is sent instead &mdash; it names the part, which is what the customer actually wants to know.</p></td></tr>';
 		echo '<tr><th>Parts update</th><td><textarea name="sms_parts" rows="2" class="large-text">' . esc_textarea( $partsu ) . '</textarea><p class="description">Sent whenever you save a change to any part&rsquo;s status &mdash; this is the everyday update. <code>{changes}</code> lists each changed part and its new stage (e.g. <em>LCD screen: Shipped from the factory &mdash; on its way to Bangladesh</em>). <code>{detail}</code> is the same list with the full explanation of each stage &mdash; clearer, but several times longer, so it costs more SMS parts.</p></td></tr>';
+		echo '<tr><th>Delivered &mdash; job finished</th><td><textarea name="sms_done" rows="2" class="large-text">' . esc_textarea( $smsdone ) . '</textarea><p class="description">Sent <strong>once, when every part has been delivered</strong> and the request becomes Completed &mdash; instead of another &ldquo;update on your request&rdquo; progress text. The default carries <strong>no tracking link</strong>, because there is nothing left to track; <code>{phone}</code> is the contact number from Settings, and <code>{track}</code> is still available if you want it.</p></td></tr>';
 		echo '<tr><th>Rejection</th><td><textarea name="sms_reject" rows="2" class="large-text">' . esc_textarea( $reject ) . '</textarea><p class="description"><code>{coupon}</code> becomes your goodwill line when a coupon code is set in Settings.</p></td></tr>';
 		echo '<tr><th>Goodwill coupon line</th><td><textarea name="sms_coupon" rows="2" class="large-text">' . esc_textarea( $smscoup ) . '</textarea><p class="description">This is what <code>{coupon}</code> becomes inside the rejection message above. <code>{code}</code> is the coupon code from Settings; leave that setting empty and no line is added at all.</p></td></tr>';
 		echo '<tr><th>Better-photo request</th><td><textarea name="sms_photo" rows="2" class="large-text">' . esc_textarea( $photo ) . '</textarea><p class="description">Sent when you click &ldquo;Ask customer for a better photo&rdquo; on a request.</p></td></tr>';
@@ -520,6 +523,9 @@ class AUN_SP_Admin {
 			update_option( 'aun_sp_tracking_url', esc_url_raw( wp_unslash( $_POST['tracking_url'] ?? '' ) ) );
 			update_option( 'aun_sp_service_url', esc_url_raw( wp_unslash( $_POST['service_url'] ?? '' ) ) );
 			update_option( 'aun_sp_goodwill_coupon', sanitize_text_field( wp_unslash( $_POST['goodwill_coupon'] ?? '' ) ) );
+			update_option( 'aun_sp_contact_phone', sanitize_text_field( wp_unslash( $_POST['contact_phone'] ?? '' ) ) );
+			update_option( 'aun_sp_abandoned_pay_hours', max( 1, (int) ( $_POST['abandoned_pay_hours'] ?? 6 ) ) );
+			update_option( 'aun_sp_mute_foreign_sms', empty( $_POST['mute_foreign_sms'] ) ? 0 : 1 );
 			// Turning expiry ON must not retroactively lapse quotes that were sent
 			// under "no deadline" terms — that would expire a pile of live quotes (and
 			// text every one of those customers) the very next morning. They get the
@@ -543,6 +549,9 @@ class AUN_SP_Admin {
 		$track   = (string) get_option( 'aun_sp_tracking_url', '' );
 		$service = (string) get_option( 'aun_sp_service_url', '' );
 		$coupon  = (string) get_option( 'aun_sp_goodwill_coupon', '' );
+		$cphone  = (string) get_option( 'aun_sp_contact_phone', '' );
+		$abhours = (int) get_option( 'aun_sp_abandoned_pay_hours', 6 );
+		$mute    = (bool) get_option( 'aun_sp_mute_foreign_sms', 1 );
 		$has_key = defined( 'AUN_SP_ERP_API_KEY' ) && AUN_SP_ERP_API_KEY !== '';
 
 		echo '<div class="wrap"><h1>Settings</h1>';
@@ -556,6 +565,9 @@ class AUN_SP_Admin {
 		echo '<tr><th>Hard-to-source after (years)</th><td><input type="number" name="hard_source_years" value="' . esc_attr( $hard ) . '" min="0" class="small-text"> <span style="color:#646970;">flags older devices on a request</span></td></tr>';
 		echo '<tr><th>Tracking page URL</th><td><input type="url" name="tracking_url" value="' . esc_attr( $track ) . '" class="regular-text" placeholder="https://aun-projector.com.bd/spare-parts-status/"> <span style="color:#646970;">included in customer status SMS</span></td></tr>';
 		echo '<tr><th>Send-projector page URL</th><td><input type="url" name="service_url" value="' . esc_attr( $service ) . '" class="regular-text" placeholder="https://aun-projector.com.bd/send-projector/"> <span style="color:#646970;">where the &ldquo;Send my projector&rdquo; choice links (defaults to /send-projector/)</span></td></tr>';
+		echo '<tr><th>Contact phone (for messages)</th><td><input type="text" name="contact_phone" value="' . esc_attr( $cphone ) . '" class="regular-text" placeholder="01787698268"> <span style="color:#646970;">fills <code>{phone}</code> in customer messages</span></td></tr>';
+		echo '<tr><th>Remove unpaid orders after (hours)</th><td><input type="number" name="abandoned_pay_hours" value="' . esc_attr( $abhours ) . '" min="1" max="720" class="small-text"> <span style="color:#646970;">a customer who opens the pay page and does not pay leaves an unpaid order behind</span><p class="description">WooCommerce cannot run a gateway without an order, so one is created when the customer presses <strong>Pay online</strong>. If the payment is never completed, that order is <strong>deleted</strong> after this many hours so your Orders list only keeps real sales. Paid orders are never touched, and the customer can start payment again at any time.</p></td></tr>';
+		echo '<tr><th>One SMS per event</th><td><label><input type="checkbox" name="mute_foreign_sms" value="1" ' . checked( $mute, true, false ) . '> Stop other plugins texting about spare-parts orders</label><p class="description">Your shop-wide SMS plugin also texts customers when an order changes status. On a spare-parts order that means <strong>two messages for one event</strong> &mdash; a generic &ldquo;order #123 is processing&rdquo; alongside this plugin&rsquo;s own wording. With this ticked, third-party SMS and WooCommerce&rsquo;s own emails are suppressed <strong>only for spare-parts orders</strong>; your normal shop orders are untouched. Every suppression is written to the request&rsquo;s Activity log.</p></td></tr>';
 		echo '<tr><th>Goodwill coupon code</th><td><input type="text" name="goodwill_coupon" value="' . esc_attr( $coupon ) . '" class="regular-text" placeholder="e.g. UPGRADE10"> <span style="color:#646970;">added to rejection SMS as an apology</span></td></tr>';
 		$qdays = AUN_SP_Requests::quote_valid_days();
 		list( $qr1, $qr2 ) = AUN_SP_Requests::reminder_days();
@@ -594,6 +606,26 @@ class AUN_SP_Admin {
 		echo 'Database ready (<code>wc_order_id</code>): <strong>' . ( $has_col ? 'yes' : 'NO — deactivate and reactivate the plugin' ) . '</strong><br>';
 		echo 'Payment methods a customer would see: <strong>' . ( $gateways ? esc_html( implode( ', ', $gateways ) ) : 'NONE — enable SSLCommerz / Cash on delivery in WooCommerce → Settings → Payments' ) . '</strong><br>';
 		echo 'Orders created so far: <strong>' . $orders_made . '</strong>';
+		echo '</p></div>';
+
+		// Duplicate-SMS guard: what it has actually caught. This is the box to look at
+		// after changing SMS provider — if the new company's host appears here, the
+		// guard is covering it. (It does not rely on knowing the provider: it spots an
+		// SMS by the customer's own number plus a message field in the request.)
+		$muted = (array) get_option( 'aun_sp_muted_hosts', array() );
+		$on    = AUN_SP_Woo::muting_enabled();
+		echo '<div class="notice ' . ( $on ? 'notice-success' : 'notice-warning' ) . ' inline" style="max-width:640px;margin-top:14px;"><p style="margin:.6em 0;">';
+		echo '<strong>One SMS per event:</strong> ' . ( $on ? 'on' : 'OFF — customers may get two messages for one event' ) . '<br>';
+		if ( $muted ) {
+			echo 'Duplicate messages blocked, by provider:<br>';
+			foreach ( $muted as $host => $info ) {
+				echo '&nbsp;&nbsp;<code>' . esc_html( $host ) . '</code> — ' . (int) $info['n']
+					. ' blocked, last ' . esc_html( substr( (string) $info['last'], 0, 16 ) ) . '<br>';
+			}
+			echo '<span style="color:#646970;">Changed SMS provider? Send one test payment: the new company&rsquo;s address should appear in this list.</span>';
+		} else {
+			echo '<span style="color:#646970;">Nothing blocked yet. That is normal until a spare-parts order changes status while your shop-wide SMS plugin is set to text on that status.</span>';
+		}
 		echo '</p></div>';
 
 		echo '<p style="margin-top:14px;color:#646970;max-width:640px;">ERP live-lookup key (<code>AUN_SP_ERP_API_KEY</code> in wp-config.php): <strong>' . ( $has_key ? 'configured' : 'not set' ) . '</strong>. Without it, lookups use the legacy archive only — fine until the <code>/api/sales-lookup</code> endpoint is deployed.</p>';
