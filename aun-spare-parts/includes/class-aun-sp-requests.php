@@ -40,6 +40,162 @@ class AUN_SP_Requests {
 		return in_array( (string) $status, self::CANCELLED_STATES, true );
 	}
 
+	/**
+	 * Part statuses that must NOT be charged for.
+	 *
+	 * A part we cannot supply ('unavailable') or that the customer isn't taking
+	 * ('cancelled') has to drop out of the amount owed — otherwise a request where
+	 * one of three parts turned out to be unavailable still bills for all three.
+	 */
+	const NOT_CHARGEABLE = array( 'unavailable', 'cancelled' );
+
+	/**
+	 * Part statuses meaning the goods have already left us.
+	 *
+	 * Once a part is with the courier or in the customer's hands, "Pay online" must
+	 * disappear: on a cash-on-delivery request the courier is collecting the money,
+	 * so paying online too is a double payment; on a delivered one there is nothing
+	 * left to pay for online.
+	 */
+	const HANDED_OVER = array( 'dispatched', 'delivered' );
+
+	public static function is_chargeable_line( $line_status ) {
+		return ! in_array( (string) $line_status, self::NOT_CHARGEABLE, true );
+	}
+
+	/**
+	 * Reduce whatever was typed in the courier field to a bare consignment ID.
+	 *
+	 * The field invites a pasted link, but only ONE link shape used to survive:
+	 * `?consignment_id=XXX`. Anything else was run through "strip everything that
+	 * isn't a letter or digit", so `…/public-tracking/DA240626FDJC6N` was stored as
+	 * `httpsmerchantpathaocompublictrackingDA240626FDJC6N`, and a note to self like
+	 * "i will add later" became `iwilladdlater`. Both were saved without a murmur and
+	 * then shown to the CUSTOMER as a live tracking chip that opens a Pathao page
+	 * finding nothing.
+	 *
+	 * So: pull the ID out of a query parameter or the last path segment, and if what
+	 * is left doesn't look like a consignment ID, return '' rather than a plausible-
+	 * looking mess. '' means "reject it and tell the admin", never "store garbage".
+	 *
+	 * @return string the ID, or '' if this isn't one.
+	 */
+	public static function clean_consignment( $raw ) {
+		$s = trim( (string) $raw );
+		if ( '' === $s ) {
+			return '';
+		}
+		// Any URL carrying ?consignment_id= / &consignment_id=
+		if ( preg_match( '/consignment_id=([A-Za-z0-9]+)/i', $s, $m ) ) {
+			return $m[1];
+		}
+		// A link with the ID as the last path segment (…/public-tracking/DA24…).
+		if ( preg_match( '~^https?://~i', $s ) ) {
+			$path = (string) wp_parse_url( $s, PHP_URL_PATH );
+			$last = basename( rtrim( $path, '/' ) );
+			return self::looks_like_consignment( $last ) ? $last : '';
+		}
+		// Typed by hand — tolerate spaces and dashes inside the ID.
+		$s = preg_replace( '/[^A-Za-z0-9]/', '', $s );
+		return self::looks_like_consignment( $s ) ? $s : '';
+	}
+
+	/**
+	 * Is this string plausibly a consignment number?
+	 *
+	 * Length alone is not enough: a note to self like "i will add later" collapses to
+	 * `iwilladdlater`, which is a perfectly respectable 13 characters and would sail
+	 * through — then hand the customer a tracking chip that finds nothing. A real
+	 * consignment number always carries digits (Pathao's look like DA240626FDJC6N:
+	 * a prefix, the date, then a random tail), so requiring at least one digit is
+	 * what separates an ID from a sentence.
+	 *
+	 * Filterable, in case a courier ever issues something shaped differently.
+	 */
+	private static function looks_like_consignment( $s ) {
+		$pattern = (string) apply_filters( 'aun_sp_consignment_pattern', '/^(?=.*\d)[A-Za-z0-9]{8,32}$/' );
+		return (bool) preg_match( $pattern, (string) $s );
+	}
+
+	/**
+	 * The public Pathao tracking URL for a stored value — or '' when it cannot make
+	 * a working link.
+	 *
+	 * Used by BOTH the admin badge and the customer's tracker, so neither can render
+	 * a link the other wouldn't. It also copes with a value written by something
+	 * other than the admin form (the app, an import, a direct DB edit): a full URL is
+	 * passed through as-is instead of being pushed into `?consignment_id=`.
+	 */
+	public static function courier_url( $stored ) {
+		$s = trim( (string) $stored );
+		if ( '' === $s ) {
+			return '';
+		}
+		if ( preg_match( '~^https?://~i', $s ) ) {
+			return esc_url_raw( $s ); // already a link — don't wrap it in another one
+		}
+		$id = self::clean_consignment( $s );
+		return '' === $id ? '' : 'https://merchant.pathao.com/public-tracking?consignment_id=' . rawurlencode( $id );
+	}
+
+	/**
+	 * Event types the CUSTOMER may see in "Progress history".
+	 *
+	 * This is an allow-list on purpose. It used to be a deny-list, and the result was
+	 * exactly what a deny-list always produces: every event type added later leaked
+	 * by default. Customers ended up reading our own bookkeeping —
+	 * "Online payment order #9275 refreshed — now ৳16.00" — which exposes shop order
+	 * numbers and reads as if the price keeps changing.
+	 *
+	 * Anything not listed here is internal and stays on the admin's Activity log:
+	 * sms, wc_order, contact_changed, quote_reminder, duplicate_confirmed, refund_due.
+	 */
+	const PUBLIC_EVENTS = array(
+		'created', 'status_change', 'qty_change', 'quote_sent', 'approved', 'declined',
+		'quote_expired', 'quote_revived', 'rejected', 'photo_request', 'reupload',
+		'payment', 'refund',
+	);
+
+	/**
+	 * Can this request still be paid for ONLINE, and how much is owed?
+	 *
+	 * The single rule behind both the customer's "Pay online" button and the endpoint
+	 * that mints the order — they must agree, or a stale page (or a crafted POST) can
+	 * do what the UI says is impossible.
+	 *
+	 * @return array{money:float,open:int,can_pay:bool}
+	 */
+	public static function payable_state( $id ) {
+		global $wpdb;
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			'SELECT line_status, qty, unit_price FROM ' . AUN_SP_Install::table( 'request_items' ) . ' WHERE request_id = %d',
+			(int) $id
+		) );
+		$status = (string) $wpdb->get_var( $wpdb->prepare(
+			'SELECT overall_status FROM ' . AUN_SP_Install::table( 'requests' ) . ' WHERE id = %d',
+			(int) $id
+		) );
+
+		$money = 0.0;
+		$open  = 0;
+		foreach ( (array) $rows as $r ) {
+			if ( ! self::is_chargeable_line( $r->line_status ) ) {
+				continue;
+			}
+			$unit  = (float) $r->unit_price;
+			$money += $unit * max( 1, (int) $r->qty );
+			if ( $unit > 0 && ! in_array( $r->line_status, self::HANDED_OVER, true ) ) {
+				$open++;
+			}
+		}
+
+		return array(
+			'money'   => round( $money, 2 ),
+			'open'    => $open,
+			'can_pay' => ( $money > 0 && $open > 0 && ! self::is_cancelled( $status ) && 'closed' !== $status ),
+		);
+	}
+
 	/** SQL fragment matching open (non-terminal) requests. $col e.g. 'r.overall_status'. */
 	private static function open_sql( $col = 'overall_status' ) {
 		return $col . " NOT IN ('" . implode( "','", self::TERMINAL_STATES ) . "')";
@@ -223,13 +379,37 @@ class AUN_SP_Requests {
 		echo '</div>';
 
 		// Filter tabs.
-		$tabs = array( 'open' => 'Open', 'quote_sent' => 'Awaiting reply', 'waiting_customer' => 'Waiting on customer', 'ready' => 'Ready', 'expired' => 'Expired', 'rejected' => 'Rejected', 'declined' => 'Declined', 'all' => 'All' );
+		// Every status a request can be in is reachable from here. "Completed" was
+		// missing entirely, so finished work could only be found via All.
+		$tabs = array(
+			'open'             => 'Open',
+			'submitted'        => 'New',
+			'quote_sent'       => 'Awaiting reply',
+			'approved'         => 'Approved',
+			'in_progress'      => 'In progress',
+			'ready'            => 'Ready',
+			'waiting_customer' => 'Waiting on customer',
+			'closed'           => 'Completed',
+			'expired'          => 'Expired',
+			'declined'         => 'Declined',
+			'rejected'         => 'Rejected',
+			'all'              => 'All',
+		);
+		// Counts on the tabs, so you can see where the work is without clicking.
+		$tab_counts = array();
+		foreach ( (array) $wpdb->get_results( "SELECT overall_status s, COUNT(*) n FROM $t_req GROUP BY overall_status" ) as $c ) {
+			$tab_counts[ $c->s ] = (int) $c->n;
+		}
+		$tab_counts['all']  = array_sum( $tab_counts );
+		$tab_counts['open'] = $open;
 		echo '<ul class="subsubsub">';
 		$i = 0;
 		foreach ( $tabs as $key => $label ) {
 			$url = admin_url( 'admin.php?page=aun-sp&status=' . $key );
 			$cur = $filter === $key ? ' class="current"' : '';
-			echo ( $i++ ? ' | ' : '' ) . '<li><a href="' . esc_url( $url ) . '"' . $cur . '>' . esc_html( $label ) . '</a></li>';
+			$n   = isset( $tab_counts[ $key ] ) ? (int) $tab_counts[ $key ] : 0;
+			echo ( $i++ ? ' | ' : '' ) . '<li><a href="' . esc_url( $url ) . '"' . $cur . '>' . esc_html( $label )
+				. ' <span class="count">(' . (int) $n . ')</span></a></li>';
 		}
 		echo '</ul>';
 
@@ -283,7 +463,20 @@ class AUN_SP_Requests {
 			echo '</tr>';
 		}
 		echo '</tbody></table>';
-		echo '<p style="color:#646970;max-width:820px;">The <strong>Request status</strong> column is the whole request in one word &mdash; every stage between ordering and arrival reads as &ldquo;In progress&rdquo;, by design. <strong>Parts &amp; where they are</strong> is the detail: each part with the exact stage it has reached.</p>';
+		echo '<p style="color:#646970;max-width:900px;margin-top:14px;">The <strong>Request status</strong> column is the whole request in one word &mdash; every stage between ordering and arrival reads as &ldquo;In progress&rdquo;, by design. <strong>Parts &amp; where they are</strong> is the detail: each part with the exact stage it has reached. A <strong>solid</strong> status pill means the next move is yours.</p>';
+
+		// Legend: what each colour means, and what the two easily-missed part statuses
+		// are for. Cheap to render, and it stops "what does 'Not going ahead' mean?".
+		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:12px 16px;max-width:900px;margin-top:10px;">';
+		echo '<strong style="display:block;margin-bottom:8px;">Colour key</strong>';
+		echo '<div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;">';
+		foreach ( array_keys( self::overall_statuses() ) as $k ) {
+			echo $this->status_badge( $k );
+		}
+		echo '</div>';
+		echo '<p style="color:#646970;margin:10px 0 0;"><strong>Unavailable</strong> = we cannot supply that part (it is not charged for). '
+			. '<strong>Not going ahead</strong> = the part was priced but the customer declined the quote, or the quote expired with no reply &mdash; also not charged for.</p>';
+		echo '</div>';
 	}
 
 	/** part rows for a set of request ids, keyed by request id (one query). */
@@ -316,11 +509,20 @@ class AUN_SP_Requests {
 		if ( empty( $parts ) ) {
 			return '<span style="color:#646970;">—</span>';
 		}
+		// One colour per stage — applied/at_factory and arrived/dispatched/delivered
+		// used to share one, so a glance down the column couldn't tell "ordered" from
+		// "being made", or "in our office" from "already with the customer".
 		$colors = array(
-			'pending'     => '#646970', 'quoted'     => '#8250df', 'applied'   => '#bf6a02',
-			'at_factory'  => '#bf6a02', 'shipped'    => '#2271b1', 'arrived'   => '#1a7f37',
-			'dispatched'  => '#1a7f37', 'delivered'  => '#1a7f37', 'unavailable' => '#b32d2e',
-			'cancelled'   => '#646970',
+			'pending'     => '#646970', // grey    — not started
+			'quoted'      => '#8250df', // purple  — with the customer
+			'applied'     => '#bf6a02', // orange  — ordered
+			'at_factory'  => '#8a6d3b', // brown   — being made
+			'shipped'     => '#2271b1', // blue    — in transit to BD
+			'arrived'     => '#00838f', // teal    — at AUN
+			'dispatched'  => '#b02a8f', // magenta — with the courier
+			'delivered'   => '#1a7f37', // green   — done
+			'unavailable' => '#b32d2e', // red     — can't supply
+			'cancelled'   => '#8c8f94', // pale    — not going ahead
 		);
 		$labels = self::item_statuses();
 		$out    = '';
@@ -493,10 +695,19 @@ class AUN_SP_Requests {
 			$locked     = ( $paid_order && $paid_order->is_paid() );
 		}
 		$lock_attr = $locked ? ' readonly disabled style="background:#f0f0f1;color:#646970;"' : '';
+		$excluded = 0;
 		foreach ( (array) $items as $it ) {
 			$iqty  = max( 1, (int) ( $it->qty ?? 1 ) );
 			$line  = round( (float) $it->unit_price * $iqty, 2 );
-			$grand += $line;
+			// A part we can't supply, or that isn't going ahead, is NOT billed — so it
+			// must not be in the total shown here either, or this page and the
+			// customer's own screen would quote two different numbers.
+			$bill  = self::is_chargeable_line( $it->line_status );
+			if ( $bill ) {
+				$grand += $line;
+			} elseif ( $line > 0 ) {
+				$excluded++;
+			}
 			echo '<tr>';
 			echo '<td><strong>' . esc_html( $it->part_label ) . '</strong></td>';
 			echo '<td><input type="number" min="1" step="1" name="item_qty[' . $it->id . ']" value="' . esc_attr( $iqty ) . '" class="small-text" style="width:58px;"' . $lock_attr . '></td>';
@@ -505,11 +716,20 @@ class AUN_SP_Requests {
 			echo '<td><input type="date" name="item_eta[' . $it->id . ']" value="' . esc_attr( $it->eta ) . '"></td>';
 			echo '<td><input type="text" name="item_note[' . $it->id . ']" value="' . esc_attr( $it->note ) . '" class="regular-text" style="width:120px;"></td>';
 			echo '<td><input type="number" step="0.01" min="0" name="item_price[' . $it->id . ']" value="' . esc_attr( $it->unit_price ) . '" class="small-text" style="width:90px;"' . $lock_attr . '></td>';
-			echo '<td style="white-space:nowrap;">' . ( $line > 0 ? '৳' . esc_html( number_format_i18n( $line, 2 ) ) : '<span style="color:#646970;">—</span>' ) . '</td>';
+			if ( $line > 0 && ! $bill ) {
+				echo '<td style="white-space:nowrap;color:#646970;"><s>৳' . esc_html( number_format_i18n( $line, 2 ) ) . '</s><br><span style="font-size:11px;">not charged</span></td>';
+			} else {
+				echo '<td style="white-space:nowrap;">' . ( $line > 0 ? '৳' . esc_html( number_format_i18n( $line, 2 ) ) : '<span style="color:#646970;">—</span>' ) . '</td>';
+			}
 			$tno = isset( $it->tracking_no ) ? $it->tracking_no : '';
-			echo '<td><input type="text" name="item_track[' . $it->id . ']" value="' . esc_attr( $tno ) . '" class="small-text" placeholder="Pathao ID / URL" style="width:120px;">';
-			if ( $tno !== '' ) {
-				echo ' <a href="' . esc_url( 'https://merchant.pathao.com/public-tracking?consignment_id=' . rawurlencode( $tno ) ) . '" target="_blank" rel="noopener" title="Open Pathao tracking" style="text-decoration:none;">&#8599;</a>';
+			echo '<td><input type="text" name="item_track[' . $it->id . ']" value="' . esc_attr( $tno ) . '" class="small-text" placeholder="DA240626FDJC6N" title="Pathao consignment ID — pasting the whole tracking link works too" style="width:120px;">';
+			// One helper builds this link and the customer's, so the admin can never
+			// see a working chip where the customer sees a dead one (or the reverse).
+			$track_url = self::courier_url( $tno );
+			if ( '' !== $track_url ) {
+				echo ' <a href="' . esc_url( $track_url ) . '" target="_blank" rel="noopener" title="Open Pathao tracking" style="text-decoration:none;">&#8599;</a>';
+			} elseif ( '' !== $tno ) {
+				echo ' <span title="This is not a usable Pathao consignment ID, so no tracking link is shown to the customer." style="color:#b32d2e;cursor:help;">&#9888;</span>';
 			}
 			echo '</td>';
 			$pics = $by_item[ (int) $it->id ] ?? array();
@@ -521,7 +741,9 @@ class AUN_SP_Requests {
 			echo '</tr>';
 		}
 		if ( $grand > 0 ) {
-			echo '<tr><td colspan="7" style="text-align:right;font-weight:600;">Quote total (qty × unit price)</td>'
+			echo '<tr><td colspan="7" style="text-align:right;font-weight:600;">Quote total (qty × unit price)'
+				. ( $excluded ? '<br><span style="font-weight:400;color:#646970;font-size:12px;">' . (int) $excluded . ' part(s) excluded — unavailable or not going ahead</span>' : '' )
+				. '</td>'
 				. '<td style="font-weight:700;white-space:nowrap;">৳' . esc_html( number_format_i18n( $grand, 2 ) ) . '</td><td colspan="2"></td></tr>';
 		}
 		echo '</tbody></table></div>';
@@ -730,7 +952,9 @@ class AUN_SP_Requests {
 			// payment bridge existed, or creation failed. Offer to raise it by hand
 			// rather than leaving the customer with nothing to pay.
 			$owed = $this->quote_total( (int) $r->id );
-			if ( $owed > 0 && ! self::is_cancelled( $r->overall_status ) ) {
+			// No payment link for a finished request — the parts are with the customer
+			// and, on cash on delivery, the money came with them.
+			if ( $owed > 0 && ! self::is_cancelled( $r->overall_status ) && 'closed' !== $r->overall_status ) {
 				echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;">';
 				wp_nonce_field( 'aun_sp_mkorder', 'aun_sp_mkorder_nonce' );
 				echo '<h2 style="margin-top:0;">Payment</h2>';
@@ -836,12 +1060,13 @@ class AUN_SP_Requests {
 				$money_locked = ( $paid_order && $paid_order->is_paid() );
 			}
 			$moves    = array(); // new line_status => the parts that moved to it
+			$bad_tracking = array(); // parts where the courier field was refused
 			$became_quoted = false; // a part was moved to "Quoted" in this save
 
 			foreach ( $statuses as $iid => $new ) {
 				$iid = (int) $iid;
 				$new = array_key_exists( $new, $labels ) ? $new : 'pending';
-				$cur = $wpdb->get_row( $wpdb->prepare( "SELECT line_status, part_label, qty, unit_price FROM $t_item WHERE id = %d AND request_id = %d", $iid, $id ) );
+				$cur = $wpdb->get_row( $wpdb->prepare( "SELECT line_status, part_label, qty, unit_price, tracking_no FROM $t_item WHERE id = %d AND request_id = %d", $iid, $id ) );
 				if ( ! $cur ) {
 					continue;
 				}
@@ -856,12 +1081,15 @@ class AUN_SP_Requests {
 				if ( $eta !== '' && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $eta ) ) {
 					$eta = '';
 				}
-				// Pathao consignment: accept a raw ID or a pasted tracking URL, keep alphanumerics only.
-				$track = trim( (string) wp_unslash( $tracks[ $iid ] ?? '' ) );
-				if ( preg_match( '/consignment_id=([A-Za-z0-9]+)/i', $track, $tm ) ) {
-					$track = $tm[1];
+				// Pathao consignment: a bare ID, or any pasted tracking link.
+				// Anything that ISN'T one is refused and the old value kept — storing a
+				// mangled string used to hand the customer a dead tracking chip.
+				$typed = trim( (string) wp_unslash( $tracks[ $iid ] ?? '' ) );
+				$track = self::clean_consignment( $typed );
+				if ( '' === $track && '' !== $typed ) {
+					$track          = (string) ( $cur->tracking_no ?? '' ); // keep what was there
+					$bad_tracking[] = $cur->part_label;
 				}
-				$track = preg_replace( '/[^A-Za-z0-9]/', '', $track );
 				$wpdb->update(
 					$t_item,
 					array(
@@ -934,10 +1162,14 @@ class AUN_SP_Requests {
 			// Already quote_sent? Don't auto-resend on every save; the button re-sends.
 			$auto_quote = ( $became_quoted && 'quote_sent' !== $current );
 			if ( isset( $_POST['send_quote'] ) || $auto_quote ) {
-				if ( $total <= 0 ) {
+				// Price it in QUOTE scope: on a declined or expired request every line
+				// is 'cancelled', which billing (rightly) counts as ৳0 — using that here
+				// would make the plugin refuse to send its own revised quote.
+				$quote_sum = $this->quote_total( $id, 'quote' );
+				if ( $quote_sum <= 0 ) {
 					return '<div class="notice notice-error is-dismissible"><p><strong>No quote was sent.</strong> Enter a price for at least one part first — a quote of ৳0 has nothing for the customer to approve.</p></div>';
 				}
-				return $this->do_send_quote( $id, $total, $quote_note, $auto_quote );
+				return $this->do_send_quote( $id, $quote_sum, $quote_note, $auto_quote );
 			}
 
 			// Plain save: keep the total current and let the overall status follow the
@@ -951,6 +1183,11 @@ class AUN_SP_Requests {
 			}
 
 			$extra = '';
+			// Finishing the job is its own message, not a progress update: a request
+			// that has just been fully delivered used to text "update on your request —
+			// LCD screen: Delivered to you. Track it: <link>", which reads like there is
+			// more to come and links to a page with nothing left on it.
+			$just_completed = ( 'closed' === $overall && 'closed' !== $current );
 			// Never text the customer about a request that was ALREADY finished before
 			// this save. Tidying the parts on a declined, rejected, expired or
 			// completed request is bookkeeping — texting "LCD screen: Delivered to you"
@@ -963,7 +1200,9 @@ class AUN_SP_Requests {
 				$extra = ' This request is already ' . esc_html( self::overall_statuses()[ $current ] ?? $current )
 					. ', so the customer was not texted.';
 			} elseif ( ! empty( $_POST['notify'] ) ) {
-				if ( ! empty( $changes ) ) {
+				if ( $just_completed ) {
+					$extra = $this->sms_customer( $id, 'done', $overall, implode( ', ', $changes ) );
+				} elseif ( ! empty( $changes ) ) {
 					// THE PART YOU MOVED IS THE NEWS. The overall status is a coarse
 					// internal bucket — six different part stages (ordered / at factory /
 					// shipped / arrived / dispatched / delivered-in-part) all collapse into
@@ -979,6 +1218,12 @@ class AUN_SP_Requests {
 					// after a customer action): the overall status IS the news here.
 					$extra = $this->sms_customer( $id, 'status', $overall, '' );
 				}
+			}
+			// A refused courier value must never pass unnoticed: the customer would be
+			// looking at a tracking chip that opens a Pathao page finding nothing.
+			if ( ! empty( $bad_tracking ) ) {
+				$extra .= ' <strong>Courier tracking not saved for ' . esc_html( implode( ', ', $bad_tracking ) )
+					. '</strong> — that didn&rsquo;t look like a Pathao consignment ID. Paste the ID (e.g. <code>DA240626FDJC6N</code>) or the full tracking link.';
 			}
 			$moved = ( $overall !== $current ) ? ' Status is now &ldquo;' . esc_html( self::overall_statuses()[ $overall ] ?? $overall ) . '&rdquo;.' : '';
 			if ( ! empty( $_POST['notify'] ) && $extra === '' && empty( $changes ) && $overall === $current ) {
@@ -1079,19 +1324,36 @@ class AUN_SP_Requests {
 	 * silently make every quote ৳0 and refuse to send. In that case fall back to the
 	 * un-multiplied sum rather than pricing the job at nothing.
 	 */
-	private function quote_total( $id ) {
+	/**
+	 * @param string $scope 'billing' — what the customer owes RIGHT NOW: parts we
+	 *                      can't supply and parts that aren't going ahead are out.
+	 *                      'quote'   — what a NEW quote would come to: only the
+	 *                      unsuppliable parts are out.
+	 *
+	 * The two scopes exist because a declined or expired request has every line
+	 * marked 'cancelled'. Billing must ignore those (nothing is owed), but re-quoting
+	 * must not: with one scope, sending a revised quote after a decline computed a
+	 * total of ৳0 and refused itself — the customer could never be re-offered.
+	 */
+	private function quote_total( $id, $scope = 'billing' ) {
 		global $wpdb;
 		$t_item = AUN_SP_Install::table( 'request_items' );
 
+		$exclude  = ( 'quote' === $scope ) ? array( 'unavailable' ) : self::NOT_CHARGEABLE;
+		$skip     = "'" . implode( "','", $exclude ) . "'";
 		$suppress = $wpdb->suppress_errors( true );
 		$sum      = $wpdb->get_var( $wpdb->prepare(
-			"SELECT COALESCE(SUM(unit_price * (CASE WHEN qty < 1 OR qty IS NULL THEN 1 ELSE qty END)),0) FROM $t_item WHERE request_id = %d",
+			"SELECT COALESCE(SUM(unit_price * (CASE WHEN qty < 1 OR qty IS NULL THEN 1 ELSE qty END)),0)
+			 FROM $t_item WHERE request_id = %d AND line_status NOT IN ($skip)",
 			$id
 		) );
 		$wpdb->suppress_errors( $suppress );
 
 		if ( null === $sum ) {
-			$sum = $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(unit_price),0) FROM $t_item WHERE request_id = %d", $id ) );
+			$sum = $wpdb->get_var( $wpdb->prepare(
+				"SELECT COALESCE(SUM(unit_price),0) FROM $t_item WHERE request_id = %d AND line_status NOT IN ($skip)",
+				$id
+			) );
 		}
 		return round( (float) $sum, 2 );
 	}
@@ -1137,6 +1399,11 @@ class AUN_SP_Requests {
 			 WHERE request_id = %d AND line_status IN ('pending','cancelled') AND unit_price > 0",
 			current_time( 'mysql' ), $id
 		) );
+
+		// Recompute now that the lines have moved to 'quoted': the stored total is the
+		// billing figure, and after the flip both scopes agree.
+		$total = $this->quote_total( $id );
+		$wpdb->update( $t_req, array( 'quote_total' => $total ), array( 'id' => $id ) );
 
 		$this->log( $id, 0, 'quote_sent', 'Quote sent — total ৳' . number_format_i18n( $total, 2 )
 			. ( $expires ? ', valid until ' . date_i18n( get_option( 'date_format' ), strtotime( $expires ) ) : '' )
@@ -1525,6 +1792,14 @@ class AUN_SP_Requests {
 			$msg            = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REJECT ), $vars );
 		} elseif ( 'photo' === $type ) {
 			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO ), $vars );
+		} elseif ( 'done' === $type ) {
+			// Completion. {track} is available if the admin wants it, but the default
+			// deliberately omits it; {phone} is the shop's contact number so the
+			// customer has somewhere to go if the part is faulty.
+			$vars['changes'] = $reason;
+			$vars['phone']   = trim( (string) get_option( 'aun_sp_contact_phone', '' ) );
+			$body            = AUN_SP_Messages::drop_empty_brackets( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_DONE ), $vars );
+			$msg             = AUN_SP_Messages::fill( $body, $vars );
 		} elseif ( 'quote' === $type || 'remind' === $type || 'remind_final' === $type || 'expired' === $type ) {
 			$vars['total'] = number_format_i18n( (float) $r->quote_total, 2 );
 			$tpl_map       = array(
@@ -1563,7 +1838,7 @@ class AUN_SP_Requests {
 		$labels = array(
 			'rejected' => 'rejection', 'photo' => 'better-photo request', 'quote' => 'quote',
 			'parts' => 'parts update', 'remind' => 'quote reminder', 'remind_final' => 'final quote reminder',
-			'expired' => 'quote expiry',
+			'expired' => 'quote expiry', 'done' => 'delivery confirmation',
 		);
 		$label  = isset( $labels[ $type ] ) ? $labels[ $type ] : 'status update';
 		$res    = AUN_SP_SMS::send_tracked( $id, $r->phone_current, $msg, $label );
@@ -1854,17 +2129,40 @@ class AUN_SP_Requests {
 		return $out . '</select>';
 	}
 
-	private function status_badge( $status ) {
-		$colors = array(
-			'submitted' => '#2271b1', 'in_progress' => '#2271b1', 'quote_sent' => '#8250df',
-			'approved' => '#1a7f37', 'waiting_customer' => '#bf6a02', 'ready' => '#1a7f37',
-			'closed' => '#646970', 'declined' => '#b32d2e', 'rejected' => '#b32d2e',
-			'expired' => '#bf6a02',
+	/**
+	 * One distinct colour per status — they used to collide in three places
+	 * (submitted = in_progress, approved = ready, declined = rejected, and later
+	 * waiting = expired), which defeats the point of colouring them at all.
+	 *
+	 * Colour is not the only signal: the three statuses that need YOUR move are
+	 * drawn SOLID (white text on a filled pill) and everything else is tinted, so
+	 * the list is readable at a glance and still works if two hues look alike on a
+	 * particular screen.
+	 */
+	public static function status_style( $status ) {
+		$map = array(
+			'submitted'        => array( '#2271b1', true  ), // blue, solid   — review it
+			'quote_sent'       => array( '#8250df', false ), // purple        — with the customer
+			'approved'         => array( '#1a7f37', true  ), // green, solid  — order from the factory
+			'in_progress'      => array( '#00838f', false ), // teal          — moving
+			'ready'            => array( '#b02a8f', true  ), // magenta, solid— dispatch it
+			'waiting_customer' => array( '#bf6a02', false ), // orange        — with the customer
+			'expired'          => array( '#8a6d3b', false ), // brown         — lapsed, no reply
+			'declined'         => array( '#b32d2e', false ), // red           — they said no
+			'rejected'         => array( '#7d1b1b', false ), // dark red      — we said no
+			'closed'           => array( '#646970', false ), // grey          — done
 		);
-		$labels = self::overall_statuses();
-		$c      = $colors[ $status ] ?? '#646970';
-		$l      = $labels[ $status ] ?? $status;
-		return '<span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:' . esc_attr( $c ) . '1a;color:' . esc_attr( $c ) . ';font-weight:600;">' . esc_html( $l ) . '</span>';
+		return $map[ $status ] ?? array( '#646970', false );
+	}
+
+	private function status_badge( $status ) {
+		$labels        = self::overall_statuses();
+		list( $c, $solid ) = self::status_style( $status );
+		$l             = $labels[ $status ] ?? $status;
+		$css = $solid
+			? 'background:' . esc_attr( $c ) . ';color:#fff;'
+			: 'background:' . esc_attr( $c ) . '1a;color:' . esc_attr( $c ) . ';';
+		return '<span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;' . $css . '">' . esc_html( $l ) . '</span>';
 	}
 
 	private function card( $label, $value ) {

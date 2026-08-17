@@ -46,6 +46,23 @@ class AUN_SP_Woo {
 		} );
 
 		add_action( 'woocommerce_order_status_changed', array( __CLASS__, 'on_status_changed' ), 10, 4 );
+
+		// Every customer SMS about a spare-parts request comes from THIS plugin, in
+		// wording the admin controls, retried on failure and written to the request's
+		// activity log. A shop-wide SMS plugin listening on order status changes (the
+		// Alpha SMS plugin hooks woocommerce_order_status_changed at priority 10) would
+		// text the same customer a second, generic message about "order #123" — once
+		// when they pay, again when we mark the request delivered. These two hooks
+		// bracket every transition of OUR orders and silence third-party senders for
+		// its duration; normal shop orders are completely unaffected.
+		add_action( 'woocommerce_order_status_changed', array( __CLASS__, 'mute_foreign_start' ), -PHP_INT_MAX, 4 );
+		add_action( 'woocommerce_order_status_changed', array( __CLASS__, 'mute_foreign_end' ), PHP_INT_MAX, 4 );
+		// WooCommerce's own customer emails, for the same reason. (Today our orders
+		// carry no billing email so they go nowhere, but that is luck, not design.)
+		add_filter( 'woocommerce_email_enabled_customer_processing_order', array( __CLASS__, 'mute_wc_email' ), 99, 2 );
+		add_filter( 'woocommerce_email_enabled_customer_completed_order', array( __CLASS__, 'mute_wc_email' ), 99, 2 );
+		add_filter( 'woocommerce_email_enabled_customer_on_hold_order', array( __CLASS__, 'mute_wc_email' ), 99, 2 );
+		add_filter( 'woocommerce_email_enabled_customer_invoice', array( __CLASS__, 'mute_wc_email' ), 99, 2 );
 		// Piggy-backs the existing daily cron.
 		add_action( 'aun_sp_daily_digest', array( __CLASS__, 'cancel_abandoned' ) );
 
@@ -73,6 +90,177 @@ class AUN_SP_Woo {
 	/** True when this order was raised by us. */
 	private static function is_ours( $order ) {
 		return ( $order instanceof WC_Order ) && (int) $order->get_meta( self::META_REQ ) > 0;
+	}
+
+	/* --------------------------------------------- Duplicate-notification guard */
+
+	/** Request id whose order is mid-transition, or 0. */
+	private static $muting = 0;
+
+	/** The customer's phone in every form a gateway might use, while muting. */
+	private static $mute_phones = array();
+
+	/** Is the guard switched on? Admin can disable it in Settings. */
+	public static function muting_enabled() {
+		return (bool) get_option( 'aun_sp_mute_foreign_sms', 1 );
+	}
+
+	/**
+	 * Hosts we KNOW are SMS gateways — a fast, certain match. This list is a
+	 * shortcut, NOT the mechanism: see looks_like_sms() for the provider-agnostic
+	 * test that catches gateways nobody has heard of yet. Filterable either way.
+	 */
+	public static function sms_hosts() {
+		return (array) apply_filters( 'aun_sp_sms_hosts', array(
+			'sms.net.bd', 'api.sms.net.bd',        // Alpha SMS (current provider)
+			'bulksmsbd.net', 'sms.greenweb.com.bd', // previous BD providers
+			'api.mimsms.com', 'smsplus.sslwireless.com', 'sms.sslwireless.com',
+			'api.twilio.com', 'api.infobip.com', 'rest.nexmo.com', 'api.vonage.com',
+		) );
+	}
+
+	/**
+	 * Does this outbound request look like an SMS to THIS customer?
+	 *
+	 * The point of this method is that it does not care who the provider is. Any SMS
+	 * API call has to carry two things: the recipient's number, and the message. So
+	 * we look for the customer's phone (in any format a gateway might use) together
+	 * with a messaging shape in the URL or the body — "sms", "message", "text",
+	 * "sendsms", a `msg=`/`Body=` field, and so on.
+	 *
+	 * That means switching from Alpha SMS to Twilio, MimSMS, SSLWireless, Infobip or
+	 * anything else keeps working with no code change: Twilio posts To/Body to
+	 * .../Messages.json, MimSMS posts MobileNumber/Message, Infobip posts to /sms/2/…
+	 * — each trips both halves of the test. The known-host list above is only there
+	 * to catch a gateway that somehow hides the number (e.g. sends it pre-encoded).
+	 */
+	private static function looks_like_sms( $url, $args ) {
+		$body = isset( $args['body'] ) ? $args['body'] : '';
+		if ( is_array( $body ) ) {
+			$flat = '';
+			foreach ( $body as $k => $v ) {
+				$flat .= ' ' . $k . '=' . ( is_scalar( $v ) ? $v : wp_json_encode( $v ) );
+			}
+			$body = $flat;
+		}
+		$body = is_string( $body ) ? substr( $body, 0, 4000 ) : '';
+		$hay  = strtolower( $url . ' ' . $body );
+
+		// 1. Is the customer's number in there?
+		$has_phone = false;
+		foreach ( self::$mute_phones as $p ) {
+			if ( '' !== $p && strpos( str_replace( array( '%2b', '+', '-', ' ' ), '', $hay ), $p ) !== false ) {
+				$has_phone = true;
+				break;
+			}
+		}
+		if ( ! $has_phone ) {
+			return false;
+		}
+
+		// 2. Does it look like a message, rather than (say) an order webhook?
+		return (bool) preg_match(
+			'~(sms|/messages|message=|"message"|msg=|"msg"|text=|"text"|body=|"body"|content=|"content")~',
+			$hay
+		);
+	}
+
+	public static function mute_foreign_start( $order_id, $old, $new, $order = null ) {
+		if ( ! self::muting_enabled() ) {
+			return;
+		}
+		$order = $order instanceof WC_Order ? $order : wc_get_order( $order_id );
+		if ( ! $order || ! self::is_ours( $order ) ) {
+			return;
+		}
+		self::mute_on( (int) $order->get_meta( self::META_REQ ) );
+	}
+
+	/**
+	 * Open the window by request id. Also used around order CREATION, because an SMS
+	 * plugin listening on `woocommerce_new_order` would otherwise text the customer
+	 * "your order has been placed" the moment they press Pay online — before any
+	 * money has moved, and for an order they may never complete.
+	 */
+	public static function mute_on( $request_id ) {
+		global $wpdb;
+		if ( ! self::muting_enabled() || self::$muting ) {
+			return;
+		}
+		self::$muting = (int) $request_id;
+
+		// Every shape the customer's number could take in a gateway payload.
+		$raw = (string) $wpdb->get_var( $wpdb->prepare(
+			'SELECT phone_current FROM ' . AUN_SP_Install::table( 'requests' ) . ' WHERE id = %d',
+			(int) $request_id
+		) );
+		$local  = aun_sp_normalize_phone( $raw );          // 01XXXXXXXXX
+		$digits = preg_replace( '/\D+/', '', $raw );
+		$last10 = substr( $digits, -10 );                  // XXXXXXXXXX
+		self::$mute_phones = array_filter( array_unique( array(
+			$local,
+			$last10,
+			'' !== $last10 ? '880' . $last10 : '',
+		) ) );
+
+		add_filter( 'pre_http_request', array( __CLASS__, 'block_foreign_sms' ), 1, 3 );
+	}
+
+	public static function mute_foreign_end( $order_id, $old, $new, $order = null ) {
+		self::mute_off();
+	}
+
+	/**
+	 * Cancel an outbound SMS that some OTHER plugin is sending while one of our
+	 * orders changes status.
+	 *
+	 * Deliberately blunt but narrow: it only bites inside the transition window, only
+	 * for known SMS gateway hosts, and never for messages this plugin is sending —
+	 * AUN_SP_SMS marks its own calls in flight, so our "payment received" and
+	 * "delivered" texts pass straight through.
+	 */
+	public static function block_foreign_sms( $pre, $args, $url ) {
+		if ( ! self::$muting || ( class_exists( 'AUN_SP_SMS' ) && AUN_SP_SMS::is_sending() ) ) {
+			return $pre;
+		}
+		$host  = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		$known = false;
+		foreach ( self::sms_hosts() as $h ) {
+			$h = strtolower( $h );
+			if ( $host === $h || substr( $host, -strlen( '.' . $h ) ) === '.' . $h ) {
+				$known = true;
+				break;
+			}
+		}
+		if ( ! $known && ! self::looks_like_sms( $url, $args ) ) {
+			return $pre;
+		}
+
+		// Remember which host it was, so Settings can show that the guard is still
+		// covering whichever provider is in use — the check that matters after
+		// switching SMS company.
+		$seen = (array) get_option( 'aun_sp_muted_hosts', array() );
+		if ( ! isset( $seen[ $host ] ) ) {
+			$seen[ $host ] = array( 'n' => 0, 'last' => '' );
+		}
+		$seen[ $host ]['n']++;
+		$seen[ $host ]['last'] = current_time( 'mysql' );
+		update_option( 'aun_sp_muted_hosts', array_slice( $seen, -10, 10, true ), false );
+
+		self::log(
+			self::$muting,
+			'sms',
+			'A duplicate SMS from another plugin (' . $host . ') was blocked while this order changed status — the customer already gets the spare-parts message. (Turn this off in Spare Parts → Settings if you want both.)'
+		);
+		return new WP_Error( 'aun_sp_muted', 'Blocked by AUN Spare Parts: this customer is already texted by the spare-parts plugin.' );
+	}
+
+	/** WooCommerce's own customer emails, off for our orders. */
+	public static function mute_wc_email( $enabled, $object = null ) {
+		if ( self::muting_enabled() && $object instanceof WC_Order && self::is_ours( $object ) ) {
+			return false;
+		}
+		return $enabled;
 	}
 
 	/* ------------------------------------------------------- Gateways / statuses */
@@ -157,9 +345,19 @@ class AUN_SP_Woo {
 		if ( AUN_SP_Requests::is_cancelled( $r->overall_status ) ) {
 			return 0;
 		}
+		// Creating/updating the order fires WooCommerce hooks that a shop-wide SMS
+		// plugin listens to ("your order has been placed"). The customer has not paid
+		// anything yet — this plugin will tell them what matters.
+		self::mute_on( (int) $request_id );
 
+		// Only lines we can actually supply are billed. Without the status filter a
+		// part later marked Unavailable (or cancelled) stayed on the invoice, so the
+		// customer was asked to pay for something they were never going to receive.
+		$skip  = "'" . implode( "','", AUN_SP_Requests::NOT_CHARGEABLE ) . "'";
 		$items = $wpdb->get_results( $wpdb->prepare(
-			"SELECT part_label, qty, unit_price FROM $t_item WHERE request_id = %d AND unit_price > 0 ORDER BY id ASC",
+			"SELECT part_label, qty, unit_price FROM $t_item
+			 WHERE request_id = %d AND unit_price > 0 AND line_status NOT IN ($skip)
+			 ORDER BY id ASC",
 			(int) $request_id
 		) );
 		if ( empty( $items ) ) {
@@ -244,7 +442,16 @@ class AUN_SP_Woo {
 		} else {
 			self::log( $request_id, 'wc_order', 'Online payment order #' . $order->get_order_number() . ' refreshed — now ৳' . number_format_i18n( (float) $order->get_total(), 2 ) );
 		}
+		self::mute_off();
 		return $order_id;
+	}
+
+	/** Close a window opened with mute_on(). */
+	public static function mute_off() {
+		if ( self::$muting ) {
+			remove_filter( 'pre_http_request', array( __CLASS__, 'block_foreign_sms' ), 1 );
+			self::$muting = 0;
+		}
 	}
 
 	/** Keep an unpaid order's delivery charge in step with the admin's edit. */
@@ -316,17 +523,28 @@ class AUN_SP_Woo {
 		if ( ! $order ) {
 			return;
 		}
-		if ( 'closed' === $sp_status && $order->is_paid() && ! $order->has_status( 'completed' ) ) {
+		if ( 'ready' === $sp_status && $order->is_paid() ) {
+			// WooCommerce has no "dispatched" status, and inventing one would break the
+			// gateway's expectations. The order stays PROCESSING (paid, being fulfilled)
+			// and gets a private note, so the order's own timeline still shows what
+			// happened without pretending the job is finished.
+			$order->add_order_note( 'Spare-parts request ' . $sp_status . ': parts are with the courier. Order stays Processing until delivery.' );
+			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' left at Processing (parts dispatched)' );
+		} elseif ( 'closed' === $sp_status && $order->is_paid() && ! $order->has_status( 'completed' ) ) {
 			$order->update_status( 'completed', 'Spare-parts request marked Completed.' );
 			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' marked Completed (request delivered)' );
 		} elseif ( in_array( $sp_status, array( 'rejected', 'declined', 'expired' ), true ) ) {
 			if ( $order->is_paid() ) {
 				// Money already taken — cancelling here would hide that a refund is owed.
-				self::log( $request_id, 'refund', 'REFUND DUE — ৳' . number_format_i18n( (float) $order->get_total(), 2 )
+				// Type 'refund_due' (not 'refund'): this is a note to US that we owe the
+				// money, not the customer's record of having received it. The customer
+				// already sees "your refund is being processed" on their own page.
+				self::log( $request_id, 'refund_due', 'REFUND DUE — ৳' . number_format_i18n( (float) $order->get_total(), 2 )
 					. ' was paid online and the request is now ' . $sp_status . '.' );
-			} elseif ( ! $order->has_status( array( 'cancelled', 'refunded' ) ) ) {
-				$order->update_status( 'cancelled', 'Spare-parts request ' . $sp_status . '.' );
-				self::log( $request_id, 'wc_order', 'Unpaid order #' . $order->get_order_number() . ' cancelled (request ' . $sp_status . ')' );
+			} else {
+				// Nothing was paid, and the request is off: delete rather than cancel,
+				// so the shop's Orders list isn't slowly filled with dead rows.
+				self::discard_unpaid( $request_id, 'the request is ' . $sp_status );
 			}
 		}
 	}
@@ -406,9 +624,10 @@ class AUN_SP_Woo {
 		if ( ! self::is_active() ) {
 			return;
 		}
-		$hours = max( 1, (int) apply_filters( 'aun_sp_abandoned_pay_hours', 72 ) );
+		$hours = max( 1, (int) apply_filters( 'aun_sp_abandoned_pay_hours', (int) get_option( 'aun_sp_abandoned_pay_hours', 6 ) ) );
 		$cut   = time() - $hours * HOUR_IN_SECONDS;
 		$rows  = $wpdb->get_results( 'SELECT id, wc_order_id FROM ' . AUN_SP_Install::table( 'requests' ) . ' WHERE wc_order_id > 0' );
+		$gone  = 0;
 		foreach ( (array) $rows as $row ) {
 			$order = wc_get_order( (int) $row->wc_order_id );
 			if ( ! $order || ! $order->has_status( 'pending' ) ) {
@@ -416,10 +635,54 @@ class AUN_SP_Woo {
 			}
 			$modified = $order->get_date_modified();
 			if ( $modified && $modified->getTimestamp() < $cut ) {
-				$order->update_status( 'cancelled', 'Online payment not completed within ' . $hours . ' hours.' );
-				self::log( (int) $row->id, 'wc_order', 'Abandoned payment order #' . $order->get_order_number() . ' cancelled — the customer can start payment again any time.' );
+				self::discard_unpaid( (int) $row->id, 'Online payment was not completed within ' . $hours . ' hours' );
+				$gone++;
 			}
 		}
+		return $gone;
+	}
+
+	/**
+	 * Delete an UNPAID order for a request, so the shop only ever keeps orders that
+	 * represent real money.
+	 *
+	 * WooCommerce cannot run a gateway without an order — the pay page, the redirect
+	 * and the callback all address one — so an order has to exist for the few minutes
+	 * a customer is at the gateway. What it does NOT have to do is survive: a customer
+	 * who opens the pay page and changes their mind used to leave a cancelled order in
+	 * the Orders list for ever. Cancelling still left the row; deleting removes it.
+	 *
+	 * Safe by construction: only PENDING orders created by this plugin are touched,
+	 * so a paid, processing, completed or refunded order can never be deleted, and the
+	 * request's own activity log keeps the history the order row would have carried.
+	 * Pressing "Pay online" again simply builds a fresh one.
+	 */
+	public static function discard_unpaid( $request_id, $why ) {
+		global $wpdb;
+		if ( ! self::is_active() ) {
+			return false;
+		}
+		$order = self::order_for( (int) $request_id );
+		if ( ! $order ) {
+			return false;
+		}
+		// Never delete money. Paid / processing / completed / refunded all stay.
+		if ( $order->is_paid() || ! $order->has_status( array( 'pending', 'failed' ) ) ) {
+			return false;
+		}
+		if ( self::CREATED_VIA !== $order->get_created_via() ) {
+			return false; // not ours — never touch someone else's order
+		}
+
+		$number = $order->get_order_number();
+		$order->delete( true ); // force delete, no trash row left behind
+		$wpdb->update(
+			AUN_SP_Install::table( 'requests' ),
+			array( 'wc_order_id' => 0, 'updated_at' => current_time( 'mysql' ) ),
+			array( 'id' => (int) $request_id )
+		);
+		self::log( (int) $request_id, 'wc_order', 'Unpaid order #' . $number . ' removed — ' . $why . '. Nothing was charged; the customer can start payment again any time.' );
+		return true;
 	}
 
 	/* ------------------------------------------------------------------ Payment */
@@ -450,7 +713,10 @@ class AUN_SP_Woo {
 			self::notify_customer_paid( $request_id, $order, $total );
 			self::notify_admin( $order, 'Online payment received — ৳' . $total );
 		} elseif ( in_array( $to, array( 'cancelled', 'failed', 'refunded' ), true ) ) {
-			self::log( $request_id, 'payment', 'Order #' . $order->get_order_number() . ' is now ' . $to );
+			// Internal ('wc_order', not 'payment'): "order #9275 is now failed" is our
+			// plumbing. The customer is told about a refund by the refund flow, and
+			// about a failed payment by the gateway itself.
+			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' is now ' . $to );
 		}
 	}
 

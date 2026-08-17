@@ -339,6 +339,15 @@ class AUN_SP_I18N {
 					'srv_already_paid'   => array( 'en' => 'This request is already paid — thank you.', 'bn' => 'এই অনুরোধের পেমেন্ট ইতিমধ্যেই সম্পন্ন হয়েছে — ধন্যবাদ।' ),
 					'srv_quote_gone'     => array( 'en' => 'This quote is no longer awaiting approval.', 'bn' => 'এই কোটেশনটি আর অনুমোদনের অপেক্ষায় নেই।' ),
 					'srv_invalid'        => array( 'en' => 'Invalid request.', 'bn' => 'অনুরোধটি সঠিক নয়।' ),
+					// Progress-history lines for the two money events. The stored note is
+					// internal ("Online payment order #9275 refreshed — now ৳16.00") and
+					// must never be shown to the customer.
+					'tl_payment'         => array( 'en' => 'Payment received — ৳{amount}. Thank you.', 'bn' => 'পেমেন্ট পাওয়া গেছে — ৳{amount}। ধন্যবাদ।' ),
+					'tl_refund'          => array( 'en' => 'Refund of ৳{amount} issued to you.', 'bn' => 'আপনাকে ৳{amount} ফেরত দেওয়া হয়েছে।' ),
+					// Used when the figure isn't available (e.g. the order row is gone).
+					// Better a sentence with no number than "৳." with nothing after it.
+					'tl_payment_plain'   => array( 'en' => 'Payment received. Thank you.', 'bn' => 'পেমেন্ট পাওয়া গেছে। ধন্যবাদ।' ),
+					'tl_refund_plain'    => array( 'en' => 'A refund has been issued to you.', 'bn' => 'আপনাকে টাকা ফেরত দেওয়া হয়েছে।' ),
 					'srv_revive_ok'      => array( 'en' => 'Thank you — we will check the price again and send you a new quote shortly.', 'bn' => 'ধন্যবাদ — আমরা আবার দাম যাচাই করে শীঘ্রই নতুন কোটেশন পাঠাব।' ),
 					'srv_revive_no'      => array( 'en' => 'This request is already active — no need to ask again.', 'bn' => 'এই অনুরোধটি ইতিমধ্যেই সক্রিয় — আবার অনুরোধ করার দরকার নেই।' ),
 				),

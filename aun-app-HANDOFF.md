@@ -29,6 +29,185 @@ Current versions: **app 1.94.0+98**, **plugin 1.87.0 (DB v20)**, **spare-parts 0
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-08-16 (6) — app 2.0.0+104: two detail screens that had the data and waited anyway
+
+Owner: *"spare-parts requests open instantly, repairs take a few seconds, support tickets too — is
+that the ERP, or unoptimised code?"* **Both, and the app was the bigger half of each.**
+
+Server side is genuinely slow and already documented: ~1.1 s of WordPress bootstrap on every
+request, plus a live ERP call for repairs (2-min cache, so a re-open is quick) and the osTicket
+bridge for tickets — the slowest hop in the app. Neither is fixable from Dart.
+
+### Repairs — the screen was handed everything and drew a spinner
+
+`RepairDetailScreen` receives the whole `RepairEntry` from the list (ref, model, issue, status, live
+`erpStatus`, job sheet, courier, tracking). `build()` even computed `_detail?.request ?? widget.entry`
+— and then short-circuited on `_detail == null ? CircularProgressIndicator()`, so **that fallback
+could never be reached on the first frame**. Same defect as the notification centre, different
+screen. Only the ERP card waits now (`_ErpPending`, which shows the status the list already knew —
+a skeleton with no information is a spinner wearing a card).
+
+⚠️ **The flash this nearly caused, and the reason to be careful when painting early:** the "post it
+to us" card renders when `erp == null`, which used to mean "no job sheet". Painting before the fetch
+made that briefly true for EVERY repair — so a customer whose projector is already on our bench
+would see "courier it to us" for a second. Now gated on `!entry.isLinked`, which the list row knows.
+**When you make a screen paint earlier, re-check every `x == null` branch: they were written knowing
+the data had arrived.**
+
+### Tickets — the summary was thrown away at the door
+
+`TicketThreadScreen` took only `number`, so it genuinely had nothing to draw while the bridge
+answered. Now takes an optional `summary`; the header (subject + status) paints instantly and only
+the messages wait. **Optional on purpose:** the notification router and deep links really do have
+only a number.
+
+**Honest limit:** this makes both screens FEEL instant without being faster. The ERP and bridge calls
+take as long as they take. Real gains need the server work from the 2026-08-15 connection audit.
+
+⚠️ **Version 2.0.0 was my choice, not the owner's** — 1.99.0 had nowhere natural to go, and the Play
+listing is a reasonable milestone for it. 1.100.0 is equally valid if they prefer to keep the 1.x
+line; the build number (104) is what actually matters.
+
+## 2026-08-16 (5) — app 1.99.0+103 / app-api 1.93.0: the app DELEGATES the courier link
+
+Owner fixed the tracking-link bug reported last round, in **spare parts 0.38.0**: new
+`AUN_SP_Requests::courier_url()` + `clean_consignment()`, used by the admin badge AND the website
+tracker, plus normalisation on save (a value that isn't a consignment ID is refused, the old one
+kept, and the admin gets a red ⚠).
+
+`AUN_App_Services::courier_tracking_url()` now **calls the plugin's helper** instead of building the
+URL itself (fallback only for a plugin older than 0.38.0).
+
+⚠️ **Why the app's own version was not good enough, and it is a lesson about length checks:** the
+plugin rejects anything failing `/^(?=.*\d)[A-Za-z0-9]{8,32}$/`. A note typed into the box —
+"i will add later" — collapses to `iwilladdlater`, a respectable 13 characters, which the app's
+version would have turned into a link to a Pathao page that finds nothing. **Requiring a DIGIT is
+what separates an ID from a sentence**; length alone never does.
+
+### ⚠️ CORRECTION to the previous entry — no plain-text fallback
+
+The 1.98.0 note argued a number with no URL should render as PLAIN TEXT, on the grounds that a dead
+link is worse than an honest label. Half right, wrong conclusion. After 0.38.0 an empty URL means
+**the stored value is not a tracking number**, and `sp-track.js` renders the chip ONLY when
+`tracking_url` is non-empty — the website shows nothing at all. Printing
+`Tracking: i will add later` to a customer is not an honest label, it is leaking a staff note. The
+app now hides it too.
+
+**That is the second time in two rounds the app displayed something the website deliberately
+withholds** (the first was the progress-history leak). When in doubt, look at what the website does
+with the same field before inventing a fallback.
+
+**Tests:** `test-parts-billing.php` now **37**. The important addition is a PARITY LOOP — for a real
+ID, a note, an empty string, a foreign courier URL and a spaced/dashed ID, the app's output must
+equal `AUN_SP_Requests::courier_url()` byte for byte. That is the assertion that fails the day
+somebody reimplements this in the app again.
+
+**Known and accepted:** rows written before 0.38.0 keep whatever is stored, so they show no chip in
+the app or on the website until the request is re-saved. The admin's red ⚠ badge is how staff find
+them.
+
+## 2026-08-16 (4) — app 1.98.0+102 / app-api 1.92.0: the app was showing customers our staff notes
+
+Owner shipped **spare parts 0.37.0** and asked for the app to follow. The new work over 0.36.0 was
+`PUBLIC_EVENTS`, re-worded money lines, and the i18n strings for them.
+
+### ⛔ The app's progress history was leaking internal notes
+
+The app filtered the timeline with a **deny-list**
+(`type NOT IN ('sms','contact_changed','wc_order','quote_reminder')`) and printed the raw stored
+message. Exactly as the plugin's own comment predicts, every event type added afterwards leaked by
+default. Two were reaching customers:
+
+- `refund_due` → **"REFUND DUE — ৳3,400 was paid online and the request is now declined."**
+  An instruction to our staff, sitting in the customer's progress list.
+- `duplicate_confirmed` → "Customer was warned this overlaps SP-0042 and chose to submit anyway"
+
+and `payment` printed raw as *"Online payment received for order #9275 via SSLCommerz"*, exposing
+WooCommerce order numbers.
+
+Now reads **`AUN_SP_Requests::PUBLIC_EVENTS`** (guarded, with a literal fallback for an older
+plugin) so the next event type the plugin adds is private here automatically, and re-words
+payment/refund through `AUN_SP_I18N::msg( 'tl_payment' … )` like the website tracker.
+
+**New `X-AUN-Lang` header** carries the app's language to every endpoint. ⚠️ A HEADER, not a query
+parameter, and not a value captured at construction: language is a property of the phone rather than
+of one call, a new call site cannot forget it, and `ApiClient.getLang` is a CALLBACK because the
+customer can change language long after the client is built.
+
+### The tracking number is now a link (owner request)
+
+`tracking_url` is sent per item and the number renders as brand-blue underlined text with an ↗ icon
+and a padded tap target.
+
+⚠️ **Built on the SERVER, never in Dart.** The consignment-URL pattern belongs to the spare-parts
+plugin; a copy in the app would be a third place to change when AUN switches courier — and the app
+is the one nobody would remember, because a wrong link still LOOKS like a link.
+⚠️ **No URL ⇒ plain text, not a dead tappable.** A link that does nothing is worse than an honest
+label: the customer taps it again and concludes the app is broken.
+
+### ⚠️ Open plugin bug, NOT fixed (needs the owner's call)
+
+The admin field is labelled **"Pathao ID / URL"**, but both the admin badge
+(`class-aun-sp-requests.php:652`) and the website tracker
+(`class-aun-sp-tracking.php:165`) push whatever is typed into `?consignment_id=`. Paste a whole URL
+— as the label invites — and the link becomes `?consignment_id=https%3A%2F%2F…`, which opens a
+Pathao page that finds nothing. `AUN_App_Services::courier_tracking_url()` passes a URL through
+unchanged, **so the app is now correct where the website is not**. The clean fix is one shared
+helper in the plugin used by all three; not done because the owner had just edited those files.
+
+**Tests:** `test-parts-billing.php` now **29** — the leak cases are asserted by absence (REFUND DUE,
+SP-0042, `#9275`, the SMS log) with a real progress event asserted present so the filter cannot pass
+by hiding everything; plus the pasted-URL passthrough and the empty-number case.
+
+## 2026-08-16 (3) — app 1.97.0+101 / app-api 1.91.0: the app could charge twice
+
+Owner fixed bugs in **spare parts 0.36.0** and asked for the app to follow. Reading the diff found
+the app carrying the SAME defects, plus one of its own.
+
+### The plugin's two new rules
+
+- **`NOT_CHARGEABLE = ( unavailable, cancelled )`** — a part we can't supply, or that isn't going
+  ahead, keeps its price in the history but drops out of the amount owed.
+- **`payable_state( $id )`** — the ONE gate for online payment. Refuses when the request is
+  completed or cancelled, **or when every priced part is already `dispatched`/`delivered`
+  (`HANDED_OVER`)**: on cash on delivery the courier collects the money, so a Pay button after
+  dispatch asks for it a second time.
+
+### ⚠️ The app had the double-charge bug in TWO places
+
+`can_pay` excluded `quote_sent/rejected/declined/expired` but **not `closed`, and not dispatched
+parts** — so a delivered COD request still showed "Pay online". The **pay endpoint** had the same
+gap, and that is the one that takes money: a screen left open before dispatch, a back button or a
+replayed POST reaches it with the button never visible. Both now call `payable_state()`.
+**The plugin's own comment is the rule: "the button is only a hint."**
+
+### ⚠️ Found while wiring it up: `payable` was built from a stale column
+
+The app sent `quote_total + delivery`, but `quote_total` is a STORED column that only refreshes when
+an admin saves the request. Mark a part unavailable and the app kept charging for it until someone
+re-saved. `payable` now comes from `payable_state()['money']`, which reads the lines. The same stale
+value was also used to decide whether an existing unpaid order still matched — so it would call a
+wrong order "the same" and skip the rebuild that fixes it.
+
+**App changes:** `chargeable` per item in the payload; `SpRequestItem.chargeable` (**defaults true**
+so an older server keeps today's behaviour); non-billed parts render struck-through with
+`notCharged` (en/bn) rather than being hidden — the customer asked for that part and deserves to
+know what happened to it; and the payment breakdown's parts line is derived from `payable`, never
+`quoteTotal`, so parts + delivery always add up above the button that takes the money.
+
+Every plugin call is `method_exists`-guarded — an older spare-parts plugin degrades to the previous
+behaviour instead of fataling.
+
+**Tests:** NEW bench `test-parts-billing.php` (**18**) — run against the real 0.36.0 plugin: what is
+owed with unavailable/cancelled lines, every stop-paying case, and the app payload itself (payable
+excludes the unsuppliable part, all three parts still SHOWN, the delivered request offers no Pay
+button).
+
+⚠️ **Worth knowing before adding any SMS to the app:** the plugin's new `block_foreign_sms` mutes
+third-party SMS during ITS order transitions and identifies "ours" via `AUN_SP_SMS::is_sending()`.
+`AUN_App_SMS` is a different class, so an app SMS to the same customer during a spare-parts order
+transition would be silently blocked. Nothing in the current flow does this.
+
 ## 2026-08-16 (2) — app 1.96.0+100 / app-api 1.89.0 (DB v21): how a repair ENDS
 
 Owner asked how the repair cycle closes, given their ERP has 16 statuses of which only 2 are flagged

@@ -2,14 +2,14 @@
 /**
  * Plugin Name: AUN Spare Parts
  * Description: Spare-parts request intake + per-part tracking for AUN Projector. Reads sales/warranty from the UltimatePOS ERP and a legacy inFlow sales archive; lets customers request parts (no device sent in) and track each part. Phase 1: legacy import + phone/order/serial lookup + warranty calc + image compression.
- * Version: 0.33.0
+ * Version: 0.38.0
  * Author: Smart Living Bangladesh
  * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SP_VERSION', '0.33.0' );
+define( 'AUN_SP_VERSION', '0.38.0' );
 define( 'AUN_SP_FILE', __FILE__ );
 define( 'AUN_SP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SP_URL', plugin_dir_url( __FILE__ ) );

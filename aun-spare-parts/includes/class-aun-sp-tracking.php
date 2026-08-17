@@ -136,13 +136,22 @@ class AUN_SP_Tracking {
 		foreach ( $reqs as $r ) {
 			$items = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t_item WHERE request_id = %d ORDER BY id ASC", $r->id ) );
 			$parts = array();
-			$money = 0.0; // Σ unit × qty across the request
+			$money = 0.0; // Σ unit × qty of the lines we can actually charge for
+			$open_payable = 0; // priced lines not yet handed to the courier
 			foreach ( (array) $items as $it ) {
 				$cat   = AUN_SP_Parts::get( $it->part_type );
 				$qty   = max( 1, (int) ( $it->qty ?? 1 ) );
 				$unit  = (float) $it->unit_price;
-				$money += $unit * $qty;
+				// A part we can't supply, or that isn't going ahead, must not be billed.
+				$chargeable = AUN_SP_Requests::is_chargeable_line( $it->line_status );
+				if ( $chargeable ) {
+					$money += $unit * $qty;
+					if ( $unit > 0 && ! in_array( $it->line_status, AUN_SP_Requests::HANDED_OVER, true ) ) {
+						$open_payable++;
+					}
+				}
 				$parts[] = array(
+					'chargeable' => $chargeable,
 					'label'     => $it->part_label,
 					'label_bn'  => ( $cat && ! empty( $cat['label_bn'] ) ) ? $cat['label_bn'] : $it->part_label,
 					'qty'       => $qty,
@@ -153,18 +162,44 @@ class AUN_SP_Tracking {
 					'line_total' => number_format( $unit * $qty, 2 ),      // unit × qty
 					'ref_image' => ( $cat && ! empty( $cat['ref_image'] ) ) ? $cat['ref_image'] : '',
 					'tracking_no'  => isset( $it->tracking_no ) ? $it->tracking_no : '',
-					'tracking_url' => ( ! empty( $it->tracking_no ) ) ? 'https://merchant.pathao.com/public-tracking?consignment_id=' . rawurlencode( $it->tracking_no ) : '',
+					// Shared with the admin badge (AUN_SP_Requests::courier_url) and
+					// returns '' for anything that isn't a usable consignment ID — so a
+					// mangled or legacy value shows no chip at all, rather than a link
+					// to a Pathao page that finds nothing.
+					'tracking_url' => AUN_SP_Requests::courier_url( isset( $it->tracking_no ) ? $it->tracking_no : '' ),
 				);
 			}
-			// 'quote_reminder' is excluded like 'sms': it records that WE chased THEM,
-			// which reads as nagging on the customer's own progress list (and tells them
-			// nothing about the parts). The expiry and the re-quote request do show.
-			$ev       = $wpdb->get_results( $wpdb->prepare( "SELECT type, message, created_at FROM $t_event WHERE request_id = %d AND type NOT IN ('sms','contact_changed','quote_reminder') ORDER BY id ASC LIMIT 40", $r->id ) );
+			// Allow-list, not deny-list — see AUN_SP_Requests::PUBLIC_EVENTS for why.
+			$allowed  = "'" . implode( "','", AUN_SP_Requests::PUBLIC_EVENTS ) . "'";
+			$ev       = $wpdb->get_results( $wpdb->prepare(
+				"SELECT type, message, created_at FROM $t_event
+				 WHERE request_id = %d AND type IN ($allowed) ORDER BY id ASC LIMIT 40",
+				$r->id
+			) );
 			$timeline = array();
 			foreach ( (array) $ev as $e ) {
+				// Money events are re-worded for the customer instead of showing the
+				// internal note, which names the WooCommerce order and its plumbing.
+				if ( 'payment' === $e->type ) {
+					// No explicit language: msg() falls back to req_lang(), which reads the
+					// language the calling page was rendered in — the right source here,
+					// since admin-ajax runs outside TranslatePress's URL context.
+					$paid   = AUN_SP_Woo::is_active() ? AUN_SP_Woo::order_for( (int) $r->id ) : null;
+					$amount = $paid ? (float) $paid->get_total() : 0.0;
+					$text   = $amount > 0
+						? AUN_SP_I18N::msg( 'tl_payment', array( 'amount' => number_format( $amount, 2 ) ) )
+						: AUN_SP_I18N::msg( 'tl_payment_plain' );
+				} elseif ( 'refund' === $e->type ) {
+					$amount = (float) $r->refund_amount;
+					$text   = $amount > 0
+						? AUN_SP_I18N::msg( 'tl_refund', array( 'amount' => number_format( $amount, 2 ) ) )
+						: AUN_SP_I18N::msg( 'tl_refund_plain' );
+				} else {
+					$text = $e->message;
+				}
 				$timeline[] = array(
 					'date' => $e->created_at ? date_i18n( 'j M Y, g:i a', strtotime( $e->created_at ) ) : '',
-					'text' => $e->message,
+					'text' => $text,
 				);
 			}
 
@@ -187,11 +222,16 @@ class AUN_SP_Tracking {
 				// disagree with them. A ৳0 request (in warranty / free) shows nothing.
 				// Live WooCommerce order, only if they already chose to pay online.
 				'order'        => AUN_SP_Woo::customer_summary( (int) $r->id ),
-				// Whether to offer "Pay online" at all: something is owed, the request
-				// is live, and WooCommerce is available. Cash on delivery is simply
-				// what happens when they don't take this option.
-				'can_pay'      => ( $money > 0 && AUN_SP_Woo::is_active()
-					&& ! in_array( $r->overall_status, array( 'rejected', 'declined', 'expired' ), true ) ),
+				// Whether to offer "Pay online" at all. It used to be "money > 0 and the
+				// request isn't cancelled", which left the button sitting on a DELIVERED
+				// request — the customer had already paid the courier in cash, and the
+				// button invited them to pay a second time. Now it also requires:
+				//   - the request is not finished ('closed'), and
+				//   - at least one priced part has NOT yet been dispatched or delivered.
+				// Cash on delivery is simply what happens when they don't take this.
+				'can_pay'      => ( $money > 0 && $open_payable > 0 && AUN_SP_Woo::is_active()
+					&& ! AUN_SP_Requests::is_cancelled( $r->overall_status )
+					&& 'closed' !== $r->overall_status ),
 				// An unanswered quote carries a deadline: the customer needs to see it
 				// next to the Approve button, not only in the SMS they may have lost.
 				'expires'      => ( 'quote_sent' === $r->overall_status && ! empty( $r->quote_expires_at ) )
@@ -365,10 +405,13 @@ class AUN_SP_Tracking {
 		if ( ! $req ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) ) );
 		}
-		// Nothing to pay on a request we've closed off — including an EXPIRED quote,
-		// which was missing here: the pay button is hidden for it, but the customer
-		// still holds the pay link we texted, and this endpoint is the real gate.
-		if ( AUN_SP_Requests::is_cancelled( $req->overall_status ) ) {
+		// Nothing to pay on a request we've closed off — an EXPIRED quote (the pay
+		// button is hidden for it, but the customer still holds the pay link we
+		// texted), a completed one, or one whose parts are all already with the
+		// courier, where the money is being collected in cash on delivery. This
+		// endpoint is the real gate: the button is only a hint.
+		$pay_state = AUN_SP_Requests::payable_state( (int) $req->id );
+		if ( ! $pay_state['can_pay'] ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
 		}
 

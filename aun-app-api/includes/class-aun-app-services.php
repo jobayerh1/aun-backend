@@ -243,6 +243,40 @@ class AUN_App_Services {
 	 * @param int $request_id Spare-parts request id.
 	 * @return array|null
 	 */
+	/**
+	 * The courier's public tracking page for a stored consignment value.
+	 *
+	 * ⚠️ DELEGATES to the spare-parts plugin (0.38.0+). Do not reimplement this.
+	 *
+	 * The plugin's `courier_url()` does considerably more than build a URL: it
+	 * pulls the ID out of a pasted tracking link, tolerates spaces and dashes in
+	 * a hand-typed one, and — the part that matters — returns '' for anything
+	 * that is not plausibly a consignment number. A note like "i will add later"
+	 * collapses to `iwilladdlater`, a respectable 13 characters, which an
+	 * app-side length check would happily turn into a link to a Pathao page that
+	 * finds nothing.
+	 *
+	 * The admin badge, the website tracker and this all call the same helper, so
+	 * staff can never see a working chip where the customer sees a dead one.
+	 *
+	 * The fallback below is only for a plugin older than 0.38.0, and deliberately
+	 * matches what the app shipped in 1.98.0 rather than the older plugin's
+	 * behaviour — the old one wrapped pasted URLs and produced dead links.
+	 */
+	public static function courier_tracking_url( $tracking_no ) {
+		$no = trim( (string) $tracking_no );
+		if ( '' === $no ) {
+			return '';
+		}
+		if ( method_exists( 'AUN_SP_Requests', 'courier_url' ) ) {
+			return (string) AUN_SP_Requests::courier_url( $no );
+		}
+		if ( preg_match( '~^https?://~i', $no ) ) {
+			return esc_url_raw( $no );
+		}
+		return 'https://merchant.pathao.com/public-tracking?consignment_id=' . rawurlencode( $no );
+	}
+
 	public static function payment_summary( $request_id ) {
 		if ( ! class_exists( 'AUN_SP_Woo' )
 			|| ! method_exists( 'AUN_SP_Woo', 'customer_summary' ) ) {
@@ -1421,7 +1455,13 @@ class AUN_App_Services {
 	 * @param int    $user_id   User id (repairs are linked by id too).
 	 * @return array{spare_parts:array,repairs:array}
 	 */
-	public static function my_requests( $canonical, $user_id ) {
+	/**
+	 * @param string|null $lang 'bn'|'en' — only the re-worded money lines in the
+	 *                          progress history are localised (every other entry is
+	 *                          the plugin's stored English note, same as the website
+	 *                          tracker shows). null lets the plugin decide.
+	 */
+	public static function my_requests( $canonical, $user_id, $lang = null ) {
 		global $wpdb;
 
 		$spare = array();
@@ -1480,17 +1520,60 @@ class AUN_App_Services {
 				// THEM. On the customer's own progress list that reads as
 				// nagging, and it says nothing about their parts. The expiry
 				// and their re-quote request are real events and do show.
+				// ⚠️ ALLOW-LIST, from the plugin (spare parts 0.37.0) — never a
+				// deny-list, and never a copy of the list.
+				//
+				// This WAS a deny-list, and it behaved the way deny-lists always do:
+				// every event type added to the plugin afterwards leaked to the
+				// customer by default. Two were leaking here —
+				//   refund_due:          "REFUND DUE - Tk 3,400 was paid online and
+				//                          the request is now declined"
+				//   duplicate_confirmed: "Customer was warned this overlaps SP-0042
+				//                          and chose to submit anyway"
+				// — internal instructions to staff, shown to the customer as if they
+				// were progress. The plugin's PUBLIC_EVENTS is the one list; reading
+				// it means the next new type is private here too, automatically.
+				$allowed = ( class_exists( 'AUN_SP_Requests' ) && defined( 'AUN_SP_Requests::PUBLIC_EVENTS' ) )
+					? AUN_SP_Requests::PUBLIC_EVENTS
+					: array( 'created', 'status_change', 'qty_change', 'quote_sent', 'approved',
+						'declined', 'quote_expired', 'quote_revived', 'rejected', 'photo_request',
+						'reupload', 'payment', 'refund' );
+				$ph_ev    = implode( ',', array_fill( 0, count( $allowed ), '%s' ) );
 				$events   = $wpdb->get_results( $wpdb->prepare(
-					"SELECT message, created_at FROM $t_event
-					 WHERE request_id = %d AND type NOT IN ('sms','contact_changed','wc_order','quote_reminder')
+					"SELECT type, message, created_at FROM $t_event
+					 WHERE request_id = %d AND type IN ($ph_ev)
 					 ORDER BY id ASC LIMIT 40",
-					$r->id
+					array_merge( array( $r->id ), $allowed )
 				) );
 				$timeline = array();
 				foreach ( (array) $events as $e ) {
+					// The two money events are RE-WORDED, exactly as the website
+					// tracker does. Their stored note is internal and names the
+					// WooCommerce order ("Online payment received for order #9275"),
+					// which exposes shop order numbers and reads like our plumbing.
+					$text = (string) $e->message;
+					if ( 'payment' === $e->type || 'refund' === $e->type ) {
+						$is_pay = ( 'payment' === $e->type );
+						$amount = 0.0;
+						if ( $is_pay ) {
+							$ord    = ( class_exists( 'AUN_SP_Woo' ) && AUN_SP_Woo::is_active() )
+								? AUN_SP_Woo::order_for( (int) $r->id ) : null;
+							$amount = $ord ? (float) $ord->get_total() : 0.0;
+						} else {
+							$amount = isset( $r->refund_amount ) ? (float) $r->refund_amount : 0.0;
+						}
+						$slug = $is_pay
+							? ( $amount > 0 ? 'tl_payment' : 'tl_payment_plain' )
+							: ( $amount > 0 ? 'tl_refund' : 'tl_refund_plain' );
+						$text = class_exists( 'AUN_SP_I18N' )
+							? AUN_SP_I18N::msg( $slug, array( 'amount' => number_format( $amount, 2 ) ), $lang )
+							// Plugin too old for these strings: say the plain fact
+							// rather than the internal note.
+							: ( $is_pay ? 'Payment received. Thank you.' : 'A refund has been issued to you.' );
+					}
 					$timeline[] = array(
 						'date' => $e->created_at ? date_i18n( 'j M Y, g:i a', strtotime( $e->created_at ) ) : '',
-						'text' => (string) $e->message,
+						'text' => $text,
 					);
 				}
 
@@ -1498,6 +1581,25 @@ class AUN_App_Services {
 				// show it too — otherwise the parts list totals ৳3,400 while the
 				// Pay button says ৳3,520 and the customer stops trusting both.
 				$delivery = isset( $r->delivery_charge ) ? (float) $r->delivery_charge : 0.0;
+
+				// ── What is actually owed, asked of the PLUGIN (spare parts 0.36.0) ──
+				//
+				// ⚠️ Never recompute this here. The plugin owns two rules the app kept
+				// getting wrong by restating them:
+				//   • a part marked Unavailable or Not-going-ahead is NOT billed, so a
+				//     request where one of three parts fell through must not charge for
+				//     three;
+				//   • once every priced part is with the courier or delivered, online
+				//     payment must STOP — on cash on delivery the courier is collecting
+				//     the money, and a Pay button there asks for it twice.
+				//
+				// `quote_total` is a stored column that only refreshes when an admin
+				// saves the request, so it can lag behind a part marked unavailable.
+				// payable_state() reads the lines.
+				$pay_state = method_exists( 'AUN_SP_Requests', 'payable_state' )
+					? AUN_SP_Requests::payable_state( (int) $r->id )
+					: array( 'money' => (float) $r->quote_total, 'open' => 1, 'can_pay' => true );
+				$owed = (float) $pay_state['money'];
 
 				$spare[] = array(
 					'ref'          => (string) $r->ref,
@@ -1513,8 +1615,10 @@ class AUN_App_Services {
 					'quote_note'   => (string) $r->quote_note,
 					'created_at'   => substr( (string) $r->created_at, 0, 10 ),
 					'delivery'     => $delivery,
-					// What the Pay button will actually charge.
-					'payable'      => (float) $r->quote_total + $delivery,
+					// What the Pay button will actually charge — the live figure from
+					// the plugin, NOT the stored quote_total, which goes stale the
+					// moment a part is marked unavailable.
+					'payable'      => round( $owed + $delivery, 2 ),
 					// ── The quote deadline (spare parts 0.31.0) ──
 					//
 					// An unanswered quote now lapses, and the customer is told
@@ -1582,8 +1686,17 @@ class AUN_App_Services {
 					// others: that price is no longer promised. Taking money
 					// against a lapsed quote would commit us to a figure we
 					// deliberately let go stale.
+					// ⚠️ The plugin's own gate FIRST, then the app's extra strictness.
+					//
+					// The plugin's payable_state() is what the pay endpoint enforces, so
+					// disagreeing with it here only ever produces a button that fails.
+					// It closes two holes the app had on its own: a COMPLETED request
+					// still offered Pay online (on cash on delivery the customer had
+					// already paid the courier — this invited a SECOND payment), and so
+					// did one whose parts were all already dispatched.
 					'can_pay'      => (
-						( (float) $r->quote_total + $delivery ) > 0
+						(bool) $pay_state['can_pay']
+						&& ( $owed + $delivery ) > 0
 						&& class_exists( 'AUN_SP_Woo' ) && AUN_SP_Woo::is_active()
 						&& ! in_array(
 							$r->overall_status,
@@ -1599,15 +1712,27 @@ class AUN_App_Services {
 						// quote total three times larger.
 						$qty  = max( 1, (int) ( $i->qty ?? 1 ) );
 						$unit = null !== $i->unit_price ? (float) $i->unit_price : null;
+						// Unavailable / not-going-ahead lines keep their price in the
+						// history but are not billed. The app must SHOW them (the
+						// customer asked for that part and deserves to know what
+						// happened to it) while making clear it costs nothing —
+						// silently dropping the row reads as us losing the request.
+						$chargeable = method_exists( 'AUN_SP_Requests', 'is_chargeable_line' )
+							? (bool) AUN_SP_Requests::is_chargeable_line( $i->line_status )
+							: true;
 						return array(
 							'label'        => (string) $i->part_label,
 							'qty'          => $qty,
+							'chargeable'   => $chargeable,
 							'status'       => (string) $i->line_status,
 							'status_label' => (string) ( $ist[ $i->line_status ] ?? $i->line_status ),
 							'eta'          => (string) ( $i->eta && '0000-00-00' !== $i->eta ? $i->eta : '' ),
 							'price'        => $unit,
 							'line_total'   => null !== $unit ? round( $unit * $qty, 2 ) : null,
 							'tracking'     => (string) $i->tracking_no,
+							// The courier page for this consignment, so the number in
+							// the app is tappable exactly like the website's link.
+							'tracking_url' => self::courier_tracking_url( (string) $i->tracking_no ),
 						);
 					}, (array) $items ),
 				);
