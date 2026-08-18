@@ -1,0 +1,177 @@
+/* AUN Care promo animation — web build.
+   Ported from animation/aun-care-promo.html. All classes prefixed so nothing
+   can collide with Flatsome. Sizes raised for web (the authoring file was
+   sized for video export). */
+
+/* The authoring file relied on a global `* {box-sizing:border-box}`. Without it the
+   stage's percentage padding resolves against the WRAPPER's width and is added to
+   the declared width, so 16:9 rendered as 1.84:1. Scoped here so it cannot leak
+   into the theme. */
+.aun-promo-wrap,
+.aun-promo-wrap *,
+.aun-promo-wrap *::before,
+.aun-promo-wrap *::after{box-sizing:border-box}
+
+.aun-promo-wrap{--aun-promo-max:1040px;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+
+.aun-promo-stage{
+  position:relative;overflow:hidden;isolation:isolate;
+  width:min(560px,92vw);aspect-ratio:1/1;border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(12px,3vw,20px);padding:5% 6% 4%;
+  perspective:1400px;perspective-origin:50% 45%;
+  font-family:"Inter","Segoe UI","Hind Siliguri","Nirmala UI",system-ui,sans-serif;
+  --room:radial-gradient(125% 95% at 50% 4%, #17263F 0%, #0A101C 46%, #04070D 100%);
+  --cap:#EDF2FA;--cap-sub:#6FB6FF;--cap-shadow:0 2px 18px rgba(0,0,0,.8);
+  --vig:radial-gradient(80% 70% at 50% 40%, transparent 52%, rgba(2,4,9,.88) 100%);
+  --beam-a:.22;--beam-b:.07;--grain:.30;--mote:.55;--spill:.55;
+  background:var(--room);
+  contain:layout paint;
+}
+
+/* ---- day room ---- */
+.aun-promo-stage[data-mood="day"]{
+  --room:radial-gradient(120% 100% at 50% 0%, #FFFFFF 0%, #E7EFFA 45%, #CBDCF0 100%);
+  --cap:#0E2036;--cap-sub:#0B6FCB;--cap-shadow:none;
+  --vig:radial-gradient(85% 80% at 50% 40%, transparent 60%, rgba(150,178,208,.35) 100%);
+  --beam-a:.16;--beam-b:.05;--grain:.10;--mote:.20;--spill:.30;
+}
+/* mood="auto" follows the visitor's OS setting */
+@media (prefers-color-scheme: light){
+  .aun-promo-stage[data-mood="auto"]{
+    --room:radial-gradient(120% 100% at 50% 0%, #FFFFFF 0%, #E7EFFA 45%, #CBDCF0 100%);
+    --cap:#0E2036;--cap-sub:#0B6FCB;--cap-shadow:none;
+    --vig:radial-gradient(85% 80% at 50% 40%, transparent 60%, rgba(150,178,208,.35) 100%);
+    --beam-a:.16;--beam-b:.05;--grain:.10;--mote:.20;--spill:.30;
+  }
+}
+
+/* ---- aspect ratios ---- */
+.aun-promo-stage[data-ar="9:16"]{aspect-ratio:9/16;width:min(360px,78vw)}
+.aun-promo-stage[data-ar="16:9"]{
+  aspect-ratio:16/9;width:min(var(--aun-promo-max),94vw);
+  flex-direction:row;gap:4.5%;padding:2.4% 6%;
+}
+
+.aun-promo-beam{position:absolute;inset:-32% -12% auto -12%;height:155%;z-index:0;filter:blur(20px);
+  background:conic-gradient(from 200deg at 50% 0%, transparent 0deg,
+    rgba(1,136,254,var(--beam-a)) 13deg, rgba(111,182,255,var(--beam-b)) 27deg, transparent 41deg)}
+.aun-promo-spill{position:absolute;left:50%;top:44%;width:120%;aspect-ratio:1;z-index:1;
+  transform:translate(-50%,-50%);pointer-events:none;opacity:var(--spill);
+  background:radial-gradient(closest-side, rgba(120,185,255,.30), rgba(80,150,255,.10) 45%, transparent 72%);
+  filter:blur(26px)}
+.aun-promo-motes{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:var(--mote)}
+.aun-promo-motes span{position:absolute;border-radius:50%;background:radial-gradient(circle,#CFE6FF,rgba(207,230,255,0) 70%)}
+.aun-promo-grain{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;
+  background-image:radial-gradient(rgba(255,255,255,.11) .5px, transparent .6px);background-size:3px 3px}
+.aun-promo-vig{position:absolute;inset:0;z-index:7;pointer-events:none;background:var(--vig)}
+
+/* ---- phone ---- */
+.aun-promo-phone{
+  position:relative;z-index:2;flex:1 1 auto;min-height:0;max-height:490px;
+  width:auto;aspect-ratio:1080/2424;transform-style:preserve-3d;padding:0;
+  border-radius:9.5% / 4.3%;
+  background:linear-gradient(103deg,#7E8EA6 0%,#47536B 8%,#333D51 20%,#2A3446 50%,#333D51 80%,#4C5870 92%,#8291AA 100%);
+  box-shadow:
+    inset 0 .8px 0 0 rgba(255,255,255,.55),
+    inset .8px 0 0 0 rgba(255,255,255,.28),
+    inset -.8px 0 0 0 rgba(0,0,0,.35),
+    inset 0 -.8px 0 0 rgba(0,0,0,.45),
+    0 0 0 .6px rgba(150,170,196,.75),
+    0 2px 3px rgba(0,0,0,.35),
+    0 26px 60px rgba(0,0,0,.6),
+    0 0 110px rgba(1,136,254,.30);
+}
+.aun-promo-phone::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(78deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 18%,
+             rgba(255,255,255,0) 74%, rgba(255,255,255,.16) 88%, rgba(255,255,255,0) 100%)}
+.aun-promo-stage[data-mood="day"] .aun-promo-phone{
+  box-shadow:0 0 0 .6px rgba(120,140,170,.8),0 24px 54px rgba(40,70,110,.34),0 0 90px rgba(1,136,254,.22)}
+@media (prefers-color-scheme: light){
+  .aun-promo-stage[data-mood="auto"] .aun-promo-phone{
+    box-shadow:0 0 0 .6px rgba(120,140,170,.8),0 24px 54px rgba(40,70,110,.34),0 0 90px rgba(1,136,254,.22)}
+}
+.aun-promo-stage[data-ar="16:9"] .aun-promo-phone{flex:0 0 auto;height:min(100%,460px);max-height:none}
+
+.aun-promo-btn-pwr,.aun-promo-btn-vol{position:absolute;right:-1.1%;width:1.15%;border-radius:0 2px 2px 0;
+  background:linear-gradient(180deg,#93A2B8,#485672 50%,#2A3446 100%);box-shadow:0 0 2px rgba(0,0,0,.5)}
+.aun-promo-btn-pwr{top:21.5%;height:6.4%}
+.aun-promo-btn-vol{top:30.5%;height:11.2%}
+
+.aun-promo-screen{position:absolute;left:1.6%;right:1.6%;top:.713%;bottom:.713%;
+  overflow:hidden;border-radius:8.6% / 3.9%;background:#EDF4FB}
+.aun-promo-screen::after{content:"";position:absolute;inset:0;z-index:7;pointer-events:none;border-radius:inherit;
+  box-shadow:inset 0 0 2px rgba(10,20,35,.55), inset 0 1px 1px rgba(255,255,255,.35);
+  background:linear-gradient(126deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.02) 12%, rgba(255,255,255,0) 34%)}
+
+.aun-promo-camera{position:absolute;left:50%;top:1.35%;width:3.6%;aspect-ratio:1;z-index:8;
+  transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(circle at 38% 32%, #38414F 0%, #10151F 42%, #05070C 100%);
+  box-shadow:0 0 0 .8px rgba(255,255,255,.16), inset 0 0 2px rgba(120,170,255,.5)}
+.aun-promo-camera::after{content:"";position:absolute;left:26%;top:22%;width:26%;height:26%;
+  border-radius:50%;background:rgba(150,200,255,.5)}
+
+.aun-promo-gloss{position:absolute;inset:-30%;z-index:5;pointer-events:none;opacity:0;
+  background:linear-gradient(102deg, transparent 38%, rgba(255,255,255,.42) 50%, transparent 62%)}
+
+.aun-promo-view{position:absolute;inset:0;opacity:0}
+.aun-promo-view img{display:block;width:100%;height:auto}
+.aun-promo-chrome-top{position:absolute;top:0;left:0;right:0;z-index:4}
+.aun-promo-chrome-nav{position:absolute;bottom:0;left:0;right:0;z-index:4}
+.aun-promo-port{position:absolute;left:0;right:0;overflow:hidden}
+.aun-promo-track{position:absolute;top:0;left:0;width:100%;will-change:transform}
+.aun-promo-track img{display:block;width:100%}
+.aun-promo-track.fit{height:100%}
+.aun-promo-track.fit img{height:100%;object-fit:cover;object-position:top center}
+.aun-promo-layer2{position:absolute;top:0;left:0;opacity:0}
+.aun-promo-full{position:absolute;inset:0}
+.aun-promo-full img{width:100%;height:100%;object-fit:cover;object-position:top center}
+
+.aun-promo-tap{position:absolute;left:68.2%;top:30.2%;width:16%;aspect-ratio:1;z-index:3;
+  transform:translate(-50%,-50%) scale(0);opacity:0;border-radius:50%;
+  border:1.5px solid rgba(1,136,254,.9);background:rgba(1,136,254,.14)}
+
+.aun-promo-spin{position:absolute;left:50.32%;top:61.68%;width:7.04%;aspect-ratio:1;
+  transform:translate(-50%,-50%);border-radius:50%;z-index:3;
+  background:conic-gradient(from -95deg, #33557F 0deg 264deg, rgba(51,85,127,0) 268deg 360deg);
+  -webkit-mask:radial-gradient(closest-side, transparent 70%, #000 71%);
+          mask:radial-gradient(closest-side, transparent 70%, #000 71%)}
+
+/* ---- captions ---- */
+.aun-promo-caption{position:relative;z-index:5;flex:0 0 auto;width:100%;
+  display:grid;place-items:center;text-align:center;min-height:3.6em;padding-bottom:.2em}
+.aun-promo-stage[data-ar="16:9"] .aun-promo-caption{flex:0 1 auto;min-height:0;text-align:left;
+  place-items:center start;max-width:46%}
+.aun-promo-caption p{grid-area:1/1;margin:0;opacity:0;color:var(--cap);
+  font-size:clamp(14px,3.5vw,21px);font-weight:600;letter-spacing:-.015em;line-height:1.3;
+  text-wrap:balance;text-shadow:var(--cap-shadow)}
+.aun-promo-stage[data-ar="16:9"] .aun-promo-caption p{font-size:clamp(17px,2.5vw,28px)}
+.aun-promo-caption .w{display:inline-block;will-change:transform,opacity}
+.aun-promo-caption small{display:block;margin-top:8px;font-size:9.5px;font-weight:600;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--cap-sub);text-shadow:none}
+
+.aun-promo-note{max-width:64ch;font-size:13px;line-height:1.6;color:#8892A6;text-align:center;margin:0}
+
+/* ---- performance on modest Android hardware ----
+   The two animated blurs are the costly part: a blur cannot be cached while the
+   element under it is transforming, so it is recomputed every frame. Halving the
+   radius on small screens keeps the look and cuts most of the cost. */
+@media (max-width:700px){
+  .aun-promo-beam{filter:blur(10px)}
+  .aun-promo-spill{filter:blur(14px)}
+  .aun-promo-grain{opacity:calc(var(--grain) * .6)}
+}
+
+/* `.is-lite` — set by JS on low-memory / low-core devices. Drops the blurs and the
+   blend layer entirely. The scene still reads correctly; it is just flatter. */
+.aun-promo-stage.is-lite .aun-promo-beam{filter:none;opacity:.85}
+.aun-promo-stage.is-lite .aun-promo-spill{filter:none;opacity:calc(var(--spill) * .8)}
+.aun-promo-stage.is-lite .aun-promo-grain{display:none}
+.aun-promo-stage.is-lite .aun-promo-phone{box-shadow:0 0 0 .6px rgba(150,170,196,.75),0 14px 30px rgba(0,0,0,.5)}
+
+/* ---- reduced motion: hold a single readable frame, no looping ---- */
+@media (prefers-reduced-motion: reduce){
+  .aun-promo-stage .aun-promo-view[data-view="home"]{opacity:1}
+  .aun-promo-stage .aun-promo-caption p[data-c="1"]{opacity:1}
+  .aun-promo-phone{opacity:1;transform:none}
+}

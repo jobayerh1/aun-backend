@@ -1,0 +1,44 @@
+/* Mobile app banner. Slim, fixed, dismissible — never an interstitial. */
+
+.aun-appbar,
+.aun-appbar *{box-sizing:border-box}
+
+.aun-appbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:9990;
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
+  background:rgba(11,18,32,.97);
+  border-top:1px solid rgba(255,255,255,.12);
+  box-shadow:0 -8px 24px rgba(0,0,0,.35);
+  font-family:'Inter',-apple-system,'Hind Siliguri',system-ui,sans-serif;
+  transform:translateY(100%);
+  transition:transform .22s ease;
+}
+.aun-appbar.is-in{transform:translateY(0)}
+.aun-appbar[hidden]{display:none}
+
+.aun-appbar-ic{
+  flex:0 0 auto;width:40px;height:40px;border-radius:10px;
+  background:#0188fe;object-fit:cover;
+}
+.aun-appbar-tx{flex:1 1 auto;min-width:0;line-height:1.3}
+.aun-appbar-tx b{display:block;color:#fff;font-size:14px;font-weight:700}
+.aun-appbar-tx span{display:block;color:#9fb3c8;font-size:12px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.aun-appbar-go{
+  flex:0 0 auto;display:inline-flex;align-items:center;
+  padding:9px 20px;border-radius:999px;text-decoration:none;
+  color:#fff!important;font-weight:800;font-size:14px;
+  background:linear-gradient(135deg,#0188fe,#00c6ff);
+}
+.aun-appbar-x{
+  flex:0 0 auto;width:30px;height:30px;padding:0;
+  background:none;border:0;cursor:pointer;
+  color:#7d92a8;font-size:24px;line-height:1;
+}
+.aun-appbar-x:hover{color:#fff}
+
+@media (prefers-reduced-motion: reduce){
+  .aun-appbar{transition:none}
+}
