@@ -96,6 +96,20 @@ class AUN_App_Watch {
 		return 0 === strpos( (string) $key, 'eyJ' ) && substr_count( (string) $key, '.' ) >= 2;
 	}
 
+	/**
+	 * Public door to the ONE TMDB client.
+	 *
+	 * Exists so AUN_App_Chorki can run its own typed searches without growing a
+	 * second copy of the key handling — the v3-vs-v4 credential detection below
+	 * is exactly the kind of thing that gets fixed in one place and stays broken
+	 * in the other.
+	 *
+	 * @return array Decoded response, or array() on any failure.
+	 */
+	public static function api( $path, $params = array() ) {
+		return self::tmdb( $path, $params );
+	}
+
 	/** One TMDB GET, decoded ({} on failure). */
 	private static function tmdb( $path, $params = array() ) {
 		$key = trim( (string) ( aun_app_api_get_options()['tmdb_api_key'] ?? '' ) );
@@ -503,7 +517,7 @@ class AUN_App_Watch {
 	 * @param array  $row  The curated row (platform + url are the admin's).
 	 * @param string $link "movie:1044789" or "tv:12345"; a bare number = movie.
 	 */
-	private static function hydrate_local( $row, $link ) {
+	public static function hydrate_local( $row, $link ) {
 		if ( ! preg_match( '/^(?:(movie|tv):)?(\d+)$/i', $link, $m ) ) {
 			return $row;
 		}
@@ -645,6 +659,15 @@ class AUN_App_Watch {
 		// Local picks are cheap (an option parse) and must honour their end
 		// dates immediately, so they're never cached.
 		$local = self::local_picks();
+
+		// Chorki's own "hot and fresh", pulled automatically. Served from its own
+		// store and NEVER built inline (see AUN_App_Chorki::picks()), so a slow
+		// chorki.net cannot delay this response.
+		//
+		// ⚠️ Ordered AFTER the hand-curated picks deliberately: when the admin has
+		// pinned something for a campaign, that is a decision, and an automatic
+		// feed must not push it down the rail.
+		$local = array_merge( $local, AUN_App_Chorki::picks( $force ) );
 
 		if ( $force ) {
 			$global = self::global_picks();

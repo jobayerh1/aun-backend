@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.98.0
+ * Version:           1.99.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.98.0' );
+define( 'AUN_APP_API_VERSION', '1.99.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -89,6 +89,7 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-greeting.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-help.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-tickets.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-watch.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-chorki.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-projectors.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-referrals.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-sslcommerz.php';
@@ -102,7 +103,12 @@ if ( is_admin() ) {
 // when the store goes stale, plus a twice-daily warm), never in a customer
 // request — see AUN_App_Watch::picks().
 add_action( 'aun_app_watch_refresh', array( 'AUN_App_Watch', 'refresh_cron' ) );
+// Chorki's "hot and fresh" list → the local half of the same rail. Its own
+// event because it is a different, slower source: one HTTP call per title
+// against chorki.net, which must never share a worker with the TMDB rebuild.
+add_action( 'aun_app_chorki_refresh', array( 'AUN_App_Chorki', 'refresh_cron' ) );
 add_action( 'aun_app_watch_warm', array( 'AUN_App_Watch', 'refresh_cron' ) );
+add_action( 'aun_app_chorki_warm', array( 'AUN_App_Chorki', 'refresh_cron' ) );
 
 /**
  * Default plugin settings.
@@ -171,6 +177,11 @@ function aun_app_api_default_options() {
 		'tmdb_api_key'        => '',          // Free TMDB key → "what to watch" global trending on Home.
 		'watch_local_picks'   => '',          // One per line: Title | Platform | URL | optional poster URL
 		'watch_limit'         => 30,          // How many global "what to watch" titles to serve (max 100).
+		// Chorki auto-picks: pull their published list into the app's rail instead
+		// of hand-typing local picks that go stale. Off until switched on.
+		'chorki_enabled'      => 0,
+		'chorki_limit'        => 5,           // How many of Chorki's newest titles to show (max 12).
+		'chorki_list_url'     => '',          // Blank = AUN_App_Chorki::LIST_URL (hot-and-fresh).
 		'youtube_api_key'     => '',          // Free YouTube Data API key → real video upload dates.
 		// OUR OWN OneDrive/SharePoint app registration, so firmware downloads do
 		// not depend on the WP File Download plugin. Optional: with these blank
@@ -668,6 +679,15 @@ function aun_app_api_activate() {
 		wp_schedule_event( time() + 120, 'twicedaily', 'aun_app_watch_warm' );
 	}
 
+	// Same idea for the Chorki feed, and it is the SAFETY NET rather than the
+	// main mechanism: AUN_App_Chorki::picks() already queues a rebuild as soon
+	// as its 6-hour TTL lapses, so on a site with any traffic the list is never
+	// more than ~6 h behind Chorki. This twice-daily run only covers the case
+	// where nobody opens the app at all.
+	if ( ! wp_next_scheduled( 'aun_app_chorki_warm' ) ) {
+		wp_schedule_event( time() + 180, 'twicedaily', 'aun_app_chorki_warm' );
+	}
+
 	// Repair-status poll: the ERP has no webhooks, so every 10 minutes we check
 	// active job sheets for a status change and push it to the owner. No-op
 	// until the ERP repair API is configured.
@@ -689,7 +709,7 @@ register_activation_hook( __FILE__, 'aun_app_api_activate' );
  * Deactivation: stop the sweep (re-scheduled on activation).
  */
 function aun_app_api_deactivate() {
-	foreach ( array( 'aun_app_verify_devices', 'aun_app_daily_notices', 'aun_app_tickets_poll', 'aun_app_repair_poll' ) as $hook ) {
+	foreach ( array( 'aun_app_verify_devices', 'aun_app_daily_notices', 'aun_app_tickets_poll', 'aun_app_repair_poll', 'aun_app_chorki_warm' ) as $hook ) {
 		$timestamp = wp_next_scheduled( $hook );
 		if ( $timestamp ) {
 			wp_unschedule_event( $timestamp, $hook );
