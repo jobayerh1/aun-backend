@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.2+110**, **plugin 1.100.1 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.3+111**, **plugin 1.100.2 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,37 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+### app 2.1.3+111 / app-api 1.100.2 — the Short film chip, and a DECISION not to hide titles
+
+**The chip.** The server has sent `kind = 'short'` since 1.99.1, but the detail screen still read
+`kind == 'series' ? Series : Movie`, so a 25-minute short showed "Movie" next to a chip saying
+"25m" — and Chorki's list is currently three shorts out of five, so nearly every card said the same
+word. Now a `switch` with its own icon and `watchKindShort` string. Anything unrecognised still falls
+through to "Movie", so an older server that only sends movie/series keeps working.
+
+**⭐ DECISION — a title with no TMDB match is KEPT, not skipped.** Owner proposed moving on to the
+next Chorki title when TMDB has no match, so every card is uniformly rich. Declined, and the reason
+is recorded at the decision point in `build()`:
+
+* TMDB lags **months** behind on Bangladeshi content, so the titles missing from it are exactly the
+  ones Chorki just published — the newest releases, which is what we most want to promote and what
+  the customer came to see. The rail is called "hot and fresh"; filtering it by a third party's
+  cataloguing speed would quietly turn it into "whatever TMDB got round to".
+* Chorki's own page already gives title, poster, synopsis, runtime, genre and year — a complete
+  card. TMDB adds cast, trailer and a rating **on top**. Missing extras is not a broken card.
+* It would also be baffling to support: a film could vanish from the app between refreshes, or
+  appear weeks late, for reasons invisible to everyone.
+
+**What the owner's instinct WAS right about, and is now built:** a title whose page cannot be parsed
+is genuinely useless, and used to just shorten the rail (ask for five, show four). `build()` now
+fetches `limit + BACKFILL` candidates and tops up from the spares. ⚠️ Spares are only FETCHED when
+one is needed — the loop breaks once the quota is full, so a normal run still costs one page per
+shown title. Spares cover an **extraction failure**, never a TMDB miss.
+
+**Tests: 80** (was 76) — new section 4b asserts a broken page is replaced by a spare, that the
+failure is logged, that unmatched titles are kept, and that no spare pages are fetched when nothing
+failed.
 
 ### 1.100.1 — "no SKU" was OUR bug: a variable product keeps its SKUs on the variations
 
