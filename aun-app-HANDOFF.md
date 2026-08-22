@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.3+111**, **plugin 1.100.2 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.4+112**, **plugin 1.100.3 (DB v21)**, **spare-parts 0.41.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,68 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+## 2026-08-22 (6) — LIVE PAYMENT BUG: a PAID request asked to be paid again
+
+Owner changed statuses on a paid spare-parts request and the payment card reverted to
+**"Amount to pay ৳১০"** while the timeline still read *"Payment received — ৳১০.00"*. Reproduced on
+the bench. **One root cause, five consequences — spare-parts 0.41.0 / app-api 1.100.3.**
+
+### ⚠️ ROOT CAUSE: payment was treated as a CURRENT STATUS, not a historical fact
+
+`WC_Order::is_paid()` is true only for the statuses in `wc_get_is_paid_statuses()` — by default
+`processing` and `completed`. But `sync_from_request()` advances a delivered request's order to
+whatever `aun_sp_order_status_delivered` names, and that option exists precisely so a shop with
+**Advanced Shipment Tracking** can point it at a CUSTOM status like `wc-delivered`.
+
+**The moment the order lands there, `is_paid()` flips to false and every caller concludes the
+customer never paid.** Proven on the bench:
+
+```
+=== 2. the request is delivered -> order moves to a CUSTOM status ===
+PASS  is_paid() has flipped to FALSE  <-- the bug
+PASS  date_paid survives the status change
+PASS  has_been_paid STILL true  <-- the fix
+```
+
+New `AUN_SP_Woo::has_been_paid( $order )`: `is_paid()` **OR** `get_date_paid()` **OR** a transaction
+id. `date_paid` is stamped once when the money arrives and is never cleared by a later status change.
+A REFUNDED order still counts as paid — correct, because refunds are tracked separately on the
+request (`refunded_at`) and the customer's card checks that first.
+
+### The five consequences, all fixed
+
+1. **The customer was invited to pay twice.** `customer_summary()['paid']` drives the app's green
+   "Payment received" card; false sent it to the "Amount to pay" branch. → `has_been_paid()`.
+2. ⚠️ **`create_order()` would REBUILD a paid order.** Its "already settled — never rebuild" guard
+   was `is_paid()`. With that false and the status not cancelled/refunded/failed, it reused the
+   settled order's shell and **wiped its line items**. → `has_been_paid()`.
+3. ⚠️ **The `already_paid` guard ran AFTER `create_order()`** — in BOTH pay endpoints. It fired
+   correctly, on an order it had just damaged. Moved ahead of order creation in
+   `AUN_SP_Tracking` and `AUN_App_REST`.
+4. ⚠️ **`can_pay` never checked payment at all.** `payable_state()` inferred "they must have paid
+   cash" from no priced line still being open. Wrong in BOTH directions: paying online normally
+   happens BEFORE dispatch, so `can_pay` stayed true right after a successful payment; and moving a
+   delivered line back re-opened it on a settled request. `payable_state()` now returns `paid` and
+   `can_pay` requires `! $settled`.
+5. **`refund_due()` and the admin locks** would stop reporting money owed, and would unlock prices
+   on a paid request. → `has_been_paid()`.
+
+**Tests:** `test-paid-status.php` (**11**, workdir) registers a real custom `wc-delivered` status
+exactly as a shipment-tracking plugin does, takes a payment, moves the order there, and asserts
+`is_paid()` flips while `has_been_paid()` holds — plus refunded-still-paid and never-paid cases.
+
+### app 2.1.4+112 / app-api 1.100.3 — a title with no trailer showed a black box
+
+Owner: *"without tmdb user can't see any trailer, the trailer screen is blank."* The detail header
+falls back to the backdrop, and to a black rectangle with a grey film icon when there is no backdrop
+either — and **only TMDB sets a backdrop**, so every un-catalogued Chorki title opened on that box,
+which reads as a player that failed to load.
+
+Chorki's og:image is a **1200x675 landscape still**, already backdrop-shaped. The server now sends it
+as `backdrop` as well as `poster` (SCHEMA bumped to 2, or stored rows would keep the black header
+until the 6 h TTL lapsed), and the app falls back to the poster anyway — so older builds are fixed
+without updating.
 
 ### app 2.1.3+111 / app-api 1.100.2 — the Short film chip, and a DECISION not to hide titles
 

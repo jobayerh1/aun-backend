@@ -1086,6 +1086,15 @@ class AUN_App_REST {
 		$pay_state = method_exists( 'AUN_SP_Requests', 'payable_state' )
 			? AUN_SP_Requests::payable_state( (int) $row->id )
 			: null;
+		// ⚠️ ALREADY PAID IS CHECKED HERE, before anything can touch the order.
+		// The equivalent guard below runs only after create_order() has already
+		// reused and rebuilt the order — fine when the order is unpaid, actively
+		// harmful on a settled one. Spare parts 0.41.0 added `paid` to
+		// payable_state() precisely so this could be asked up front; the
+		// method_exists guard keeps an older plugin working unchanged.
+		if ( is_array( $pay_state ) && ! empty( $pay_state['paid'] ) ) {
+			return $this->err( 'already_paid', 'This request is already paid — thank you.', 409 );
+		}
 		if ( is_array( $pay_state ) && empty( $pay_state['can_pay'] ) ) {
 			return $this->err(
 				'unavailable',

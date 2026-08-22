@@ -325,6 +325,12 @@ if ( false !== $list_html && false !== $detail_html ) {
 	check( 'flagged as a local pick', $r['local'], true );
 	check( 'title from the detail page', $r['title'], 'Rockstar' );
 	check( 'poster carried', 0 === strpos( $r['poster'], 'https://image.chorkicdn.com/' ), true );
+	// A title TMDB has not catalogued has no trailer and no TMDB backdrop; the
+	// detail header would otherwise be a black rectangle with a grey film icon,
+	// which reads as a player that failed. Chorki's og:image is a 1200x675
+	// landscape still, so it IS backdrop-shaped.
+	check( "backdrop falls back to Chorki's landscape still", $r['backdrop'], $r['poster'] );
+	check( 'and it is not empty', '' !== $r['backdrop'], true );
 	check( 'synopsis carried', strlen( $r['overview'] ) > 100, true );
 	check( 'runtime carried', $r['runtime'], '2h 19m' );
 	check( 'genre is ONE honest chip, not three invented ones', $r['genres'], array( 'Musical Drama Romance' ) );
