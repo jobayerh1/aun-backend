@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.1+109**, **plugin 1.99.0 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.1+109**, **plugin 1.99.1 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -77,9 +77,21 @@ rail is briefly one section short, which nobody notices, rather than the app han
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
 
-⚠️ A short film is filed as `kind = 'movie'` deliberately: the app renders
-`kind == 'series' ? Series : Movie`, so a third value would display as "Movie" anyway while looking
-like a supported case. The runtime chip already says "25m".
+### 1.99.1 — short films get their own kind
+
+Owner spotted that a 25-minute short film showed a chip reading **"Movie"** next to a chip reading
+**"25m"**. Chorki's three URL kinds are now carried through distinctly: `series` / `short` / `movie`.
+
+⚠️ **`'short'` is forward-compatible, which is why the server half shipped alone.** Every app
+build in customers' hands renders `kind == 'series' ? Series : Movie`, so `'short'` displays as
+"Movie" on them exactly as before — no breakage, no blank chip. `app_kind()` is kept separate from
+`tmdb_type()` because they answer different questions: TMDB has no notion of a short film and must
+still be told `movie`.
+
+⬜ **PENDING, next app release:** `lib/src/screens/watch_detail_screen.dart` (~line 102) still reads
+`kind == 'series' ? Series : Movie`. Add the third branch — a new `watchKindShort` string pair in
+`app_en.arb`/`app_bn.arb` and a different icon — and shorts start labelling themselves. Nothing on
+the server needs to change when that lands.
 
 ### Settings → What to watch
 

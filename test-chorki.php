@@ -278,8 +278,12 @@ if ( false !== $list_html && false !== $detail_html ) {
 	check( 'synopsis carried', strlen( $r['overview'] ) > 100, true );
 	check( 'runtime carried', $r['runtime'], '2h 19m' );
 	check( 'genre is ONE honest chip, not three invented ones', $r['genres'], array( 'Musical Drama Romance' ) );
-	check( 'kind from the URL, not guessed', $r['kind'], 'movie' );
-	check( 'series row typed as series', $rows[4]['kind'], 'movie' ); // index 4 = /en/movie/lifeline
+	// Chorki's three kinds are carried through distinctly. 'short' is new and
+	// forward-compatible: shipped apps render anything that is not 'series' as
+	// "Movie", so this cannot break an install that has not updated.
+	check( 'short film typed as short', $r['kind'], 'short' );          // /en/shortfilm/faisha-gesi
+	check( 'movie typed as movie', $rows[3]['kind'], 'movie' );          // /en/movie/rockstar
+	check( 'movie typed as movie (2)', $rows[4]['kind'], 'movie' );      // /en/movie/lifeline
 
 	// RULE 1: no TMDB match must not blank the card.
 	check( 'no TMDB match still yields a full card',
@@ -304,6 +308,7 @@ if ( false !== $list_html && false !== $detail_html ) {
 	check( 'only the eligible titles are hydrated', $GLOBALS['hydrated'], array( 'movie:999001', 'movie:999001' ) );
 	check( 'the three short films were skipped', count( $GLOBALS['hydrated'] ), 2 );
 	check( 'a skipped short film keeps rating 0', $rows2[1]['rating'], 0 );
+	check( 'a skipped short film is still typed short', $rows2[1]['kind'], 'short' );
 	check( 'Chorki title survives enrichment', $rows2[3]['title'], 'Rockstar' );
 	check( 'Chorki platform survives enrichment', $rows2[3]['platform'], 'Chorki' );
 	check( 'TMDB rating layered onto the movie', $rows2[3]['rating'], 7.1 );

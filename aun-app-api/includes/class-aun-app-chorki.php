@@ -84,6 +84,24 @@ class AUN_App_Chorki {
 		return ( 'series' === $kind ) ? 'tv' : 'movie';
 	}
 
+	/**
+	 * Chorki's URL kind → the value the app's WatchPick.kind expects.
+	 *
+	 * Kept separate from {@see tmdb_type()} because they answer different
+	 * questions: TMDB has no notion of a short film and must be told 'movie',
+	 * while the app can usefully say so.
+	 */
+	private static function app_kind( $kind ) {
+		switch ( $kind ) {
+			case 'series':
+				return 'series';
+			case 'shortfilm':
+				return 'short';
+			default:
+				return 'movie';
+		}
+	}
+
 	/* ─────────────────────────── settings ─────────────────────────────── */
 
 	public static function enabled() {
@@ -458,13 +476,16 @@ class AUN_App_Chorki {
 				'backdrop' => '',
 				'year'     => $d['year'],
 				'rating'   => 0,
-				// ⚠️ A short film is filed as 'movie' ON PURPOSE, not by oversight.
-				// The app renders this field as `kind == 'series' ? Series : Movie`,
-				// so a third value would display as "Movie" anyway while looking, to
-				// the next reader, like a supported case. The runtime chip beside it
-				// already says "25m", which tells the customer what they need. Give
-				// shorts their own label only when the app learns to show one.
-				'kind'     => ( 'series' === $item['kind'] ) ? 'series' : 'movie',
+				// Chorki's three content kinds, carried through as-is.
+				//
+				// ⚠️ 'short' is FORWARD-COMPATIBLE on purpose, and that is what makes
+				// this safe to deploy without an app release. Every build already in
+				// customers' hands renders this field as
+				//     kind == 'series' ? Series : Movie
+				// so a short film shows "Movie" on those exactly as it does today —
+				// no breakage, no blank chip. When the app learns the third value it
+				// starts saying "Short film" on its own, with no server change.
+				'kind'     => self::app_kind( $item['kind'] ),
 				// Chorki's genre arrives as one loose string ("Musical Drama
 				// Romance"). Kept whole rather than split on spaces: "Sci-Fi
 				// Thriller" and "Musical Drama" do not divide the same way, and
