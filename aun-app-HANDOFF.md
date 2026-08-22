@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.1+109**, **plugin 1.99.1 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.1+109**, **plugin 1.99.2 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,37 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+### 1.99.2 — LIVE BUG: the test button worked and the app showed nothing
+
+Owner: *"tested the Test Chorki now button and it pulled content successfully — inside app i can't
+see any chorki content."* Reproduced on the bench in one run. **Three bugs, all mine.**
+
+⚠️ **1. `diagnostic()` built the rows and threw them away.** The button reported *"5 titles pulled
+from Chorki"* while `get_option( STORE_KEY )` stayed **EMPTY**. It had already paid the 5-second
+build and then discarded it. **A success message for work that was discarded is worse than an
+error** — it tells the admin to stop looking. It now stores what it built, and says "and saved —
+they are live in the app now".
+
+⚠️ **2. The twice-daily warm cron only existed on ACTIVATION.** Uploading a new zip over a running
+plugin never fires `register_activation_hook`, so `aun_app_chorki_warm` was never scheduled on the
+live site — or on any site that upgraded rather than freshly activated, which is every real site.
+Moved into the existing `aun_app_api_ensure_crons()` on `init`, which exists for exactly this reason
+and which I should have used in the first place. **Check that hook whenever adding a cron.**
+
+⚠️ **3. Saving with it newly enabled emptied the store and waited.** The save handler deleted the
+store and left the rail blank until some cron ran. It now also queues an immediate single event, and
+does the same when the source URL changes (the old store belongs to the old list).
+
+The three compounded: enable → store deleted → press the button → result discarded → no warm cron
+existed → nothing until a single event happened to fire.
+
+**After the fix, same repro:** button reports 5 saved, store holds 5, and the very next
+`AUN_App_Watch::picks()` returns **6 rows** (1 hand-curated + 5 Chorki) with no cron in between.
+Verified separately that a fresh request reschedules the missing warm cron.
+
+**Tests: 71** (was 65) — new section 5 asserts the button persists its work, that the app is served
+with no cron in between, and that a FAILED test run does not wipe a good store.
 
 ### 1.99.1 — short films get their own kind
 
