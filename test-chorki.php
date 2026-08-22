@@ -192,6 +192,53 @@ check(
 	'movie:999001'
 );
 
+// ⚠️ THE 1.100.0 CASE, and how TMDB really stores these. TMDB files the
+// Bangladeshi Rockstar under its BANGLA name — there is no Latin title on the
+// record at all — so title comparison scores ~0 and 1.99.x rejected the correct
+// match. The synopsis is the fingerprint that survives the change of script.
+$real_bd = array(
+	array( 'id' => 61697, 'title' => 'Rockstar', 'original_title' => 'रॉकस्टार', 'original_language' => 'hi', 'release_date' => '2011-11-11',
+		'overview' => 'A young man from a small town rises to fame as a rock musician after heartbreak.' ),
+	array( 'id' => 777001, 'title' => 'রকস্টার', 'original_title' => 'রকস্টার', 'original_language' => 'bn', 'release_date' => '2026-07-18',
+		'overview' => 'Agun overcomes his childhood stage fright to become a world-famous rockstar. But with fame comes addiction, heartbreak, imprisonment, and the devastating loss of his voice.' ),
+);
+$chorki_synopsis = 'Agun overcomes his childhood stage fright to become a world-famous rockstar. But with fame comes addiction, heartbreak, imprisonment, and the devastating loss of his voice. Supported by Aslam\'s friendship and Meera\'s love, he struggles to rebuild his life.';
+
+check( 'Bangla-script title still rejected on NAME alone',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', $real_bd ), '' );
+check( 'but MATCHED once the synopsis is supplied',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', $real_bd, $chorki_synopsis ), 'movie:777001' );
+
+// The synopsis must not become a backdoor around the country gate: the same
+// story text on an Indian record is still rejected.
+check( 'a matching synopsis cannot bypass the BD gate',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', array(
+		array( 'id' => 3, 'title' => 'Rockstar', 'original_language' => 'hi', 'release_date' => '2026-01-01', 'overview' => $chorki_synopsis ),
+	), $chorki_synopsis ),
+	'' );
+
+// Nor around the year gate.
+check( 'a matching synopsis cannot bypass the year gate',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', array(
+		array( 'id' => 4, 'title' => 'রকস্টার', 'original_language' => 'bn', 'release_date' => '2015-01-01', 'overview' => $chorki_synopsis ),
+	), $chorki_synopsis ),
+	'' );
+
+// Two unrelated Bangladeshi 2026 films must not match each other on stopwords.
+check( 'unrelated bn films of the same year do not match',
+	AUN_App_Chorki::pick_match( 'Lifeline', 'movie', '2026', array(
+		array( 'id' => 6, 'title' => 'লাইফলাইন', 'original_language' => 'bn', 'release_date' => '2026-03-01',
+			'overview' => 'A village schoolteacher fights to keep the last ferry route open across the river.' ),
+	), 'How far would you go, and what would you risk for the one you love? Ananya is driven to an impossible choice.' ),
+	'' );
+
+// A too-short synopsis is no evidence at all — it must not match on nothing.
+check( 'a one-line synopsis is not treated as proof',
+	AUN_App_Chorki::pick_match( 'Meu', 'movie', '2026', array(
+		array( 'id' => 9, 'title' => 'মেউ', 'original_language' => 'bn', 'release_date' => '2026-05-01', 'overview' => 'A cat.' ),
+	), 'A cat.' ),
+	'' );
+
 // Gate 3: right language, wrong film.
 check(
 	'rejects a bn title that is not this title',
@@ -236,10 +283,13 @@ check(
 );
 
 // Short films skip the lookup entirely — no request, no chance of a wrong hit.
-$GLOBALS['tmdb_response'] = array( 'results' => array( array( 'id' => 1, 'title' => 'Gerakol', 'original_language' => 'bn', 'release_date' => '2026-01-01' ) ) );
+// ⚠️ 1.99.x SKIPPED short films on the assumption TMDB had no Bangladeshi ones.
+// It does — "Faisha Gesi" and "Paint on Dry Leaf" are both catalogued — so the
+// skip was throwing away real cast and trailer data. They are looked up now.
+$GLOBALS['tmdb_response'] = array( 'results' => array( array( 'id' => 1, 'title' => 'Faisha Gesi', 'original_title' => 'ফাইসা গেছি', 'original_language' => 'bn', 'release_date' => '2026-08-20' ) ) );
 AUN_App_Watch::$last_query = null;
-check( 'short film returns no match', AUN_App_Chorki::match_tmdb( 'Gerakol', 'shortfilm', '2026' ), '' );
-check( 'short film makes NO TMDB call', AUN_App_Watch::$last_query, null );
+check( 'short films ARE looked up now', AUN_App_Chorki::match_tmdb( 'Faisha Gesi', 'shortfilm', '2026' ), 'movie:1' );
+check( 'and a short film DOES make a TMDB call', AUN_App_Watch::$last_query['path'], '/search/movie' );
 
 // And the typed endpoint is used, not /search/multi — that is what carries
 // original_language.
@@ -289,8 +339,8 @@ if ( false !== $list_html && false !== $detail_html ) {
 	check( 'no TMDB match still yields a full card',
 		'' !== $r['title'] && '' !== $r['overview'] && '' !== $r['poster'], true );
 	check( 'nothing was hydrated', $GLOBALS['hydrated'], array() );
-	check( 'log explains the misses', $log[3]['note'], 'no confident TMDB match (Chorki data used)' );
-	check( 'log flags short films separately', $log[0]['note'], 'short film — TMDB skipped' );
+	check( 'log explains the misses', $log[3]['note'], "not on TMDB — showing Chorki's own details" );
+	check( 'the note no longer claims shorts are skipped', $log[0]['note'], "not on TMDB — showing Chorki's own details" );
 	check( 'log records the extraction strategy', $log[0]['via'], 'json-ld' );
 
 	// Now WITH a confident match: TMDB enrichment layers on top, and Chorki's
@@ -305,10 +355,11 @@ if ( false !== $list_html && false !== $detail_html ) {
 	// ⚠️ The first THREE entries on the real list are short films — which is
 	// precisely the case that makes "TMDB is a bonus, never a gate" the right
 	// rule. Only the two movies are eligible for a lookup.
-	check( 'only the eligible titles are hydrated', $GLOBALS['hydrated'], array( 'movie:999001', 'movie:999001' ) );
-	check( 'the three short films were skipped', count( $GLOBALS['hydrated'] ), 2 );
-	check( 'a skipped short film keeps rating 0', $rows2[1]['rating'], 0 );
-	check( 'a skipped short film is still typed short', $rows2[1]['kind'], 'short' );
+	check( 'every title is now eligible, shorts included', count( $GLOBALS['hydrated'] ), 5 );
+	// ⚠️ TMDB has no notion of a short film and hydrate_local() stamps 'movie'
+	// over the kind. Chorki is right about its own catalogue, so its answer wins.
+	check( 'a hydrated short film STAYS typed short', $rows2[1]['kind'], 'short' );
+	check( 'a hydrated short film still gets TMDB rating', $rows2[1]['rating'], 7.1 );
 	check( 'Chorki title survives enrichment', $rows2[3]['title'], 'Rockstar' );
 	check( 'Chorki platform survives enrichment', $rows2[3]['platform'], 'Chorki' );
 	check( 'TMDB rating layered onto the movie', $rows2[3]['rating'], 7.1 );
