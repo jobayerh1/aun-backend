@@ -23,11 +23,38 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.1+109**, **plugin 1.98.0 (DB v21)**, **spare-parts 0.39.0 (DB v10)**,
+Current versions: **app 2.1.1+109**, **plugin 1.98.0 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-08-22 (3) — RESTORE POINT before Phase 3: git tag `phase2-final`
+
+Owner: *"our app is almost perfect now — keep the current condition somewhere, if something goes
+wrong we can revert back to this version."* Done, in **both** repos.
+
+| repo | commit | tag |
+|---|---|---|
+| `C:\dev\aun-app` (Flutter) | `6863a17` | `phase2-final` |
+| workdir (plugins, ERP, docs) | `09db1aa` | `phase2-final` |
+
+Captured state: **app 2.1.1+109 / app-api 1.98.0 (DB v21) / spare-parts 0.40.0 (DB v10) /
+wizard 3.5.0**.
+
+⚠️ **A tag on the last commit would have been WRONG.** Both repos' newest commits were dated
+08-18 — four days of work (the track-parcel chip, the repair status chip, `fetch_media()`'s local
+route and `s-maxage`, the spare-parts crash guard) was sitting UNCOMMITTED in the working tree. A
+tag alone would have created a restore point that silently threw all of it away. Everything was
+committed first, then tagged.
+
+**To go back:** `git checkout phase2-final` in the repo concerned, or `git reset --hard phase2-final`
+to abandon Phase 3 outright. Do it in BOTH repos — an app rolled back against a Phase 3 backend, or
+the reverse, is a half-revert.
+
+⚠️ **`backup-to-github.cmd` does NOT push tags.** It pushes commits only, so the restore point
+exists on this PC alone until somebody runs `git push origin phase2-final` in each repo. Worth doing:
+the whole point of a restore point is surviving the disk it was made on.
 
 ## 2026-08-22 (2) — app 2.1.1+109: one courier chip, used twice
 
