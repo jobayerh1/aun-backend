@@ -153,7 +153,13 @@ class AUN_App_Projectors {
 			'id'          => $id,
 			// The SKU is how a registered device is matched to this product —
 			// see product_for_device(). Both sides already carry it.
+			//
+			// ⚠️ `sku` is the PARENT's own, which on a variable product is
+			// legitimately empty — WooCommerce keeps SKUs on the variations.
+			// Match against `skus`, never this one, or every colour-variant
+			// projector silently fails to link (see self::skus_of()).
 			'sku'         => (string) $product->get_sku(),
+			'skus'        => self::skus_of( $product ),
 			'erp_id'      => self::erp_id_of( $id ),
 			'name'        => (string) $product->get_name(),
 			'image'       => $image_url,
@@ -172,6 +178,47 @@ class AUN_App_Projectors {
 			'sources'     => (array) $specs['sources'],
 			'exact'       => in_array( ( $specs['sources']['throw_ratio'] ?? '' ), array( 'meta', 'extracted' ), true ),
 		);
+	}
+
+	/**
+	 * Every SKU that identifies this product — the parent's own plus each
+	 * variation's.
+	 *
+	 * ⚠️ **A variable product has no SKU of its own, and that is correct
+	 * WooCommerce behaviour, not missing data.** The AUN A005 is one product
+	 * with a Grey and a White variation carrying APB-A005-GRY and
+	 * APB-A005-WHT; `$product->get_sku()` on the parent returns ''. Because
+	 * matching only ever looked at that parent SKU, a registered A005 could
+	 * never be linked by SKU and fell through to name matching — which cannot
+	 * tell "A005" from "A005 Pro". The admin planner panel reported it as
+	 * "no SKU", which read like a data-entry problem and was really this.
+	 *
+	 * The colours are optically identical, so every variation SKU maps to the
+	 * same parent product and the same throw ratio. That is exactly what the
+	 * planner needs.
+	 *
+	 * @param WC_Product $product Parent product.
+	 * @return string[] Unique, non-empty SKUs.
+	 */
+	public static function skus_of( $product ) {
+		$out = array();
+		$own = trim( (string) $product->get_sku() );
+		if ( '' !== $own ) {
+			$out[] = $own;
+		}
+		if ( method_exists( $product, 'is_type' ) && $product->is_type( 'variable' ) ) {
+			foreach ( (array) $product->get_children() as $child_id ) {
+				$child = wc_get_product( (int) $child_id );
+				if ( ! $child ) {
+					continue;
+				}
+				$sku = trim( (string) $child->get_sku() );
+				if ( '' !== $sku ) {
+					$out[] = $sku;
+				}
+			}
+		}
+		return array_values( array_unique( $out ) );
 	}
 
 	/**
@@ -309,9 +356,13 @@ class AUN_App_Projectors {
 		$sku = self::sku_for_serial( (string) ( $device['serial'] ?? '' ) );
 		if ( '' !== $sku ) {
 			foreach ( $catalogue as $p ) {
-				if ( '' !== (string) ( $p['sku'] ?? '' )
-					&& 0 === strcasecmp( (string) $p['sku'], $sku ) ) {
-					return (int) $p['id'];
+				// ⚠️ Against every SKU the product answers to, not just the
+				// parent's. A variable product keeps its SKUs on the variations,
+				// so comparing the parent alone never matched a colour variant.
+				foreach ( (array) ( $p['skus'] ?? array() ) as $candidate ) {
+					if ( 0 === strcasecmp( (string) $candidate, $sku ) ) {
+						return (int) $p['id'];
+					}
 				}
 			}
 		}
