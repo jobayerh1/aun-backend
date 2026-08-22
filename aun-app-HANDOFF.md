@@ -29,6 +29,53 @@ Current versions: **app 2.1.1+109**, **plugin 1.98.0 (DB v21)**, **spare-parts 0
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-08-22 (4) — DECISION (no code shipped): Phase 3 / the TV app is DROPPED
+
+Owner wanted the app to stream films to the projector, sourced from BDIX pirate FTP servers
+(CircleFTP, SAM Online, FTPBD) through a scraper backend AUN would operate, fronted by a
+"media management shell" on Play and a sideloaded projector-only APK.
+
+**Not built, and I said why once rather than repeatedly.** The short version, for whoever reads this
+next:
+
+* The Stremio/Kodi "empty shell" defence works because those projects run NO index. **The moment AUN
+  operates the scraper, AUN is the index** — and that is where liability attaches, not to the player.
+  Repackaging the front end does not change who runs the server.
+* Hiding the feature behind a Settings URL revealed after review is itself a Play **Deceptive
+  Behavior** violation — a second, independent grounds for termination on top of copyright.
+* Enforcement is frequently **account-level**. That account holds AUN Care: warranty, repairs, spare
+  parts, live SSLCommerz payments. And D-U-N-S verification permanently attaches the real company.
+* The "second app on our own website" variant is WORSE, not better: aun-projector.com.bd is the most
+  attributable possible distribution point, and a DMCA to that host takes down the WooCommerce store
+  and the warranty system with it. Worse still, the Play-published app would have carried a
+  "Watch on projector" button walking customers to the sideload — importing the violation into the
+  clean app.
+* Two premises did not hold: BDIX servers **do** carry Bangla content heavily, and filtering
+  Bangladeshi titles out would have removed the weakest plaintiff while keeping the MPA/ACE and the
+  Indian studios.
+
+**The legitimate alternative was costed out and the owner declined it, which is a fair call.**
+Deep-linking into Chorki/Hoichoi/Toffee + phone-as-remote casting + a DLNA/SMB player. Owner cut the
+player (correctly — redundant with stock projector firmware and with VLC) and the own-content layer
+(correctly — dealers-only value). What remained was a care app on a big screen, and he judged that
+not worth the engineering. Agreed. ⚠️ Also worth recording: a BDIX scraper would have been
+**permanently fragile** even ignoring the law — BTRC orders those servers offline and their layouts
+change without warning, so every silent break becomes a broken app on a projector a customer paid
+for.
+
+**Branch `phase3` in `C:\dev\aun-app` is PARKED, never merged.** It holds a working, analyzer-clean
+TV shell: TV detection (leanback / television UI mode / no-touchscreen, plus a Settings override for
+the stock-Android projectors that report as tablets), the leanback manifest, D-pad focus ring, a
+numeric-keypad OTP login (the leanback IME is unusable for an 11-digit number), and the
+approved-device projector lock. `main` is untouched at `phase2-final`.
+
+⚠️ **One real find on that branch, worth knowing if a TV build is ever revisited:**
+`camera_android_camerax` ships `<uses-feature android:name="android.hardware.camera.any" />` with NO
+`android:required` attribute — and Android's default is TRUE. The manifest merger carries it through
+and locks the app out of every TV, silently: no build error, the app just never appears on a TV's
+Play Store. `tools:replace="android:required"` is the fix. Harmless for the phone-only build we
+actually ship, so nothing was cherry-picked to `main`.
+
 ## 2026-08-22 (3) — RESTORE POINT before Phase 3: git tag `phase2-final`
 
 Owner: *"our app is almost perfect now — keep the current condition somewhere, if something goes
