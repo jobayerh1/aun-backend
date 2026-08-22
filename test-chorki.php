@@ -401,6 +401,30 @@ check( 'failed forced rebuild keeps the last good list', $kept[0]['title'], 'Kep
 $GLOBALS['opts_store'][ AUN_App_Chorki::STORE_KEY ]['v'] = 0;
 check( 'stale schema is not served', AUN_App_Chorki::picks(), array() );
 
+section( '4b. Backfill covers a broken page, not a TMDB miss' );
+
+// A title whose page cannot be parsed is dropped; a spare from further down the
+// list takes its place so the rail still shows the requested number.
+$GLOBALS['opts_store'] = array();
+$GLOBALS['aun_opts']['chorki_limit'] = 3;
+$GLOBALS['tmdb_response'] = array( 'results' => array() );
+// list, then: good, BROKEN, good, good  → the broken one must be replaced.
+$GLOBALS['fixture_seq'] = array( $list_html, $detail_html, '', $detail_html, $detail_html );
+$GLOBALS['fetched'] = array();
+$log3 = array();
+$rows3 = AUN_App_Chorki::build( $log3 );
+check( 'a broken page is replaced by a spare', count( $rows3 ), 3 );
+check( 'the failure is recorded', $log3[1]['note'], 'detail fetch failed' );
+
+// ⚠️ And the case we deliberately do NOT skip: no TMDB match keeps the title.
+$GLOBALS['aun_opts']['chorki_limit'] = 5;
+$GLOBALS['fixture_seq'] = array_merge( array( $list_html ), array_fill( 0, 8, $detail_html ) );
+$GLOBALS['fetched'] = array();
+$log4 = array();
+$rows4 = AUN_App_Chorki::build( $log4 );
+check( 'unmatched titles are KEPT, not skipped over', count( $rows4 ), 5 );
+check( 'no spare pages were fetched when nothing failed', count( $GLOBALS['fetched'] ), 6 );
+
 section( '5. The diagnostic button persists its work (1.99.2 regression)' );
 
 // ⚠️ Shipped in 1.99.0 and reported from the live site: the button said

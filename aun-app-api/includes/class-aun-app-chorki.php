@@ -72,6 +72,19 @@ class AUN_App_Chorki {
 	const TIMEOUT   = 12;
 
 	/**
+	 * Spare candidates fetched beyond the limit.
+	 *
+	 * A title whose page cannot be parsed is dropped, and without spares the
+	 * rail would simply come up short — ask for five, show four. These are only
+	 * FETCHED if one is actually needed: the loop stops as soon as the quota is
+	 * filled, so the usual run still costs one page per shown title.
+	 *
+	 * ⚠️ Spares cover an EXTRACTION FAILURE, never a missing TMDB match. See
+	 * build() for why those are not the same thing.
+	 */
+	const BACKFILL = 3;
+
+	/**
 	 * How alike two titles must be (0–1) before TMDB is allowed to describe a
 	 * Chorki film. 0.86 accepts punctuation and spacing differences but rejects
 	 * "Meu" against "Meurtres" — short Bangla titles are the dangerous case,
@@ -528,13 +541,18 @@ class AUN_App_Chorki {
 	 */
 	public static function build( &$log = null ) {
 		$log   = array();
-		$items = self::fetch_list();
+		$limit = self::limit();
+		$items = self::fetch_list( '', $limit + self::BACKFILL );
 		if ( empty( $items ) ) {
 			return array();
 		}
 
 		$out = array();
 		foreach ( $items as $item ) {
+			// Quota filled — the spares below it are never fetched.
+			if ( count( $out ) >= $limit ) {
+				break;
+			}
 			$d = self::fetch_detail( $item['path'] );
 			if ( empty( $d ) || '' === $d['title'] ) {
 				$log[] = array( 'path' => $item['path'], 'title' => '', 'matched' => '', 'note' => 'detail fetch failed' );
@@ -574,6 +592,19 @@ class AUN_App_Chorki {
 				'trailer'  => '',
 			);
 
+			// ⚠️ A title with no TMDB match is KEPT, deliberately.
+			//
+			// Dropping it and reaching further down the list would make every
+			// card uniformly rich, and would systematically hide the newest
+			// Bangladeshi releases — TMDB lags months behind on them, so the
+			// titles most likely to be missing are exactly the ones Chorki just
+			// published and we most want to promote. The rail is called "hot and
+			// fresh"; filtering it by a third party's cataloguing speed would
+			// quietly turn it into "whatever TMDB got round to".
+			//
+			// Chorki's own page already yields title, poster, synopsis, runtime,
+			// genre and year — a complete card. TMDB adds cast, trailer and a
+			// rating on top. Missing extras is not a broken card.
 			$link = self::match_tmdb( $d['title'], $item['kind'], $d['year'], $d['overview'] );
 			if ( '' !== $link ) {
 				// ⚠️ TMDB has no concept of a short film, so hydrate_local()

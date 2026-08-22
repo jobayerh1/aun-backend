@@ -1,3 +1,24 @@
+# BEGIN AUN Public App API
+# The mod_expires block below sets application/json to "access plus 0 seconds".
+# mod_expires runs at the web-server level AFTER PHP, so it overrides any
+# Cache-Control a plugin sends - which is why the app's public REST routes could
+# never be cached at the edge.
+#
+# These six routes return identical bytes to every caller (no user context in
+# their handlers), so they are safe to cache briefly. Everything else, including
+# /me/* and /auth/*, is untouched and stays max-age=0.
+#
+# Keep this OUTSIDE the plugin markers below: WP Rocket rewrites its own block
+# and would delete anything placed inside it.
+<IfModule mod_setenvif.c>
+	SetEnvIf Request_URI "^/wp-json/aun-app/v1/(ping|config|models|dealers|content|watch)/?$" AUN_PUBLIC_API=1
+</IfModule>
+<IfModule mod_headers.c>
+	Header always set Cache-Control "public, max-age=300, s-maxage=300" env=AUN_PUBLIC_API
+	Header always unset Expires env=AUN_PUBLIC_API
+</IfModule>
+# END AUN Public App API
+
 # BEGIN WP Rocket
 # Use UTF-8 encoding for anything served text/plain or text/html
 AddDefaultCharset UTF-8
