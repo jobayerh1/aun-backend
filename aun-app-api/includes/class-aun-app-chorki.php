@@ -607,6 +607,16 @@ class AUN_App_Chorki {
 		$rows    = self::build( $log );
 		$secs    = round( microtime( true ) - $started, 1 );
 
+		// ⚠️ STORE WHAT WE JUST BUILT. This button used to throw the result
+		// away, which made it a liar: it reported "5 titles pulled from Chorki"
+		// while the store stayed empty, so the admin saw success and the app
+		// went on showing nothing until cron happened to run. The five-second
+		// build has already been paid for by the time we reach here — discarding
+		// it is pure waste on top of misleading feedback.
+		if ( ! empty( $rows ) ) {
+			self::store( $rows );
+		}
+
 		if ( empty( $rows ) ) {
 			return array(
 				'ok'      => false,
@@ -630,7 +640,7 @@ class AUN_App_Chorki {
 			'ok'      => true,
 			'rows'    => $log,
 			'message' => sprintf(
-				'Working. %d titles pulled from Chorki in %.1fs; %d enriched with TMDB details. Titles without a TMDB match still show, using Chorki\'s own synopsis and poster.',
+				'Working. %d titles pulled from Chorki in %.1fs and saved — they are live in the app now. %d were enriched with TMDB details; the rest show with Chorki\'s own synopsis and poster, which is normal for Bangladeshi releases and short films.',
 				count( $rows ),
 				$secs,
 				$matched

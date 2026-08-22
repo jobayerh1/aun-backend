@@ -1828,6 +1828,7 @@ class AUN_App_Admin {
 				AUN_App_Watch::flush_local_meta();
 			}
 			$opts['watch_limit']         = max( 1, min( AUN_App_Watch::MAX_LIMIT, (int) ( $_POST['watch_limit'] ?? AUN_App_Watch::GLOBAL_LIMIT ) ) );
+			$chorki_before_url           = (string) ( $opts['chorki_list_url'] ?? '' );
 			$chorki_was                  = ! empty( $opts['chorki_enabled'] );
 			$opts['chorki_enabled']      = empty( $_POST['chorki_enabled'] ) ? 0 : 1;
 			$opts['chorki_limit']        = max( 1, min( AUN_App_Chorki::MAX_LIMIT, (int) ( $_POST['chorki_limit'] ?? AUN_App_Chorki::LIMIT ) ) );
@@ -1835,8 +1836,17 @@ class AUN_App_Admin {
 			// Switching it on should show something without the admin hunting for a
 			// second button; the build itself still happens on cron, off this
 			// request, because it is five-plus HTTP calls to another site.
-			if ( ! $chorki_was && ! empty( $opts['chorki_enabled'] ) ) {
+			if ( ! empty( $opts['chorki_enabled'] )
+				&& ( ! $chorki_was || $opts['chorki_list_url'] !== $chorki_before_url ) ) {
+				// Turning it on — or pointing it at a different list — must not leave
+				// the rail empty waiting for a cron nobody can see. Drop the stale
+				// store (it may belong to the previous source URL) and queue an
+				// immediate background build, so titles appear within the minute
+				// rather than at the next twice-daily run.
 				delete_option( AUN_App_Chorki::STORE_KEY );
+				if ( ! wp_next_scheduled( 'aun_app_chorki_refresh' ) ) {
+					wp_schedule_single_event( time() + 5, 'aun_app_chorki_refresh' );
+				}
 			}
 			$opts['youtube_api_key']     = trim( sanitize_text_field( $_POST['youtube_api_key'] ?? '' ) );
 			// Our own OneDrive app registration (makes firmware downloads

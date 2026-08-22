@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.99.1
+ * Version:           1.99.2
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.99.1' );
+define( 'AUN_APP_API_VERSION', '1.99.2' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -1372,6 +1372,15 @@ function aun_app_api_ensure_crons() {
 	}
 	if ( ! wp_next_scheduled( 'aun_app_repair_poll' ) ) {
 		wp_schedule_event( time() + 120, 'aun_app_ten_minutes', 'aun_app_repair_poll' );
+	}
+	// ⚠️ Here, and NOT only in the activation hook. Uploading a new plugin
+	// zip over a running install never fires activation, so a cron registered
+	// there alone does not exist on any site that UPGRADED rather than freshly
+	// activated — which is every real site. That is exactly how the Chorki warm
+	// job went missing on the live site after 1.99.0.
+	if ( class_exists( 'AUN_App_Chorki' ) && AUN_App_Chorki::enabled()
+		&& ! wp_next_scheduled( 'aun_app_chorki_warm' ) ) {
+		wp_schedule_event( time() + 180, 'twicedaily', 'aun_app_chorki_warm' );
 	}
 }
 add_action( 'init', 'aun_app_api_ensure_crons' );

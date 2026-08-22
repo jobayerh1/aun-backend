@@ -350,6 +350,35 @@ check( 'failed forced rebuild keeps the last good list', $kept[0]['title'], 'Kep
 $GLOBALS['opts_store'][ AUN_App_Chorki::STORE_KEY ]['v'] = 0;
 check( 'stale schema is not served', AUN_App_Chorki::picks(), array() );
 
+section( '5. The diagnostic button persists its work (1.99.2 regression)' );
+
+// ⚠️ Shipped in 1.99.0 and reported from the live site: the button said
+// "5 titles pulled from Chorki" while the app went on showing nothing, because
+// diagnostic() built the rows and threw them away. A success message for work
+// that was discarded is worse than an error — the admin stops looking.
+$GLOBALS['opts_store'] = array();
+$GLOBALS['aun_opts']['chorki_enabled'] = 1;
+$GLOBALS['fixture_seq']   = array_merge( array( $list_html ), array_fill( 0, 5, $detail_html ) );
+$GLOBALS['tmdb_response'] = array( 'results' => array() );
+
+$diag = AUN_App_Chorki::diagnostic();
+check( 'diagnostic reports success', $diag['ok'], true );
+$saved = get_option( AUN_App_Chorki::STORE_KEY );
+check( 'diagnostic SAVED what it built', count( $saved['picks'] ?? array() ), 5 );
+
+// The very next app request must therefore be served with no cron in between.
+$GLOBALS['fixture_seq'] = array();
+$GLOBALS['scheduled']   = array();
+check( 'app served immediately after the button', count( AUN_App_Chorki::picks() ), 5 );
+check( 'and no rebuild is queued', $GLOBALS['scheduled'], array() );
+
+// A failed run must NOT wipe a good store.
+$GLOBALS['fixture_html'] = ''; // chorki.net down
+$diag2 = AUN_App_Chorki::diagnostic();
+check( 'a failed test reports failure', $diag2['ok'], false );
+$still = get_option( AUN_App_Chorki::STORE_KEY );
+check( 'a failed test keeps the last good list', count( $still['picks'] ?? array() ), 5 );
+
 /* ══════════════════════════════════════════════════════════════════════════ */
 echo "\n" . str_repeat( '=', 60 ) . "\n";
 echo "  $pass passed, $fail failed\n";
