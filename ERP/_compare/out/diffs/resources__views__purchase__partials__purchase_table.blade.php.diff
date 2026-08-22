@@ -1,0 +1,22 @@
+--- stock/resources/views/purchase/partials/purchase_table.blade.php
++++ live/resources/views/purchase/partials/purchase_table.blade.php
+@@ -5,6 +5,8 @@
+             <th>@lang('messages.date')</th>
+             <th>@lang('purchase.ref_no')</th>
+             <th>@lang('purchase.location')</th>
++            {{-- CUSTOM: human-readable Location ID (e.g. AUN) --}}
++            <th>Location ID</th>
+             <th>@lang('purchase.supplier')</th>
+             <th>@lang('purchase.purchase_status')</th>
+             <th>@lang('purchase.payment_status')</th>
+@@ -24,6 +26,10 @@
+     </thead>
+     <tfoot>
+         <tr class="bg-gray font-17 text-center footer-total">
++            {{-- NOTE: left at 5 (original). DataTables re-maps this scrolling
++                 footer against its own column list, so it already accounts for
++                 the added Location ID column; widening the span here shifts
++                 every total one column right. --}}
+             <td colspan="5"><strong>@lang('sale.total'):</strong></td>
+             <td class="footer_status_count"></td>
+             <td class="footer_payment_status_count"></td>

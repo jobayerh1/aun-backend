@@ -1,0 +1,13 @@
+--- stock/.htaccess
++++ live/.htaccess
+@@ -1,5 +1,10 @@
+ <IfModule mod_rewrite.c>
+     RewriteEngine On
+ 
++    # Block direct access to sensitive files & folders
++    RewriteRule ^(vendor|storage|modules|bootstrap|resources|config)/ - [F,L,NC]
++    RewriteRule ^(.env|artisan|composer\.json|composer\.lock|phpunit\.xml) - [F,L,NC]
++
++    # Send everything else to public/
+     RewriteRule ^(.*)$ public/$1 [L]
+-</IfModule>+</IfModule>

@@ -1,0 +1,116 @@
+Queries by Component
+Component	SELECT	SHOW	UPDATE	Time
+Plugin: woocommerce	88			0.0483
+WordPress Core	14	1	4	0.0204
+Plugin: google-site-kit	34			0.0156
+Plugin: download-manager	18			0.0072
+Plugin: facebook-for-woocommerce	11			0.0051
+Plugin: woocommerce-smart-coupons	30			0.0048
+Plugin: translatepress-multilingual	6			0.0041
+Plugin: wordfence	11			0.0028
+Plugin: discontinued-products	14			0.0026
+Plugin: seo-by-rank-math	11			0.0024
+Plugin: wc-sslcommerz-easycheckout	1			0.0021
+Plugin: query-monitor	6			0.0015
+Plugin: wp-file-download-cloud-addon	9			0.0010
+Plugin: customer-reviews-woocommerce	7			0.0010
+Plugin: wp-file-download	2	1		0.0009
+Parent Theme	2			0.0008
+Plugin: google-listings-and-ads	3			0.0006
+Plugin: wp-rocket	2			0.0005
+Plugin: omnisend-connect	4			0.0004
+Plugin: wp-rollback	1			0.0003
+Plugin: akismet	1			0.0003
+Plugin: seo-by-rank-math-pro	1			0.0003
+Plugin: classic-editor	2			0.0003
+MU Plugin: health-check-troubleshooting-mode.php	3			0.0003
+Plugin: wp-mail-logging	1			0.0002
+Plugin: wpo365-msgraphmailer	1			0.0002
+Plugin: aun-campaign-bar	1			0.0002
+Plugin: translatepress-business	1			0.0002
+Plugin: health-check	1			0.0001
+286	2	4	0.1246
+
+
+Method	URL	Status	Caller	Component	Timeout	Time
+POST	https://graph.facebook.com/v21.0/338819870608047/events	200 OK	
+WooCommerce\Facebook\Framework\Api\Base->do_remote_request()
+wp-content/plugins/facebook-for-woocommerce/includes/Framework/Api/Base.php:114
+WooCommerce\Facebook\Framework\Api\Base->perform_request()
+wp-content/plugins/facebook-for-woocommerce/includes/Framework/Api/Base.php:87
+WooCommerce\Facebook\API->perform_request()
+wp-content/plugins/facebook-for-woocommerce/includes/API.php:102
+WooCommerce\Facebook\API->send_pixel_events()
+wp-content/plugins/facebook-for-woocommerce/includes/API.php:788
+WC_Facebookcommerce_EventsTracker->send_api_event()
+wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php:1594
+WC_Facebookcommerce_EventsTracker->inject_initiate_checkout_event()
+wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php:1108
+do_action('woocommerce_after_checkout_form')
+wp-content/themes/flatsome/woocommerce/checkout/form-checkout.php:107
+include(wp-content/themes/flatsome/woocommerce/checkout/form-checkout.php)
+wp-content/themes/flatsome/woocommerce/checkout/form-checkout.php:107
+wc_get_template()
+wp-content/plugins/woocommerce/includes/wc-core-functions.php:352
+WC_Shortcode_Checkout::checkout()
+wp-content/plugins/woocommerce/includes/shortcodes/class-wc-shortcode-checkout.php:370
+WC_Shortcode_Checkout::output()
+wp-content/plugins/woocommerce/includes/shortcodes/class-wc-shortcode-checkout.php:70
+WC_Shortcodes::shortcode_wrapper()
+wp-content/plugins/woocommerce/includes/class-wc-shortcodes.php:75
+WC_Shortcodes::checkout()
+wp-content/plugins/woocommerce/includes/class-wc-shortcodes.php:98
+do_shortcode_tag()
+wp-includes/shortcodes.php:434
+preg_replace_callback()
+do_shortcode()
+wp-includes/shortcodes.php:273
+apply_filters('the_content')
+wp-includes/post-template.php:256
+the_content()
+wp-includes/post-template.php:256
+require(wp-content/themes/flatsome/woocommerce/checkout/layouts/checkout.php)
+wp-content/themes/flatsome/woocommerce/checkout/layouts/checkout.php:18
+load_template(wp-content/themes/flatsome/woocommerce/checkout/layouts/checkout.php)
+wp-includes/template.php:816
+wc_get_template_part()
+wp-content/plugins/woocommerce/includes/wc-core-functions.php:290
+Plugin: facebook-for-woocommerce	60	0.2484
+Total: 1	0.2484
+
+
+No data logged.
+
+Read about profiling and logging in Query Monitor.
+
+
+GET https://aun-projector.com.bd/checkout/ → 200
+Page Generation Time
+1.5641 seconds
+0.1% of 3,000s limit
+
+Peak Memory Usage
+110,672,920 bytes (105.5 MB)
+5.2% of 2,042 MB server limit
+
+Database Queries
+0.1246 seconds
+
+SELECT: 286
+SHOW: 2
+UPDATE: 4
+Total: 292
+
+HTTP API Calls
+0.2484 seconds
+
+Total: 1
+Object Cache
+98.0% hit rate (30,202 hits, 592 misses)
+
+Persistent object cache plugin not in use
+
+The APCu object cache extension for PHP is installed but is not in use by WordPress. You should install a APCu plugin.
+
+Opcode Cache
+Opcode cache in use: Zend OPcache

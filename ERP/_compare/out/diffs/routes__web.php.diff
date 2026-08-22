@@ -1,0 +1,12 @@
+--- stock/routes/web.php
++++ live/routes/web.php
+@@ -526,4 +526,9 @@
+     Route::get('/sells/invoice-url/{id}', [SellPosController::class, 'showInvoiceUrl']);
+     Route::get('/show-notification/{id}', [HomeController::class, 'showNotification']);
+     Route::post('/sell/check-invoice-number', [SellController::class, 'checkInvoiceNumber']);
+-});+});
++
++use App\Http\Controllers\RepairStatusApiController;
++
++Route::get('/api/repair-status', [RepairStatusApiController::class, 'check']);
++

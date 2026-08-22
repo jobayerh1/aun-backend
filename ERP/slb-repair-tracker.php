@@ -2,7 +2,9 @@
 /**
  * Plugin Name: AUN Repair Tracker
  * Description: Repair tracking shortcode + secure ERP proxy for AUN Projector.
- * Version: 1.1.1
+ *              A Pathao consignment ID written in an engineer's note (e.g. "Pathao DA200826WQJCJ5")
+ *              is rendered as a tappable parcel-tracking chip on the front end.
+ * Version: 1.2.0
  * Author: Smart Living Bangladesh
  */
 
@@ -257,6 +259,11 @@ class SLB_Repair_Tracker {
         .slb-note-toggle{display:inline-block;margin-left:10px;font-weight:600;color:#0188fe;text-decoration:none;cursor:pointer}
         .slb-note-toggle:hover{text-decoration:underline;}
         .slb-note-text{word-break:break-word}
+        /* Courier tracking chip rendered from a consignment ID inside a note */
+        .slb-track-chip{display:inline-flex;align-items:center;gap:7px;margin:2px 0;padding:5px 11px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#0188fe;font-weight:700;font-size:13px;text-decoration:none;line-height:1.2;white-space:nowrap;vertical-align:middle;transition:background .15s,border-color .15s,color .15s;}
+        .slb-track-chip:hover,.slb-track-chip:focus{background:#0188fe;border-color:#0188fe;color:#fff;text-decoration:none;}
+        .slb-track-chip-id{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.4px;}
+        .slb-track-chip-go{font-size:10px;opacity:.75;}
         .slb-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid #e5e7eb;background:#fff;}
         .slb-table-scroll table{min-width:600px;width:100%;border-collapse:collapse;}
         .slb-table-scroll th{background:#f9fafb;padding:14px 16px;text-align:left;color:#4b5563;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;}
@@ -318,6 +325,50 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     function slbNl2Br(str) {
         return String(str).replace(/\n/g, '<br>');
+    }
+
+    /* ---------------------------------------------------------------------
+     * Courier tracking inside engineer notes.
+     * When a note carries a Pathao consignment ID (e.g. DA200826WQJCJ5) - or a
+     * pasted Pathao tracking URL - it becomes a tappable "track" chip instead of
+     * dead text. Uses the same public-tracking endpoint as the order tracker and
+     * the spare-parts plugin (no phone number in the URL, no API call needed).
+     * ------------------------------------------------------------------- */
+    var SLB_PATHAO_TRACK = 'https://merchant.pathao.com/public-tracking?consignment_id=';
+
+    function slbChipHtml(id) {
+        return '<a class="slb-track-chip" href="' + SLB_PATHAO_TRACK + encodeURIComponent(id) + '"' +
+               ' target="_blank" rel="noopener noreferrer"' +
+               ' title="Track this parcel on Pathao" aria-label="Track parcel ' + id + ' on Pathao">' +
+               '<i class="fa-solid fa-truck-fast" aria-hidden="true"></i>' +
+               '<span class="slb-track-chip-id">' + id + '</span>' +
+               '<i class="fa-solid fa-arrow-up-right-from-square slb-track-chip-go" aria-hidden="true"></i>' +
+               '</a>';
+    }
+
+    /**
+     * Linkify consignment IDs. Runs on ALREADY-ESCAPED html and only ever matches
+     * [A-Z0-9] tokens, so the URL it builds can never carry markup. Matches are
+     * stashed behind placeholders first so a URL match is not re-matched as a
+     * bare ID (which would double-wrap the chip).
+     */
+    function slbTrackChip(html) {
+        var out = String(html), chips = [];
+        function stash(id) { chips.push(String(id).toUpperCase()); return '\u0000C' + (chips.length - 1) + '\u0000'; }
+
+        // A pasted tracking URL (its '&' is already escaped to '&amp;' at this point).
+        out = out.replace(/https?:\/\/[^\s<]*pathao[^\s<]*consignment_id=([A-Za-z0-9]+)/gi,
+                          function (m, id) { return stash(id); });
+        // A bare consignment ID: 2-3 letters + 6-8 digits + 4-10 alphanumerics.
+        out = out.replace(/\b([A-Z]{2,3}\d{6,8}[A-Z0-9]{4,10})\b/g,
+                          function (m, id) { return stash(id); });
+
+        return out.replace(/\u0000C(\d+)\u0000/g, function (m, i) { return slbChipHtml(chips[parseInt(i, 10)]); });
+    }
+
+    /** Note -> safe display html: escape, keep line breaks, then linkify tracking IDs. */
+    function slbNoteHtml(raw) {
+        return slbTrackChip(slbNl2Br(slbEscapeHtml(raw)));
     }
 
     // Status badge class — exact match on ERP status names (case-insensitive, trimmed).
@@ -426,10 +477,10 @@ document.addEventListener('DOMContentLoaded', function(){
                 var a        = activities[i];
                 var noteRaw  = a.note || '';
                 var noteLimit = 120;
-                var noteFullHtml  = slbNl2Br(slbEscapeHtml(noteRaw));
+                var noteFullHtml  = slbNoteHtml(noteRaw);
                 var needsToggle   = String(noteRaw).length > noteLimit;
                 var noteShortHtml = needsToggle
-                    ? slbNl2Br(slbEscapeHtml(String(noteRaw).substring(0, noteLimit))) + '...'
+                    ? slbNoteHtml(String(noteRaw).substring(0, noteLimit)) + '...'
                     : noteFullHtml;
 
                 var noteData = encodeURIComponent(String(noteRaw));
@@ -538,11 +589,11 @@ document.addEventListener('DOMContentLoaded', function(){
                     if (!textEl) return;
                     var state   = this.getAttribute('data-state') || 'more';
                     if (state === 'more') {
-                        textEl.innerHTML = slbNl2Br(slbEscapeHtml(fullRaw));
+                        textEl.innerHTML = slbNoteHtml(fullRaw);
                         this.textContent = 'Show less';
                         this.setAttribute('data-state', 'less');
                     } else {
-                        textEl.innerHTML = slbNl2Br(slbEscapeHtml(fullRaw.substring(0, 120))) + (fullRaw.length > 120 ? '...' : '');
+                        textEl.innerHTML = slbNoteHtml(fullRaw.substring(0, 120)) + (fullRaw.length > 120 ? '...' : '');
                         this.textContent = 'Show more';
                         this.setAttribute('data-state', 'more');
                     }

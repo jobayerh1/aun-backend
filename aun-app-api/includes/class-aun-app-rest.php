@@ -1703,6 +1703,78 @@ class AUN_App_REST {
 	 * Envelope + auth helpers
 	 * --------------------------------------------------------------------- */
 
+	/**
+	 * Routes whose answer is the SAME for everybody, and how long an edge may
+	 * hold it.
+	 *
+	 * ⚠️ A route belongs here only if its response cannot vary by customer.
+	 * Every one of these registers `permission_callback => __return_true`, which
+	 * means `wp_set_current_user()` is never called for them, so the handler
+	 * sees an anonymous user even when the app sends a token — and none of them
+	 * reads `identity()` or `get_current_user_id()` (checked, not assumed).
+	 *
+	 * ⚠️ If you ever add a route here, verify BOTH of those things. A cached
+	 * personalised response is one customer being shown another customer's data
+	 * by a machine in another country, and nothing in the app would reveal it.
+	 *
+	 * Query strings are part of the cache key, so `?type=video` and
+	 * `?type=manual` are separate entries — no special handling needed.
+	 */
+	private function public_cache_seconds( $route ) {
+		$map = array(
+			'/config'  => 300,   // banners, version gate, support numbers
+			'/models'  => 900,   // the product list changes when a product does
+			'/dealers' => 900,
+			'/content' => 300,   // firmware/manuals/videos, admin-edited
+			'/watch'   => 1800,  // the server already rebuilds these every 12 h
+			'/ping'    => 60,    // a health check; even a minute is generous
+		);
+		foreach ( $map as $suffix => $ttl ) {
+			// The registered route is "/aun-app/v1/config" etc.
+			if ( '' !== $suffix && substr( $route, -strlen( $suffix ) ) === $suffix ) {
+				return $ttl;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Tell Cloudflare (and any other shared cache) what it may keep.
+	 *
+	 * ⚠️ WordPress sends `Cache-Control: public, max-age=0` on REST responses,
+	 * which means "you may cache this for zero seconds". A Cloudflare rule set
+	 * to *respect origin* therefore caches nothing at all — the rule looks
+	 * configured and does nothing. This is the header that makes it real.
+	 *
+	 * `s-maxage` matters twice over: it is what a SHARED cache reads, and under
+	 * RFC 7234 a shared cache may not store a response to a request carrying an
+	 * `Authorization` header UNLESS the response is explicitly public. The app
+	 * sends its bearer token on every request, including these, so without this
+	 * the edge would be entitled to refuse.
+	 *
+	 * ⚠️ The trade, stated plainly: /config carries the force-update version
+	 * gate, so a new minimum version takes up to 5 minutes to reach every phone.
+	 * That is the cost of not paying ~1 s of WordPress boot on every launch.
+	 */
+	public function public_cache_headers( $response, $server, $request ) {
+		if ( ! $response instanceof WP_REST_Response || 'GET' !== $request->get_method() ) {
+			return $response;
+		}
+		if ( $response->get_status() >= 300 ) {
+			return $response; // never cache an error
+		}
+		$ttl = $this->public_cache_seconds( (string) $request->get_route() );
+		if ( $ttl < 1 ) {
+			return $response;
+		}
+		$response->header( 'Cache-Control', "public, max-age=60, s-maxage=$ttl" );
+		// ⚠️ WordPress/the host adds `Vary: User-Agent`, which splits the cache
+		// by every Android build string in Bangladesh — a cache that never hits.
+		// These responses do not depend on the user agent.
+		$response->header( 'Vary', 'Accept-Encoding' );
+		return $response;
+	}
+
 	private function ok( $data, $status = 200 ) {
 		return new WP_REST_Response(
 			array(
@@ -2072,7 +2144,18 @@ class AUN_App_REST {
 		}
 
 		header( 'Content-Type: ' . $result['type'] );
-		header( 'Cache-Control: public, max-age=86400' );
+		// ⚠️ s-maxage is what a SHARED cache reads. With only max-age,
+		// Cloudflare left this DYNAMIC and every viewing of a repair re-fetched
+		// every photo from the ERP - through WordPress, one request each.
+		//
+		// A month is safe because the URL names one immutable file: the ERP
+		// never rewrites a job-sheet photo under the same filename, it uploads
+		// a new one with a new name.
+		header( 'Cache-Control: public, max-age=86400, s-maxage=2592000, immutable' );
+		// ⚠️ Without this the host's default `Vary: User-Agent` splits the
+		// edge cache by every Android build string in Bangladesh - a cache that
+		// stores plenty and hits almost never.
+		header( 'Vary: Accept-Encoding' );
 		header( 'X-Robots-Tag: noindex, nofollow' );
 		echo $result['body']; // phpcs:ignore WordPress.Security.EscapeOutput -- binary image.
 		exit;

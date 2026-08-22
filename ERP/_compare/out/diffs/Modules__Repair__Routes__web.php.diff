@@ -1,0 +1,10 @@
+--- stock/Modules/Repair/Routes/web.php
++++ live/Modules/Repair/Routes/web.php
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-Route::get('/repair-status', [Modules\Repair\Http\Controllers\CustomerRepairStatusController::class, 'index'])->name('repair-status');
++//Route::get('/repair-status', [Modules\Repair\Http\Controllers\CustomerRepairStatusController::class, 'index'])->name('repair-status');
+ Route::post('/post-repair-status', [Modules\Repair\Http\Controllers\CustomerRepairStatusController::class, 'postRepairStatus'])->name('post-repair-status');
+ Route::middleware('web', 'authh', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu')->prefix('repair')->group(function () {
+     Route::get('edit-repair/{id}/status', [Modules\Repair\Http\Controllers\RepairController::class, 'editRepairStatus']);

@@ -1145,6 +1145,12 @@ class AUN_SP_Requests {
 					$synced = AUN_SP_Woo::sync_delivery_charge( $id, $charge );
 					if ( 'updated' === $synced ) {
 						$delivery_notice = ' Delivery charge updated on the customer\'s order.';
+					} elseif ( 'failed' === $synced ) {
+						// The charge IS saved on the request; only the WooCommerce order
+						// could not be rebuilt. Say exactly that, or the admin walks away
+						// believing the customer's payment link carries the new total.
+						$delivery_notice = ' <strong>The delivery charge was saved, but the payment order could NOT be updated</strong>'
+							. ' — another plugin failed while WooCommerce was saving it. See the activity log below, and check the order before sending a payment link.';
 					} elseif ( 'paid' === $synced ) {
 						$delivery_notice = ' <strong>Note:</strong> that order is already paid, so its delivery charge was left unchanged.';
 					}

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SP_Install {
 
-	const DB_VERSION = '10';
+	const DB_VERSION = '11';
 
 	/** Fully-qualified table name for a given short key. */
 	public static function table( $name ) {
@@ -172,6 +172,12 @@ class AUN_SP_Install {
 
 		if ( ! wp_next_scheduled( 'aun_sp_daily_digest' ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'aun_sp_daily_digest' );
+		}
+		// Tidying unpaid orders hung off the DAILY digest, so "remove after 6 hours"
+		// could take a day and a half to happen — and the shop's Orders list kept
+		// showing rows the setting said should be gone. It gets its own hourly run.
+		if ( ! wp_next_scheduled( 'aun_sp_hourly_tidy' ) ) {
+			wp_schedule_event( time() + 300, 'hourly', 'aun_sp_hourly_tidy' );
 		}
 
 		update_option( 'aun_sp_db_version', self::DB_VERSION );

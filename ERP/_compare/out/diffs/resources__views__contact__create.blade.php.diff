@@ -1,0 +1,135 @@
+--- stock/resources/views/contact/create.blade.php
++++ live/resources/views/contact/create.blade.php
+@@ -313,7 +313,75 @@
+                         <span class="input-group-addon">
+                             <i class="fa fa-map-marker"></i>
+                         </span>
+-                        {!! Form::text('city', null, ['class' => 'form-control', 'placeholder' => __('business.city')]); !!}
++                        <select name="city" id="city" class="form-control">
++    <option value="">{{ __('messages.please_select') }}</option>
++    <option value="Bagerhat">Bagerhat</option>
++    <option value="Bandarban">Bandarban</option>
++    <option value="Barguna">Barguna</option>
++    <option value="Barishal">Barishal</option>
++    <option value="Bhola">Bhola</option>
++    <option value="Bogura">Bogura</option>
++    <option value="Brahmanbaria">Brahmanbaria</option>
++    <option value="Chandpur">Chandpur</option>
++    <option value="Chapai Nawabganj">Chapai Nawabganj</option>
++    <option value="Chattogram">Chattogram</option>
++    <option value="Chuadanga">Chuadanga</option>
++    <option value="Cox's Bazar">Cox's Bazar</option>
++    <option value="Cumilla">Cumilla</option>
++    <option value="Dhaka">Dhaka</option>
++    <option value="Dinajpur">Dinajpur</option>
++    <option value="Faridpur">Faridpur</option>
++    <option value="Feni">Feni</option>
++    <option value="Gaibandha">Gaibandha</option>
++    <option value="Gazipur">Gazipur</option>
++    <option value="Gopalganj">Gopalganj</option>
++    <option value="Habiganj">Habiganj</option>
++    <option value="Jamalpur">Jamalpur</option>
++    <option value="Jashore">Jashore</option>
++    <option value="Jhalokathi">Jhalokathi</option>
++    <option value="Jhenaidah">Jhenaidah</option>
++    <option value="Joypurhat">Joypurhat</option>
++    <option value="Khagrachhari">Khagrachhari</option>
++    <option value="Khulna">Khulna</option>
++    <option value="Kishoreganj">Kishoreganj</option>
++    <option value="Kurigram">Kurigram</option>
++    <option value="Kushtia">Kushtia</option>
++    <option value="Lakshmipur">Lakshmipur</option>
++    <option value="Lalmonirhat">Lalmonirhat</option>
++    <option value="Madaripur">Madaripur</option>
++    <option value="Magura">Magura</option>
++    <option value="Manikganj">Manikganj</option>
++    <option value="Meherpur">Meherpur</option>
++    <option value="Moulvibazar">Moulvibazar</option>
++    <option value="Munshiganj">Munshiganj</option>
++    <option value="Mymensingh">Mymensingh</option>
++    <option value="Naogaon">Naogaon</option>
++    <option value="Narail">Narail</option>
++    <option value="Narayanganj">Narayanganj</option>
++    <option value="Narsingdi">Narsingdi</option>
++    <option value="Natore">Natore</option>
++    <option value="Nawabganj">Nawabganj</option>
++    <option value="Netrakona">Netrakona</option>
++    <option value="Nilphamari">Nilphamari</option>
++    <option value="Noakhali">Noakhali</option>
++    <option value="Pabna">Pabna</option>
++    <option value="Panchagarh">Panchagarh</option>
++    <option value="Patuakhali">Patuakhali</option>
++    <option value="Pirojpur">Pirojpur</option>
++    <option value="Rajbari">Rajbari</option>
++    <option value="Rajshahi">Rajshahi</option>
++    <option value="Rangamati">Rangamati</option>
++    <option value="Rangpur">Rangpur</option>
++    <option value="Satkhira">Satkhira</option>
++    <option value="Shariatpur">Shariatpur</option>
++    <option value="Sherpur">Sherpur</option>
++    <option value="Sirajganj">Sirajganj</option>
++    <option value="Sunamganj">Sunamganj</option>
++    <option value="Sylhet">Sylhet</option>
++    <option value="Tangail">Tangail</option>
++    <option value="Thakurgaon">Thakurgaon</option>
++</select>
++
+                     </div>
+                 </div>
+               </div>
+@@ -335,7 +403,7 @@
+                     <span class="input-group-addon">
+                         <i class="fa fa-globe"></i>
+                     </span>
+-                    {!! Form::text('country', null, ['class' => 'form-control', 'placeholder' => __('business.country')]); !!}
++                    {!! Form::text('country', 'Bangladesh', ['class' => 'form-control', 'placeholder' => __('business.country')]); !!}
+                 </div>
+             </div>
+           </div>
+@@ -592,6 +660,45 @@
+     </div>
+ 
+     {!! Form::close() !!}
+-  
++<script>
++    (function(){
++        var districtToDivision = {
++            'Bagerhat':'Khulna Division','Bandarban':'Chattogram Division','Barguna':'Barishal Division','Barishal':'Barishal Division','Bhola':'Barishal Division','Bogura':'Rajshahi Division','Brahmanbaria':'Chattogram Division',
++            'Chandpur':'Chattogram Division','Chapai Nawabganj':'Rajshahi Division','Chattogram':'Chattogram Division','Chuadanga':'Khulna Division',"Cox's Bazar":'Chattogram Division','Cumilla':'Chattogram Division',
++            'Dhaka':'Dhaka Division','Dinajpur':'Rangpur Division','Faridpur':'Dhaka Division','Feni':'Chattogram Division','Gaibandha':'Rangpur Division','Gazipur':'Dhaka Division','Gopalganj':'Dhaka Division','Habiganj':'Sylhet Division',
++            'Jamalpur':'Mymensingh Division','Jashore':'Khulna Division','Jhalokathi':'Barishal Division','Jhenaidah':'Khulna Division','Joypurhat':'Rajshahi Division','Khagrachhari':'Chattogram Division','Khulna':'Khulna Division',
++            'Kishoreganj':'Dhaka Division','Kurigram':'Rangpur Division','Kushtia':'Khulna Division','Lakshmipur':'Chattogram Division','Lalmonirhat':'Rangpur Division','Madaripur':'Dhaka Division',
++            'Magura':'Khulna Division','Manikganj':'Dhaka Division','Meherpur':'Khulna Division','Moulvibazar':'Sylhet Division','Munshiganj':'Dhaka Division','Mymensingh':'Mymensingh Division','Naogaon':'Rajshahi Division',
++            'Narail':'Khulna Division','Narayanganj':'Dhaka Division','Narsingdi':'Dhaka Division','Natore':'Rajshahi Division','Nawabganj':'Dhaka Division','Netrakona':'Mymensingh Division','Nilphamari':'Rangpur Division',
++            'Noakhali':'Chattogram Division','Pabna':'Rajshahi Division','Panchagarh':'Rangpur Division','Patuakhali':'Barishal Division','Pirojpur':'Barishal Division','Rajbari':'Dhaka Division','Rajshahi':'Rajshahi Division',
++            'Rangamati':'Chattogram Division','Rangpur':'Rangpur Division','Satkhira':'Khulna Division','Shariatpur':'Dhaka Division','Sherpur':'Mymensingh Division','Sirajganj':'Rajshahi Division','Sunamganj':'Sylhet Division',
++            'Sylhet':'Sylhet Division','Tangail':'Dhaka Division','Thakurgaon':'Rangpur Division'
++        };
++
++        // Added '#quick_add_contact' selector to handle the "Sale -> Add Sale" popup
++        var form = document.querySelector('#contact_add_form') || document.querySelector('#contact_edit_form') || document.querySelector('#quick_add_contact');
++
++        // If neither form exists, stop running
++        if (!form) return;
++
++        // Find the fields INSIDE that specific form
++        var cityField = form.querySelector('[name="city"]');
++        var stateField = form.querySelector('[name="state"]');
++
++        if (!cityField || !stateField) return;
++
++        function updateDivision() {
++            var district = cityField.value.trim();
++            var division = districtToDivision[district] || '';
++            if (division) {
++                stateField.value = division;
++            }
++        }
++
++        cityField.addEventListener('change', updateDivision);
++        cityField.addEventListener('blur', updateDivision);
++    })();
++</script>
++
+   </div><!-- /.modal-content -->
+ </div><!-- /.modal-dialog -->

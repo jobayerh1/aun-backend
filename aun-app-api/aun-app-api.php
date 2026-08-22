@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.93.0
+ * Version:           1.98.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.93.0' );
+define( 'AUN_APP_API_VERSION', '1.98.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -73,6 +73,9 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-phone.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-sms.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-otp.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-tokens.php';
+// Loaded BEFORE the ERP and ticket clients — both ask it whether a call can
+// stay on this machine instead of going out to Cloudflare and back.
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-local-route.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-erp.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-profile.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-warranty.php';
@@ -866,6 +869,10 @@ add_action( 'plugins_loaded', 'aun_app_api_maybe_upgrade', 24 );
 function aun_app_api_boot() {
 	$rest = new AUN_App_REST();
 	add_action( 'rest_api_init', array( $rest, 'register_routes' ) );
+	// Declare which public routes an edge cache may keep, and for how long.
+	// Without this WordPress sends max-age=0 and a Cloudflare rule set to
+	// "respect origin" caches nothing — see public_cache_headers().
+	add_filter( 'rest_post_dispatch', array( $rest, 'public_cache_headers' ), 10, 3 );
 
 	if ( is_admin() ) {
 		$admin = new AUN_App_Admin();
@@ -1348,6 +1355,15 @@ function aun_app_api_ensure_crons() {
 	}
 }
 add_action( 'init', 'aun_app_api_ensure_crons' );
+
+/*
+ * Learn this machine's own IP from ordinary web traffic.
+ *
+ * SERVER_ADDR does not exist under WP-CLI or cron — which is exactly when the
+ * repair poll and the ticket poll run — so it is captured here, during normal
+ * requests, and read back from the option when there is no web request to ask.
+ */
+add_action( 'init', array( 'AUN_App_Local_Route', 'remember_ip' ), 1 );
 
 /**
  * TEST BENCH ONLY: when AUN_APP_DEV_OTP is defined the REST API also sends

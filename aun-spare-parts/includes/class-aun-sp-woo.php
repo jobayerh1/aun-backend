@@ -326,7 +326,48 @@ class AUN_SP_Woo {
 	 *
 	 * @return int order id, or 0.
 	 */
+	/**
+	 * Build (or rebuild) the WooCommerce order for a request.
+	 *
+	 * ⚠️ A WRAPPER, and the try/catch is the whole point of it.
+	 *
+	 * wc_create_order() fires WooCommerce's order hooks, and every plugin on the
+	 * site gets to run inside them. On 2026-08-21 "Connect for Yeamazing" threw a
+	 * fatal there (`get() on null` — it expects a cart or session that does not
+	 * exist in wp-admin), and because the throw travelled up through our code it
+	 * took the whole Spare Parts screen down with a WordPress critical error. The
+	 * admin could not even see the request, let alone save it.
+	 *
+	 * A third-party plugin misbehaving inside a hook must not be able to do that.
+	 * The order fails, the admin is told, and the page still renders.
+	 *
+	 * \Throwable, not Exception: a PHP Error (which is what "call to a member
+	 * function on null" is) is NOT an Exception and would sail straight past a
+	 * `catch ( Exception $e )`.
+	 */
 	public static function create_order( $request_id ) {
+		try {
+			return self::build_order( $request_id );
+		} catch ( \Throwable $e ) {
+			// Close the SMS-muting window this call may have opened — leaving the
+			// pre_http_request filter armed would silently block other plugins'
+			// outbound calls for the rest of the request.
+			self::mute_off();
+			error_log(
+				'AUN SP: order build failed for request ' . (int) $request_id
+				. ' - ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()
+			);
+			self::log(
+				(int) $request_id,
+				'wc_order',
+				'Could not build the payment order - another plugin failed while WooCommerce was saving it: '
+				. $e->getMessage()
+			);
+			return 0;
+		}
+	}
+
+	private static function build_order( $request_id ) {
 		global $wpdb;
 		if ( ! self::is_active() ) {
 			return 0;
@@ -463,8 +504,10 @@ class AUN_SP_Woo {
 		if ( $order->is_paid() ) {
 			return 'paid';
 		}
-		self::create_order( $request_id ); // full rebuild keeps everything consistent
-		return 'updated';
+		// full rebuild keeps everything consistent
+		// ⚠️ 0 means the rebuild FAILED. Reporting 'updated' anyway told the admin
+		// the customer's order now carried the new delivery charge when it did not.
+		return self::create_order( $request_id ) ? 'updated' : 'failed';
 	}
 
 	/** The order attached to a request, or null. */
@@ -518,21 +561,72 @@ class AUN_SP_Woo {
 	 *   Completed  -> order completed (money already taken online)
 	 *   Rejected / declined -> cancel the order if it was never paid
 	 */
+	/**
+	 * Which WooCommerce status this shop wants when the parts reach a milestone.
+	 *
+	 * Defaults match plain WooCommerce: nothing on dispatch, 'completed' on delivery.
+	 * They are settings because a shop's status names are its own. Jobayer runs
+	 * Advanced Shipment Tracking Pro, which RELABELS core "Completed" to "Shipped"
+	 * and adds a separate "Delivered" status — so the hardcoded 'completed' landed
+	 * his orders on "Shipped" at the very moment the customer received the parts.
+	 *
+	 * Returns '' when the mapping is off or names a status this site doesn't have
+	 * (a plugin can always be deactivated later), so we never try to set a status
+	 * that doesn't exist.
+	 *
+	 * @param string $milestone 'dispatched' | 'delivered'
+	 */
+	public static function order_status_for( $milestone ) {
+		$defaults = array( 'dispatched' => '', 'delivered' => 'completed' );
+		$want     = (string) get_option( 'aun_sp_order_status_' . $milestone, $defaults[ $milestone ] ?? '' );
+		// Stored either way round ('completed' or 'wc-completed') — normalise to the
+		// bare key that update_status() and has_status() expect.
+		$want     = preg_replace( '/^wc-/', '', trim( $want ) );
+		if ( '' === $want || 'none' === $want ) {
+			return '';
+		}
+		return array_key_exists( 'wc-' . $want, self::order_statuses() ) ? $want : '';
+	}
+
+	/** Every order status registered on this site: 'wc-completed' => 'Shipped'. */
+	public static function order_statuses() {
+		return function_exists( 'wc_get_order_statuses' ) ? (array) wc_get_order_statuses() : array();
+	}
+
+	/** The shop's own label for a status key, so notes read like the admin's screen. */
+	public static function status_label( $key ) {
+		$all = self::order_statuses();
+		return isset( $all[ 'wc-' . $key ] ) ? $all[ 'wc-' . $key ] : $key;
+	}
+
 	public static function sync_from_request( $request_id, $sp_status ) {
 		$order = self::order_for( $request_id );
 		if ( ! $order ) {
 			return;
 		}
 		if ( 'ready' === $sp_status && $order->is_paid() ) {
-			// WooCommerce has no "dispatched" status, and inventing one would break the
-			// gateway's expectations. The order stays PROCESSING (paid, being fulfilled)
-			// and gets a private note, so the order's own timeline still shows what
-			// happened without pretending the job is finished.
-			$order->add_order_note( 'Spare-parts request ' . $sp_status . ': parts are with the courier. Order stays Processing until delivery.' );
-			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' left at Processing (parts dispatched)' );
-		} elseif ( 'closed' === $sp_status && $order->is_paid() && ! $order->has_status( 'completed' ) ) {
-			$order->update_status( 'completed', 'Spare-parts request marked Completed.' );
-			self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' marked Completed (request delivered)' );
+			// Core WooCommerce has no "dispatched" status, so by default the order
+			// stays PROCESSING and just gets a note. A shop that HAS one (Advanced
+			// Shipment Tracking adds its own, and relabels core statuses) can map it
+			// in Settings — see order_status_for().
+			$want = self::order_status_for( 'dispatched' );
+			if ( '' !== $want && ! $order->has_status( $want ) ) {
+				$order->update_status( $want, 'Spare-parts request: parts are with the courier.' );
+				self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' set to "' . self::status_label( $want ) . '" (parts dispatched)' );
+			} else {
+				$order->add_order_note( 'Spare-parts request ' . $sp_status . ': parts are with the courier. Order stays Processing until delivery.' );
+				self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' left at Processing (parts dispatched)' );
+			}
+		} elseif ( 'closed' === $sp_status && $order->is_paid() ) {
+			// NOT hardcoded to 'completed' any more. On a shop using Advanced Shipment
+			// Tracking, core's "completed" is relabelled **Shipped** and the real final
+			// state is that plugin's own **Delivered** status — so setting 'completed'
+			// on delivery made the order read "Shipped" just as the parts arrived.
+			$want = self::order_status_for( 'delivered' );
+			if ( '' !== $want && ! $order->has_status( $want ) ) {
+				$order->update_status( $want, 'Spare-parts request marked Completed.' );
+				self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' set to "' . self::status_label( $want ) . '" (request delivered)' );
+			}
 		} elseif ( in_array( $sp_status, array( 'rejected', 'declined', 'expired' ), true ) ) {
 			if ( $order->is_paid() ) {
 				// Money already taken — cancelling here would hide that a refund is owed.

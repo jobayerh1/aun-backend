@@ -525,6 +525,8 @@ class AUN_SP_Admin {
 			update_option( 'aun_sp_goodwill_coupon', sanitize_text_field( wp_unslash( $_POST['goodwill_coupon'] ?? '' ) ) );
 			update_option( 'aun_sp_contact_phone', sanitize_text_field( wp_unslash( $_POST['contact_phone'] ?? '' ) ) );
 			update_option( 'aun_sp_abandoned_pay_hours', max( 1, (int) ( $_POST['abandoned_pay_hours'] ?? 6 ) ) );
+			update_option( 'aun_sp_order_status_dispatched', sanitize_text_field( wp_unslash( $_POST['order_status_dispatched'] ?? '' ) ) );
+			update_option( 'aun_sp_order_status_delivered', sanitize_text_field( wp_unslash( $_POST['order_status_delivered'] ?? 'completed' ) ) );
 			update_option( 'aun_sp_mute_foreign_sms', empty( $_POST['mute_foreign_sms'] ) ? 0 : 1 );
 			// Turning expiry ON must not retroactively lapse quotes that were sent
 			// under "no deadline" terms — that would expire a pile of live quotes (and
@@ -566,6 +568,31 @@ class AUN_SP_Admin {
 		echo '<tr><th>Tracking page URL</th><td><input type="url" name="tracking_url" value="' . esc_attr( $track ) . '" class="regular-text" placeholder="https://aun-projector.com.bd/spare-parts-status/"> <span style="color:#646970;">included in customer status SMS</span></td></tr>';
 		echo '<tr><th>Send-projector page URL</th><td><input type="url" name="service_url" value="' . esc_attr( $service ) . '" class="regular-text" placeholder="https://aun-projector.com.bd/send-projector/"> <span style="color:#646970;">where the &ldquo;Send my projector&rdquo; choice links (defaults to /send-projector/)</span></td></tr>';
 		echo '<tr><th>Contact phone (for messages)</th><td><input type="text" name="contact_phone" value="' . esc_attr( $cphone ) . '" class="regular-text" placeholder="01787698268"> <span style="color:#646970;">fills <code>{phone}</code> in customer messages</span></td></tr>';
+		// Which WooCommerce status a paid order should take when the parts move. The
+		// dropdowns show THIS shop's own labels, so a renamed core status (Advanced
+		// Shipment Tracking calls "Completed" -> "Shipped") is picked by the name the
+		// admin actually sees, not by a key they'd have to guess.
+		if ( AUN_SP_Woo::is_active() ) {
+			$wc_statuses = AUN_SP_Woo::order_statuses();
+			$sel_disp    = AUN_SP_Woo::order_status_for( 'dispatched' );
+			$sel_deliv   = AUN_SP_Woo::order_status_for( 'delivered' );
+			$dropdown    = function ( $name, $current, $none_label ) use ( $wc_statuses ) {
+				$out = '<select name="' . esc_attr( $name ) . '">';
+				$out .= '<option value="">' . esc_html( $none_label ) . '</option>';
+				foreach ( $wc_statuses as $key => $label ) {
+					$bare = preg_replace( '/^wc-/', '', $key );
+					$out .= '<option value="' . esc_attr( $bare ) . '"' . selected( $current, $bare, false ) . '>'
+						. esc_html( $label ) . '</option>';
+				}
+				return $out . '</select>';
+			};
+			echo '<tr><th>When parts are dispatched, set the order to</th><td>'
+				. $dropdown( 'order_status_dispatched', $sel_disp, '— leave it alone (Processing) —' )
+				. ' <span style="color:#646970;">only for orders paid online</span></td></tr>';
+			echo '<tr><th>When parts are delivered, set the order to</th><td>'
+				. $dropdown( 'order_status_delivered', $sel_deliv, '— leave it alone —' )
+				. '<p class="description">Use the names as they appear in your own Orders list. If a plugin has renamed WooCommerce&rsquo;s <em>Completed</em> to something like <strong>Shipped</strong> and added its own <strong>Delivered</strong> status, pick <strong>Delivered</strong> here &mdash; otherwise a delivered request would flip the order to &ldquo;Shipped&rdquo; just as the customer receives the parts.</p></td></tr>';
+		}
 		echo '<tr><th>Remove unpaid orders after (hours)</th><td><input type="number" name="abandoned_pay_hours" value="' . esc_attr( $abhours ) . '" min="1" max="720" class="small-text"> <span style="color:#646970;">a customer who opens the pay page and does not pay leaves an unpaid order behind</span><p class="description">WooCommerce cannot run a gateway without an order, so one is created when the customer presses <strong>Pay online</strong>. If the payment is never completed, that order is <strong>deleted</strong> after this many hours so your Orders list only keeps real sales. Paid orders are never touched, and the customer can start payment again at any time.</p></td></tr>';
 		echo '<tr><th>One SMS per event</th><td><label><input type="checkbox" name="mute_foreign_sms" value="1" ' . checked( $mute, true, false ) . '> Stop other plugins texting about spare-parts orders</label><p class="description">Your shop-wide SMS plugin also texts customers when an order changes status. On a spare-parts order that means <strong>two messages for one event</strong> &mdash; a generic &ldquo;order #123 is processing&rdquo; alongside this plugin&rsquo;s own wording. With this ticked, third-party SMS and WooCommerce&rsquo;s own emails are suppressed <strong>only for spare-parts orders</strong>; your normal shop orders are untouched. Every suppression is written to the request&rsquo;s Activity log.</p></td></tr>';
 		echo '<tr><th>Goodwill coupon code</th><td><input type="text" name="goodwill_coupon" value="' . esc_attr( $coupon ) . '" class="regular-text" placeholder="e.g. UPGRADE10"> <span style="color:#646970;">added to rejection SMS as an apology</span></td></tr>';
@@ -607,6 +634,48 @@ class AUN_SP_Admin {
 		echo 'Payment methods a customer would see: <strong>' . ( $gateways ? esc_html( implode( ', ', $gateways ) ) : 'NONE — enable SSLCommerz / Cash on delivery in WooCommerce → Settings → Payments' ) . '</strong><br>';
 		echo 'Orders created so far: <strong>' . $orders_made . '</strong>';
 		echo '</p></div>';
+
+		// Which pending orders in the shop are OURS, and which came from somewhere
+		// else. Every order this plugin creates carries an SP- reference and a total
+		// above zero, so a ৳0 pending order with no reference is not ours — and this
+		// box says so plainly instead of leaving it a mystery in the Orders list.
+		if ( AUN_SP_Woo::is_active() && function_exists( 'wc_get_orders' ) ) {
+			$pending = wc_get_orders( array(
+				'status'  => array( 'pending' ),
+				'limit'   => 25,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+			) );
+			$ours = array();
+			$theirs = array();
+			foreach ( (array) $pending as $po ) {
+				$ref = (string) $po->get_meta( '_aun_sp_ref' );
+				$row = '#' . $po->get_order_number() . ' — ' . wc_price( $po->get_total() )
+					. ' · ' . esc_html( $po->get_date_created() ? $po->get_date_created()->date( 'j M H:i' ) : '' );
+				if ( '' !== $ref ) {
+					$ours[] = $row . ' · ' . esc_html( $ref );
+				} else {
+					$via = $po->get_created_via();
+					$theirs[] = $row . ' · created via <code>' . esc_html( '' !== $via ? $via : 'unknown' ) . '</code>';
+				}
+			}
+			$hrs = (int) get_option( 'aun_sp_abandoned_pay_hours', 6 );
+			echo '<div class="notice notice-info inline" style="max-width:640px;margin-top:14px;"><p style="margin:.6em 0;">';
+			echo '<strong>Pending orders in your shop right now</strong><br>';
+			echo 'From spare parts (a customer pressed Pay online and hasn&rsquo;t paid yet): <strong>' . count( $ours ) . '</strong><br>';
+			foreach ( array_slice( $ours, 0, 8 ) as $r ) {
+				echo '&nbsp;&nbsp;' . $r . '<br>';
+			}
+			echo '<span style="color:#646970;">These are deleted automatically ' . $hrs . 'h after the customer stops (checked hourly), so only paid orders stay.</span><br><br>';
+			echo 'From somewhere else &mdash; <strong>not</strong> this plugin: <strong>' . count( $theirs ) . '</strong><br>';
+			foreach ( array_slice( $theirs, 0, 8 ) as $r ) {
+				echo '&nbsp;&nbsp;' . $r . '<br>';
+			}
+			if ( $theirs ) {
+				echo '<span style="color:#646970;">Spare-parts orders always carry an SP- reference and a total above &#2547;0. The <code>created via</code> value above tells you which plugin or page made these.</span>';
+			}
+			echo '</p></div>';
+		}
 
 		// Duplicate-SMS guard: what it has actually caught. This is the box to look at
 		// after changing SMS provider — if the new company's host appears here, the
