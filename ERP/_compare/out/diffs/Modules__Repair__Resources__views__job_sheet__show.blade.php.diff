@@ -1,0 +1,15 @@
+--- stock/Modules/Repair/Resources/views/job_sheet/show.blade.php
++++ live/Modules/Repair/Resources/views/job_sheet/show.blade.php
+@@ -534,5 +534,12 @@
+             });
+         });
+     });
++    @if(!empty($job_sheet->documents))
++    <h3>Uploaded Photos</h3>
++    @foreach(json_decode($job_sheet->documents) as $img)
++       <img src="{{ asset($img) }}" style="max-width:200px; margin:10px;">
++    @endforeach
++@endif
++
+ </script>
+ @stop

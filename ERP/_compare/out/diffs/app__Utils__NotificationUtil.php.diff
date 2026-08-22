@@ -1,0 +1,82 @@
+--- stock/app/Utils/NotificationUtil.php
++++ live/app/Utils/NotificationUtil.php
+@@ -26,8 +26,28 @@
+      * @param  obj  $contact
+      * @return void
+      */
+-    public function autoSendNotification($business_id, $notification_type, $transaction, $contact)
++    public function autoSendNotification($business_id, $notification_type, $transaction, $contact, $force_send = false)
+     {
++    // ===== CUSTOM: prevent duplicate "new sale" notifications on invoice update =====
++    //
++    // For 'new_sale', send notification only when the transaction is first created.
++    // If the invoice is edited later, created_at != updated_at, so we skip.
++    // $force_send bypasses this check — callers set it when a draft/quotation
++    // transitions to 'final', which is an update but must still notify.
++    if ($notification_type == 'new_sale' && ! $force_send) {
++        try {
++            if (!empty($transaction->created_at) && !empty($transaction->updated_at)) {
++                if ($transaction->created_at != $transaction->updated_at) {
++                    // This is an UPDATE (edited invoice) -> don't send SMS/email/WA again.
++                    // Return an empty WhatsApp link (same type as at the end of this method).
++                    return '';
++                }
++            }
++        } catch (\Throwable $e) {
++            // Fail-safe: if anything goes wrong in this check, ignore and continue as normal.
++        }
++    }
++    // ===== END CUSTOM BLOCK =====
+         $notification_template = NotificationTemplate::where('business_id', $business_id)
+                 ->where('template_for', $notification_type)
+                 ->first();
+@@ -45,6 +65,49 @@
+                     'whatsapp_text' => $notification_template->whatsapp_text,
+                 ];
+                 $tag_replaced_data = $this->replaceTags($business_id, $orig_data, $transaction);
++                
++                // ===== CUSTOM: use the human 'location_id' column (e.g. "AUN") for business_location_id =====
++try {
++    $business_location_id   = '';
++    $business_location_name = '';
++    $business_location_code = '';
++
++    if (!empty($transaction->location_id)) {
++        $loc = \App\BusinessLocation::find($transaction->location_id);
++        if ($loc) {
++            // Use the textual Location ID column (stores "AUN" in your DB)
++            $business_location_id   = $loc->location_id ?? '';
++
++            // Friendly name and fallback code
++            $business_location_name = $loc->name ?? '';
++            $business_location_code = $loc->code ?? $business_location_id;
++
++            // If for some reason location_id is empty, fallback to code or numeric id
++            if (empty($business_location_id)) {
++                if (!empty($loc->code)) {
++                    $business_location_id = $loc->code;
++                } else {
++                    $business_location_id = $loc->id ?? '';
++                }
++            }
++        }
++    }
++
++    // Replace these tags in each returned template field (if present)
++    foreach ($tag_replaced_data as $k => $v) {
++        if (!is_string($v)) {
++            continue;
++        }
++        $v = str_replace('{business_location_id}', $business_location_id, $v);
++        $v = str_replace('{business_location_name}', $business_location_name, $v);
++        $v = str_replace('{business_location_code}', $business_location_code, $v);
++        $tag_replaced_data[$k] = $v;
++    }
++} catch (\Throwable $e) {
++    \Log::debug('NotificationUtil: business location tag replace error: '.$e->getMessage());
++}
++// ===== END CUSTOM BLOCK =====
++
+ 
+                 $data['email_body'] = $tag_replaced_data['email_body'];
+                 $data['sms_body'] = $tag_replaced_data['sms_body'];

@@ -56,10 +56,27 @@ class AUN_App_ERP {
 
 		$url = add_query_arg( array_map( 'rawurlencode', $query ), $s['base'] . $path );
 
-		$response = wp_remote_get( $url, array(
+		$args = array(
 			'timeout' => 15,
 			'headers' => array( 'X-Warranty-Secret' => $s['secret'] ),
-		) );
+		);
+
+		// Keep the call on this machine when we can — the ERP lives here, and
+		// going out to Cloudflare and back cost ~100 ms per call (and up to
+		// 300 ms on a bad day). See AUN_App_Local_Route.
+		$pinned   = class_exists( 'AUN_App_Local_Route' ) && AUN_App_Local_Route::arm( $url );
+		$response = wp_remote_get( $url, $args );
+		if ( $pinned ) {
+			AUN_App_Local_Route::disarm();
+		}
+
+		// ⚠️ A pinned call that fails must NEVER be the customer's answer. The
+		// shortcut is an optimisation; the public route is the contract. Back
+		// off for ten minutes and ask again the normal way.
+		if ( $pinned && is_wp_error( $response ) ) {
+			AUN_App_Local_Route::note_failure( 'erp: ' . $response->get_error_message() );
+			$response = wp_remote_get( $url, $args );
+		}
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -205,9 +222,26 @@ class AUN_App_ERP {
 			return array( 'ok' => false, 'status' => 503 );
 		}
 
-		$response = wp_remote_get( $s['base'] . '/uploads/media/' . rawurlencode( $file ), array(
-			'timeout' => 15,
-		) );
+		$url  = $s['base'] . '/uploads/media/' . rawurlencode( $file );
+		$args = array( 'timeout' => 15 );
+
+		// Keep it on this machine, exactly like get() and repair_get().
+		//
+		// ⚠️ This was MISSED when the local route was wired in, and it is the
+		// call where it matters most: a repair screen fetches every job-sheet
+		// photo through here, so one screen paid the Cloudflare round trip six
+		// or seven times over - and these are the biggest payloads in the app,
+		// so the connection setup is repeated on the slowest transfers.
+		$pinned   = class_exists( 'AUN_App_Local_Route' ) && AUN_App_Local_Route::arm( $url );
+		$response = wp_remote_get( $url, $args );
+		if ( $pinned ) {
+			AUN_App_Local_Route::disarm();
+		}
+		if ( $pinned && is_wp_error( $response ) ) {
+			AUN_App_Local_Route::note_failure( 'media: ' . $response->get_error_message() );
+			$response = wp_remote_get( $url, $args );
+		}
+
 		if ( is_wp_error( $response ) ) {
 			return array( 'ok' => false, 'status' => 502 );
 		}
@@ -255,6 +289,44 @@ class AUN_App_ERP {
 	 * @param array $query e.g. ['search_by'=>'mobile','query'=>'01XXXXXXXXX','serial'=>'...']
 	 * @return array|false|WP_Error Normalised job sheet, false when none found.
 	 */
+	/**
+	 * A courier consignment ID sitting inside an engineer's free-text note.
+	 *
+	 * The service centre types things like "Sent by Pathao DA200826WQJCJ5" into
+	 * the job sheet. The website's repair tracker turns that into a tappable
+	 * chip (slb-repair-tracker.php), and the app should do the same rather than
+	 * showing a number the customer has to copy out by hand.
+	 *
+	 * ⚠️ The PATTERN mirrors the tracker plugin's JavaScript and must be kept
+	 * in step with it: 2-3 letters, 6-8 digits, then 4-10 alphanumerics. If the
+	 * two drift, the website and the app will disagree about whether the same
+	 * note contains a trackable parcel - which is exactly the class of bug this
+	 * codebase keeps finding.
+	 *
+	 * The URL itself is NOT built here: that belongs to
+	 * AUN_App_Services::courier_tracking_url(), which the spare-parts plugin
+	 * owns. Only the "find it in prose" step is new.
+	 *
+	 * @param string $note Free text.
+	 * @return string The consignment ID, or '' when the note has none.
+	 */
+	public static function consignment_in( $note ) {
+		$note = trim( (string) $note );
+		if ( '' === $note ) {
+			return '';
+		}
+		// A pasted tracking link wins: its ID is explicit, so there is nothing
+		// to infer.
+		if ( preg_match( '~consignment_id=([A-Za-z0-9]+)~i', $note, $m ) ) {
+			return strtoupper( $m[1] );
+		}
+		// A bare ID typed into the sentence.
+		if ( preg_match( '/\b([A-Za-z]{2,3}\d{6,8}[A-Za-z0-9]{4,10})\b/', $note, $m ) ) {
+			return strtoupper( $m[1] );
+		}
+		return '';
+	}
+
 	private static function repair_get( $query ) {
 		if ( ! self::repair_configured() ) {
 			return new WP_Error( 'erp_not_configured', 'Repair tracking is not configured.' );
@@ -269,13 +341,25 @@ class AUN_App_ERP {
 
 		$url = add_query_arg( array_map( 'rawurlencode', $query ), $s['base'] . '/api/repair-status' );
 
-		$response = wp_remote_get( $url, array(
+		$args = array(
 			'timeout' => 15,
 			'headers' => array(
 				'X-API-KEY' => self::repair_api_key(),
 				'Accept'    => 'application/json',
 			),
-		) );
+		);
+
+		// Same local shortcut as get() — this is the repair-status endpoint the
+		// app hits every time somebody opens a repair.
+		$pinned   = class_exists( 'AUN_App_Local_Route' ) && AUN_App_Local_Route::arm( $url );
+		$response = wp_remote_get( $url, $args );
+		if ( $pinned ) {
+			AUN_App_Local_Route::disarm();
+		}
+		if ( $pinned && is_wp_error( $response ) ) {
+			AUN_App_Local_Route::note_failure( 'repair: ' . $response->get_error_message() );
+			$response = wp_remote_get( $url, $args );
+		}
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -297,11 +381,20 @@ class AUN_App_ERP {
 		$activities = array();
 		foreach ( (array) ( $d['activities'] ?? array() ) as $a ) {
 			$a            = (array) $a;
+			$note         = (string) ( $a['note'] ?? '' );
+			$consignment  = self::consignment_in( $note );
 			$activities[] = array(
 				'date'   => (string) ( $a['date'] ?? '' ),
 				'action' => (string) ( $a['action'] ?? '' ),
 				'by'     => (string) ( $a['by'] ?? '' ),
-				'note'   => (string) ( $a['note'] ?? '' ),
+				'note'   => $note,
+				// A courier consignment the engineer typed into the note, pulled
+				// out so the app can offer a tap instead of a number to copy.
+				// Empty for the overwhelming majority of notes.
+				'tracking'     => $consignment,
+				'tracking_url' => '' === $consignment
+					? ''
+					: AUN_App_Services::courier_tracking_url( $consignment ),
 			);
 		}
 

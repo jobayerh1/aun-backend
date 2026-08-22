@@ -1,0 +1,78 @@
+--- stock/app/Http/Controllers/TransactionPaymentController.php
++++ live/app/Http/Controllers/TransactionPaymentController.php
+@@ -127,11 +127,31 @@
+                     event(new TransactionPaymentAdded($tp, $inputs));
+                 }
+ 
+-                //update payment status
+-                $payment_status = $this->transactionUtil->updatePaymentStatus($transaction_id, $transaction->final_total);
+-                $transaction->payment_status = $payment_status;
+-
+-                $this->transactionUtil->activityLog($transaction, 'payment_edited', $transaction_before);
++//update payment status
++$payment_status = $this->transactionUtil->updatePaymentStatus($transaction_id, $transaction->final_total);
++$transaction->payment_status = $payment_status;
++
++
++// ✅ CUSTOM: schedule maintenance SMS only if now paid.
++// For sells, only FINAL sales qualify — drafts holding advance payments never trigger.
++try {
++    $is_final_sell = $transaction->type != 'sell' || $transaction->status == 'final';
++    if ($transaction_before->payment_status !== 'paid' && $payment_status === 'paid' && $is_final_sell) {
++    app(\App\Services\MaintenanceSmsService::class)->handleTransactionIfPaid($transaction_id);
++}
++
++} catch (\Throwable $e) {
++    \Log::error('Maintenance SMS scheduling failed', [
++        'transaction_id' => $transaction_id,
++        'error' => $e->getMessage(),
++        'file' => $e->getFile(),
++        'line' => $e->getLine(),
++    ]);
++}
++
++
++$this->transactionUtil->activityLog($transaction, 'payment_edited', $transaction_before);
++
+ 
+                 DB::commit();
+             }
+@@ -285,11 +305,33 @@
+ 
+             $payment->update($inputs);
+ 
+-            //update payment status
+-            $payment_status = $this->transactionUtil->updatePaymentStatus($payment->transaction_id);
+-            $transaction->payment_status = $payment_status;
+-
+-            $this->transactionUtil->activityLog($transaction, 'payment_edited', $transaction_before);
++//update payment status
++//$payment_status = $this->transactionUtil->updatePaymentStatus($payment//->transaction_id);
++$payment_status = $this->transactionUtil->updatePaymentStatus($payment->transaction_id, $transaction->final_total);
++
++$transaction->payment_status = $payment_status;
++
++// ✅ CUSTOM: for sells, only FINAL sales trigger the maintenance SMS —
++// drafts holding advance payments never do.
++try {
++    $is_final_sell = $transaction->type != 'sell' || $transaction->status == 'final';
++    if ($transaction_before->payment_status !== 'paid' && $payment_status === 'paid' && $is_final_sell) {
++    app(\App\Services\MaintenanceSmsService::class)->handleTransactionIfPaid($payment->transaction_id);
++}
++
++} catch (\Throwable $e) {
++    \Log::error('Maintenance SMS scheduling failed', [
++        'transaction_id' => $payment->transaction_id,
++        'error' => $e->getMessage(),
++        'file' => $e->getFile(),
++        'line' => $e->getLine(),
++    ]);
++}
++
++
++
++$this->transactionUtil->activityLog($transaction, 'payment_edited', $transaction_before);
++
+ 
+             DB::commit();
+ 

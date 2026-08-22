@@ -1,0 +1,12 @@
+--- stock/public/js/pos.js
++++ live/public/js/pos.js
+@@ -2782,6 +2782,9 @@
+         if (data.text) {
+             address.push('<br>' + data.text);
+         }
++        if (data.mobile) {
++            address.push('<br>Mobile: ' + data.mobile);
++        }
+         if (data.address_line_1) {
+             address.push('<br>' + data.address_line_1);
+         }

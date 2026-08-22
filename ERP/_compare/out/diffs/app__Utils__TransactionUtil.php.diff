@@ -1,0 +1,64 @@
+--- stock/app/Utils/TransactionUtil.php
++++ live/app/Utils/TransactionUtil.php
+@@ -710,7 +710,10 @@
+         }
+ 
+         //If status is draft don't add payment
+-        if ($transaction->status == 'draft') {
++        //CUSTOM: plain drafts (empty sub_status) MAY hold payments, so advance/
++        //online payments for out-of-stock orders can be recorded on the draft.
++        //Quotations & proformas (sub_status set) remain payment-free.
++        if ($transaction->status == 'draft' && ! empty($transaction->sub_status)) {
+             return true;
+         }
+         $c = 0;
+@@ -791,7 +794,11 @@
+         }
+ 
+         //Delete the payment lines removed.
+-        if (! empty($edit_ids)) {
++        //CUSTOM: when saving a plain draft from a form that rendered no
++        //existing payment rows (edit_ids only holds the placeholder 0), skip
++        //the cleanup so the draft's advance payments are never silently wiped
++        $skip_payment_delete = $transaction->status == 'draft' && count($edit_ids) <= 1;
++        if (! empty($edit_ids) && ! $skip_payment_delete) {
+             $deleted_transaction_payments = $transaction->payment_lines()->whereNotIn('id', $edit_ids)->get();
+ 
+             $transaction->payment_lines()->whereNotIn('id', $edit_ids)->delete();
+@@ -4895,6 +4902,16 @@
+  
+ 
+         if (! empty($transaction)) {
++            //CUSTOM: drafts can now hold advance payments. Direct deletion
++            //would orphan the payment/account records, so block it until
++            //the payments are removed/refunded first.
++            if ($transaction->status == 'draft' && $transaction->payment_lines->where('is_return', 0)->where('amount', '>', 0)->isNotEmpty()) {
++                return [
++                    'success' => false,
++                    'msg' => 'This draft has payments recorded on it. Please remove/refund the payments before deleting the draft.',
++                ];
++            }
++
+             $log_properities = [
+                 'id' => $transaction->id,
+                 'invoice_no' => $transaction->invoice_no,
+@@ -5000,6 +5017,8 @@
+                         'transactions.payment_status',
+                         'transactions.final_total',
+                         'BS.name as location_name',
++                        //CUSTOM: human-readable Location ID (e.g. "AUN") for its own column
++                        'BS.location_id as business_location_id',
+                         'transactions.pay_term_number',
+                         'transactions.pay_term_type',
+                         'PR.id as return_transaction_id',
+@@ -5158,6 +5177,10 @@
+                     DB::raw('(SELECT SUM(IF(TP.is_return = 1,-1*TP.amount,TP.amount)) FROM transaction_payments AS TP WHERE
+                         TP.transaction_id=transactions.id) as total_paid'),
+                     'bl.name as business_location',
++                    //CUSTOM: human-readable Location ID (e.g. "AUN") shown as its
++                    //own column in the sales list so staff can identify the store
++                    //at a glance. Aliased to avoid clashing with transactions.location_id.
++                    'bl.location_id as business_location_id',
+                     DB::raw('COUNT(SR.id) as return_exists'),
+                     DB::raw('(SELECT SUM(TP2.amount) FROM transaction_payments AS TP2 WHERE
+                         TP2.transaction_id=SR.id ) as return_paid'),

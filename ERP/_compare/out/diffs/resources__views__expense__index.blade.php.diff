@@ -1,0 +1,22 @@
+--- stock/resources/views/expense/index.blade.php
++++ live/resources/views/expense/index.blade.php
+@@ -115,6 +115,8 @@
+                                 <th>@lang('expense.expense_category')</th>
+                                 <th>@lang('product.sub_category')</th>
+                                 <th>@lang('business.location')</th>
++                                {{-- CUSTOM: human-readable Location ID (e.g. AUN) --}}
++                                <th>Location ID</th>
+                                 <th>@lang('sale.payment_status')</th>
+                                 <th>@lang('product.tax')</th>
+                                 <th>@lang('sale.total_amount')</th>
+@@ -127,7 +129,9 @@
+                         </thead>
+                         <tfoot>
+                             <tr class="bg-gray font-17 text-center footer-total">
+-                                <td colspan="7"><strong>@lang('sale.total'):</strong></td>
++                                {{-- CUSTOM: colspan 7 -> 8 after the Location ID column was
++                                     added, so each footer total stays under its own column --}}
++                                <td colspan="8"><strong>@lang('sale.total'):</strong></td>
+                                 <td class="footer_payment_status_count"></td>
+                                 <td></td>
+                                 <td class="footer_expense_total"></td>

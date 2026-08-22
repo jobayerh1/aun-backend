@@ -1,0 +1,58 @@
+UltimatePOS Customization Report
+Generated: 2026-08-20 09:01:57
+Files modified after: 2025-10-17 00:00:00
+Scanning root: /home/bdsmwccr/portal.smartliving.com.bd
+Total customized files: 48
+==============================================================================
+
+2025-11-20 09:59  public/error_log
+2025-11-22 15:09  .htaccess
+2025-11-23 06:01  public/favicon.ico
+2025-11-23 06:07  public/img/logo-small.png
+2025-11-23 06:41  Modules/Repair/Resources/views/job_sheet/print_pdf.blade.php
+2025-11-24 15:11  resources/views/contact/edit.blade.php
+2025-11-24 15:23  resources/views/contact/create.blade.php
+2025-11-27 10:59  app/Providers/AppServiceProvider.php
+2025-11-27 13:49  bimi/smartliving-bimi.svg
+2025-12-04 07:05  Modules/Repair/Resources/views/job_sheet/show.blade.php
+2025-12-06 12:25  Modules/Repair/Http/Controllers/JobSheetController.php
+2025-12-26 12:25  public/js/report.js
+2026-01-02 06:17  resources/views/report/product_sell_report.blade.php
+2026-01-04 10:07  resources/views/report/trending_products.blade.php
+2026-01-16 14:17  Modules/Repair/Routes/web.php
+2026-02-15 09:15  database/migrations/2026_02_15_000001_create_maintenance_sms_schedules_table.php
+2026-02-15 12:02  public/maintenance-sms-cron.php
+2026-03-30 17:27  public/modules/repair/js/app.js
+2026-03-30 17:27  public/modules/repair/sass/app.scss
+2026-03-30 17:27  public/modules/repair/.gitkeep
+2026-05-06 10:27  public/sms_test.php
+2026-05-06 13:33  routes/web.php
+2026-05-07 03:35  app/Jobs/ProcessMaintenanceSms.php
+2026-05-07 05:31  app/Console/Commands/CleanOldSms.php
+2026-05-07 07:13  app/Jobs/ProcessSms.php
+2026-05-10 09:46  Modules/Repair/Utils/RepairUtil.php
+2026-06-11 07:01  app/Utils/NotificationUtil.php
+2026-06-11 12:49  public/js/pos.js
+2026-06-11 12:55  app/Utils/Util.php
+2026-06-12 09:40  resources/views/sell/create.blade.php
+2026-06-12 10:02  app/Http/Controllers/TransactionPaymentController.php
+2026-06-13 11:35  app/Http/Controllers/WarrantyApiController.php
+2026-06-20 05:25  app/Http/Controllers/SellPosController.php
+2026-06-25 15:05  app/Http/Controllers/SalesLookupApiController.php
+2026-07-03 11:28  resources/views/sale_pos/receipts/classic.blade.php
+2026-07-05 07:14  app/Http/Controllers/SellController.php
+2026-07-12 08:57  routes/api.php
+2026-07-16 16:50  app/Http/Controllers/RepairStatusApiController.php
+2026-07-17 16:51  app/Http/Controllers/AppLookupController.php
+2026-08-09 14:51  app/Utils/TransactionUtil.php
+2026-08-09 14:52  app/Http/Controllers/ExpenseController.php
+2026-08-09 14:53  config/constants.php
+2026-08-09 14:54  resources/views/expense/index.blade.php
+2026-08-09 14:56  public/js/app.js
+2026-08-09 14:56  public/js/purchase.js
+2026-08-09 15:09  resources/views/purchase/partials/purchase_table.blade.php
+2026-08-09 15:18  resources/views/sell/index.blade.php
+2026-08-13 13:15  app/Services/MaintenanceSmsService.php
+
+==============================================================================
+REMEMBER: delete this file from the server now.

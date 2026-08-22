@@ -2,14 +2,14 @@
 /**
  * Plugin Name: AUN Spare Parts
  * Description: Spare-parts request intake + per-part tracking for AUN Projector. Reads sales/warranty from the UltimatePOS ERP and a legacy inFlow sales archive; lets customers request parts (no device sent in) and track each part. Phase 1: legacy import + phone/order/serial lookup + warranty calc + image compression.
- * Version: 0.38.0
+ * Version: 0.40.0
  * Author: Smart Living Bangladesh
  * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SP_VERSION', '0.38.0' );
+define( 'AUN_SP_VERSION', '0.40.0' );
 define( 'AUN_SP_FILE', __FILE__ );
 define( 'AUN_SP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SP_URL', plugin_dir_url( __FILE__ ) );
@@ -102,12 +102,18 @@ add_action( 'aun_sp_daily_digest', array( 'AUN_SP_Requests', 'send_digest' ) );
 // composed (priority 5) so today's expiries are reflected in today's email.
 add_action( 'aun_sp_daily_digest', array( 'AUN_SP_Requests', 'process_quotes' ), 5 );
 
+// Hourly: remove unpaid orders the customer never completed, so the shop's Orders
+// list only keeps real sales (the window is set in Spare Parts -> Settings).
+add_action( 'aun_sp_hourly_tidy', array( 'AUN_SP_Woo', 'cancel_abandoned' ) );
+
 // Background retry for failed customer SMS (Alpha busy/down) — scheduled by AUN_SP_SMS::send_tracked.
 add_action( 'aun_sp_sms_retry', array( 'AUN_SP_SMS', 'retry' ), 10, 5 );
 register_deactivation_hook( __FILE__, function () {
-	$ts = wp_next_scheduled( 'aun_sp_daily_digest' );
-	if ( $ts ) {
-		wp_unschedule_event( $ts, 'aun_sp_daily_digest' );
+	foreach ( array( 'aun_sp_daily_digest', 'aun_sp_hourly_tidy' ) as $hook ) {
+		$ts = wp_next_scheduled( $hook );
+		if ( $ts ) {
+			wp_unschedule_event( $ts, $hook );
+		}
 	}
 } );
 

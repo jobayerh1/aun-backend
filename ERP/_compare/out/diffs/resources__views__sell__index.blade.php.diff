@@ -1,0 +1,89 @@
+--- stock/resources/views/sell/index.blade.php
++++ live/resources/views/sell/index.blade.php
+@@ -72,6 +72,8 @@
+                             <th>@lang('sale.customer_name')</th>
+                             <th>@lang('lang_v1.contact_no')</th>
+                             <th>@lang('sale.location')</th>
++                            {{-- CUSTOM: human-readable Location ID (e.g. AUN) --}}
++                            <th>Location ID</th>
+                             <th>@lang('sale.payment_status')</th>
+                             <th>@lang('lang_v1.payment_method')</th>
+                             <th>@lang('sale.total_amount')</th>
+@@ -98,16 +100,44 @@
+                     <tbody></tbody>
+                     <tfoot>
+                         <tr class="bg-gray font-17 footer-total text-center">
+-                            <td colspan="6"><strong>@lang('sale.total'):</strong></td>
+-                            <td class="footer_payment_status_count"></td>
+-                            <td class="payment_method_count"></td>
+-                            <td class="footer_sale_total"></td>
+-                            <td class="footer_total_paid"></td>
+-                            <td class="footer_total_remaining"></td>
+-                            <td class="footer_total_sell_return_due"></td>
+-                            <td colspan="2"></td>
+-                            <td class="service_type_count"></td>
+-                            <td colspan="7"></td>
++                            {{-- CUSTOM: one <td> per column, no colspan. This table uses
++                                 DataTables scrollX, which renders the footer as a separate
++                                 table and sizes its cells BY POSITION — it cannot do that
++                                 correctly across colspan cells, so the totals drifted out
++                                 of alignment. A 1:1 cell-per-column footer always lines up,
++                                 and stays correct even when columns are hidden.
++                                 Order must match the `columns:` list below exactly. --}}
++                            {{-- Cells 0-6 have their inner borders hidden so they read as
++                                 ONE merged "Total:" block (the look colspan used to give),
++                                 while still being separate cells so DataTables can size
++                                 each one to its column and keep the totals aligned. --}}
++                            <td style="border-right:none;"></td>{{-- 0 action --}}
++                            <td style="border-left:none;border-right:none;"></td>{{-- 1 date --}}
++                            <td style="border-left:none;border-right:none;"></td>{{-- 2 invoice_no --}}
++                            <td style="border-left:none;border-right:none;"><strong>@lang('sale.total'):</strong></td>{{-- 3 customer --}}
++                            <td style="border-left:none;border-right:none;"></td>{{-- 4 mobile --}}
++                            <td style="border-left:none;border-right:none;"></td>{{-- 5 location --}}
++                            <td style="border-left:none;"></td>{{-- 6 location id --}}
++                            <td class="footer_payment_status_count"></td>{{-- 7 payment status --}}
++                            <td class="payment_method_count"></td>{{-- 8 payment method --}}
++                            <td class="footer_sale_total"></td>{{-- 9 total amount --}}
++                            <td class="footer_total_paid"></td>{{-- 10 total paid --}}
++                            <td class="footer_total_remaining"></td>{{-- 11 sell due --}}
++                            <td class="footer_total_sell_return_due"></td>{{-- 12 sell return due --}}
++                            <td></td>{{-- 13 shipping status --}}
++                            <td></td>{{-- 14 total items --}}
++                            <td class="service_type_count"></td>{{-- 15 types of service --}}
++                            <td></td>{{-- 16 service custom field 1 --}}
++                            <td></td>{{-- 17 custom field 1 --}}
++                            <td></td>{{-- 18 custom field 2 --}}
++                            <td></td>{{-- 19 custom field 3 --}}
++                            <td></td>{{-- 20 custom field 4 --}}
++                            <td></td>{{-- 21 added by --}}
++                            <td></td>{{-- 22 sell note --}}
++                            <td></td>{{-- 23 staff note --}}
++                            <td></td>{{-- 24 shipping details --}}
++                            <td></td>{{-- 25 table --}}
++                            <td></td>{{-- 26 service staff --}}
+                         </tr>
+                     </tfoot>
+                 </table>
+@@ -218,6 +248,11 @@
+                     {
+                         data: 'business_location',
+                         name: 'bl.name'
++                    },
++                    {
++                        data: 'business_location_id',
++                        name: 'bl.location_id',
++                        defaultContent: ''
+                     },
+                     {
+                         data: 'payment_status',
+@@ -359,7 +394,9 @@
+                     $('.payment_method_count').html(__count_status(data, 'payment_methods'));
+                 },
+                 createdRow: function(row, data, dataIndex) {
+-                    $(row).find('td:eq(6)').attr('class', 'clickable_td');
++                    //CUSTOM: index shifted 6 -> 7 after the Location ID column
++                    //was inserted; this must stay on the Payment Status cell.
++                    $(row).find('td:eq(7)').attr('class', 'clickable_td');
+                 }
+             });
+ 

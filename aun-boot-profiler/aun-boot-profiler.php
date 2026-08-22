@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Boot Profiler
  * Description: Measures how long each active plugin takes to load, plus the main WordPress boot phases. Must-use plugin: loads before everything else.
- * Version: 1.0.0
+ * Version: 1.2.0
  * Author: AUN
  */
 
@@ -16,7 +16,7 @@ final class AUN_Boot_Profiler {
 	const KEY = 'aun-boot-2026';
 
 	/** Only log requests slower than this (seconds). Keeps the log small. */
-	const SLOW_THRESHOLD = 0.75;
+	const SLOW_THRESHOLD = 1.5;
 
 	private $start;
 	private $last;
@@ -99,7 +99,28 @@ final class AUN_Boot_Profiler {
 			$kind = 'admin';
 		}
 
-		return sprintf( '[%s] %s', $kind, substr( $uri, 0, 80 ) );
+		/*
+		 * For ajax and cron the URI is always the same file, which tells us
+		 * nothing. Record what the request actually asked for.
+		 */
+		$detail = '';
+
+		if ( 'ajax' === $kind && ! empty( $_REQUEST['action'] ) ) {
+			$detail = ' action=' . sanitize_key( wp_unslash( $_REQUEST['action'] ) );
+		} elseif ( 'cron' === $kind ) {
+			$due = array();
+			foreach ( (array) _get_cron_array() as $ts => $hooks ) {
+				if ( $ts > time() ) {
+					break;
+				}
+				$due = array_merge( $due, array_keys( (array) $hooks ) );
+			}
+			if ( $due ) {
+				$detail = ' hooks=' . implode( ',', array_slice( array_unique( $due ), 0, 4 ) );
+			}
+		}
+
+		return sprintf( '[%s] %s%s', $kind, substr( $uri, 0, 60 ), $detail );
 	}
 
 	private function wants_browser_output() {
@@ -114,8 +135,8 @@ final class AUN_Boot_Profiler {
 
 		$file = trailingslashit( $dir['basedir'] ) . 'aun-boot-profile.log';
 
-		if ( file_exists( $file ) && filesize( $file ) > 2097152 ) {
-			return; // Stop at 2MB rather than fill the disk.
+		if ( file_exists( $file ) && filesize( $file ) > 10485760 ) {
+			return; // Stop at 10MB rather than fill the disk.
 		}
 
 		file_put_contents( $file, $report, FILE_APPEND | LOCK_EX );

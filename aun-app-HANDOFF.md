@@ -23,11 +23,440 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 1.94.0+98**, **plugin 1.87.0 (DB v20)**, **spare-parts 0.32.0 (DB v10)**,
+Current versions: **app 2.1.1+109**, **plugin 1.98.0 (DB v21)**, **spare-parts 0.39.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-08-22 (2) — app 2.1.1+109: one courier chip, used twice
+
+Owner liked the repair track-parcel chip and asked for the same style on spare parts.
+
+⚠️ **Shared the WIDGET, not the appearance.** Spare parts had an underlined blue link while repairs
+had a filled chip — the same action, in the same app, wearing two different clothes. Both now render
+`_TrackParcelChip`. Copying the styling would have looked identical today and drifted the first time
+either side was touched; sharing the widget means a change to the icon, the wording or a future
+"copied" confirmation lands in both.
+
+Behaviour rules carry over unchanged: the chip appears ONLY when the server produced a URL, so a note
+typed into the tracking field still shows nothing rather than a chip opening a courier page that
+finds nothing.
+
+## 2026-08-22 — app-api 1.98.0: repair PHOTOS were the one call still going the long way
+
+Owner: *"the server is optimised, so why do repair images still take several seconds?"* **Our code,
+and one half of it was a miss when the local route was wired in.**
+
+Measured live: `/repair-image?file=nope.jpg` took **0.8-2.7 s just to return an ERROR** - so the
+time was not the image bytes.
+
+⚠️ **`AUN_App_ERP::fetch_media()` never got the local route.** `get()` and `repair_get()` were wired
+up on 2026-08-19; the media proxy was missed. It is the call where it matters MOST: a repair screen
+fetches every job-sheet photo through it, so ONE screen paid the Cloudflare round trip six or seven
+times - on the largest payloads in the app, where the connection setup repeats on the slowest
+transfers. **When adding a cross-cutting optimisation, enumerate every call site rather than the
+ones you happen to be reading.**
+
+⚠️ **No `s-maxage`, so Cloudflare never cached a single photo.** The response carried
+`max-age=86400`, which is what BROWSERS read; a shared cache reads `s-maxage`, and without it
+Cloudflare left it `DYNAMIC`. Every viewing re-fetched every photo from the ERP through WordPress.
+Now `public, max-age=86400, s-maxage=2592000, immutable` - safe because the URL names one immutable
+file (the ERP uploads a new NAME, it never rewrites one) - plus `Vary: Accept-Encoding` to stop the
+host default `Vary: User-Agent` shredding the edge cache.
+
+**Owner action:** add `/wp-json/aun-app/v1/repair-image` to the Cloudflare cache rule; the header
+makes it eligible but the rule lists paths explicitly.
+
+## 2026-08-22 — REFERRAL AUDIT (no code change): ERP returns are already handled
+
+Owner asked how unlocking works and what a sell return in the ERP does.
+
+**Unlocking is not "an order in the ERP".** `is_established_customer()` accepts EITHER a WooCommerce
+order in a payout status OR a registered projector ("a serial we sold" - how offline buyers qualify
+at all). Deliberately stricter than `has_purchase_history()`, and the code comment records the
+loophole that forced the split: *order at 10am, mint a code, invite the neighbourhood, refuse the
+parcel at the door.*
+
+**ERP sell returns ARE handled.** The hourly sweep calls `lookup_serial()` per device:
+`returned` -> unlinked at once; sale deleted -> 3 strikes then unlinked; **ERP unreachable ->
+skipped, never treated as "they never bought it"**.
+
+**And the obvious loophole is closed:** `claim()` re-checks `can_invite( $referrer )` LIVE at the
+endpoint, not just in the app UI - so a code shared before a return stops working within the hour.
+
+⚠️ **The one real gap is a PROCESS one, not code.** Rewards reverse on WooCommerce refunds
+(`on_order_reversed` + `on_partial_refund`). A website sale returned **in the ERP only**, without
+refunding or cancelling the Woo order, fires nothing and the referrer keeps the reward.
+**Staff rule: a returned website sale must be refunded in WooCommerce, not just in the ERP.**
+
+Judgement recorded: rewards already earned SHOULD survive the referrer later returning their own
+projector - the friends' purchases were real. Changing that is a policy decision, not a bug fix.
+
+## 2026-08-21 (2) — app 2.1.0+108 / app-api 1.97.0: repair status chip + track-parcel chip
+
+### Referral programme: audited, NOT the mu-plugin (unresolved, needs a symptom)
+
+Owner suspected the mu-plugin broke referrals. Audited rather than guessed: `AUN_App_Referrals`
+depends only on WooCommerce (**kept**) and its own `AUN_App_*` classes, and the payout hook
+`woocommerce_order_status_changed` fires on website checkout, wp-admin, the SSLCommerz callback and
+cron — **none of which the mu-plugin touches** (`is_admin()` + a URI test for `/wp-json/aun-app/`).
+On the one path it does touch, `aun-app-api` is kept, so the hook is still registered.
+
+**No mechanism found. The A/B to settle it:** `define( 'AUN_API_LEAN_OFF', true )` in wp-config,
+retest, remove. Still open — nobody has said WHAT looks wrong.
+
+### The repair row was speaking a different language from the spare-parts row
+
+Spare parts showed a status CHIP; repairs showed bold coloured Text. Side by side on one screen, the
+text read as a heading rather than a state. Repairs now use the same `statusChip`.
+
+⚠️ **On its own line, NOT inline like spare parts.** Workshop statuses are long ("Repair Not
+Authorized – Customer Unresponsive") and would crush the ref; `Flexible` lets one wrap inside the
+pill instead of overflowing the card.
+
+⚠️ Coloured by STATE, not wording: `isFinished` (which includes `erp_completed`) goes green as soon
+as the ERP says so, without waiting for the 10-minute poll — but **never overrides a rejection**,
+which must stay red.
+
+### Track-parcel chip, mirroring slb-repair-tracker
+
+The service centre types a consignment into an engineer's note ("Sent by Pathao DA200826WQJCJ5"), and
+the website turns it into a tappable chip. The app now does too.
+
+**Extraction is SERVER-side** (`AUN_App_ERP::consignment_in()`), and the URL still comes from the
+shared `AUN_App_Services::courier_tracking_url()` — so only the "find it in prose" rule is new.
+⚠️ **That rule mirrors the tracker plugin's JAVASCRIPT regex** (2-3 letters, 6-8 digits, 4-10
+alphanumerics) and must be kept in step, or the website and the app will disagree about whether the
+same note contains a trackable parcel.
+
+⚠️ **A bug worth remembering:** writing the pattern through a shell heredoc put a literal BACKSPACE
+byte (0x08) into the PHP where `` was intended. The regex would have matched nothing, ever, and
+the feature would have looked implemented while doing nothing. Caught only by testing against real
+notes. **After writing a regex through any tooling, print it back and look at it.**
+
+**UI choices:** a filled chip, not a link — underlined text mid-paragraph is easy to read straight
+past, and this is the one thing on that line the customer can act on. It shows the NUMBER as well as
+the action, because somebody phoning the courier has to read it out.
+
+**Tests:** extraction verified 6/6 on the bench against real IDs from the owner's screenshots and on
+ordinary notes ("replaced the LCD panel, tested 30 minutes" -> nothing).
+
+## 2026-08-21 — LIVE INCIDENT: a third-party plugin white-screened the Spare Parts admin
+
+Owner saved a delivery charge on request 17 and got a WordPress critical error. **Not caused by the
+app work or the mu-plugin** — that bails out twice on an admin URL (`is_admin()`, and the URI does
+not contain `/wp-json/aun-app/`). Verified before anything else was touched.
+
+**What happened**, reading the trace bottom-up:
+`sync_delivery_charge()` -> `create_order()` -> `wc_create_order()` -> WooCommerce fires its order
+hooks -> **"Connect for Yeamazing" throws `get() on null`** at `YEAMCO_WcHooks.php:119`. It expects a
+cart or session that does not exist in wp-admin: written for storefront checkout, and the Spare Parts
+screen creates orders from the admin side.
+
+The bug is theirs. **Taking the whole screen down was ours to prevent.**
+
+### spare-parts 0.39.0
+
+`create_order()` is now a thin wrapper with a try/catch; the work moved to a private `build_order()`.
+
+⚠️ **`\Throwable`, NOT `Exception`.** "Call to a member function on null" is a PHP **Error**, which
+sails straight past `catch ( Exception $e )`. Getting this wrong would look like a fix and change
+nothing.
+
+⚠️ **`sync_delivery_charge()` was lying.** It returned `'updated'` unconditionally, so a failed
+rebuild still told the admin "Delivery charge updated on the customer's order" — they would have sent
+a payment link carrying the OLD total. It now returns `'failed'` and the notice says the charge was
+saved but the payment order was not.
+
+⚠️ **A leaked mute window.** `create_order()` calls `mute_on()` early but could return without
+`mute_off()`, leaving a `pre_http_request` filter armed for the rest of the request and silently
+blocking other plugins' outbound HTTP. The catch block closes it.
+
+**Tests:** NEW bench `test-order-crash-guard.php` (**4**) — reproduces the incident with a hook that
+throws the same `Error` shape, and asserts the page survives, the admin is told the truth, and orders
+build again once the bad plugin is gone. ⚠️ **Reaching the final line IS the assertion**: a
+regression fatals the run rather than printing a FAIL.
+
+**Still open for the owner:** Yeamazing is still broken, it just cannot take the screen down now. If
+it is unused, deactivate it and the problem is gone entirely; if it is used, its author needs to know
+their hook fatals on admin-created orders.
+
+## 2026-08-20 (3) — app 2.0.3+107: the photo rail reaches the screen edge
+
+Owner asked whether the count in the heading was the right call, or whether a scrollbar would be
+better. **The count is right and the scrollbar was wrong** — a scrollbar answers "where am I in this
+list", which is meaningless for six photos, and it draws over the content (which is exactly what the
+owner saw). Gmail, iOS Photos, Amazon and the Material 3 carousel guidance all use PEEK; WhatsApp and
+Drive put the COUNT in the header. This rail now has both, and dots were rejected because they belong
+to one-at-a-time carousels, not multi-item rails.
+
+The one real weakness that discussion exposed: the rail sat inside the page's `EdgeInsets.all(16)`,
+so an overflowing tile was clipped **at the content margin**. That reads as "the strip ends here and
+the last one is oddly cut"; a tile clipped by the **screen edge** reads as "this continues", which is
+the entire job of a peek.
+
+⚠️ **Flutter has no negative padding.** The idiom is `OverflowBox`: give the child a constraint
+`maxWidth + 32` and centre it, so it spills 16 px past each side; the ListView's own
+`padding: horizontal 16` then puts the first and last tiles back on the page margin, so only a
+SCROLLED tile ever reaches the edge.
+
+⚠️ **Nothing is clipped, and that is by construction rather than luck:** the page's ListView viewport
+is already full-width and its padding insets CONTENT, not the canvas — so painting into that margin
+is legitimate. If the rail is ever moved inside a Card or a clipping parent, this breaks and the
+tiles will be cut at the old margin again.
+
+## 2026-08-20 (2) — app 2.0.2+106: the photo rail, third attempt and the right one
+
+Owner, on the 2.0.1 build: *"the thumbnail is like this new design now, and the scrollbar appears on
+them. please fix the design and make it beautiful."* Both fair. A screenshot showed portrait phone
+screenshots stranded between wide grey bars, and the scrollbar drawn across the bottom of the first
+photo.
+
+⚠️ **Two attempts, wrong in opposite directions, because both treated it as a choice of BoxFit:**
+
+| tile | result |
+|---|---|
+| fixed landscape + `cover` | filled the frame; closing a portrait photo JERKED (viewer is `contain`) |
+| fixed landscape + `contain` | flight smooth; every portrait photo LETTERBOXED |
+
+**The fit was never the variable. The SHAPE was.** New `_PhotoThumb` sizes each tile to its own
+image's aspect ratio: one shared height (116) so the rail keeps a straight top and bottom, width from
+the photo. When the tile matches the photo, `cover` and `contain` render identically — it fills its
+frame AND the Hero flight is geometrically exact end to end.
+
+Details that matter:
+- Asks the image its shape through the SAME `ImageProvider` it then draws, so it resolves from
+  Flutter's cache — no extra download.
+- ⚠️ Aspect **clamped to ~0.62–1.78**. A panorama would fill the whole rail and hide that there are
+  five more photos; a very tall shot would shrink to an unrecognisable sliver.
+- `AnimatedContainer`: the true shape arrives a frame or two after first paint, so the tile eases
+  from a neutral 4:3 rather than snapping.
+
+⚠️ **The Scrollbar is REMOVED, and should not come back.** It was added for discoverability and drew
+over the photo — a horizontal scrollbar lives inside the scroll view's own box, and the tiles filled
+that box. The count in the heading plus the half-visible next tile carry that job. Varied tile widths
+help too: a rail of identical rectangles could plausibly end at the screen edge; irregular ones read
+as continuing.
+
+**Left alone deliberately:** the spare-parts reference image (`services_screens.dart`) is a 48 px
+square badge beside a checkbox, not a rail. It is `contain` at every stage, so it is self-consistent
+and has nothing to tear; aspect-sizing it would break the checkbox row.
+
+⚠️ **Process note:** `AunMotion.quick` was used without importing `motion.dart`, and a watcher that
+matched on the wrong word led to reporting analyze as clean before it had finished. It had not — the
+missing import would have failed the build. **Match a watcher on the tool's OWN completion string,
+never on a word that another line of output might contain.**
+
+## 2026-08-20 — app 2.0.1+105: two layout bugs the owner spotted on a real phone
+
+### 1. The tracking link drew straight through the status text
+
+The part row was a `ListTile`, and its halves fought for width with nothing bounded: `trailing`
+carried a status label as long as "Dispatched to customer (courier)" and took whatever it wanted,
+while `subtitle` carried the ETA AND the tracking link.
+
+⚠️ **ListTile is for a title, one line of detail and a SMALL trailing widget.** This row has six
+pieces of information. Replaced with `_PartRow`: left side `Expanded` (long names and consignment
+numbers wrap), right side `ConstrainedBox(maxWidth: 116)` (the status label can no longer push into
+the left side; it wraps to two lines), and the tracking link on its OWN line with the number
+`Flexible` so it wraps inside the link rather than shoving the icon off the edge.
+
+### 2. The image viewer jerked and stretched on close
+
+Owner: *"it zooms out then sudden jerk and it stretched to the landscape thumbnail again."* Three
+stages, and one disagreed:
+
+| stage | fit |
+|---|---|
+| thumbnail | **cover** |
+| Hero flight shuttle (`heroImageShuttle`) | contain |
+| full-screen viewer | contain |
+
+So the return flight shrank the photo correctly and then, **on its very last frame**, swapped to a
+cover-cropped thumbnail. Worst on the PORTRAIT photos the service centre uploads, because cover
+crops those hardest.
+
+⚠️ **All three stages must use the same BoxFit or a Hero tears at the hand-off.** Now `contain`
+everywhere, on a tinted tile so a portrait photo has somewhere to sit instead of being cropped.
+Fixed in BOTH places that use `heroImageShuttle` with a thumbnail — the repair job-sheet photos and
+the spare-parts reference photos had the identical bug.
+
+**Also (owner observation):** a horizontal rail that runs off the screen edge looks exactly like a
+rail with nothing more in it. The heading now reads "Attachments (5)" when there is more than one,
+and an always-visible `Scrollbar` sits under the rail — one that appears only once you are already
+scrolling cannot tell you that scrolling is possible. ⚠️ It needs its OWN `ScrollController`: the
+page's PrimaryScrollController belongs to the vertical list, and handing that to a horizontal rail
+draws a bar tracking the wrong axis.
+
+The full-screen viewer already supported swiping through every photo with a "2 / 5" counter. That
+was working — just undiscoverable from the rail.
+
+## 2026-08-19 (2) — THE BIG ONE: app REST bootstrap 1300 ms -> 110 ms
+
+`mu-aun-api-lean.php` (in the workdir; installs to `wp-content/mu-plugins/`) drops **49 of the 68
+active plugins** on requests whose URI contains `/wp-json/aun-app/`. Measured from outside, same
+server, same minute — the ONLY difference is the URL path:
+
+| route | TTFB |
+|---|---|
+| `/wp-json/aun-app/v1/ping` (trimmed) | **100-123 ms** |
+| `/wp-json/wp/v2/types` (not trimmed) | **1260-1620 ms** |
+
+`/config` measured **1136 ms** on 2026-08-15 and **72-210 ms** after. ~90% of the app's server time
+was WordPress loading a slider suite, three SEO plugins, Site Kit, Facebook for WooCommerce and a
+file manager, on requests that return JSON.
+
+**This dwarfs everything else done for speed this week.** The local ERP route saved ~90 ms; this
+saved ~1200 ms.
+
+⚠️ **`aun-latency-probe.php` CANNOT measure this.** The probe is a direct `.php` file, not a REST
+request, so the mu-plugin's URI test never matches and Section D still reports 68 plugins and ~630 ms.
+That is correct behaviour, not a failure — but do not read Section D as "the trimming did not work".
+Measure with `curl` against `/wp-json/aun-app/v1/ping` instead.
+
+**Kept, and why** — traced from real calls, not guessed: WooCommerce, SSLCommerz, smart-coupons,
+spare-parts, warranty, erp-sync, repair-tracker, projector-wizard, throw-calculator, help-center,
+alpha-sms + otp-login, maintenance-sms, wpo365 mailer, and **wordfence** (the API is the most exposed
+surface we have; never unload the firewall). TranslatePress is kept deliberately —
+`AUN_SP_I18N::req_lang()` falls back to it, and dropping it would make Bangla quietly return in
+English on some responses.
+
+⚠️ A DENY-list, not an allow-list: a deny-list can only remove what is named, so the blast radius is
+readable. Off switch: `define( 'AUN_API_LEAN_OFF', true )`.
+
+### Still open after this
+
+- ⚠️ **1.96.0's edge-cache headers are NOT live** — `/config` still answers `public, max-age=0`
+  (the WordPress default), so the Cloudflare cache rule caches nothing. Check the deployed version in
+  wp-admin. Worth much less now that the bootstrap is 110 ms, but the rule is inert until it is fixed.
+- **APCu IS available and enabled** (cPanel screenshot + probe both confirm) — an earlier note here
+  said to skip the object cache because Namecheap has no Redis/Memcached. That was right about
+  Redis/Memcached and wrong about the conclusion. APCu can back a WordPress object cache.
+- **The WEBSITE is still slow** (1.3-1.6 s). The mu-plugin only trims app routes. Shop pages need
+  those plugins, so the same trick does not transfer — an object cache is the lever there.
+- **Autoloaded options: 283 KB / 1434 rows = healthy** (under 300 KB). But it holds dead data from
+  plugins removed years ago: WPML (`icl_*`, `wpml_*`, `otgs_*`, ~60 KB), Yoast (`wpseo_titles`),
+  P3 Profiler (`p3_scan_*` dated 2019), Jetpack, Kirki. Tidy, not urgent.
+- ⚠️ **Cloudflare's route to the ERP degraded badly during this run** — 636 ms vs 25 ms pinned
+  (TCP connect alone was 82 ms). The local route insulated the app completely. That is the value of
+  AUN_App_Local_Route showing up in the wild.
+
+## 2026-08-19 — app-api 1.95.0: MEASURED, then fixed — the ERP/osTicket hop stays on the machine
+
+Owner asked whether the WordPress -> ERP / -> osTicket "handshake" could be sped up. It was measured
+on the live server with `aun-latency-probe.php` (kept in the workdir; admin-only, read-only, works
+via `wp eval-file` OR a browser visit).
+
+### ⚠️ The first hypothesis was WRONG, and the measurement said so
+
+The guess was "the TLS/DNS handshake is the cost". It is not:
+
+| call | DNS+TCP | waiting for the reply | total |
+|---|---|---|---|
+| ERP | 15.9 ms | 173.7 ms | 189.6 ms |
+| bridge | 13.9 ms | 337.1 ms | 351.0 ms |
+
+Handshake is **4-8%** of the call. The rest is the other application thinking. **Do not go back and
+optimise the handshake.**
+
+### ⚠️ And the probe's OWN verdict line was wrong — a 404 is not a fast answer
+
+v2 reported "96% saving" by comparing against `127.0.0.1` runs that returned **HTTP 404**: loopback
+answers on :443 but with the WRONG vhost. The verdict took the fastest local run without checking it
+was a VALID one. **Whenever a benchmark compares two routes, assert the status code first.**
+
+Real comparison, 200-only, best of three:
+
+| call | via Cloudflare | via server IP | saving |
+|---|---|---|---|
+| ERP | 132 ms (worst 187) | **33 ms** (worst 38) | ~99 ms (75%) |
+| bridge | 103 ms (worst 302) | **17 ms** (worst 26) | ~86 ms (83%) |
+
+The WORST case is the prize: Cloudflare swung 103-302 ms, local sits at 17-26 ms.
+
+### New `AUN_App_Local_Route`
+
+`CURLOPT_RESOLVE` changes only the IP dialled — URL, Host header and TLS SNI are untouched, so the
+vhost still routes and the request is byte-identical at the far end. Wired into `AUN_App_ERP::get()`,
+`AUN_App_ERP::repair_get()` and `AUN_App_Tickets::call()`.
+
+⚠️ **Pins to `SERVER_ADDR`, NEVER to 127.0.0.1** — loopback returned 404 for both hostnames when
+measured. "Surely localhost is faster" is the edit that would break both services.
+
+⚠️ **The IP is read from the server, never hardcoded** — a host migration cannot strand us pointing
+at somebody else's machine. Captured on `init` from web traffic, because SERVER_ADDR does not exist
+under WP-CLI or cron, which is when the polls run.
+
+⚠️ **READS ONLY.** POSTs were wired up first and then deliberately removed: the failure-retry cannot
+tell "connection died before anything happened" from "the reply was accepted and the answer got
+lost", so a retried POST could post a customer's support reply twice. The shortcut buys ~100 ms and
+nobody notices that on a button they pressed on purpose.
+
+⚠️ **Certificate verification is off for pinned calls only.** The origin serves a Cloudflare Origin
+Certificate, which cannot validate publicly — that is what failed in v1. Verification proves you
+reached the intended machine; here that machine is the one running the code.
+
+**Backs off on any failure** for 10 minutes and immediately retries the normal way, so a broken
+shortcut is one slow call, never a broken repair screen. Off switch: `AUN_APP_NO_LOCAL_ROUTE` or the
+`local_route` option. `AUN_App_Local_Route::status()` reports on/off/backed-off for an admin screen.
+
+**Verified on the bench:** declines to arm with no IP known; arms once the IP is known; declines for
+this site's own hostname (self-deadlock guard); `enabled()` false after a failure.
+
+**Perspective, still true:** ~90 ms saved sits inside a request already paying **~1000 ms of
+WordPress bootstrap**. Worth having, but the elephant is unchanged.
+
+## 2026-08-16 (7) — app-api 1.94.0: ticket threads cached; a probe for the ERP hop
+
+Owner asked whether the WordPress→ERP / WordPress→osTicket "handshake" can be sped up, since all
+of it lives on the same Namecheap machine.
+
+### The hypothesis worth testing (NOT yet confirmed)
+
+Both `AUN_App_ERP::get()` and `AUN_App_Tickets::call()` reach their service by its PUBLIC hostname
+through `wp_remote_get`. With DNS on Cloudflare that likely means the call leaves the server, goes
+to a Cloudflare edge, and comes back to the SAME machine — paying a DNS lookup, a TCP handshake and
+a full TLS negotiation for a service one directory away, on every app request that needs a repair
+status or a ticket.
+
+⚠️ **This is a hypothesis, not a measurement.** Server-to-server latency is invisible from a Claude
+session; only the owner's server can answer it. Hence:
+
+**NEW `erp-latency-probe.php`** — run on the LIVE server with `wp eval-file`. Read-only, prints no
+secrets. For the ERP and the bridge it reports which IP the call actually reaches and where the
+milliseconds go (DNS / TCP / TLS / first byte), then retries both pinned to `127.0.0.1` via
+**`CURLOPT_RESOLVE`** — which keeps the URL, Host header and TLS SNI identical, so vhost routing and
+certificate validation still work and only the dialled IP changes.
+
+Three outcomes, all useful: a Cloudflare address on the normal route confirms the hairpin; a FAILED
+local attempt means the shortcut is unavailable (many shared hosts block connections to their own
+IP) and the idea is dead; and if `first byte − tls done` dominates, it is the other service's own
+thinking time and no networking change will help.
+
+### ⚠️ Fixed without waiting: ticket threads had NO cache at all
+
+Repairs have cached their ERP lookup for 2 minutes since day one. `AUN_App_Tickets::thread()` cached
+nothing, so every open, re-open, back-navigation and pull-to-refresh paid a full round trip to
+osTicket through the bridge — the slowest hop in the app.
+
+Now **45 seconds**, and the number is deliberate rather than copied from repairs: a ticket is a
+CONVERSATION. Two minutes would hide a staff reply that has already fired a push, so the customer
+taps the notification and sees nothing new.
+
+**Two invalidations make it safe:**
+- `reply()` clears it — otherwise the customer posts a message and gets back a 45-second-old thread
+  without it.
+- `poll_replies()` clears it per affected customer BEFORE sending the push — that is precisely the
+  "tapped the notification, saw nothing" case.
+
+The cached value is the FINISHED shape, not the raw bridge body, so the HTML cleaning (data-URI
+markers, the agent-only context table, cid: images) is not redone on every open.
+
+**Tests:** NEW bench `test-ticket-cache.php` (**9**). A support thread is the most private thing in
+the app, so a key collision here is a DISCLOSURE, not a slow page — the suite asserts that the same
+ticket viewed by two different customers gets different entries, that an extra address on the
+account is a different view, and that clearing one customer's copy leaves the other's intact.
 
 ## 2026-08-16 (6) — app 2.0.0+104: two detail screens that had the data and waited anyway
 

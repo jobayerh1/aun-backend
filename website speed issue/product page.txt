@@ -1,0 +1,101 @@
+Component	SELECT	SHOW	UPDATE	INSERT	Time
+Plugin: woocommerce	176				0.1318
+WordPress Core	24	1	4		0.0306
+Parent Theme	19				0.0218
+Plugin: google-site-kit	34				0.0205
+Plugin: seo-by-rank-math	24				0.0128
+Plugin: wp-file-download	34	2	2	1	0.0117
+Plugin: translatepress-multilingual	6				0.0048
+Plugin: facebook-for-woocommerce	10				0.0048
+Plugin: woocommerce-smart-coupons	23				0.0041
+Plugin: discontinued-products	16				0.0035
+Plugin: download-manager	18				0.0031
+Plugin: wc-sslcommerz-easycheckout	1				0.0028
+Plugin: wordfence	11				0.0028
+Plugin: wp-file-download-cloud-addon	13				0.0027
+Plugin: wp-rollback	1				0.0023
+Plugin: wb-custom-product-tabs-for-woocommerce	8				0.0022
+Plugin: customer-reviews-woocommerce	13				0.0020
+Plugin: query-monitor	5				0.0013
+Plugin: AUN Smart Bundler	6				0.0010
+Plugin: google-listings-and-ads	3				0.0008
+Plugin: AUN-Projector-Wizard	1				0.0004
+Plugin: wp-rocket	2				0.0004
+Plugin: wpo365-msgraphmailer	1				0.0004
+MU Plugin: health-check-troubleshooting-mode.php	3				0.0004
+Plugin: aun-dealer-locator-v1.1	1				0.0004
+Plugin: akismet	1				0.0003
+Plugin: aun-tutorial-video	1				0.0003
+Plugin: wp-mail-logging	1				0.0003
+Plugin: translatepress-business	1				0.0002
+Plugin: classic-editor	2				0.0002
+Plugin: health-check	1				0.0002
+Plugin: aun-campaign-bar	1				0.0002
+Plugin: aun-chat-order	1				0.0001
+Plugin: omnisend-connect	1				0.0001
+463	3	6	1	0.2714
+
+
+HTTP API
+Method	URL	Status	Caller	Component	Timeout	Time
+POST	https://graph.facebook.com/v21.0/338819870608047/events	200 OK	
+WooCommerce\Facebook\Framework\Api\Base->do_remote_request()
+wp-content/plugins/facebook-for-woocommerce/includes/Framework/Api/Base.php:114
+WooCommerce\Facebook\Framework\Api\Base->perform_request()
+wp-content/plugins/facebook-for-woocommerce/includes/Framework/Api/Base.php:87
+WooCommerce\Facebook\API->perform_request()
+wp-content/plugins/facebook-for-woocommerce/includes/API.php:102
+WooCommerce\Facebook\API->send_pixel_events()
+wp-content/plugins/facebook-for-woocommerce/includes/API.php:788
+WC_Facebookcommerce_EventsTracker->send_api_event()
+wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php:1594
+WC_Facebookcommerce_EventsTracker->inject_view_content_event()
+wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php:769
+do_action('woocommerce_after_single_product')
+wp-content/themes/flatsome/woocommerce/content-single-product.php:44
+require(wp-content/themes/flatsome/woocommerce/content-single-product.php)
+wp-content/themes/flatsome/woocommerce/content-single-product.php:44
+load_template(wp-content/themes/flatsome/woocommerce/content-single-product.php)
+wp-includes/template.php:816
+wc_get_template_part()
+wp-content/plugins/woocommerce/includes/wc-core-functions.php:290
+Plugin: facebook-for-woocommerce	60	0.3318
+Total: 1	0.3318
+
+
+No data logged.
+
+Read about profiling and logging in Query Monitor.
+
+
+GET https://aun-projector.com.bd/aun-u002-pro-full-hd-dustproof-tof-laser-auto-focus-android-projector-4k-support/ → 200
+Page Generation Time
+2.6328 seconds
+0.1% of 3,000s limit
+
+Peak Memory Usage
+116,784,496 bytes (111.4 MB)
+5.5% of 2,042 MB server limit
+
+Database Queries
+0.2714 seconds
+
+SELECT: 463
+SHOW: 3
+UPDATE: 6
+INSERT: 1
+Total: 473
+
+HTTP API Calls
+0.3318 seconds
+
+Total: 1
+Object Cache
+96.0% hit rate (41,988 hits, 1,417 misses)
+
+Persistent object cache plugin not in use
+
+The APCu object cache extension for PHP is installed but is not in use by WordPress. You should install a APCu plugin.
+
+Opcode Cache
+Opcode cache in use: Zend OPcache

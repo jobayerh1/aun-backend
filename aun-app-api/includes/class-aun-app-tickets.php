@@ -184,10 +184,44 @@ class AUN_App_Tickets {
 		if ( 'POST' === $method ) {
 			$args['headers']['Content-Type'] = 'application/json; charset=utf-8';
 			$args['body']                    = wp_json_encode( $params );
-			$response                        = wp_remote_post( $url, $args );
 		} else {
-			$url      = add_query_arg( array_map( 'rawurlencode', array_map( 'strval', $params ) ), $url );
-			$response = wp_remote_get( $url, $args );
+			$url = add_query_arg( array_map( 'rawurlencode', array_map( 'strval', $params ) ), $url );
+		}
+
+		// The bridge is on this machine. Going out to Cloudflare and back cost
+		// ~100 ms typically and 300 ms at worst; pinned it is ~17 ms. This is
+		// the slowest hop in the app, so it is the one most worth shortening.
+		// See AUN_App_Local_Route.
+		$send = function () use ( $method, $url, $args ) {
+			return 'POST' === $method
+				? wp_remote_post( $url, $args )
+				: wp_remote_get( $url, $args );
+		};
+
+		// ⚠️ READS ONLY. A POST to the bridge creates a ticket or posts a
+		// reply, and the retry below cannot tell "the connection failed before
+		// anything happened" from "the reply was accepted and the answer got
+		// lost" — so retrying a POST could post the customer's message twice.
+		//
+		// Nothing is lost by leaving POSTs alone: the shortcut buys ~100 ms, and
+		// nobody notices 100 ms on a button they deliberately pressed. It is
+		// the READS — opening a ticket, loading a thread — where the wait is
+		// staring the customer in the face.
+		$pinned = 'POST' !== $method
+			&& class_exists( 'AUN_App_Local_Route' )
+			&& AUN_App_Local_Route::arm( $url );
+
+		$response = $send();
+		if ( $pinned ) {
+			AUN_App_Local_Route::disarm();
+		}
+
+		// A failed shortcut must never be the customer's answer: back off for
+		// ten minutes and ask again the normal way. Safe here precisely because
+		// this only ever runs for a GET.
+		if ( $pinned && is_wp_error( $response ) ) {
+			AUN_App_Local_Route::note_failure( 'bridge: ' . $response->get_error_message() );
+			$response = $send();
 		}
 
 		if ( is_wp_error( $response ) ) {
@@ -323,11 +357,27 @@ class AUN_App_Tickets {
 			'ref'    => (int) $ref,
 		) );
 
-		$response = wp_remote_get( $url, array(
+		$args = array(
 			'timeout'    => 25,
 			'headers'    => array( 'X-AUN-Bridge-Secret' => $s['secret'] ),
 			'user-agent' => 'AUN-App-Bridge/1.0',
-		) );
+		);
+
+		// ⚠️ This does NOT go through call(), so it does not inherit call()'s
+		// local route - it was missed for the same reason fetch_media() was:
+		// enumerate CALL SITES, not the functions you happen to be reading.
+		// It downloads a file, so it is in the same large-payload class as the
+		// repair photos, where the round trip out to Cloudflare hurts most.
+		$pinned   = class_exists( 'AUN_App_Local_Route' ) && AUN_App_Local_Route::arm( $url );
+		$response = wp_remote_get( $url, $args );
+		if ( $pinned ) {
+			AUN_App_Local_Route::disarm();
+		}
+		if ( $pinned && is_wp_error( $response ) ) {
+			AUN_App_Local_Route::note_failure( 'attachment: ' . $response->get_error_message() );
+			$response = wp_remote_get( $url, $args );
+		}
+
 		if ( is_wp_error( $response ) ) {
 			return $response;
 		}
@@ -528,8 +578,46 @@ class AUN_App_Tickets {
 	}
 
 	/** @return array|WP_Error {ticket, entries[]} */
+	/** How long a fetched thread stays warm. See thread() for the reasoning. */
+	const THREAD_CACHE_TTL = 45;
+
+	/** Cache key for one customer's view of one ticket. */
+	private static function thread_key( $number, $emails ) {
+		// The emails are part of the key, not just the number: the bridge filters
+		// the thread by owner, so two people must never share a cached copy.
+		return 'aun_app_ost_th_' . md5( (string) $number . '|' . implode( ',', (array) $emails ) );
+	}
+
+	/** Drop the cached copy of a thread — call after anything that changes it. */
+	public static function forget_thread( $number, $emails ) {
+		delete_transient( self::thread_key( $number, $emails ) );
+	}
+
 	public static function thread( $me, $number ) {
 		$emails = self::emails_for_user( $me['user_id'], $me['phone'] );
+
+		// ⚠️ 45 seconds, and the number is chosen rather than inherited.
+		//
+		// Repairs have cached their ERP lookup for 2 minutes since day one;
+		// ticket threads cached NOTHING, so every open paid a full round trip to
+		// osTicket through the bridge — the slowest hop in the app — and so did
+		// every re-open, every back-and-forward, and every pull-to-refresh.
+		//
+		// Why not 2 minutes here: a ticket is a CONVERSATION. Staff reply while
+		// the customer is looking at the screen, and a two-minute-old thread
+		// would hide a reply that has already triggered a push notification —
+		// the customer taps the notification and sees nothing new. 45 s is long
+		// enough to cover opening, reading and re-opening, short enough that a
+		// reply is never far away.
+		//
+		// A REPLY clears it outright (see reply()), so the customer's own
+		// message is never missing from the thread they just posted it to.
+		$key    = self::thread_key( $number, $emails );
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
 		$body   = self::call( 'thread', array(
 			'number' => (string) $number,
 			'emails' => implode( ',', $emails ),
@@ -594,10 +682,15 @@ class AUN_App_Tickets {
 			);
 		}
 
-		return array(
+		$out = array(
 			'ticket'  => is_array( $body['ticket'] ?? null ) ? $body['ticket'] : null,
 			'entries' => $entries,
 		);
+		// Cache the FINISHED shape, not the raw bridge body: the HTML cleaning
+		// above (data-URI markers, the agent-only context table, cid: images) is
+		// pure CPU we would otherwise redo on every open.
+		set_transient( $key, $out, self::THREAD_CACHE_TTL );
+		return $out;
 	}
 
 	/** @return array|WP_Error {number} */
@@ -612,6 +705,10 @@ class AUN_App_Tickets {
 		if ( is_wp_error( $body ) ) {
 			return $body;
 		}
+		// The thread just changed, and the app reloads it immediately after this
+		// returns. Without this the customer would post a message and watch a
+		// 45-second-old copy of the conversation come back without it.
+		self::forget_thread( $number, $emails );
 		return array( 'number' => (string) ( $body['number'] ?? $number ) );
 	}
 
@@ -688,6 +785,14 @@ class AUN_App_Tickets {
 			}
 
 			foreach ( self::users_for_ticket_email( (string) ( $reply['email'] ?? '' ) ) as $user_id ) {
+				// ⚠️ A staff reply just landed, and we are about to PUSH about it.
+				// Drop this customer's cached thread first, or they tap the
+				// notification and are shown a copy from before the reply — the
+				// exact "nothing new here" moment the push exists to avoid.
+				self::forget_thread(
+					$number,
+					self::emails_for_user( (int) $user_id, (string) AUN_App_Phone::user_phone( (int) $user_id ) )
+				);
 				$title    = "Support replied — ticket #$number";
 				$title_bn = "সাপোর্ট উত্তর দিয়েছে — টিকিট #$number";
 				$id       = AUN_App_Notices::create( array(

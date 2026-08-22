@@ -1,0 +1,10 @@
+--- stock/public/js/app.js
++++ live/public/js/app.js
+@@ -1522,6 +1522,7 @@
+             { data: 'category', name: 'ec.name' },
+             { data: 'sub_category', name: 'esc.name' },
+             { data: 'location_name', name: 'bl.name' },
++            { data: 'business_location_id', name: 'bl.location_id', defaultContent: '' },
+             { data: 'payment_status', name: 'payment_status', orderable: false },
+             { data: 'tax', name: 'tr.name' },
+             { data: 'final_total', name: 'final_total' },
