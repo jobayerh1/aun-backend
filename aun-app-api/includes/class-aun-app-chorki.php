@@ -79,6 +79,15 @@ class AUN_App_Chorki {
 	 */
 	const MATCH_MIN = 0.86;
 
+	/**
+	 * How much of the shorter synopsis must be shared before the story alone is
+	 * accepted as proof of identity. 0.5 comfortably matches two copies of the
+	 * same distributor blurb (one possibly truncated) while rejecting two
+	 * unrelated Bangladeshi films from the same year, which is the only
+	 * confusion Gate 1 and Gate 2 leave on the table.
+	 */
+	const STORY_MIN = 0.5;
+
 	/** Content kinds Chorki puts in its URLs, mapped to what TMDB calls them. */
 	private static function tmdb_type( $kind ) {
 		return ( 'series' === $kind ) ? 'tv' : 'movie';
@@ -339,6 +348,42 @@ class AUN_App_Chorki {
 		return trim( preg_replace( '/\s+/u', ' ', $s ) );
 	}
 
+	/**
+	 * How much of the shorter synopsis appears in the longer one (0–1).
+	 *
+	 * ⚠️ **This is what makes matching Bangladeshi titles work at all.** TMDB
+	 * files them under their Bangla name — Chorki's "Rockstar" is
+	 * "রকস্টার" on TMDB — so comparing title strings scores near
+	 * zero on precisely the films we most want to match. The SYNOPSIS does not
+	 * change script: both sides carry the distributor's English blurb, usually
+	 * word for word.
+	 *
+	 * Word overlap rather than similar_text(): O(n) instead of O(n³) on
+	 * thousand-character blurbs, and it tolerates one side being truncated,
+	 * which TMDB's search results often are. Short words are dropped so
+	 * "the/and/with" cannot manufacture a match.
+	 */
+	private static function overview_overlap( $a, $b ) {
+		$words = static function ( $t ) {
+			$t = self::normalize( $t );
+			$out = array();
+			foreach ( explode( ' ', $t ) as $w ) {
+				if ( strlen( $w ) >= 4 ) {
+					$out[ $w ] = true;
+				}
+			}
+			return $out;
+		};
+		$wa = $words( $a );
+		$wb = $words( $b );
+		// Too little to judge on — say "no evidence", never "match".
+		if ( count( $wa ) < 6 || count( $wb ) < 6 ) {
+			return 0.0;
+		}
+		$common = count( array_intersect_key( $wa, $wb ) );
+		return $common / min( count( $wa ), count( $wb ) );
+	}
+
 	/** 0–1 similarity. */
 	private static function similarity( $a, $b ) {
 		$a = self::normalize( $a );
@@ -376,20 +421,33 @@ class AUN_App_Chorki {
 	 * @return string "movie:123" / "tv:456" for hydrate_local(), or '' — and ''
 	 *                is a perfectly good outcome, not a failure.
 	 */
-	public static function match_tmdb( $title, $kind, $year = '' ) {
-		if ( 'shortfilm' === $kind || '' === trim( (string) $title ) ) {
+	public static function match_tmdb( $title, $kind, $year = '', $overview = '' ) {
+		if ( '' === trim( (string) $title ) ) {
 			return '';
 		}
+		// ⚠️ Short films are NO LONGER skipped. 1.99.0 assumed TMDB had no
+		// Bangladeshi shorts; it does — "Faisha Gesi" and "Paint on Dry Leaf"
+		// are both there as movies, and skipping them threw away the cast and
+		// trailer we could have shown.
 		$type = self::tmdb_type( $kind );
 
 		// Typed search, not /search/multi: the typed endpoints return the
 		// original_language field the country gate depends on.
 		$res = AUN_App_Watch::api(
 			'/search/' . $type,
-			array( 'query' => $title, 'include_adult' => 'false' )
+			array(
+				'query'         => $title,
+				'include_adult' => 'false',
+				// ⚠️ Pinned, not left to the default. The synopsis is what
+				// identifies a Bangla-script title (see overview_overlap), and
+				// it can only do that if TMDB returns the ENGLISH blurb to
+				// compare against Chorki's English one. A different default
+				// would return Bangla overviews and silently stop every match.
+				'language'      => 'en-US',
+			)
 		);
 
-		return self::pick_match( $title, $type, $year, (array) ( $res['results'] ?? array() ) );
+		return self::pick_match( $title, $type, $year, (array) ( $res['results'] ?? array() ), $overview );
 	}
 
 	/**
@@ -406,32 +464,51 @@ class AUN_App_Chorki {
 	 * @param array  $results TMDB search result rows.
 	 * @return string "movie:123" / "tv:456", or ''.
 	 */
-	public static function pick_match( $title, $type, $year, $results ) {
+	public static function pick_match( $title, $type, $year, $results, $overview = '' ) {
 		foreach ( $results as $r ) {
 			$id = (int) ( $r['id'] ?? 0 );
 			if ( $id <= 0 ) {
 				continue;
 			}
 
-			// Gate 2 — Bangladeshi, or nothing.
+			// ── Gate 1: Bangladeshi, or nothing ──────────────────────────────
+			// The load-bearing one. TMDB's top hit for "Rockstar" is the 2011
+			// Ranbir Kapoor film (hi); the American one is en. Neither survives
+			// this line, and no later gate has to be clever about them.
 			$lang      = strtolower( (string) ( $r['original_language'] ?? '' ) );
 			$countries = array_map( 'strtoupper', (array) ( $r['origin_country'] ?? array() ) );
 			if ( 'bn' !== $lang && ! in_array( 'BD', $countries, true ) ) {
 				continue;
 			}
 
-			// Gate 3 — the name.
-			$cand_title = (string) ( $r['title'] ?? $r['name'] ?? '' );
-			$cand_orig  = (string) ( $r['original_title'] ?? $r['original_name'] ?? '' );
-			$score      = max( self::similarity( $title, $cand_title ), self::similarity( $title, $cand_orig ) );
-			if ( $score < self::MATCH_MIN ) {
-				continue;
-			}
-
-			// Gate 4 — the year, when both sides know one.
+			// ── Gate 2: a plausible year ─────────────────────────────────────
+			// Chorki gives an UPLOAD date, so this is a sanity check rather
+			// than an assertion; ±1 absorbs the usual festival-to-streaming gap.
 			$date      = (string) ( $r['release_date'] ?? $r['first_air_date'] ?? '' );
 			$cand_year = '' !== $date ? (int) substr( $date, 0, 4 ) : 0;
 			if ( $year && $cand_year && abs( (int) $year - $cand_year ) > 1 ) {
+				continue;
+			}
+
+			// ── Gate 3: it is actually this film ─────────────────────────────
+			// EITHER the name matches OR the synopsis does, and the "or" is the
+			// entire point. TMDB files Bangladeshi titles in Bangla script, so
+			// Chorki's "Rockstar" meets TMDB's "রকস্টার" and scores ~0 on any
+			// string comparison. Requiring the title alone — which 1.99.0 did —
+			// rejected every correctly-found Bangladeshi film on the list.
+			//
+			// TMDB's SEARCH already handles the transliteration (it returns the
+			// Bangla entry for an English query). Only the verification needed
+			// a signal that survives the change of script.
+			$cand_title = (string) ( $r['title'] ?? $r['name'] ?? '' );
+			$cand_orig  = (string) ( $r['original_title'] ?? $r['original_name'] ?? '' );
+			$by_title   = max(
+				self::similarity( $title, $cand_title ),
+				self::similarity( $title, $cand_orig )
+			);
+			$by_story = self::overview_overlap( $overview, (string) ( $r['overview'] ?? '' ) );
+
+			if ( $by_title < self::MATCH_MIN && $by_story < self::STORY_MIN ) {
 				continue;
 			}
 
@@ -497,13 +574,20 @@ class AUN_App_Chorki {
 				'trailer'  => '',
 			);
 
-			$link = self::match_tmdb( $d['title'], $item['kind'], $d['year'] );
+			$link = self::match_tmdb( $d['title'], $item['kind'], $d['year'], $d['overview'] );
 			if ( '' !== $link ) {
+				// ⚠️ TMDB has no concept of a short film, so hydrate_local()
+				// would stamp 'movie' over what Chorki told us plainly in the
+				// URL. Chorki is right about its own catalogue; keep its answer.
+				$chorki_kind = $row['kind'];
 				// hydrate_local() already protects what matters: the admin's —
 				// here Chorki's — title, platform, URL and poster always win.
 				// Only the enrichment fields (cast, trailer, rating, backdrop,
 				// proper genres) are taken from TMDB.
 				$row = AUN_App_Watch::hydrate_local( $row, $link );
+				if ( 'short' === $chorki_kind ) {
+					$row['kind'] = 'short';
+				}
 			}
 
 			$log[] = array(
@@ -511,7 +595,7 @@ class AUN_App_Chorki {
 				'title'   => $d['title'],
 				'matched' => $link,
 				'via'     => $d['via'],
-				'note'    => '' !== $link ? 'TMDB matched' : ( 'shortfilm' === $item['kind'] ? 'short film — TMDB skipped' : 'no confident TMDB match (Chorki data used)' ),
+				'note'    => '' !== $link ? 'TMDB matched' : "not on TMDB — showing Chorki's own details",
 			);
 			$out[] = $row;
 		}
@@ -636,15 +720,43 @@ class AUN_App_Chorki {
 			}
 		}
 
-		return array(
-			'ok'      => true,
-			'rows'    => $log,
-			'message' => sprintf(
-				'Working. %d titles pulled from Chorki in %.1fs and saved — they are live in the app now. %d were enriched with TMDB details; the rest show with Chorki\'s own synopsis and poster, which is normal for Bangladeshi releases and short films.',
+		// ⚠️ Say "no key" outright rather than letting it read as a matching
+		// failure. Without a TMDB key every title falls back to Chorki's own
+		// data, which looks identical to a broken matcher from this screen —
+		// and sends whoever is debugging in exactly the wrong direction.
+		$has_key = '' !== trim( (string) ( aun_app_api_get_options()['tmdb_api_key'] ?? '' ) );
+		if ( ! $has_key ) {
+			$note = sprintf(
+				'%d titles pulled from Chorki in %.1fs and saved — they are live in the app now. '
+				. 'No TMDB key is set, so none of them can show cast, trailer or genres: '
+				. 'add a key in the field above and press this button again.',
+				count( $rows ),
+				$secs
+			);
+		} elseif ( $matched === count( $rows ) ) {
+			$note = sprintf(
+				'Working. %d titles pulled from Chorki in %.1fs and saved — all %d matched on TMDB, '
+				. 'so every one has cast, trailer and genres.',
 				count( $rows ),
 				$secs,
 				$matched
-			),
+			);
+		} else {
+			$note = sprintf(
+				'Working. %d titles pulled from Chorki in %.1fs and saved — they are live in the app now. '
+				. '%d of %d matched on TMDB; the rest show with Chorki\'s own synopsis and poster, which is '
+				. 'normal for titles TMDB has not catalogued yet.',
+				count( $rows ),
+				$secs,
+				$matched,
+				count( $rows )
+			);
+		}
+
+		return array(
+			'ok'      => true,
+			'rows'    => $log,
+			'message' => $note,
 		);
 	}
 }

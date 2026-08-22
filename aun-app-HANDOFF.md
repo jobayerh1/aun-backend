@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.1+109**, **plugin 1.99.2 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.1+109**, **plugin 1.100.0 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,50 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+### 1.100.0 — why NOTHING was matching TMDB: they are filed in Bangla script
+
+Owner: *"cast and trailer is missing — all of them is available in tmdb, i saw there's a (BD) tag."*
+Right on both counts, and the cause was a bad assumption in my matcher, not a missing record.
+
+⚠️ **TMDB stores Bangladeshi titles under their BANGLA name.** Checked on themoviedb.org:
+searching "Rockstar" returns the 2026 Bangladeshi film at position 2 — titled **রকস্টার**, with no
+Latin title on the record at all. 1.99.x required title similarity ≥ 0.86, so Chorki's "Rockstar" met
+TMDB's "রকস্টার", scored ~0, and was rejected. **Every correctly-found Bangladeshi film failed the
+same way** — which is why 0 of 5 enriched and no cast or trailer ever appeared.
+
+**TMDB's SEARCH was never the problem** — it handles the transliteration itself and returns the
+Bangla record for an English query. Only the VERIFICATION needed a signal that survives a change of
+script. That signal is the **synopsis**: both sides carry the distributor's English blurb, usually
+word for word. `overview_overlap()` scores shared words (≥ 4 letters, so stopwords cannot
+manufacture a match) as a fraction of the shorter text. Gate 3 is now *title similarity **OR**
+synopsis overlap*.
+
+⚠️ **The country/year gates are unchanged and still hard requirements**, so the synopsis cannot
+become a backdoor — there are tests asserting that the same story text on a `hi` record, or on a bn
+record from 2015, is still rejected.
+
+⚠️ **`language=en-US` is now pinned on the search.** The overview can only identify a title if
+TMDB returns the ENGLISH blurb to compare against Chorki's. Relying on the API default would mean a
+future change silently stops every match.
+
+⚠️ **Short films are no longer skipped.** 1.99.0 assumed TMDB had no Bangladeshi shorts; it does —
+"Faisha Gesi" and "Paint on Dry Leaf" are both catalogued — so the skip was throwing away real cast
+and trailer data. **But `hydrate_local()` stamps `kind = 'movie'`, so Chorki's `'short'` is restored
+after hydration:** TMDB has no notion of a short film and Chorki is right about its own catalogue.
+
+⚠️ **The diagnostic now says "No TMDB key is set" outright.** Without a key every title falls back
+to Chorki's data, which from that screen looks exactly like a broken matcher — and sends whoever is
+debugging in precisely the wrong direction. **This is the first thing to check if cast/trailer are
+missing.**
+
+**Tests: 76** (was 71), plus a separate `match-real.php` run against TMDB records transcribed from
+themoviedb.org: Rockstar → the Bangla-script BD entry (Bollywood rejected), Faisha Gesi and Paint on
+Dry Leaf → matched as shorts, Rongin Surma → correctly no match (genuinely not on TMDB).
+
+⚠️ **NOT verified against the live TMDB API** — the bench has no key, so the records above were
+transcribed by hand from TMDB's public pages. The shapes are right; confirm on the live site with
+**Test Chorki now** once a key is in.
 
 ### 1.99.2 — LIVE BUG: the test button worked and the app showed nothing
 
