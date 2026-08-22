@@ -411,6 +411,15 @@ class AUN_SP_Tracking {
 		// courier, where the money is being collected in cash on delivery. This
 		// endpoint is the real gate: the button is only a hint.
 		$pay_state = AUN_SP_Requests::payable_state( (int) $req->id );
+
+		// ⚠️ THE PAID CHECK COMES FIRST, before create_order() is allowed to run.
+		// It used to sit AFTER it, testing an empty pay_url — by which point
+		// create_order() had already reused the settled order's shell and wiped
+		// its line items to rebuild them. The guard fired, correctly, on an order
+		// it had just damaged.
+		if ( ! empty( $pay_state['paid'] ) ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_already_paid' ) ) );
+		}
 		if ( ! $pay_state['can_pay'] ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_pay_unavailable' ) ) );
 		}

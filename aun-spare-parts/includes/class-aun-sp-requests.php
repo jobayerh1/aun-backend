@@ -189,10 +189,31 @@ class AUN_SP_Requests {
 			}
 		}
 
+		// ⚠️ THE PAID CHECK, which this used to lack entirely.
+		//
+		// `$open > 0` was standing in for "they have not paid yet", inferred from
+		// no priced part having been dispatched or delivered. That inference is
+		// wrong in both directions:
+		//
+		//   - Paying ONLINE normally happens BEFORE dispatch, so straight after a
+		//     successful payment every line is still open and this returned true —
+		//     the Pay button stayed on screen and only a late `already_paid` check
+		//     stopped a second charge.
+		//   - Move a delivered line back to dispatched (or any admin correction
+		//     that reopens a line) and the button returns on a settled request.
+		//
+		// Whether the money arrived is a fact about the ORDER, so ask the order.
+		$settled = false;
+		if ( class_exists( 'AUN_SP_Woo' ) && AUN_SP_Woo::is_active() ) {
+			$settled = AUN_SP_Woo::has_been_paid( AUN_SP_Woo::order_for( (int) $id ) );
+		}
+
 		return array(
 			'money'   => round( $money, 2 ),
 			'open'    => $open,
-			'can_pay' => ( $money > 0 && $open > 0 && ! self::is_cancelled( $status ) && 'closed' !== $status ),
+			'paid'    => $settled,
+			'can_pay' => ( $money > 0 && $open > 0 && ! $settled
+				&& ! self::is_cancelled( $status ) && 'closed' !== $status ),
 		);
 	}
 
@@ -692,7 +713,7 @@ class AUN_SP_Requests {
 		$locked = false;
 		if ( AUN_SP_Woo::is_active() ) {
 			$paid_order = AUN_SP_Woo::order_for( (int) $r->id );
-			$locked     = ( $paid_order && $paid_order->is_paid() );
+			$locked     = AUN_SP_Woo::has_been_paid( $paid_order );
 		}
 		$lock_attr = $locked ? ' readonly disabled style="background:#f0f0f1;color:#646970;"' : '';
 		$excluded = 0;
@@ -909,7 +930,9 @@ class AUN_SP_Requests {
 			return;
 		}
 
-		if ( $order->is_paid() ) {
+		// Admin banner: the same historical fact, so a delivered request does not
+		// stop saying PAID and quietly unlock its prices.
+		if ( AUN_SP_Woo::has_been_paid( $order ) ) {
 			echo '<div style="background:#edfaef;border:1px solid #1a7f37;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
 				. '<strong style="color:#1a7f37;font-size:15px;">✓ PAID ONLINE ' . esc_html( $total ) . '</strong> '
 				. '<span style="color:#646970;">' . esc_html( $order->get_payment_method_title() ) . ' · ' . $link
@@ -969,7 +992,7 @@ class AUN_SP_Requests {
 
 		// An order exists only because the customer chose to pay online, so there is
 		// no cash-on-delivery case here — COD requests simply have no order.
-		$state = $order->is_paid()
+		$state = AUN_SP_Woo::has_been_paid( $order )
 			? '<span style="color:#1a7f37;font-weight:600;">paid online</span>'
 			: '<span style="color:#8250df;font-weight:600;">started online payment — not completed</span>';
 
@@ -1057,7 +1080,7 @@ class AUN_SP_Requests {
 			$money_locked = false;
 			if ( AUN_SP_Woo::is_active() ) {
 				$paid_order   = AUN_SP_Woo::order_for( $id );
-				$money_locked = ( $paid_order && $paid_order->is_paid() );
+				$money_locked = AUN_SP_Woo::has_been_paid( $paid_order );
 			}
 			$moves    = array(); // new line_status => the parts that moved to it
 			$bad_tracking = array(); // parts where the courier field was refused

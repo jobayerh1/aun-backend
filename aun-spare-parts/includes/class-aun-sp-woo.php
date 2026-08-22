@@ -409,7 +409,7 @@ class AUN_SP_Woo {
 		$existing = isset( $r->wc_order_id ) ? (int) $r->wc_order_id : 0;
 		if ( $existing ) {
 			$o = wc_get_order( $existing );
-			if ( $o && $o->is_paid() ) {
+			if ( self::has_been_paid( $o ) ) {
 				return $existing; // already settled — never rebuild
 			}
 			if ( $o && ! in_array( $o->get_status(), array( 'cancelled', 'refunded', 'failed' ), true ) ) {
@@ -501,13 +501,57 @@ class AUN_SP_Woo {
 		if ( ! $order ) {
 			return '';
 		}
-		if ( $order->is_paid() ) {
+		if ( self::has_been_paid( $order ) ) {
 			return 'paid';
 		}
 		// full rebuild keeps everything consistent
 		// ⚠️ 0 means the rebuild FAILED. Reporting 'updated' anyway told the admin
 		// the customer's order now carried the new delivery charge when it did not.
 		return self::create_order( $request_id ) ? 'updated' : 'failed';
+	}
+
+	/**
+	 * **Has this customer's money ever arrived?** — as opposed to
+	 * `WC_Order::is_paid()`, which only answers "is the order in a paid status
+	 * RIGHT NOW".
+	 *
+	 * ⚠️ This distinction is the root of a live bug. `is_paid()` is true only for
+	 * the statuses in `wc_get_is_paid_statuses()` — by default `processing` and
+	 * `completed`. But {@see sync_from_request()} advances a delivered request's
+	 * order to whatever `aun_sp_order_status_delivered` names, and on a shop with
+	 * Advanced Shipment Tracking that is a CUSTOM status such as `delivered`.
+	 * The moment the order lands there, `is_paid()` flips to false and every
+	 * caller downstream concludes the customer never paid:
+	 *
+	 *   - the app's payment card falls back to "Amount to pay ৳10" on a settled
+	 *     request, inviting a second payment;
+	 *   - {@see create_order()} stops treating it as settled and REBUILDS it,
+	 *     wiping the line items off a paid order;
+	 *   - {@see refund_due()} stops reporting money we owe back.
+	 *
+	 * Payment is a historical fact, not a current status. `date_paid` is stamped
+	 * once when the money arrives and is never cleared by a later status change,
+	 * and a transaction id means a gateway settled it. Either is proof.
+	 *
+	 * A REFUNDED order is still "has been paid" — that is correct. Refunds are
+	 * tracked separately on the request (`refunded_at`) and the customer's card
+	 * checks that first.
+	 *
+	 * @param WC_Order|null $order Order.
+	 * @return bool
+	 */
+	public static function has_been_paid( $order ) {
+		if ( ! $order || ! is_a( $order, 'WC_Order' ) ) {
+			return false;
+		}
+		if ( $order->is_paid() ) {
+			return true;
+		}
+		$paid_on = $order->get_date_paid();
+		if ( $paid_on ) {
+			return true;
+		}
+		return '' !== trim( (string) $order->get_transaction_id() );
 	}
 
 	/** The order attached to a request, or null. */
@@ -542,7 +586,7 @@ class AUN_SP_Woo {
 		return array(
 			'number'  => $order->get_order_number(),
 			'total'   => number_format( (float) $order->get_total(), 2 ),
-			'paid'    => (bool) $order->is_paid(),
+			'paid'    => self::has_been_paid( $order ),
 			'method'  => $order->get_payment_method_title(),
 			'pay_url' => $order->needs_payment() ? $order->get_checkout_payment_url() : '',
 			// Refund state, so a customer whose request was cancelled after paying can
@@ -604,7 +648,7 @@ class AUN_SP_Woo {
 		if ( ! $order ) {
 			return;
 		}
-		if ( 'ready' === $sp_status && $order->is_paid() ) {
+		if ( 'ready' === $sp_status && self::has_been_paid( $order ) ) {
 			// Core WooCommerce has no "dispatched" status, so by default the order
 			// stays PROCESSING and just gets a note. A shop that HAS one (Advanced
 			// Shipment Tracking adds its own, and relabels core statuses) can map it
@@ -617,7 +661,7 @@ class AUN_SP_Woo {
 				$order->add_order_note( 'Spare-parts request ' . $sp_status . ': parts are with the courier. Order stays Processing until delivery.' );
 				self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' left at Processing (parts dispatched)' );
 			}
-		} elseif ( 'closed' === $sp_status && $order->is_paid() ) {
+		} elseif ( 'closed' === $sp_status && self::has_been_paid( $order ) ) {
 			// NOT hardcoded to 'completed' any more. On a shop using Advanced Shipment
 			// Tracking, core's "completed" is relabelled **Shipped** and the real final
 			// state is that plugin's own **Delivered** status — so setting 'completed'
@@ -628,7 +672,7 @@ class AUN_SP_Woo {
 				self::log( $request_id, 'wc_order', 'Order #' . $order->get_order_number() . ' set to "' . self::status_label( $want ) . '" (request delivered)' );
 			}
 		} elseif ( in_array( $sp_status, array( 'rejected', 'declined', 'expired' ), true ) ) {
-			if ( $order->is_paid() ) {
+			if ( self::has_been_paid( $order ) ) {
 				// Money already taken — cancelling here would hide that a refund is owed.
 				// Type 'refund_due' (not 'refund'): this is a note to US that we owe the
 				// money, not the customer's record of having received it. The customer
@@ -664,7 +708,7 @@ class AUN_SP_Woo {
 			return false;
 		}
 		$order = self::order_for( $request_id );
-		return ( $order && $order->is_paid() );
+		return self::has_been_paid( $order );
 	}
 
 	/**
@@ -761,7 +805,7 @@ class AUN_SP_Woo {
 			return false;
 		}
 		// Never delete money. Paid / processing / completed / refunded all stay.
-		if ( $order->is_paid() || ! $order->has_status( array( 'pending', 'failed' ) ) ) {
+		if ( self::has_been_paid( $order ) || ! $order->has_status( array( 'pending', 'failed' ) ) ) {
 			return false;
 		}
 		if ( self::CREATED_VIA !== $order->get_created_via() ) {

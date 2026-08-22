@@ -61,7 +61,7 @@ class AUN_App_Chorki {
 	 * the OLD code until the TTL lapses. Same trap AUN_App_Watch::SCHEMA exists
 	 * for.
 	 */
-	const SCHEMA = 1;
+	const SCHEMA = 2; // 2: rows carry a backdrop (1.100.3)
 
 	const TTL       = 6 * HOUR_IN_SECONDS;
 	const BASE      = 'https://www.chorki.net';
@@ -568,7 +568,13 @@ class AUN_App_Chorki {
 				// Chorki's own values. Rule 1: these stand on their own, and a
 				// TMDB match only enriches them below.
 				'overview' => $d['overview'],
-				'backdrop' => '',
+				// ⚠️ The SAME image as the poster, and that is deliberate.
+				// Chorki's og:image is a 1200x675 landscape still, not a portrait
+				// poster — it is already backdrop-shaped. Leaving this empty gave
+				// the detail screen nothing to draw behind the title, so a title
+				// TMDB has not catalogued opened on a black rectangle with a grey
+				// film icon, which reads as a broken trailer player.
+				'backdrop' => $d['poster'],
 				'year'     => $d['year'],
 				'rating'   => 0,
 				// Chorki's three content kinds, carried through as-is.
