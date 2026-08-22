@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.1+109**, **plugin 1.100.0 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.2+110**, **plugin 1.100.1 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,41 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+### 1.100.1 — "no SKU" was OUR bug: a variable product keeps its SKUs on the variations
+
+Owner asked whether the planner panel's red **"no SKU"** on *AUN A005 Short Throw* could be ignored,
+since every product is already linked to an ERP id under **SLB Warranty → Products**. Two findings,
+and the second one overturns the first.
+
+⚠️ **The ERP link has TWO sides, and SLB Warranty is only one of them.** `slb_products.erp_product_id`
+says "warranty model #3 is ERP product #54". To finish the journey the app must find WHICH WooCommerce
+product is ERP #54 — and `erp_id_of()` reads that from **`_aun_erp_product_id` post meta on the Woo
+product**, never from `slb_products`. So filling in the SLB side alone leaves route 2 dead-ended.
+
+⚠️ **But the real fault was ours.** The A005 is a **variable product**: Grey and White variations
+carrying `APB-A005-GRY` and `APB-A005-WHT`, and — correctly, per WooCommerce — **no SKU on the
+parent**. `catalogue()` uses `wc_get_products()`, which returns parents only, and `entry()` read
+`$product->get_sku()`. So the SKUs were never seen, route 1 could never match a colour variant, and
+the panel reported perfectly good data as missing. **The owner was being sent to fix something that
+was already right.**
+
+New `AUN_App_Projectors::skus_of()` collects the parent's own SKU plus every variation's;
+`product_for_device()` matches against **all** of them; the admin panel counts and displays `skus`
+rather than `sku`. The colours are optically identical, so every variation SKU maps to the same
+parent and the same throw ratio — exactly what the planner wants.
+
+⚠️ **Why it mattered more than a red label:** with route 1 and route 2 both dead, an A005 fell
+through to route 3, name matching — which the code's own docblock warns cannot tell "A005" from
+"A005 Pro". A customer registering a plain A005 could be shown the Pro's optics.
+
+**Tests:** `test-variable-sku.php` (**7**, workdir) builds a REAL WooCommerce variable product shaped
+like the A005 plus a same-prefix `A005 Pro` sibling, and asserts the parent's own SKU is empty, both
+variation SKUs are collected, `APB-A005-GRY` resolves to the A005 parent, `APB-A005-Pro-WHT` resolves
+to the Pro, and the two are different products.
+
+⚠️ **Check the planner panel after deploying.** Any other variable projector will stop showing
+"no SKU" too. If one still does, THAT one really is missing data.
 
 ### 1.100.0 — why NOTHING was matching TMDB: they are filed in Bangla script
 

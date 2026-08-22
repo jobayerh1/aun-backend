@@ -99,16 +99,29 @@ class AUN_App_Admin {
 			// The SKU is what links a registered device to this product. An ERP
 			// product ID is only a manual override for anything the SKU cannot
 			// reach, so a product with a SKU is fully mapped.
-			$sku = trim( (string) ( $p['sku'] ?? '' ) );
-			$erp = (int) ( $p['erp_id'] ?? 0 );
-			if ( '' === $sku && $erp < 1 ) {
+			//
+			// ⚠️ Read `skus` (parent + every variation), NOT `sku`. A variable
+			// product legitimately has no SKU of its own — the AUN A005 keeps
+			// APB-A005-GRY and APB-A005-WHT on its colour variations — and this
+			// panel used to report that as "no SKU", which looked like missing
+			// data and sent the owner off to fix something that was already
+			// correct. The real fault was matching, and it is fixed in
+			// AUN_App_Projectors::skus_of().
+			$skus = array_values( array_filter( array_map( 'trim', (array) ( $p['skus'] ?? array() ) ) ) );
+			$erp  = (int) ( $p['erp_id'] ?? 0 );
+			if ( empty( $skus ) && $erp < 1 ) {
 				$unmapped++;
 			}
 
 			echo '<tr>'
 				. '<td><strong>' . esc_html( $p['name'] ) . '</strong></td>'
-				. '<td>' . ( '' !== $sku
-					? '<code>' . esc_html( $sku ) . '</code>'
+				. '<td>' . ( ! empty( $skus )
+					? implode( '<br>', array_map(
+						static function ( $s ) {
+							return '<code>' . esc_html( $s ) . '</code>';
+						},
+						$skus
+					) )
 					: ( $erp > 0
 						? 'ERP #' . (int) $erp
 						: '<span style="color:#b32d2e;font-weight:700">no SKU</span>' ) ) . '</td>'
