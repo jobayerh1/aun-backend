@@ -1,0 +1,352 @@
+<?php
+/**
+ * Bench tests for AUN_App_Chorki (app-api 1.99.0).
+ *
+ * Run:  php test-chorki.php
+ *
+ * Deliberately standalone — no WordPress needed. The parsers and the matcher
+ * are the parts that must not regress, and none of them touch WP except through
+ * http_get(), which the fixtures replace by feeding saved HTML straight in.
+ *
+ * ⚠️ Reaching the last line IS the assertion. A regression fatals or prints
+ * FAIL rather than quietly passing.
+ */
+
+// ── Minimal WP surface the class file expects at parse time ────────────────
+define( 'WPINC', 1 );
+define( 'HOUR_IN_SECONDS', 3600 );
+define( 'DAY_IN_SECONDS', 86400 );
+
+$GLOBALS['aun_opts'] = array(
+	'chorki_enabled'  => 1,
+	'chorki_limit'    => 5,
+	'chorki_list_url' => '',
+);
+function aun_app_api_get_options() {
+	return $GLOBALS['aun_opts'];
+}
+function esc_url_raw( $u ) {
+	return $u;
+}
+function wp_remote_get( $url, $args = array() ) {
+	$GLOBALS['fetched'][] = $url;
+	// A queue when one is set (build() fetches the list, then a page per title),
+	// otherwise the single fixture.
+	if ( ! empty( $GLOBALS['fixture_seq'] ) ) {
+		return array( 'body' => array_shift( $GLOBALS['fixture_seq'] ), 'code' => 200 );
+	}
+	return array( 'body' => $GLOBALS['fixture_html'] ?? '', 'code' => 200 );
+}
+function is_wp_error( $x ) {
+	return false;
+}
+function wp_remote_retrieve_response_code( $r ) {
+	return $r['code'];
+}
+function wp_remote_retrieve_body( $r ) {
+	return $r['body'];
+}
+function get_option( $k, $d = false ) {
+	return $GLOBALS['opts_store'][ $k ] ?? $d;
+}
+function update_option( $k, $v, $a = true ) {
+	$GLOBALS['opts_store'][ $k ] = $v;
+	return true;
+}
+function delete_option( $k ) {
+	unset( $GLOBALS['opts_store'][ $k ] );
+	return true;
+}
+function wp_next_scheduled( $h ) {
+	return false;
+}
+function wp_schedule_single_event( $t, $h ) {
+	$GLOBALS['scheduled'][] = $h;
+	return true;
+}
+class AUN_App_Watch {
+	public static $last_query = null;
+	public static function api( $path, $params = array() ) {
+		self::$last_query = array( 'path' => $path, 'params' => $params );
+		return $GLOBALS['tmdb_response'] ?? array();
+	}
+	public static function hydrate_local( $row, $link ) {
+		$GLOBALS['hydrated'][] = $link;
+		$row['cast']    = array( array( 'name' => 'From TMDB' ) );
+		$row['rating']  = 7.1;
+		return $row;
+	}
+}
+
+require 'C:/Users/Jobayer Hossain/Downloads/Claude session/aun-app-api/includes/class-aun-app-chorki.php';
+
+$pass = 0;
+$fail = 0;
+function check( $label, $got, $want ) {
+	global $pass, $fail;
+	$ok = ( $got === $want );
+	if ( $ok ) {
+		$pass++;
+		echo "  PASS  $label\n";
+	} else {
+		$fail++;
+		echo "  FAIL  $label\n        got:  " . var_export( $got, true ) . "\n        want: " . var_export( $want, true ) . "\n";
+	}
+}
+function section( $t ) {
+	echo "\n$t\n" . str_repeat( '-', strlen( $t ) ) . "\n";
+}
+
+$FIX = getenv( 'CHORKI_FIXTURES' ) ?: sys_get_temp_dir();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. LIST PARSING — against the real saved hot-and-fresh page
+   ══════════════════════════════════════════════════════════════════════════ */
+section( '1. List page → ordered {kind, path}' );
+
+$list_html = @file_get_contents( $FIX . '/chorki-list.html' );
+if ( false === $list_html ) {
+	echo "  SKIP  no chorki-list.html fixture at $FIX\n";
+} else {
+	$GLOBALS['fixture_html'] = $list_html;
+	$items = AUN_App_Chorki::fetch_list( 'x', 5 );
+
+	check( 'honours the limit', count( $items ), 5 );
+	check( 'first item path', $items[0]['path'], '/en/shortfilm/faisha-gesi' );
+	check( 'first item kind', $items[0]['kind'], 'shortfilm' );
+	check( 'movie kind read from URL', $items[3]['kind'], 'movie' );
+	check( 'movie path', $items[3]['path'], '/en/movie/rockstar' );
+
+	// Order is the editorial signal — Chorki puts the newest first, and a
+	// re-ordered rail would silently stop being "hot and fresh".
+	$all = AUN_App_Chorki::fetch_list( 'x', 50 );
+	check( 'full list length (deduped)', count( $all ), 15 );
+	check( 'series detected', $all[7]['kind'], 'series' );
+	check( 'document order preserved', $all[7]['path'], '/en/series/cactus' );
+
+	// A page that fails to load must yield nothing, NOT a partial list — the
+	// caller keeps the last good store only if we return empty.
+	$GLOBALS['fixture_html'] = '';
+	check( 'empty body → no items', AUN_App_Chorki::fetch_list( 'x', 5 ), array() );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. DETAIL PARSING — against the real saved Rockstar page
+   ══════════════════════════════════════════════════════════════════════════ */
+section( '2. Detail page → structured data (JSON-LD + og:)' );
+
+$detail_html = @file_get_contents( $FIX . '/chorki-detail.html' );
+if ( false === $detail_html ) {
+	echo "  SKIP  no chorki-detail.html fixture at $FIX\n";
+} else {
+	$GLOBALS['fixture_html'] = $detail_html;
+	$d = AUN_App_Chorki::fetch_detail( '/en/movie/rockstar' );
+
+	check( 'title from JSON-LD', $d['title'], 'Rockstar' );
+	check( 'read via json-ld', $d['via'], 'json-ld' );
+	check( 'year from uploadDate', $d['year'], '2026' );
+	check( 'ISO duration → "2h 19m"', $d['runtime'], '2h 19m' );
+	check( 'genre carried whole', $d['genre'], 'Musical Drama Romance' );
+	check( 'director', $d['director'], 'Azman Rusho' );
+	// embedUrl is locale-free — the app is Bangla-first and must not be pinned
+	// to Chorki's English site by the path we happened to crawl.
+	check( 'canonical URL from embedUrl', $d['url'], 'https://www.chorki.net/movie/rockstar' );
+	check( 'poster from og:image', 0 === strpos( $d['poster'], 'https://image.chorkicdn.com/' ), true );
+	// JSON-LD arrives with &apos; in the text.
+	check( 'entities decoded in synopsis', false === strpos( $d['overview'], '&apos;' ), true );
+	check( 'synopsis is real prose', strlen( $d['overview'] ) > 100, true );
+
+	// Degradation: no structured data at all still yields a usable card.
+	$GLOBALS['fixture_html'] = '<html><body>nothing useful</body></html>';
+	$bare = AUN_App_Chorki::fetch_detail( '/en/movie/tomar-jonno-mon' );
+	check( 'slug fallback title', $bare['title'], 'Tomar Jonno Mon' );
+	check( 'slug fallback flagged', $bare['via'], 'slug' );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. THE MATCHER — the gates, with real TMDB-shaped rows
+   ══════════════════════════════════════════════════════════════════════════ */
+section( '3. TMDB matcher gates' );
+
+// ⚠️ THE ONE THAT MATTERS. This is what TMDB actually returns for "Rockstar":
+// the 2011 Ranbir Kapoor film first. Accepting it would put an Indian star's
+// poster and cast on a Bangladeshi film.
+$rockstar_results = array(
+	array( 'id' => 61697, 'title' => 'Rockstar', 'original_title' => 'रॉकस्टार', 'original_language' => 'hi', 'release_date' => '2011-11-11' ),
+	array( 'id' => 293670, 'title' => 'Rockstar', 'original_title' => 'Rockstar', 'original_language' => 'en', 'release_date' => '2015-09-11' ),
+);
+check(
+	'rejects Bollywood Rockstar (hi)',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', $rockstar_results ),
+	''
+);
+
+// Same search, but the Bangladeshi one is present further down the list.
+$with_bd = array_merge(
+	$rockstar_results,
+	array( array( 'id' => 999001, 'title' => 'Rockstar', 'original_title' => 'রকস্টার', 'original_language' => 'bn', 'release_date' => '2026-07-18' ) )
+);
+check(
+	'finds the Bangladeshi one below two decoys',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', $with_bd ),
+	'movie:999001'
+);
+
+// Gate 3: right language, wrong film.
+check(
+	'rejects a bn title that is not this title',
+	AUN_App_Chorki::pick_match( 'Rockstar', 'movie', '2026', array(
+		array( 'id' => 5, 'title' => 'Hawa', 'original_title' => 'হাওয়া', 'original_language' => 'bn', 'release_date' => '2022-07-29' ),
+	) ),
+	''
+);
+
+// Gate 4: right name and language, implausible year.
+check(
+	'rejects a bn match 6 years out',
+	AUN_App_Chorki::pick_match( 'Lifeline', 'movie', '2026', array(
+		array( 'id' => 7, 'title' => 'Lifeline', 'original_title' => 'Lifeline', 'original_language' => 'bn', 'release_date' => '2020-01-01' ),
+	) ),
+	''
+);
+check(
+	'accepts ±1 year drift (upload vs release)',
+	AUN_App_Chorki::pick_match( 'Lifeline', 'movie', '2026', array(
+		array( 'id' => 8, 'title' => 'Lifeline', 'original_title' => 'Lifeline', 'original_language' => 'bn', 'release_date' => '2025-12-20' ),
+	) ),
+	'movie:8'
+);
+
+// Series use origin_country, which TMDB's MOVIE search never returns.
+check(
+	'series matched via origin_country BD',
+	AUN_App_Chorki::pick_match( 'Cactus', 'tv', '2026', array(
+		array( 'id' => 42, 'name' => 'Cactus', 'original_name' => 'ক্যাকটাস', 'original_language' => 'bn', 'origin_country' => array( 'BD' ), 'first_air_date' => '2026-06-01' ),
+	) ),
+	'tv:42'
+);
+
+// Punctuation and spacing must not defeat a real match.
+check(
+	'tolerates punctuation differences',
+	AUN_App_Chorki::pick_match( 'Jaya Aar Sharmin', 'movie', '2026', array(
+		array( 'id' => 11, 'title' => 'Jaya Aar Sharmin', 'original_title' => 'জয়া আর শারমিন', 'original_language' => 'bn', 'release_date' => '2026-02-14' ),
+	) ),
+	'movie:11'
+);
+
+// Short films skip the lookup entirely — no request, no chance of a wrong hit.
+$GLOBALS['tmdb_response'] = array( 'results' => array( array( 'id' => 1, 'title' => 'Gerakol', 'original_language' => 'bn', 'release_date' => '2026-01-01' ) ) );
+AUN_App_Watch::$last_query = null;
+check( 'short film returns no match', AUN_App_Chorki::match_tmdb( 'Gerakol', 'shortfilm', '2026' ), '' );
+check( 'short film makes NO TMDB call', AUN_App_Watch::$last_query, null );
+
+// And the typed endpoint is used, not /search/multi — that is what carries
+// original_language.
+AUN_App_Chorki::match_tmdb( 'Domm', 'movie', '2026' );
+check( 'uses typed /search/movie', AUN_App_Watch::$last_query['path'], '/search/movie' );
+AUN_App_Chorki::match_tmdb( 'Aatka', 'series', '2026' );
+check( 'series uses /search/tv', AUN_App_Watch::$last_query['path'], '/search/tv' );
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. ROW BUILDING + the "never blank the rail" rule
+   ══════════════════════════════════════════════════════════════════════════ */
+section( '4. Built rows and failure behaviour' );
+
+if ( false !== $list_html && false !== $detail_html ) {
+	// The real sequence build() performs: one list fetch, then one page per
+	// title. Every detail fetch returns the Rockstar page, which is enough to
+	// prove row shape, platform stamping and the TMDB layering.
+	$GLOBALS['fixture_html']  = '';
+	$GLOBALS['fixture_seq']   = array_merge( array( $list_html ), array_fill( 0, 5, $detail_html ) );
+	$GLOBALS['fetched']       = array();
+	$GLOBALS['tmdb_response'] = array( 'results' => array() ); // nothing matches
+	$GLOBALS['hydrated']      = array();
+
+	$log  = array();
+	$rows = AUN_App_Chorki::build( $log );
+
+	check( 'builds one row per listed title', count( $rows ), 5 );
+	check( 'fetches list + one page per title', count( $GLOBALS['fetched'] ), 6 );
+	check( 'detail URL is absolute', $GLOBALS['fetched'][1], 'https://www.chorki.net/en/shortfilm/faisha-gesi' );
+
+	$r = $rows[0];
+	check( 'platform stamped', $r['platform'], 'Chorki' );
+	check( 'flagged as a local pick', $r['local'], true );
+	check( 'title from the detail page', $r['title'], 'Rockstar' );
+	check( 'poster carried', 0 === strpos( $r['poster'], 'https://image.chorkicdn.com/' ), true );
+	check( 'synopsis carried', strlen( $r['overview'] ) > 100, true );
+	check( 'runtime carried', $r['runtime'], '2h 19m' );
+	check( 'genre is ONE honest chip, not three invented ones', $r['genres'], array( 'Musical Drama Romance' ) );
+	check( 'kind from the URL, not guessed', $r['kind'], 'movie' );
+	check( 'series row typed as series', $rows[4]['kind'], 'movie' ); // index 4 = /en/movie/lifeline
+
+	// RULE 1: no TMDB match must not blank the card.
+	check( 'no TMDB match still yields a full card',
+		'' !== $r['title'] && '' !== $r['overview'] && '' !== $r['poster'], true );
+	check( 'nothing was hydrated', $GLOBALS['hydrated'], array() );
+	check( 'log explains the misses', $log[3]['note'], 'no confident TMDB match (Chorki data used)' );
+	check( 'log flags short films separately', $log[0]['note'], 'short film — TMDB skipped' );
+	check( 'log records the extraction strategy', $log[0]['via'], 'json-ld' );
+
+	// Now WITH a confident match: TMDB enrichment layers on top, and Chorki's
+	// own identity fields survive it.
+	$GLOBALS['fixture_seq']   = array_merge( array( $list_html ), array_fill( 0, 5, $detail_html ) );
+	$GLOBALS['tmdb_response'] = array( 'results' => array(
+		array( 'id' => 999001, 'title' => 'Rockstar', 'original_title' => 'রকস্টার', 'original_language' => 'bn', 'release_date' => '2026-07-18' ),
+	) );
+	$GLOBALS['hydrated'] = array();
+	$log2  = array();
+	$rows2 = AUN_App_Chorki::build( $log2 );
+	// ⚠️ The first THREE entries on the real list are short films — which is
+	// precisely the case that makes "TMDB is a bonus, never a gate" the right
+	// rule. Only the two movies are eligible for a lookup.
+	check( 'only the eligible titles are hydrated', $GLOBALS['hydrated'], array( 'movie:999001', 'movie:999001' ) );
+	check( 'the three short films were skipped', count( $GLOBALS['hydrated'] ), 2 );
+	check( 'a skipped short film keeps rating 0', $rows2[1]['rating'], 0 );
+	check( 'Chorki title survives enrichment', $rows2[3]['title'], 'Rockstar' );
+	check( 'Chorki platform survives enrichment', $rows2[3]['platform'], 'Chorki' );
+	check( 'TMDB rating layered onto the movie', $rows2[3]['rating'], 7.1 );
+	check( 'TMDB cast layered onto the movie', $rows2[3]['cast'][0]['name'], 'From TMDB' );
+	// And the short film still has a complete card from Chorki alone.
+	check( 'short film card is still complete',
+		'' !== $rows2[1]['title'] && '' !== $rows2[1]['overview'] && '' !== $rows2[1]['poster'], true );
+}
+
+$GLOBALS['fixture_seq'] = array();
+
+// A cold store must NEVER build inline — five HTTP calls on a customer's
+// request is how a rail becomes a timeout.
+$GLOBALS['opts_store'] = array();
+$GLOBALS['scheduled']  = array();
+check( 'cold store returns empty immediately', AUN_App_Chorki::picks(), array() );
+check( 'cold store queues a background build', in_array( 'aun_app_chorki_refresh', $GLOBALS['scheduled'], true ), true );
+
+// Disabled → nothing at all, and no work done.
+$GLOBALS['aun_opts']['chorki_enabled'] = 0;
+$GLOBALS['scheduled'] = array();
+check( 'disabled returns empty', AUN_App_Chorki::picks(), array() );
+check( 'disabled schedules nothing', $GLOBALS['scheduled'], array() );
+$GLOBALS['aun_opts']['chorki_enabled'] = 1;
+
+// A stored list survives a failed rebuild. This is the rule that keeps the app
+// looking alive while chorki.net is down.
+$GLOBALS['opts_store'][ AUN_App_Chorki::STORE_KEY ] = array(
+	'v'     => AUN_App_Chorki::SCHEMA,
+	'at'    => time(),
+	'picks' => array( array( 'title' => 'Kept', 'platform' => 'Chorki' ) ),
+);
+$GLOBALS['fixture_html'] = ''; // chorki.net unreachable
+$kept = AUN_App_Chorki::picks( true );
+check( 'failed forced rebuild keeps the last good list', $kept[0]['title'], 'Kept' );
+
+// An old schema must be rebuilt, not served — otherwise a plugin upgrade that
+// adds a field is invisible until the TTL lapses.
+$GLOBALS['opts_store'][ AUN_App_Chorki::STORE_KEY ]['v'] = 0;
+check( 'stale schema is not served', AUN_App_Chorki::picks(), array() );
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+echo "\n" . str_repeat( '=', 60 ) . "\n";
+echo "  $pass passed, $fail failed\n";
+echo str_repeat( '=', 60 ) . "\n";
+exit( $fail > 0 ? 1 : 0 );

@@ -1691,6 +1691,36 @@ class AUN_App_Admin {
 				. '</p><p class="description">Detected credential: <code>' . esc_html( (string) $diag['key_type'] ) . '</code>.</p></div>';
 		}
 
+		// "Test Chorki now": pull their list live and report, title by title,
+		// what was found and what TMDB agreed to. This is the screen somebody
+		// opens when the rail looks wrong, so it shows the WORKING, not a
+		// verdict — which titles matched, which fell back to Chorki's own data,
+		// and which extraction strategy each page yielded.
+		if ( isset( $_POST['aun_chorki_test_nonce'] ) && wp_verify_nonce( $_POST['aun_chorki_test_nonce'], 'aun_app_chorki_test' ) ) {
+			$diag  = AUN_App_Chorki::diagnostic();
+			$class = ! empty( $diag['ok'] ) ? 'notice-success' : 'notice-warning';
+			echo '<div class="notice ' . esc_attr( $class ) . '"><p><strong>Chorki test:</strong> '
+				. esc_html( (string) $diag['message'] ) . '</p>';
+			if ( ! empty( $diag['rows'] ) ) {
+				echo '<table class="widefat striped" style="max-width:900px;margin:8px 0 12px">'
+					. '<thead><tr><th>Title</th><th>Chorki page</th><th>Read via</th><th>TMDB</th></tr></thead><tbody>';
+				foreach ( (array) $diag['rows'] as $r ) {
+					echo '<tr><td>' . esc_html( (string) ( $r['title'] ?: '—' ) ) . '</td>'
+						. '<td><code>' . esc_html( (string) $r['path'] ) . '</code></td>'
+						. '<td>' . esc_html( (string) ( $r['via'] ?? '—' ) ) . '</td>'
+						. '<td>' . ( ! empty( $r['matched'] )
+							? '<code>' . esc_html( (string) $r['matched'] ) . '</code>'
+							: '<span style="color:#646970">' . esc_html( (string) $r['note'] ) . '</span>' )
+						. '</td></tr>';
+				}
+				echo '</tbody></table>';
+				echo '<p class="description">"Read via" should say <code>json-ld</code> for every row. '
+					. 'If it starts saying <code>slug</code>, Chorki changed their page and only the '
+					. 'title survives — the rail still works, but it is time to look.</p>';
+			}
+			echo '</div>';
+		}
+
 		// "Rebuild picks now": throw away the stored list and fetch a fresh one
 		// in this request. Needed after a plugin upgrade adds fields to a pick,
 		// and whenever the admin just wants the rail refreshed immediately
@@ -1798,6 +1828,16 @@ class AUN_App_Admin {
 				AUN_App_Watch::flush_local_meta();
 			}
 			$opts['watch_limit']         = max( 1, min( AUN_App_Watch::MAX_LIMIT, (int) ( $_POST['watch_limit'] ?? AUN_App_Watch::GLOBAL_LIMIT ) ) );
+			$chorki_was                  = ! empty( $opts['chorki_enabled'] );
+			$opts['chorki_enabled']      = empty( $_POST['chorki_enabled'] ) ? 0 : 1;
+			$opts['chorki_limit']        = max( 1, min( AUN_App_Chorki::MAX_LIMIT, (int) ( $_POST['chorki_limit'] ?? AUN_App_Chorki::LIMIT ) ) );
+			$opts['chorki_list_url']     = esc_url_raw( trim( (string) ( $_POST['chorki_list_url'] ?? '' ) ) );
+			// Switching it on should show something without the admin hunting for a
+			// second button; the build itself still happens on cron, off this
+			// request, because it is five-plus HTTP calls to another site.
+			if ( ! $chorki_was && ! empty( $opts['chorki_enabled'] ) ) {
+				delete_option( AUN_App_Chorki::STORE_KEY );
+			}
 			$opts['youtube_api_key']     = trim( sanitize_text_field( $_POST['youtube_api_key'] ?? '' ) );
 			// Our own OneDrive app registration (makes firmware downloads
 			// independent of the WP File Download plugin).
@@ -2358,6 +2398,43 @@ class AUN_App_Admin {
 							skipping anything not streaming. Your local picks are shown first and are always in addition
 							to this. Higher numbers make the twice-daily refresh a little slower.
 						</p>
+					</td></tr>
+
+					<tr><th>Chorki auto-picks</th><td>
+						<label>
+							<input type="checkbox" name="chorki_enabled" value="1" <?php checked( ! empty( $opts['chorki_enabled'] ) ); ?> />
+							<strong>Keep Chorki titles up to date automatically</strong>
+						</label>
+						<p class="description">
+							Reads Chorki's own published list every few hours and shows the newest titles in the
+							app's rail — so it stays current without anyone typing them in below. Each title keeps
+							Chorki's poster and synopsis; where the film is also on TMDB we add cast, trailer and
+							rating on top. <strong>Bangladeshi films and short films are usually not on TMDB at all,
+							and that is fine</strong> — they still appear, using Chorki's own details.
+						</p>
+						<p style="margin:10px 0 4px">
+							<label>Show
+							<input name="chorki_limit" type="number" min="1" max="<?php echo (int) AUN_App_Chorki::MAX_LIMIT; ?>" style="width:70px"
+								value="<?php echo (int) ( $opts['chorki_limit'] ?: AUN_App_Chorki::LIMIT ); ?>" />
+							of Chorki's newest titles</label>
+							<span class="description">(max <?php echo (int) AUN_App_Chorki::MAX_LIMIT; ?> — each one costs a page fetch when the list refreshes)</span>
+						</p>
+						<p style="margin:10px 0 4px">
+							<label style="display:block;margin-bottom:4px">Source list</label>
+							<input name="chorki_list_url" type="url" style="width:70%" value="<?php echo esc_attr( (string) ( $opts['chorki_list_url'] ?? '' ) ); ?>"
+								placeholder="<?php echo esc_attr( AUN_App_Chorki::LIST_URL ); ?>" />
+						</p>
+						<p class="description">
+							Blank uses <code><?php echo esc_html( AUN_App_Chorki::LIST_URL ); ?></code>. It is a setting so you
+							can point at a different Chorki list — or at a new address if they move this one —
+							without waiting for a plugin update.
+						</p>
+						<button type="submit" form="aun-chorki-test-form" class="button button-secondary" style="margin-top:6px">Test Chorki now</button>
+						<span class="description" style="display:block;margin-top:6px">
+							Save first, then use this to see exactly which titles came back and which ones TMDB
+							recognised. If Chorki is ever unreachable the app keeps showing the last good list
+							rather than an empty rail.
+						</span>
 					</td></tr>
 
 					<tr><th>Local picks (Chorki/Bioscope…)</th><td>
@@ -2947,6 +3024,7 @@ class AUN_App_Admin {
 		?>
 		<form id="aun-tmdb-test-form" method="post"><?php wp_nonce_field( 'aun_app_tmdb_test', 'aun_tmdb_test_nonce' ); ?></form>
 		<form id="aun-watch-rebuild-form" method="post"><?php wp_nonce_field( 'aun_app_watch_rebuild', 'aun_watch_rebuild_nonce' ); ?></form>
+		<form id="aun-chorki-test-form" method="post"><?php wp_nonce_field( 'aun_app_chorki_test', 'aun_chorki_test_nonce' ); ?></form>
 		<form id="aun-maint-test-form" method="post"><?php wp_nonce_field( 'aun_app_maint_test', 'aun_maint_test_nonce' ); ?></form>
 		<form id="aun-referral-unlock-form" method="post"><?php wp_nonce_field( 'aun_app_referral_unlock', 'aun_referral_unlock_nonce' ); ?></form>
 		<form id="aun-referral-diag-form" method="post"><?php wp_nonce_field( 'aun_app_referral_diag', 'aun_referral_diag_nonce' ); ?></form>

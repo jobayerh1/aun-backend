@@ -23,11 +23,80 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.1+109**, **plugin 1.98.0 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
+Current versions: **app 2.1.1+109**, **plugin 1.99.0 (DB v21)**, **spare-parts 0.40.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-08-22 (5) — app-api 1.99.0: the Chorki half of the rail keeps itself up to date
+
+Local picks were hand-typed in Settings and went stale the moment nobody remembered them. Chorki
+publishes a list; we now read it. **Backend only — no app release needed**, because `WatchPick`
+already carries everything and Chorki rows are just more local picks.
+
+New `AUN_App_Chorki` (`includes/class-aun-app-chorki.php`), merged into `AUN_App_Watch::picks()`
+AFTER the hand-curated rows — a pinned campaign pick is a decision and an automatic feed must not
+push it down the rail.
+
+### The two rules the file is built around
+
+⚠️ **1. Chorki is the source of truth; TMDB is a bonus, never a gate.** The owner's first sketch
+was "scrape Chorki → look it up on TMDB → show it". That would have emptied the rail for exactly the
+content we want to promote: **the first three titles on the live list are short films**, which TMDB
+does not carry at all, and new Bangladeshi releases are frequently absent too. A row is therefore
+built entirely from Chorki's own page, and TMDB only layers cast/trailer/rating on top when it is
+confidently the same title.
+
+⚠️ **2. A wrong match is far worse than no match — and the list itself proves it.** Its fourth
+title is **Rockstar**, a 2026 Bangladeshi musical drama. TMDB's top hit for "Rockstar" is the 2011
+Ranbir Kapoor film. Accept result #1 and a customer taps a Bangladeshi film, sees an Indian star's
+poster and cast, then goes to Chorki looking for something that is not there. `pick_match()` runs
+four gates: not a short film → **`original_language` is `bn` or `origin_country` has BD** → title
+similarity ≥ 0.86 against BOTH the title and the original title → year within ±1. The language gate
+alone kills the Rockstar collision (Bollywood is `hi`, the American one `en`).
+
+### Where the data comes from, and why it should survive a redesign
+
+The **list page is read for hrefs only** — they give order, slug and kind (`/en/movie/rockstar` →
+movie). Everything else comes from each title's own page via **schema.org JSON-LD `VideoObject`**
+(name, description, duration, genre, director, and a locale-free `embedUrl`) plus **og:image** for
+the poster, since the JSON-LD's only images are the director's headshots. JSON-LD and og: are
+contracts a site keeps for Google and Facebook, so they outlive the CSS-selector scraping that a
+Next.js deploy would destroy. Each row records which strategy read it; the admin panel shows it, so
+a future breakage reads as "via: slug on every row" instead of quietly worse cards.
+
+⚠️ **Chorki's robots.txt disallows `/api/*`.** Their JSON API is off limits however tempting; the
+public HTML is not. We send a User-Agent naming us and linking back, so Chorki can find us if they
+object. **If a proper feed is ever negotiated, replace `fetch_list()` + `fetch_detail()` and nothing
+above them changes** — worth asking for alongside the Chorki subscription bundle.
+
+⚠️ **Never built on a customer's request.** Measured on the bench: a 4-title build takes **4.2 s**
+(one HTTP call per title plus the list). A cold store therefore returns EMPTY and queues cron — the
+rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
+does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
+as the safety net for a site nobody opened.
+
+⚠️ A short film is filed as `kind = 'movie'` deliberately: the app renders
+`kind == 'series' ? Series : Movie`, so a third value would display as "Movie" anyway while looking
+like a supported case. The runtime chip already says "25m".
+
+### Settings → What to watch
+
+New: **Chorki auto-picks** on/off (default OFF), how many titles (default 5, max 12), and the
+**source list URL as a setting** — so a different Chorki list, or a moved one, needs no plugin
+update. Plus **Test Chorki now**, which prints a per-title table: what came back, which extraction
+strategy read it, and whether TMDB matched.
+
+**Tests:** NEW `test-chorki.php` (**63**, scratchpad) — list/detail parsing against saved real pages,
+all four matcher gates including the real Rockstar decoys, and the failure rules (cold store never
+builds inline, a failed rebuild keeps the last good list, an old schema is not served). Verified LIVE
+end to end inside the WP bench against chorki.net: 4 real titles with posters, years and runtimes,
+and a simulated outage kept all 4 rows.
+
+⚠️ **Bench gotcha worth remembering:** `php` on PATH loads NO php.ini, so curl/openssl/pdo_sqlite
+are all missing and every HTTPS test fails misleadingly. Use `php -c "$(pwd)/php.ini"` from
+`wp-local`. Same for wp-cli, which otherwise dies with "PDO Driver for SQLite is missing".
 
 ## 2026-08-22 (4) — DECISION (no code shipped): Phase 3 / the TV app is DROPPED
 
