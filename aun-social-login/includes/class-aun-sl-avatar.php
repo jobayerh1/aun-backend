@@ -41,6 +41,12 @@ class AUN_SL_Avatar {
 		if ( $url === '' ) {
 			return '';
 		}
+		// A real CDN link never contains a quote, an angle bracket, a backslash,
+		// whitespace or a control character. Refusing them outright means the value
+		// cannot depend on every future output site remembering to escape it.
+		if ( preg_match( '/[\x00-\x20\x7f"\'<>\\\\`]/', $url ) ) {
+			return '';
+		}
 		$parts = wp_parse_url( $url );
 		if ( empty( $parts['scheme'] ) || 'https' !== strtolower( $parts['scheme'] ) || empty( $parts['host'] ) ) {
 			return '';

@@ -35,6 +35,7 @@ class AUN_SL_Options {
 			'at_wc_login_before' => 0,
 			'at_wc_register'     => 1,
 			'at_wc_checkout' => 1,
+			'at_wc_cart'     => 1,
 			'at_wp_login'    => 0,
 
 			// Behaviour
@@ -109,7 +110,7 @@ class AUN_SL_Options {
 		$old = self::all();
 		$out = array();
 
-		foreach ( array( 'google_enabled', 'onetap_enabled', 'facebook_enabled', 'show_label', 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_checkout', 'at_wp_login', 'allow_register', 'link_by_email', 'block_admins', 'notify_admin', 'use_avatar' ) as $k ) {
+		foreach ( array( 'google_enabled', 'onetap_enabled', 'facebook_enabled', 'show_label', 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_checkout', 'at_wc_cart', 'at_wp_login', 'allow_register', 'link_by_email', 'block_admins', 'notify_admin', 'use_avatar' ) as $k ) {
 			$out[ $k ] = ( ! empty( $input[ $k ] ) ) ? 1 : 0;
 		}
 
