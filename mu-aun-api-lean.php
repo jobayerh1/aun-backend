@@ -126,6 +126,21 @@ add_filter( 'option_active_plugins', function ( $plugins ) {
 		// WooCommerce add-ons that only shape the SHOP PAGES.
 		'ast-pro/ast-pro.php',
 		'connect-yeamazing/connect-yeamazing.php',
+		// ⚠️ discontinued-products DOES reach the app, despite sitting under this
+		// heading. The planner catalogue hides models we no longer sell, and it
+		// used to ask `taxonomy_exists( 'product_discontinued' )` — which is
+		// false here, because this list unregisters the plugin that declares it.
+		// The planner then offered retired projectors, intermittently, because
+		// its 6-hour cache meant whichever request rebuilt it won.
+		//
+		// AUN_App_Projectors::discontinued_ids() now reads the term rows
+		// straight from the database, so it no longer depends on this plugin
+		// being loaded and this entry is safe to keep.
+		//
+		// **The lesson for anything added below:** this list was audited for
+		// CLASS and FUNCTION dependencies. A TAXONOMY (or a post type, or a
+		// shortcode) a plugin registers is invisible to that kind of audit and
+		// fails silently rather than fatally. Check for those too.
 		'discontinued-products/woocommerce-discontinued-products.php',
 		'wb-custom-product-tabs-for-woocommerce/wb-custom-product-tabs-for-woocommerce.php',
 		'woocommerce-extra-price-fields/woocommerce-extra-price-fields.php',

@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.4+112**, **plugin 1.100.3 (DB v21)**, **spare-parts 0.41.0 (DB v10)**,
+Current versions: **app 2.1.4+112**, **plugin 1.100.4 (DB v21)**, **spare-parts 0.41.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,40 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+## 2026-08-23 — app-api 1.100.4: the planner offered projectors we no longer sell
+
+Owner: *"Support → Projector Planner now pulls ALL the projector models from our store — I set a
+logic there and it stopped working."* The logic was the **Discontinued** tag, and it had been dead on
+the app's endpoint since the lean route shipped.
+
+⚠️ **`mu-aun-api-lean.php` drops `discontinued-products` on every `/wp-json/aun-app/` request**,
+filed under *"WooCommerce add-ons that only shape the SHOP PAGES"*. It does not only shape shop
+pages. `AUN_App_Projectors::is_discontinued()` asked
+`taxonomy_exists( 'product_discontinued' ) && has_term( ... )`, and **both need that plugin loaded to
+register the taxonomy** — so on the app's own endpoint the answer was false for every product and
+nothing was ever filtered out.
+
+⚠️ **Why it hid for days, and why the admin screen disagreed:** `catalogue()` is cached for 6 hours,
+so whichever request happened to rebuild it decided what everyone saw. Rebuilt from wp-admin →
+correct list. Rebuilt from an app request → retired models, cached for the next six hours. And the
+admin diagnostic panel showed the CORRECT list the whole time, because that page loads the plugin.
+**An intermittent, surface-dependent bug is what a shared cache does to a conditional dependency.**
+
+`discontinued_ids()` now reads the term rows **straight from the database** — they exist whether or
+not the plugin is loaded — so the planner no longer depends on it, the lean route keeps its speed
+win, and it is one query per request instead of one `has_term()` per product. `CACHE_KEY` gained a
+`_v2` suffix so a stale transient cannot keep serving the old list after the upgrade.
+
+⚠️ **The general lesson, now written into the mu-plugin next to that entry:** the keep-list was
+audited for CLASS and FUNCTION dependencies. A **taxonomy** (or post type, or shortcode) that a
+plugin registers is invisible to that kind of audit, and fails SILENTLY rather than fatally. Audited
+the rest of app-api and spare-parts for the same shape — this was the only one.
+
+**Tests:** `test-discontinued.php` (**9**, workdir) marks a product discontinued, then
+`unregister_taxonomy()` to reproduce exactly what the app endpoint sees, and asserts the OLD
+expression answers "not discontinued" while the new one still answers correctly — then checks the
+built catalogue offers the live model and not the retired one.
 
 ## 2026-08-22 (6) — LIVE PAYMENT BUG: a PAID request asked to be paid again
 

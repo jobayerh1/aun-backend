@@ -27,7 +27,10 @@ if ( ! defined( 'WPINC' ) ) {
 class AUN_App_Projectors {
 
 	/** Cache key for the resolved catalogue. */
-	const CACHE_KEY = 'aun_app_projector_catalogue';
+	/** ⚠️ Suffix bumped when the catalogue's CONTENTS change meaning, so a
+	 * stale transient cannot keep serving the old list after an upgrade.
+	 * _v2: discontinued filtering no longer depends on a loaded plugin. */
+	const CACHE_KEY = 'aun_app_projector_catalogue_v2';
 
 	/** How long the catalogue stays cached (products change rarely). */
 	const CACHE_TTL = 6 * HOUR_IN_SECONDS;
@@ -72,8 +75,54 @@ class AUN_App_Projectors {
 	 * @return bool
 	 */
 	public static function is_discontinued( $product_id ) {
-		return taxonomy_exists( 'product_discontinued' )
-			&& has_term( 'dp-discontinued', 'product_discontinued', (int) $product_id );
+		return in_array( (int) $product_id, self::discontinued_ids(), true );
+	}
+
+	/** Cached for the request — the catalogue asks once per product. */
+	private static $discontinued_ids = null;
+
+	/**
+	 * Every product tagged discontinued, read STRAIGHT FROM THE DATABASE.
+	 *
+	 * ⚠️ **Deliberately not `taxonomy_exists()` + `has_term()`, and this is a
+	 * live bug fix.** Both of those need the Discontinued Products plugin to be
+	 * LOADED so the taxonomy is registered — and `mu-aun-api-lean.php` drops
+	 * that plugin on every `/wp-json/aun-app/` request, filed under "WooCommerce
+	 * add-ons that only shape the shop pages". It does not only shape shop
+	 * pages: the planner catalogue depends on it.
+	 *
+	 * So on the app's own endpoint `taxonomy_exists()` returned false,
+	 * `is_discontinued()` answered false for everything, and the planner offered
+	 * the customer models we no longer sell.
+	 *
+	 * ⚠️ It was intermittent, which is why it hid for so long: `catalogue()` is
+	 * cached for 6 hours, so whichever request happened to rebuild it decided
+	 * what everyone saw. Rebuilt from wp-admin → correct list. Rebuilt from an
+	 * app request → discontinued models, cached for the next six hours, and the
+	 * admin diagnostic panel would show the CORRECT list all the while, because
+	 * that page loads the plugin.
+	 *
+	 * The term rows exist in the database whether or not the plugin is loaded,
+	 * so reading them directly makes the planner independent of it. One query
+	 * per request, replacing one `has_term()` per product.
+	 *
+	 * @return int[] Product IDs.
+	 */
+	public static function discontinued_ids() {
+		if ( is_array( self::$discontinued_ids ) ) {
+			return self::$discontinued_ids;
+		}
+		global $wpdb;
+		$ids = $wpdb->get_col(
+			"SELECT tr.object_id
+			   FROM {$wpdb->term_relationships} tr
+			   JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+			   JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
+			  WHERE tt.taxonomy = 'product_discontinued'
+			    AND t.slug = 'dp-discontinued'"
+		);
+		self::$discontinued_ids = array_map( 'intval', (array) $ids );
+		return self::$discontinued_ids;
 	}
 
 	/**
