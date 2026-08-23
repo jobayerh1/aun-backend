@@ -20,6 +20,13 @@
  *  4. Tapped Get → silent for 180 days (they have seen the app page).
  *  5. Never on cart, checkout or account pages. Interrupting a purchase is the
  *     single worst thing this could do.
+ *  6. Never on single product pages, where Flatsome's sticky "Add to cart" bar
+ *     already owns the bottom edge. The impression is not spent, so the bar shows
+ *     on the next page instead. Beyond the overlap, the principle is that a buy
+ *     button always outranks an app install.
+ *  7. More generally, if anything else is painted at the bottom-centre of the
+ *     viewport (cookie notice, chat dock, One Tap), the bar waits its turn and
+ *     then yields the page rather than covering it.
  *
  * ⚠️ CACHE SAFETY: the markup is ALWAYS rendered and hidden; JavaScript decides
  * whether to reveal it. Detecting Android server-side would be cached by WP Rocket
@@ -67,6 +74,10 @@ function aun_app_banner_render() {
       'muteDismiss' => (int) aun_care_promo_opt( 'mute_dismiss' ),
       'muteTap'     => (int) aun_care_promo_opt( 'mute_tap' ),
       'avoidOneTap' => (int) aun_care_promo_opt( 'avoid_onetap' ),
+      'skipProduct' => (int) aun_care_promo_opt( 'skip_products' ),
+      // Resolved on the server, which is safe: a product page has its own URL, so
+      // WP Rocket caches this value with the page it belongs to.
+      'isProduct'   => ( function_exists( 'is_product' ) && is_product() ) ? 1 : 0,
   ) ); ?>;
 
   // Google One Tap docks to the BOTTOM of the screen on phones — exactly where
@@ -76,6 +87,29 @@ function aun_app_banner_render() {
       '#credential_picker_container,#credential_picker_iframe,' +
       'iframe[src*="gsi/iframe"],iframe[src*="accounts.google.com/gsi"]'
     );
+  }
+
+  // Is something else already pinned to the bottom edge of the screen?
+  //
+  // Deliberately theme-agnostic: rather than hunt for Flatsome's sticky
+  // Add-to-cart markup by class name (which changes between theme versions and
+  // would silently stop matching after an update), just ask the browser what is
+  // actually painted at the bottom-centre of the viewport and check whether it,
+  // or any of its parents, is position:fixed. Catches the sticky buy bar, cookie
+  // notices, chat docks and anything else we haven't thought of.
+  function bottomBusy(){
+    try{
+      var el = document.elementFromPoint(
+        Math.round(window.innerWidth/2),
+        window.innerHeight - 8
+      );
+      while(el && el !== document.body && el !== document.documentElement){
+        if(el === bar) return false;                                  // that's us
+        if(getComputedStyle(el).position === 'fixed') return true;
+        el = el.parentElement;
+      }
+    }catch(e){}
+    return false;
   }
 
   var MUTE='aunAppBarMute',      // localStorage: timestamp to stay quiet until
@@ -103,13 +137,25 @@ function aun_app_banner_render() {
     if(views < CFG.minViews) return;
   }catch(e){ return; }
 
-  var shown=false, waiting=false;
+  // A product page is where the buy button lives, and Flatsome's sticky Add to
+  // cart bar owns the bottom edge there. An app install never outranks a sale,
+  // so we stay off entirely. Note this sits AFTER the pageview counter above:
+  // the visit still counts and the impression is NOT marked as used, so the bar
+  // simply appears on the next page the visitor opens. On a projector shop most
+  // browsing is product pages, so skipping the count instead would mean the bar
+  // effectively never showed at all.
+  if(CFG.skipProduct && CFG.isProduct) return;
+
+  var shown=false, waiting=false, tries=0;
   function show(){
     if(shown) return;
-    // Never burn the one impression behind a sign-in prompt: try again shortly.
-    if(CFG.avoidOneTap && oneTapUp()){
+    // Never burn the one impression behind a sign-in prompt or under someone
+    // else's fixed bar: wait a moment and look again. After a few tries give up
+    // on THIS page with the impression still unspent, so the next page gets it.
+    if((CFG.avoidOneTap && oneTapUp()) || bottomBusy()){
+      if(tries >= 5){ cleanup(); return; }
       if(waiting) return;
-      waiting=true;
+      waiting=true; tries++;
       setTimeout(function(){ waiting=false; show(); }, 3000);
       return;
     }

@@ -20,6 +20,7 @@ function aun_care_promo_defaults() {
 		'mute_dismiss'   => 60,  // days of silence after the visitor closes it
 		'mute_tap'       => 180, // days of silence after they tap "Get"
 		'avoid_onetap'   => 1,   // hold back while a Google One Tap prompt is on screen
+		'skip_products'  => 1,   // never compete with the sticky Add to cart bar
 	);
 }
 
@@ -39,7 +40,7 @@ function aun_care_promo_sanitize( $in ) {
 	$d   = aun_care_promo_defaults();
 	$out = array();
 
-	foreach ( array( 'banner_enabled', 'avoid_onetap' ) as $k ) {
+	foreach ( array( 'banner_enabled', 'avoid_onetap', 'skip_products' ) as $k ) {
 		$out[ $k ] = empty( $in[ $k ] ) ? 0 : 1;
 	}
 	$ranges = array(
@@ -98,7 +99,7 @@ function aun_care_promo_settings_page() {
 							Show the app download bar
 						</label>
 						<p class="description">Turn this off to hide it site-wide without deactivating the plugin.
-						   It already never appears on cart, checkout, my-account or the app&rsquo;s own pages,
+						   It already never appears on cart, checkout, my-account, single product pages or the app&rsquo;s own pages,
 						   and only on Android phones.</p>
 					</td>
 				</tr>
@@ -112,6 +113,20 @@ function aun_care_promo_settings_page() {
 						<p class="description"><strong>Recommended.</strong> On phones the Google One Tap prompt also
 						   docks to the bottom of the screen, so the two can land on top of each other. With this on,
 						   the install bar simply waits until the sign-in prompt is gone.</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Product pages</th>
+					<td>
+						<label>
+							<input type="checkbox" name="<?php echo esc_attr( $n( 'skip_products' ) ); ?>" value="1" <?php checked( $o['skip_products'], 1 ); ?>>
+							Stay off single product pages
+						</label>
+						<p class="description"><strong>Recommended.</strong> Flatsome&rsquo;s sticky
+						   <em>Add to cart</em> bar docks to the bottom of the screen on phones &mdash; the same
+						   place this bar lives &mdash; and on a product page the buy button has to win.
+						   The visit still counts, so the bar just appears on the next page they open
+						   instead of being used up here.</p>
 					</td>
 				</tr>
 			</table>

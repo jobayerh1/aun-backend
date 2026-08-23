@@ -264,6 +264,7 @@ class AUN_SL_Settings {
 							self::checkbox( 'at_wc_login_before', 'Above the WooCommerce login form', $o, 'Use this instead if the phone-OTP plugin hides the email/password form — anything inside that form gets hidden with it.' );
 							self::checkbox( 'at_wc_register', 'WooCommerce register form', $o, 'Inside the form, just above the Register button (same spot as the old plugin).' );
 							self::checkbox( 'at_wc_checkout', 'WooCommerce checkout page', $o );
+							self::checkbox( 'at_wc_cart', 'WooCommerce cart page', $o, 'Above the cart table. A shopper with items in the cart who is not signed in is the best moment to ask — signing in there prefills checkout and attaches the order to an account.' );
 							self::checkbox( 'at_wp_login', 'WordPress wp-login.php screen', $o, 'Leave off if only customers use social login.' );
 							?>
 							<p class="description">You can also place them anywhere with the shortcode <code>[aun_social_login]</code>.</p>

@@ -72,6 +72,12 @@ class AUN_SL_OneTap {
 					body.append( 'action', 'aun_sl_onetap' );
 					body.append( 'credential', response.credential );
 					body.append( 'security', ( n && n.data && n.data.nonce ) ? n.data.nonce : '' );
+					/* Where the visitor actually is. The sign-in itself runs over
+					   admin-ajax, where is_checkout() is always false, so the server
+					   cannot work this out on its own — it would send someone who was
+					   halfway through checkout back to My Account. Revalidated
+					   server-side against this host before it is used. */
+					body.append( 'here', window.location.href );
 					return fetch( ajax, {
 						method: 'POST',
 						credentials: 'same-origin',
@@ -99,6 +105,11 @@ class AUN_SL_OneTap {
 		}
 		if ( ! check_ajax_referer( 'aun_sl_onetap', 'security', false ) ) {
 			wp_send_json_error( array( 'message' => 'Your session expired. Please reload the page.' ), 403 );
+		}
+		// Same per-IP ceiling the redirect flow uses. Without it this endpoint is an
+		// unauthenticated way to make the site call Google's tokeninfo on demand.
+		if ( ! AUN_SL_OAuth::rate_ok() ) {
+			wp_send_json_error( array( 'message' => 'Too many sign-in attempts. Please wait a minute and try again.' ), 429 );
 		}
 
 		$credential = isset( $_POST['credential'] ) ? (string) wp_unslash( $_POST['credential'] ) : '';
@@ -176,13 +187,20 @@ class AUN_SL_OneTap {
 		return $c;
 	}
 
-	/** Stay on checkout if that is where they were; otherwise the account page. */
+	/**
+	 * Send the visitor back to the page they signed in from — checkout, a product,
+	 * wherever. `here` comes from the browser, so it is put through
+	 * wp_validate_redirect(): anything off-host falls back to the account page.
+	 */
 	private static function redirect_url() {
-		if ( function_exists( 'is_checkout' ) && is_checkout() ) {
-			return wc_get_checkout_url();
-		}
+		$here = isset( $_POST['here'] ) ? esc_url_raw( wp_unslash( $_POST['here'] ) ) : '';
+		return wp_validate_redirect( $here, self::default_redirect() );
+	}
+
+	private static function default_redirect() {
 		if ( function_exists( 'wc_get_page_permalink' ) ) {
-			return wc_get_page_permalink( 'myaccount' );
+			$url = wc_get_page_permalink( 'myaccount' );
+			if ( $url ) { return $url; }
 		}
 		return home_url( '/' );
 	}

@@ -38,6 +38,13 @@ class AUN_SL_UI {
 		if ( ! empty( $o['at_wc_checkout'] ) ) {
 			add_action( 'woocommerce_checkout_before_customer_details', array( __CLASS__, 'render' ) );
 		}
+		// The cart is the highest-intent page a logged-out shopper can be on: they
+		// have already chosen. 'woocommerce_before_cart' puts the icons above the
+		// cart table, ahead of the "Proceed to checkout" decision. render() bails on
+		// its own for anyone already signed in, so an empty hook costs nothing.
+		if ( ! empty( $o['at_wc_cart'] ) ) {
+			add_action( 'woocommerce_before_cart', array( __CLASS__, 'render' ) );
+		}
 		if ( ! empty( $o['at_wp_login'] ) ) {
 			add_action( 'login_form', array( __CLASS__, 'render' ) );
 			add_action( 'register_form', array( __CLASS__, 'render' ) );
@@ -130,15 +137,25 @@ class AUN_SL_UI {
 			. '</svg>';
 	}
 
-	/** Current page, used so the visitor lands back where they started. */
+	/**
+	 * The page the buttons are being printed on, so the visitor lands back where
+	 * they started rather than at My Account.
+	 *
+	 * Built from REQUEST_URI but rehosted through home_url(), which pins the host:
+	 * the path can never turn the button into a link off our own domain. The
+	 * receiving end revalidates with wp_validate_redirect() as well.
+	 *
+	 * Page-cache safe: WP Rocket caches per URL, so the REQUEST_URI baked into a
+	 * cached page is that page's own address for every visitor who sees it.
+	 */
 	private static function current_url() {
-		if ( function_exists( 'is_checkout' ) && is_checkout() ) {
-			return wc_get_checkout_url();
+		$uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+		if ( $uri === '' || $uri[0] !== '/' ) {
+			// No usable path (CLI, odd proxy). Fall back to the account page.
+			return function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'myaccount' ) : home_url( '/' );
 		}
-		if ( function_exists( 'wc_get_page_permalink' ) ) {
-			return wc_get_page_permalink( 'myaccount' );
-		}
-		return home_url( '/' );
+		// Don't carry a previous refusal notice back onto the next page.
+		return esc_url_raw( remove_query_arg( 'aun_sl_error', home_url( $uri ) ) );
 	}
 
 	/** Render the ?aun_sl_error=... message as a WooCommerce-style notice. */
@@ -146,12 +163,14 @@ class AUN_SL_UI {
 		if ( empty( $_GET['aun_sl_error'] ) ) {
 			return;
 		}
-		$msg = sanitize_text_field( rawurldecode( wp_unslash( $_GET['aun_sl_error'] ) ) );
+		// The URL carries a CODE, not a sentence. Anything we do not recognise
+		// renders nothing at all, so a crafted link cannot put words of its own
+		// choosing inside our error box — see AUN_SL_OAuth::messages().
+		$code = sanitize_key( wp_unslash( $_GET['aun_sl_error'] ) );
+		$msg  = AUN_SL_OAuth::message( $code );
 		if ( $msg === '' ) {
 			return;
 		}
-		// esc_html on output: the text is echoed, never interpreted as markup, so a
-		// crafted ?aun_sl_error= cannot inject anything into the page.
 		echo '<div class="woocommerce-error aun-sl-error" role="alert">' . esc_html( $msg ) . '</div>';
 	}
 }

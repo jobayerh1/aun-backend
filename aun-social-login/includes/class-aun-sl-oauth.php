@@ -67,10 +67,10 @@ class AUN_SL_OAuth {
 			return; // not ours / malformed - let WordPress carry on normally
 		}
 		if ( ! AUN_SL_Options::provider_ready( $provider ) ) {
-			self::fail( 'This sign-in method is not available right now.' );
+			self::fail( 'unavailable' );
 		}
 		if ( ! self::rate_ok() ) {
-			self::fail( 'Too many sign-in attempts. Please wait a minute and try again.' );
+			self::fail( 'throttled' );
 		}
 
 		if ( 'start' === $action ) {
@@ -148,13 +148,13 @@ class AUN_SL_OAuth {
 	private static function callback( $provider ) {
 		// The user pressed "Cancel" on the provider screen.
 		if ( ! empty( $_GET['error'] ) ) {
-			self::fail( 'Sign-in was cancelled.' );
+			self::fail( 'cancelled' );
 		}
 
 		$state = isset( $_GET['state'] ) ? (string) wp_unslash( $_GET['state'] ) : '';
 		$code  = isset( $_GET['code'] ) ? (string) wp_unslash( $_GET['code'] ) : '';
 		if ( $state === '' || $code === '' ) {
-			self::fail( 'Sign-in could not be completed. Please try again.' );
+			self::fail( 'incomplete' );
 		}
 
 		// --- CSRF: the state must be one we minted, and it dies on first use. ---
@@ -162,12 +162,12 @@ class AUN_SL_OAuth {
 		$saved = get_transient( $key );
 		delete_transient( $key );
 		if ( ! is_array( $saved ) || ! isset( $saved['p'] ) || ! hash_equals( (string) $saved['p'], $provider ) ) {
-			self::fail( 'This sign-in link has expired. Please try again.' );
+			self::fail( 'expired' );
 		}
 
 		$is_test = ! empty( $saved['t'] );
 		if ( $is_test && ! current_user_can( 'manage_options' ) ) {
-			self::fail( 'That test link is no longer valid.' );
+			self::fail( 'testlink' );
 		}
 
 		$token = self::exchange_code( $provider, $code );
@@ -175,7 +175,7 @@ class AUN_SL_OAuth {
 			if ( $is_test ) {
 				self::finish_test( $provider, false, 'Could not exchange the code for a token. Usually the Client ID / secret is wrong, or the Redirect URL does not match the one registered with the provider.' );
 			}
-			self::fail( 'We could not verify your account with the provider. Please try again.' );
+			self::fail( 'token' );
 		}
 
 		$profile = self::fetch_profile( $provider, $token );
@@ -183,7 +183,7 @@ class AUN_SL_OAuth {
 			if ( $is_test ) {
 				self::finish_test( $provider, false, 'The token worked, but the profile could not be read. Check that the email / public_profile permission is granted to the app.' );
 			}
-			self::fail( 'We could not read your profile from the provider.' );
+			self::fail( 'profile' );
 		}
 
 		// Diagnostic run stops here: nothing is created, linked or signed in.
@@ -193,7 +193,7 @@ class AUN_SL_OAuth {
 
 		$user_id = self::authenticate( $provider, $profile );
 		if ( is_wp_error( $user_id ) ) {
-			self::fail( $user_id->get_error_message() );
+			self::fail( $user_id->get_error_code() );
 		}
 
 		$redirect = isset( $saved['r'] ) ? $saved['r'] : self::default_redirect();
@@ -480,7 +480,7 @@ class AUN_SL_OAuth {
 	private static function sign_in( $user_id ) {
 		$user = get_user_by( 'id', $user_id );
 		if ( ! $user ) {
-			self::fail( 'Sign-in failed. Please try again.' );
+			self::fail( 'session' );
 		}
 		wp_set_current_user( $user_id, $user->user_login );
 		wp_set_auth_cookie( $user_id, true );
@@ -497,15 +497,58 @@ class AUN_SL_OAuth {
 		return home_url( '/' );
 	}
 
-	/** Send the visitor back to the account page with a readable message. */
-	private static function fail( $message ) {
-		$url = add_query_arg( 'aun_sl_error', rawurlencode( $message ), self::default_redirect() );
-		wp_safe_redirect( $url );
+	/**
+	 * Every message a visitor can be shown, keyed by a short code.
+	 *
+	 * The reason this is a lookup rather than free text in the URL: the notice is
+	 * printed on the account page straight from ?aun_sl_error=. If that carried the
+	 * sentence itself, anyone could hand a customer a link to OUR domain that shows
+	 * OUR error styling saying whatever they liked ("call this number to unlock your
+	 * account"). Escaping stops markup, not a convincing sentence. With codes, an
+	 * unknown value simply renders nothing.
+	 */
+	public static function messages() {
+		return array(
+			'unavailable'    => 'This sign-in method is not available right now.',
+			'throttled'      => 'Too many sign-in attempts. Please wait a minute and try again.',
+			'cancelled'      => 'Sign-in was cancelled.',
+			'incomplete'     => 'Sign-in could not be completed. Please try again.',
+			'expired'        => 'This sign-in link has expired. Please try again.',
+			'testlink'       => 'That test link is no longer valid.',
+			'token'          => 'We could not verify your account with the provider. Please try again.',
+			'profile'        => 'We could not read your profile from the provider.',
+			'session'        => 'Sign-in failed. Please try again.',
+			// Codes raised by decide() / create_user(), passed straight through.
+			'aun_sl_dup'     => 'We found more than one account for this profile. Please contact support.',
+			'aun_sl_admin'   => 'For security, staff accounts must sign in with a password rather than a social account.',
+			'aun_sl_noemail' => 'Your social profile did not share an email address, so we cannot create your account. Please register with your email or phone number instead.',
+			'aun_sl_exists'  => 'An account already exists with this email address. Please sign in with your password to continue.',
+			'aun_sl_noreg'   => 'New account creation is currently disabled. Please contact support.',
+		);
+	}
+
+	/** The sentence for a code, or '' when the code is not one of ours. */
+	public static function message( $code ) {
+		$m = self::messages();
+		return isset( $m[ $code ] ) ? $m[ $code ] : '';
+	}
+
+	/**
+	 * Send the visitor back to the account page with an error CODE (never the
+	 * sentence — see messages()). An unrecognised code from wp_insert_user and
+	 * friends is downgraded to 'incomplete' so no internal wording ever leaks.
+	 */
+	private static function fail( $code ) {
+		if ( self::message( $code ) === '' ) {
+			self::log( 'unmapped failure code: ' . $code );
+			$code = 'incomplete';
+		}
+		wp_safe_redirect( add_query_arg( 'aun_sl_error', $code, self::default_redirect() ) );
 		exit;
 	}
 
 	/** Simple per-IP throttle so the callback cannot be hammered. */
-	private static function rate_ok() {
+	public static function rate_ok() {
 		$ip = '';
 		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
 			$ip = (string) wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] );
