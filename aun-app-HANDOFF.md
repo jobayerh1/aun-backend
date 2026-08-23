@@ -23,7 +23,7 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.4+112**, **plugin 1.100.4 (DB v21)**, **spare-parts 0.41.0 (DB v10)**,
+Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 0.41.0 (DB v10)**,
 **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
@@ -76,6 +76,58 @@ above them changes** — worth asking for alongside the Chorki subscription bund
 rail is briefly one section short, which nobody notices, rather than the app hanging, which everybody
 does. Warm reads are 0.0001 s. 6-hour TTL with stale-while-revalidate, plus a twice-daily warm cron
 as the safety net for a site nobody opened.
+
+## 2026-08-23 (2) — FULL mu-plugin DEPENDENCY AUDIT (keep it; 1.101.0)
+
+Owner, after the discontinued bug: *"what if i delete the mu-plugin? i don't know which things are
+broken too."* Fair. **Verdict: KEEP IT, audit done, one more bug found and fixed.**
+
+**Why keeping it is not close.** Measured, same server, same minute: `/wp-json/aun-app/v1/ping`
+**100-123 ms** trimmed vs **1260-1620 ms** untrimmed. ~12x on EVERY app request — every screen, every
+refresh, every customer. Deleting it undoes the single largest performance win the app has.
+
+### The audit, done from the CONSUMING side
+
+Auditing 49 dropped plugins one by one is not tractable and would miss things anyway. What IS
+complete is enumerating everything app-api and spare-parts depend on, then checking each against the
+list. **The key insight: DATABASE reads are always safe** — meta, options and term rows are there
+whether or not a plugin is loaded. What breaks is anything needing a plugin's RUNTIME.
+
+| vector | how checked | result |
+|---|---|---|
+| `class_exists` / static calls | enumerated all 30 | every one maps to a KEPT plugin ✓ |
+| `function_exists` | enumerated all 29 | WooCommerce / warranty / help-center / core — all KEPT ✓ |
+| registered **taxonomies** | grepped `taxonomy_exists` / `has_term` | **1 found** — discontinued, fixed in 1.100.4 |
+| registered **post types** | grepped `'post_type' =>` | none queried ✓ |
+| **shortcodes** | grepped `do_shortcode` | never called — so dropped shortcode plugins cannot change app output ✓ |
+| third-party **filters** | grepped `apply_filters` + output builders | **1 found** — `get_price_html()`, fixed below |
+| third-party hooks fired | grepped | only `woocommerce_session_handler` (WooCommerce is KEPT) ✓ |
+
+### ⚠️ The second bug: the planner shipped raw entity codes and another plugin's marketing
+
+`AUN_App_REST::price_text()` exists **because** `wp_strip_all_tags( get_price_html() )` was wrong
+twice — its docblock has said so since 1.73.0. `AUN_App_Projectors::entry()` was still doing exactly
+that. Proven on the bench:
+
+```
+catalogue['price'] as the APP receives it:
+  &#2547;&nbsp;14,500.00 0% EMIs from ৳2,417/month     <-- before
+  ৳ 14,500.00                                          <-- after
+```
+
+Stripping tags does not DECODE entities, and `get_price_html()` is a filtered free-for-all any plugin
+can append to. `price_text()` is now **public** so there is one implementation rather than two — *a
+second copy of a rule is a second place to forget it.*
+
+⚠️ Note this bug is NOT caused by the mu-plugin; it predates it. But the lean route makes it
+INCONSISTENT, which is its own trap: the EMI plugin is dropped on app requests and loaded everywhere
+else, so the same product's price differs by which surface asked.
+
+### The rule for anyone editing `mu-aun-api-lean.php`
+
+Written next to the discontinued entry: the keep-list was audited for CLASS and FUNCTION
+dependencies. **A taxonomy, post type, shortcode or output FILTER a plugin registers is invisible to
+that kind of audit and fails SILENTLY rather than fatally.** Check those four too.
 
 ## 2026-08-23 — app-api 1.100.4: the planner offered projectors we no longer sell
 

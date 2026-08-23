@@ -213,7 +213,14 @@ class AUN_App_Projectors {
 			'name'        => (string) $product->get_name(),
 			'image'       => $image_url,
 			'url'         => (string) $product->get_permalink(),
-			'price'       => (string) wp_strip_all_tags( (string) $product->get_price_html() ),
+			// ⚠️ NOT wp_strip_all_tags( get_price_html() ). That is a filtered
+			// free-for-all — it arrived as "&#2547;&nbsp;14,500.00 0% EMIs from
+			// ৳2,417/month": entity codes stripping does not decode, plus the EMI
+			// plugin's paragraph in a field the app renders as one price.
+			// AUN_App_REST::price_text() is the one place that gets this right.
+			'price'       => class_exists( 'AUN_App_REST' ) && method_exists( 'AUN_App_REST', 'price_text' )
+				? (string) AUN_App_REST::price_text( $product )
+				: (string) wp_strip_all_tags( (string) $product->get_price_html() ),
 			'in_stock'    => (bool) $product->is_in_stock(),
 			'throw_ratio' => round( (float) $specs['throw_ratio'], 3 ),
 			'min_screen'  => (int) $specs['min_screen'],
