@@ -32,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function aun_app_banner_render() {
 
-	if ( ! apply_filters( 'aun_app_banner_enabled', true ) ) return;
+	if ( ! apply_filters( 'aun_app_banner_enabled', (bool) aun_care_promo_opt( 'banner_enabled' ) ) ) return;
 	if ( is_admin() ) return;
 
 	// Never on the app's own pages, and never mid-purchase.
@@ -59,6 +59,25 @@ function aun_app_banner_render() {
   var bar = document.getElementById('aun-appbar');
   if(!bar) return;
 
+  // Settings -> AUN Care App. Numbers only, so nothing here can be injected.
+  var CFG = <?php echo wp_json_encode( array(
+      'minViews'    => (int) aun_care_promo_opt( 'min_views' ),
+      'delay'       => (int) aun_care_promo_opt( 'delay' ),
+      'scrollPct'   => (int) aun_care_promo_opt( 'scroll_pct' ),
+      'muteDismiss' => (int) aun_care_promo_opt( 'mute_dismiss' ),
+      'muteTap'     => (int) aun_care_promo_opt( 'mute_tap' ),
+      'avoidOneTap' => (int) aun_care_promo_opt( 'avoid_onetap' ),
+  ) ); ?>;
+
+  // Google One Tap docks to the BOTTOM of the screen on phones — exactly where
+  // this bar lives. Rather than fight over z-index, we simply wait our turn.
+  function oneTapUp(){
+    return !!document.querySelector(
+      '#credential_picker_container,#credential_picker_iframe,' +
+      'iframe[src*="gsi/iframe"],iframe[src*="accounts.google.com/gsi"]'
+    );
+  }
+
   var MUTE='aunAppBarMute',      // localStorage: timestamp to stay quiet until
       SEEN='aunAppBarSeen',      // sessionStorage: already shown this visit
       VIEWS='aunAppBarViews',    // sessionStorage: pages viewed this visit
@@ -81,12 +100,20 @@ function aun_app_banner_render() {
     // Count this pageview. Never interrupt the first page of a visit.
     var views=(parseInt(sessionStorage.getItem(VIEWS)||'0',10)||0)+1;
     sessionStorage.setItem(VIEWS,String(views));
-    if(views<2) return;
+    if(views < CFG.minViews) return;
   }catch(e){ return; }
 
-  var shown=false;
+  var shown=false, waiting=false;
   function show(){
-    if(shown) return; shown=true;
+    if(shown) return;
+    // Never burn the one impression behind a sign-in prompt: try again shortly.
+    if(CFG.avoidOneTap && oneTapUp()){
+      if(waiting) return;
+      waiting=true;
+      setTimeout(function(){ waiting=false; show(); }, 3000);
+      return;
+    }
+    shown=true;
     cleanup();
     try{ sessionStorage.setItem(SEEN,'1'); }catch(e){}
     bar.hidden=false;
@@ -107,7 +134,7 @@ function aun_app_banner_render() {
   function onScroll(){
     var d=document.documentElement,
         max=(d.scrollHeight-d.clientHeight)||1;
-    if((window.scrollY||d.scrollTop)/max > 0.25) show();
+    if((window.scrollY||d.scrollTop)/max > (CFG.scrollPct/100)) show();
   }
   function cleanup(){
     window.removeEventListener('scroll',onScroll);
@@ -121,7 +148,7 @@ function aun_app_banner_render() {
   function arm(){
     if(timer) return;
     window.addEventListener('scroll',onScroll,{passive:true});
-    timer=setTimeout(show,6000);
+    timer=setTimeout(show, CFG.delay*1000);
   }
   if(document.visibilityState==='visible'){ arm(); }
   else{
@@ -133,8 +160,8 @@ function aun_app_banner_render() {
     });
   }
 
-  bar.querySelector('.aun-appbar-x').addEventListener('click',function(){ hide(60); });
-  bar.querySelector('.aun-appbar-go').addEventListener('click',function(){ quiet(180); });
+  bar.querySelector('.aun-appbar-x').addEventListener('click',function(){ hide(CFG.muteDismiss); });
+  bar.querySelector('.aun-appbar-go').addEventListener('click',function(){ quiet(CFG.muteTap); });
 })();
 </script>
 	<?php
@@ -142,7 +169,7 @@ function aun_app_banner_render() {
 add_action( 'wp_footer', 'aun_app_banner_render', 20 );
 
 add_action( 'wp_enqueue_scripts', function () {
-	if ( ! apply_filters( 'aun_app_banner_enabled', true ) ) return;
+	if ( ! apply_filters( 'aun_app_banner_enabled', (bool) aun_care_promo_opt( 'banner_enabled' ) ) ) return;
 	wp_enqueue_style(
 		'aun-app-banner',
 		plugin_dir_url( __FILE__ ) . 'assets/banner.css',

@@ -1379,12 +1379,18 @@ class AUN_App_REST {
 	 *     appends "0% EMIs from ৳2,417/month" to it, so a field the app treats
 	 *     as one price arrived as a paragraph of someone else's marketing.
 	 *
+	 * PUBLIC so there is exactly ONE implementation of "how the app writes a
+	 * price". The planner catalogue had its own copy of the very thing this
+	 * docblock warns against and shipped `&#2547;&nbsp;14,500.00` plus the EMI
+	 * plugin's marketing to the app for months — a second copy of a rule is a
+	 * second place to forget it.
+	 *
 	 * Built from WooCommerce's own primitives instead: `wc_price()` for the
 	 * formatting (currency symbol, thousands separator and decimals all follow
 	 * the store's settings, so the app still never invents a format), and the
 	 * variable-product range handled explicitly. Then decoded, once, here.
 	 */
-	private static function price_text( $p ) {
+	public static function price_text( $p ) {
 		if ( ! function_exists( 'wc_price' ) ) {
 			return '';
 		}
