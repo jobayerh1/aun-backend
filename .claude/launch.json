@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "perf",
+      "runtimeExecutable": "C:/Users/Jobayer Hossain/AppData/Local/Microsoft/WinGet/Packages/PHP.PHP.8.2_Microsoft.Winget.Source_8wekyb3d8bbwe/php.exe",
+      "runtimeArgs": ["-S","localhost:8913","-t","C:/Users/Jobayer Hossain/Downloads/Claude session/aun-care-promo"],
+      "port": 8913
+    }
+  ]
+}

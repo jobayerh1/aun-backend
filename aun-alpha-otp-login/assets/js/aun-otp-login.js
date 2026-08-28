@@ -15,19 +15,50 @@
 	var CFG  = window.aunAlphaOtp;
 	var I18N = CFG.i18n || {};
 
-	function post( action, data, done ) {
+	/**
+	 * One AJAX round trip.
+	 *
+	 * `retry` is internal. The nonce is printed into HTML that WP Rocket caches,
+	 * so on a page that has been cached longer than the nonce lives it arrives
+	 * already stale. Rather than dead-end a real customer, a 'bad_nonce' refusal
+	 * mints a fresh nonce and replays the request exactly once. Any other
+	 * refusal is passed straight through untouched.
+	 */
+	function post( action, data, done, retry ) {
 		data = data || {};
 		data.action = action;
 		data.nonce  = CFG.nonce;
+
+		function settle( resp ) {
+			resp = resp || { success: false, data: {} };
+
+			var stale = ! resp.success && resp.data && resp.data.code === 'bad_nonce';
+			if ( stale && ! retry ) {
+				$.post( CFG.ajaxurl, { action: 'aun_alpha_otp_nonce' }, null, 'json' )
+					.done( function ( n ) {
+						if ( n && n.success && n.data && n.data.nonce ) {
+							CFG.nonce = n.data.nonce;
+							post( action, data, done, true );
+						} else {
+							done( resp );
+						}
+					} )
+					.fail( function () {
+						done( resp );
+					} );
+				return;
+			}
+
+			done( resp );
+		}
+
 		$.post( CFG.ajaxurl, data, null, 'json' )
-			.done( function ( resp ) {
-				done( resp || { success: false, data: {} } );
-			} )
+			.done( settle )
 			.fail( function ( xhr ) {
 				// wp_send_json_error() may return a non-200 status with a JSON body;
 				// jQuery routes that to .fail(), so read the real message from responseJSON.
 				if ( xhr && xhr.responseJSON ) {
-					done( xhr.responseJSON );
+					settle( xhr.responseJSON );
 				} else {
 					done( { success: false, data: { message: I18N.connError } } );
 				}

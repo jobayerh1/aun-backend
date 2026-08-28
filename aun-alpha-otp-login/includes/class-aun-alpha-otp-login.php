@@ -55,6 +55,8 @@ class AUN_Alpha_OTP_Login {
 		add_action( 'wp_ajax_aun_alpha_otp_resend', array( $this, 'ajax_resend' ) );
 		add_action( 'wp_ajax_nopriv_aun_alpha_otp_select', array( $this, 'ajax_select' ) );
 		add_action( 'wp_ajax_aun_alpha_otp_select', array( $this, 'ajax_select' ) );
+		add_action( 'wp_ajax_nopriv_aun_alpha_otp_nonce', array( $this, 'ajax_nonce' ) );
+		add_action( 'wp_ajax_aun_alpha_otp_nonce', array( $this, 'ajax_nonce' ) );
 
 		if ( ! $this->is_active() ) {
 			return;
@@ -176,11 +178,37 @@ class AUN_Alpha_OTP_Login {
 	 * --------------------------------------------------------------------- */
 
 	/**
+	 * Hand out a freshly minted nonce.
+	 *
+	 * WP ROCKET: the login form appears in the Flatsome header modal on *every*
+	 * page, so its nonce is printed into HTML that WP Rocket caches. A nonce only
+	 * lives ~12-24h, but a cached page can be served for far longer — after which
+	 * every OTP request from that page fails the security check for a real
+	 * customer. This endpoint lets the browser mint a fresh one at the moment of
+	 * use and retry.
+	 *
+	 * Deliberately not behind preflight(): requiring a valid nonce to obtain a
+	 * nonce would defeat the purpose. It reveals nothing a page load does not
+	 * already reveal, and every action it protects is rate-limited on its own.
+	 */
+	public function ajax_nonce() {
+		wp_send_json_success( array( 'nonce' => wp_create_nonce( self::NONCE ) ) );
+	}
+
+	/**
 	 * Guard shared by every AJAX handler.
 	 */
 	private function preflight() {
 		if ( ! check_ajax_referer( self::NONCE, 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Security check failed. Please reload the page.', 'aun-alpha-otp-login' ) ), 403 );
+			// 'code' lets the browser retry once with a freshly minted nonce instead of
+			// showing a dead end — see ajax_nonce() and the WP ROCKET note above.
+			wp_send_json_error(
+				array(
+					'code'    => 'bad_nonce',
+					'message' => __( 'Security check failed. Please reload the page.', 'aun-alpha-otp-login' ),
+				),
+				403
+			);
 		}
 		if ( ! $this->is_active() ) {
 			wp_send_json_error( array( 'message' => __( 'OTP login is currently unavailable.', 'aun-alpha-otp-login' ) ), 503 );

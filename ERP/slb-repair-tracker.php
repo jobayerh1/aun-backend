@@ -4,13 +4,26 @@
  * Description: Repair tracking shortcode + secure ERP proxy for AUN Projector.
  *              A Pathao consignment ID written in an engineer's note (e.g. "Pathao DA200826WQJCJ5")
  *              is rendered as a tappable parcel-tracking chip on the front end.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Smart Living Bangladesh
+ *
+ * v1.3.0: • Repair log is a TIMELINE on phones. It was a 600px-wide four-column table inside a
+ *           horizontal scroller, so "By" and "Note" were off-screen with nothing to hint at them.
+ *         • Attached documents use a CSS grid with square tiles, so they no longer stack one per row.
+ *         • ERP calls retry once, and the timeout drops 20s -> 8s (the ERP is on this machine and
+ *           answers in ~20ms over loopback, so 20s only ever meant a stuck request the customer waited for).
+ *         • If the ERP cannot be reached, the last good answer for that same search is shown with a
+ *           clear "this may be out of date" note, instead of a dead end.
+ *         • Failures are logged with attempt count, elapsed time, and whether the loopback breaker
+ *           was open — enough to actually diagnose the next occurrence.
  */
 
 if (!defined('ABSPATH')) { exit; }
 
 class SLB_Repair_Tracker {
+
+    /** Prefix for the "last known good" copy used when the ERP cannot be reached. */
+    const STALE_PREFIX = 'slb_erp_stale_';
 
     private string $erp_url;
     private string $api_key;
@@ -141,19 +154,70 @@ class SLB_Repair_Tracker {
             return new WP_REST_Response($cached, 200);
         }
 
+        // The ERP failed moments ago. Don't pile on — hand back the last good answer
+        // if we have one, and only bother the ERP again once the cool-off has passed.
+        if ( get_transient($cache_key . '_fail') ) {
+            $stale = get_transient(self::STALE_PREFIX . md5($search_by . '|' . $query . '|' . $serial_clean));
+            if ( is_array($stale) ) {
+                $stale['stale'] = true;
+                return new WP_REST_Response($stale, 200);
+            }
+        }
+
         $params = ['search_by' => $search_by, 'query' => $query];
         if ( ! empty($serial_clean) ) $params['serial'] = $serial_clean;
 
         $url = add_query_arg($params, $this->erp_url);
 
-        $response = wp_remote_get($url, [
-            'headers' => ['X-API-KEY' => $this->api_key, 'Accept' => 'application/json'],
-            'timeout' => 20,
-        ]);
+        /*
+         * The ERP lives on this same machine and AUN Local Upstream routes this
+         * call over loopback, so a healthy request is ~20ms. A 20-second ceiling
+         * therefore only ever means something is genuinely wrong, and the customer
+         * sits watching a spinner for it. Ask for less, and retry once instead:
+         * nearly every failure here is a momentary blip, not a dead service.
+         */
+        $attempts = 0;
+        $started  = microtime(true);
+        do {
+            $attempts++;
+            $response = wp_remote_get($url, [
+                'headers' => ['X-API-KEY' => $this->api_key, 'Accept' => 'application/json'],
+                'timeout' => 8,
+            ]);
+            if ( ! is_wp_error($response) ) {
+                break;
+            }
+            if ( $attempts < 2 ) {
+                usleep(250000); // 250ms — long enough to clear a blip, short enough not to be felt
+            }
+        } while ( $attempts < 2 );
 
         if ( is_wp_error($response) ) {
-            // Log the real error server-side; return a generic message to the browser.
-            error_log('SLB Repair Tracker ERP error: ' . $response->get_error_message());
+            // Log enough to actually diagnose this: how long it took, how many tries,
+            // and whether the loopback route had been switched off by its breaker.
+            error_log(sprintf(
+                'SLB Repair Tracker ERP error after %d attempt(s) in %dms: %s (loopback breaker: %s)',
+                $attempts,
+                (int) ( ( microtime(true) - $started ) * 1000 ),
+                $response->get_error_message(),
+                get_transient('aun_local_upstream_off') ? 'OPEN - using DNS' : 'closed - using loopback'
+            ));
+
+            /*
+             * Rather than show an error, serve the last good answer for this exact
+             * search if we have one. Repair status changes a few times a week, so a
+             * slightly stale answer is far more useful to a customer than a dead end.
+             */
+            $stale = get_transient(self::STALE_PREFIX . md5($search_by . '|' . $query . '|' . $serial_clean));
+            if ( is_array($stale) ) {
+                $stale['stale'] = true;
+                return new WP_REST_Response($stale, 200);
+            }
+
+            // Nothing to fall back on. Remember the failure briefly so a a burst of
+            // visitors does not queue up against an ERP that is already struggling.
+            set_transient($cache_key . '_fail', 1, 30);
+
             return new WP_REST_Response(['success' => false, 'message' => 'Could not reach the repair service. Please try again later.'], 500);
         }
 
@@ -179,6 +243,9 @@ class SLB_Repair_Tracker {
         // Only cache successful responses
         if ( ! empty($data['success']) ) {
             set_transient($cache_key, $data, 2 * MINUTE_IN_SECONDS);
+            // ...and keep a much longer-lived copy purely as a safety net for when
+            // the ERP is unreachable. See the WP_Error branch above.
+            set_transient(self::STALE_PREFIX . md5($search_by . '|' . $query . '|' . $serial_clean), $data, DAY_IN_SECONDS);
         }
 
         return new WP_REST_Response($data, $status_code);
@@ -269,10 +336,39 @@ class SLB_Repair_Tracker {
         .slb-table-scroll th{background:#f9fafb;padding:14px 16px;text-align:left;color:#4b5563;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;}
         .slb-table-scroll td{padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;color:#374151;}
         .slb-table-scroll tr:last-child td{border-bottom:none;}
-        .slb-doc-gallery{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px;}
-        .slb-doc-thumb{display:block;border:2px solid #fff;padding:0;border-radius:10px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.08);transition:transform 0.2s ease,box-shadow 0.2s ease;cursor:zoom-in;overflow:hidden;}
+        /* A grid, not a wrapping flex row: the column count is then guaranteed
+           regardless of each image's intrinsic size, which is what let these
+           stack one per row on a phone. */
+        .slb-doc-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-bottom:24px;}
+        .slb-doc-thumb{display:block;border:2px solid #fff;padding:0;border-radius:10px;background:#f3f4f6;box-shadow:0 4px 12px rgba(0,0,0,0.08);transition:transform 0.2s ease,box-shadow 0.2s ease;cursor:zoom-in;overflow:hidden;aspect-ratio:1/1;}
         .slb-doc-thumb:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.12);}
-        .slb-doc-thumb img{height:90px;width:130px;object-fit:cover;display:block;}
+        /* !important: the theme sets a global img{height:auto} that would otherwise
+           win and let a tall photo blow the tile out of shape. */
+        .slb-doc-thumb img{width:100% !important;height:100% !important;object-fit:cover;display:block;}
+        @media(min-width:768px){.slb-doc-gallery{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}}
+
+        /* ---- Repair log --------------------------------------------------
+           On a phone the four-column table was 600px wide inside a horizontal
+           scroller, so two columns sat off-screen with nothing to suggest they
+           existed. A history is a timeline, so on small screens it is drawn as
+           one: everything visible, nothing to discover. The table stays for
+           desktop, where it fits and reads more densely. */
+        .slb-timeline{list-style:none;margin:0;padding:0 0 0 26px;position:relative;}
+        .slb-timeline:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:#e5e7eb;}
+        .slb-tl-item{position:relative;padding:0 0 20px 0;}
+        .slb-tl-item:last-child{padding-bottom:0;}
+        .slb-tl-item:before{content:"";position:absolute;left:-26px;top:4px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #d1d5db;box-sizing:border-box;}
+        /* The newest entry is what the customer came to see. */
+        .slb-tl-item:first-child:before{border-color:#0188fe;box-shadow:0 0 0 4px rgba(1,136,254,.15);}
+        .slb-tl-action{font-weight:700;color:#1f2937;font-size:15px;line-height:1.45;}
+        .slb-tl-item:first-child .slb-tl-action{color:#0166c0;}
+        .slb-tl-meta{color:#6b7280;font-size:12.5px;margin-top:3px;}
+        .slb-tl-note{margin-top:7px;font-size:13.5px;color:#374151;background:#f9fafb;border:1px solid #f0f1f3;border-radius:9px;padding:9px 11px;}
+        .slb-tl-empty{color:#9ca3af;text-align:center;padding:26px 0;}
+        .slb-stale-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 13px;font-size:13.5px;margin:0 0 16px;}
+        .slb-timeline{display:block;}
+        .slb-table-scroll{display:none;}
+        @media(min-width:768px){.slb-timeline{display:none;}.slb-table-scroll{display:block;}}
         .slb-lightbox{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(17,24,39,0.9);z-index:999999;display:none;align-items:center;justify-content:center;cursor:zoom-out;backdrop-filter:blur(8px);}
         .slb-lightbox img{max-width:90%;max-height:90vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.5);animation:slbZoomIn 0.25s cubic-bezier(0.16,1,0.3,1);}
         .slb-lightbox-close{position:absolute;top:20px;right:30px;color:#fff;font-size:44px;font-weight:300;cursor:pointer;line-height:1;transition:color 0.2s;}
@@ -325,6 +421,24 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     function slbNl2Br(str) {
         return String(str).replace(/\n/g, '<br>');
+    }
+
+    /**
+     * "2026-08-21 20:31:02" -> "21 Aug 2026, 8:31 pm".
+     * The raw database stamp is fine in a desktop table column, but in the phone
+     * timeline it is the only date on screen, so it should read like a date.
+     * Falls back to the original string if it cannot be parsed — never blanks it.
+     */
+    function slbPrettyDate(raw) {
+        var str = String(raw || '').trim();
+        if (!str) return '-';
+        // Safari refuses "YYYY-MM-DD HH:MM:SS"; slashes parse everywhere.
+        var d = new Date(str.replace(/-/g, '/'));
+        if (isNaN(d.getTime())) return str;
+        return d.toLocaleString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true
+        }).replace(',', '');
     }
 
     /* ---------------------------------------------------------------------
@@ -473,6 +587,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
             // Build repair log rows — helper functions are defined above, outside this loop
             var rows = '';
+            var timeline = '';
             for (var i = 0; i < activities.length; i++) {
                 var a        = activities[i];
                 var noteRaw  = a.note || '';
@@ -495,10 +610,27 @@ document.addEventListener('DOMContentLoaded', function(){
                     '<td style="white-space:nowrap;color:#4b5563;">'                + slbEscapeHtml(a.by || '-') + '</td>' +
                     '<td>' + note + '</td>' +
                     '</tr>';
+
+                // The same entry drawn as a timeline row for phones. It gets its own
+                // note element so the Show more toggle works in whichever view is
+                // currently on screen.
+                var tlNote = '<div class="slb-note slb-tl-note" data-full="' + noteData + '">' +
+                             '<span class="slb-note-text">' + noteShortHtml + '</span>' +
+                             (needsToggle ? ' <a href="#" class="slb-note-toggle" data-state="more">Show more</a>' : '') +
+                             '</div>';
+                var tlBy   = String(a.by || '').trim();
+                var tlMeta = slbEscapeHtml(slbPrettyDate(a.date || '')) + (tlBy ? ' &middot; by ' + slbEscapeHtml(tlBy) : '');
+
+                timeline += '<li class="slb-tl-item">' +
+                    '<div class="slb-tl-action">' + slbEscapeHtml(a.action || '-') + '</div>' +
+                    '<div class="slb-tl-meta">' + tlMeta + '</div>' +
+                    (String(noteRaw).trim() ? tlNote : '') +
+                    '</li>';
             }
 
             if (!rows) {
                 rows = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#9ca3af;">No activities logged yet</td></tr>';
+                timeline = '<li class="slb-tl-empty">No activities logged yet</li>';
             }
 
             // Format estimated cost
@@ -556,6 +688,10 @@ document.addEventListener('DOMContentLoaded', function(){
             // All ERP string fields are escaped before insertion — prevents XSS
             resultBox.innerHTML =
                 '<div class="slb-result-header"><h3>Repair Status</h3></div>' +
+                // The ERP was unreachable and this came from our own last-good copy.
+                // Say so plainly rather than passing off old data as current.
+                (data.stale ? '<div class="slb-stale-note">Showing the last information we have &mdash; ' +
+                              'our repair system is briefly unavailable. Please check again shortly.</div>' : '') +
                 '<div class="slb-data-grid">' +
                     '<div class="slb-data-item"><div class="slb-data-label">Current Status</div><div class="slb-data-value">' + statusBadge + '</div></div>' +
                     '<div class="slb-data-item"><div class="slb-data-label">Received On</div><div class="slb-data-value">'         + slbEscapeHtml(receivedDate) + '</div></div>' +
@@ -571,6 +707,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 '</div>' +
                 (docsHtml ? '<div class="slb-section-title">Attached Documents</div>' + docsHtml : '') +
                 '<div class="slb-section-title">Repair Log</div>' +
+                '<ol class="slb-timeline">' + timeline + '</ol>' +
                 '<div class="slb-table-scroll"><table>' +
                     '<thead><tr><th>Date</th><th>Action</th><th>By</th><th>Note</th></tr></thead>' +
                     '<tbody>' + rows + '</tbody>' +

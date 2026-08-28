@@ -1,0 +1,238 @@
+/**
+ * Kohthai Alpha SMS OTP Login — front-end styles.
+ * Accent colour matches the Kohthai brand chocolate (#654321).
+ */
+
+.kt-otp-wrap {
+	margin-top: 6px;
+}
+
+.kt-otp-phone,
+.kt-otp-code {
+	text-align: left;
+}
+
+.kt-otp-code {
+	text-align: center;
+}
+
+/* Phone field */
+.kt-otp-phone .kt-otp-label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 600;
+}
+
+.kt-otp-phone-input {
+	width: 100%;
+}
+
+/* Buttons inherit the theme .button; we just space them */
+.kt-otp-send,
+.kt-otp-verify {
+	margin-top: 12px;
+	width: 100%;
+}
+
+.kt-otp-toggle {
+	margin-top: 14px;
+}
+
+.kt-otp-toggle .button {
+	width: 100%;
+	margin-top: 8px;
+}
+
+/* The primary action gets the brand blue; the toggle stays secondary.
+   Scoped under .kt-otp-wrap so these reliably beat the theme's .button
+   styles regardless of stylesheet load order (same single-class specificity). */
+.kt-otp-wrap .kt-otp-send,
+.kt-otp-wrap .kt-otp-verify,
+.kt-otp-wrap .kt-otp-to-otp {
+	background: #654321;
+	border-color: #654321;
+	color: #fff;
+}
+
+.kt-otp-wrap .kt-otp-send:hover,
+.kt-otp-wrap .kt-otp-verify:hover,
+.kt-otp-wrap .kt-otp-to-otp:hover {
+	background: #0070d6;
+	border-color: #0070d6;
+	color: #fff;
+}
+
+.kt-otp-wrap .kt-otp-to-pwd {
+	background: #f1f3f5;
+	border-color: #dfe3e8;
+	color: #333;
+}
+
+.kt-otp-wrap .kt-otp-to-pwd:hover {
+	background: #e6e9ec;
+	border-color: #cfd5db;
+	color: #111;
+}
+
+/* "Sent to ..." line + Change link */
+.kt-otp-sent {
+	margin-bottom: 16px;
+	font-size: 15px;
+}
+
+.kt-otp-change {
+	color: #654321;
+	cursor: pointer;
+	margin-left: 6px;
+	text-decoration: none;
+}
+
+.kt-otp-change:hover {
+	text-decoration: underline;
+}
+
+/* Digit inputs (box style) */
+.kt-otp-digits {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+	margin: 18px 0;
+	flex-wrap: nowrap;
+}
+
+.kt-otp-digits input.kt-otp-digit {
+	flex: 0 1 46px;
+	width: 46px;
+	height: 54px;
+	min-width: 34px;
+	text-align: center;
+	font-size: 22px;
+	font-weight: 600;
+	border: 2px solid #d9d9d9;
+	border-radius: 8px;
+	margin: 0;
+	padding: 0;
+	background: #fff;
+	color: #222;
+	box-shadow: none;
+	box-sizing: border-box;
+	-moz-appearance: textfield;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kt-otp-digits input.kt-otp-digit:focus {
+	border-color: #654321;
+	box-shadow: 0 0 0 3px rgba(1, 136, 254, 0.18);
+	outline: none;
+}
+
+.kt-otp-digits input.kt-otp-digit::-webkit-outer-spin-button,
+.kt-otp-digits input.kt-otp-digit::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+/* Resend row */
+.kt-otp-resend-row {
+	margin-top: 12px;
+	font-size: 14px;
+}
+
+.kt-otp-resend {
+	color: #654321;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.kt-otp-resend:hover {
+	text-decoration: underline;
+}
+
+.kt-otp-resend.kt-otp-disabled {
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+.kt-otp-timer {
+	color: #666;
+	margin-left: 4px;
+}
+
+/* Notices */
+.kt-otp-notice {
+	padding: 8px 14px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	margin: 10px 0;
+	font-size: 14px;
+	text-align: left;
+}
+
+.kt-otp-notice-error {
+	color: #a4262c;
+	background: #fde7e9;
+	border-color: #f3c0c4;
+}
+
+.kt-otp-notice-success {
+	color: #1a7f37;
+	background: #e6f4ea;
+	border-color: #b7dfc3;
+}
+
+/* Account picker (multiple accounts share a phone) */
+.kt-otp-accounts h4 {
+	margin: 0 0 12px;
+	font-size: 16px;
+}
+
+.kt-otp-wrap .kt-otp-account {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 12px 14px;
+	margin-bottom: 8px;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	background: #fff;
+	color: #222;
+	cursor: pointer;
+	height: auto;
+	line-height: 1.3;
+}
+
+.kt-otp-wrap .kt-otp-account:hover {
+	background: #f0f7ff;
+	border-color: #654321;
+	color: #222;
+}
+
+.kt-otp-account-email {
+	display: block;
+	font-weight: 600;
+	font-size: 14px;
+	word-break: break-all;
+}
+
+.kt-otp-account-meta {
+	display: block;
+	font-size: 12px;
+	color: #666;
+	margin-top: 3px;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+	.kt-otp-digits {
+		gap: 6px;
+	}
+
+	.kt-otp-digits input.kt-otp-digit {
+		flex-basis: 40px;
+		width: 40px;
+		height: 48px;
+		min-width: 32px;
+		font-size: 19px;
+	}
+}

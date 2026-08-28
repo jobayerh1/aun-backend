@@ -173,7 +173,7 @@ Each is a single file/folder replace + **purge WP Rocket**:
 | Plugin | Version | What changed |
 |---|---|---|
 | `aun-help-center/` | 2.7.0 | Per-model user manuals (WP File Download); code-review fixes |
-| `aun-campaign-bar.php` | 1.5.0 | Campaign templates, Bangla `/bn/`, skips out-of-stock/discontinued |
+| `aun-campaign-bar.php` | **1.9.0** | Exact-time start/end (see below), auto-collapsing top bar; + 1.5.0 templates, Bangla `/bn/`, stock-awareness |
 | `ERP/slb-repair-tracker.php` | 1.2.0 | Pathao consignment ID in notes → tappable tracking chip |
 | `AUN Smart Bundler/` | 2.5.0 | Sold-out variations shown greyed instead of hidden |
 | `aun-shorts-showcase.php` | 3.8.3 | Mobile swipe hint position; `title="" icon="false"` usage |
@@ -181,6 +181,143 @@ Each is a single file/folder replace + **purge WP Rocket**:
 
 **Resolved this session (no action):** the `<span> - </span>` in variation names —
 root cause was **TranslatePress**; fixed with a child-theme filter + two SQL cleanups.
+
+---
+
+## 4. `aun-campaign-bar.php` — v1.6.0 ⚠️ NOT YET DEPLOYED
+
+### The notice started/ended late
+Root cause: `is_active()` was evaluated server-side and the answer was baked into the
+WP Rocket page cache, so the bar flipped whenever the cache happened to rebuild.
+Fixed in three layers:
+
+1. **The browser enforces the window.** The notice carries `data-start`/`data-end`
+   (UTC epoch) and a small synchronous inline timer shows/hides it. Caching no longer
+   affects the visible result, and a tab left open across a boundary updates itself.
+   The script is synchronous and placed with the element so it settles before first
+   paint — no flash, and no layout shift at the very top of the page.
+2. **Pre-render before the start.** If the campaign has not opened yet the message is
+   emitted `hidden`, so a page cached beforehand can still light up on the minute.
+   After the end, nothing is emitted at all.
+3. **The cache is purged at both boundaries** by `wp_schedule_single_event`, plus on
+   every settings save. `catch_up_boundary()` is a self-healing fallback because
+   WP-Cron is unreliable here: WP Rocket serves a cached page and exits before
+   WordPress boots, so cron only runs on requests that miss the cache.
+
+`window_ts()` is the single source of truth — `is_active()`, the cron and the browser
+timer all read it, so they cannot disagree by a minute.
+
+⚠️ **The browser timer trusts the visitor's device clock.** A phone with a badly wrong
+clock flips at the wrong moment. The cron purge means the *cached HTML* is still
+correct for them, so this self-corrects; it is not worth a round-trip to the server on
+every page view to do better.
+
+### v1.8.0 — empty top bar, done properly (v1.6.0–1.7.1 got this wrong twice)
+The bar is now collapsed by a `<style>` printed in **`wp_head`**, before anything is
+painted. Two earlier attempts were wrong and both were caught on the live site:
+
+- **1.6.0–1.7.0:** the collapse ran from the *notice's own* inline script — so when
+  there was no notice to render, no script existed and the bar stayed. The one case it
+  was built for was the one case it could not handle.
+- **1.7.1:** fixed that with a hidden marker element, but it still *measured the DOM*
+  after paint, so the bar appeared and then visibly vanished a second later. You cannot
+  measure your way out of a flash: by the time there is something to measure, it has
+  been drawn.
+
+`top_will_show()` answers the question on the server. "Scheduled" counts as yes, because
+the message is pre-rendered hidden and the browser reveals it on the minute. The inline
+script now only flips that one style element (`#aun-cb-hidebar`) if the notice appears
+or disappears while the page is open — at a boundary, or on dismiss. All DOM measuring
+is gone.
+
+**Setting is now three-way**, because guessing was the underlying mistake: *phones and
+tablets only* (default), *every screen size*, or *never*. On this site the mobile top bar
+holds only the campaign widget while the desktop one also carries the Top Bar Menu and
+the language switcher — blanket-hiding would take the switcher with it. Old `'1'`/`'0'`
+values migrate to `mobile`/`off` on read.
+
+Filters: `aun_cb_topbar_selector` (default `#top-bar`), `aun_cb_topbar_breakpoint`
+(default `849`, Flatsome's medium breakpoint).
+
+### Empty top bar (Flatsome header builder) — original 1.6.0 notes
+New **`hide_empty_topbar`** option, default ON. When the notice is off, the JS checks
+whether anything else is *visible* in the `#top-bar` row and collapses it if not.
+Leaf elements only, and `getClientRects()` so Flatsome's desktop menu does not count
+while it is hidden at mobile widths — which is exactly what makes the desktop bar
+survive while the mobile one disappears. Re-evaluated on resize and on `load`.
+
+Notice ids are explicit (`aun-cb-1`, …) and the timer uses `getElementById`: the widget
+content passes through `wpautop`, which can insert a `<p>` between the span and the
+script and would silently break a sibling walk.
+
+### Harness — `test-campaign-bar.php`, **173/173 pass**
+```bash
+cd ~/wp-local && php -c php.ini wp-cli.phar --path=site eval-file "C:/Users/Jobayer Hossain/Downloads/Claude session/test-campaign-bar.php" --skip-themes
+```
+Covers window parsing (incl. a Dhaka wall-clock round-trip, so a 6-hour UTC error can't
+hide), `is_active()` on both sides of both boundaries, what the shortcode emits in each
+state, the emitted timer attributes, cron scheduling (**incl. a 3-minute campaign still
+getting both purges** — the two events carry different args because WP silently drops a
+duplicate scheduled within 10 minutes), the catch-up firing once and only once, and
+survival through `wpautop`.
+
+### v1.6.1 — audit fixes (found reading the whole file, not just the new code)
+1. **`{discount_amount}` was wrong on variable products.** It computed
+   *(cheapest regular price − cheapest sale price)*, and those two can come from
+   different variations. Worst case, a product whose expensive variation is discounted
+   and whose cheap one is not reports a saving of **0**, so `$saved <= 0` returned early
+   and the notice and sale bubble never appeared at all. There is a harness case with a
+   real variable product proving the old formula returned 0 where the true saving is
+   ৳5,000. Three copies of the calculation are now one `saving_for()`; for variable
+   products it reports the **best genuine saving** across on-sale variations.
+2. **`sanitize_options()` blanked any field absent from its input.** WordPress runs it
+   through `sanitize_option_{$key}` on *every* `update_option()`, not only on a form
+   save, so any partial programmatic update wiped the messages and the schedule.
+   Missing now means "leave alone"; a hidden `_form` marker tells it when an unticked
+   checkbox genuinely means off.
+3. **Timezone was stored unvalidated** — a typo fell through to the `Asia/Dhaka`
+   fallback in `window_ts()` and silently shifted the whole campaign. Now checked
+   against `timezone_identifiers_list()`.
+4. **Sale badge used `preg_replace` with an unescaped `$`** in the replacement string,
+   which would corrupt the badge for any currency rendered with `$`.
+5. **`aun_cb_boundaries` is now autoloaded** — `catch_up_boundary()` reads it on every
+   request, so a non-autoloaded option meant an extra query site-wide. The boundary is
+   also claimed *before* the slow purge so two concurrent requests can't both run it.
+
+Also corrected settings copy that claimed the global magnet fires when "ANY in-stock
+product is on sale" — it only fires for sales that have an **end date** set.
+
+### v1.9.0 — the campaign now beats the sale magnet
+**This was a real bug, not a preference.** The top bar picks one notice, and the order
+was: this product's sale (product pages) → **"Flash Sale Active!" if ANY product had a
+scheduled sale** → the global campaign. Because the middle rule has no page restriction
+(the code comment claiming "shop/home" was simply wrong), a single discounted accessory
+replaced a deliberately scheduled site-wide campaign on **every** page except the
+discounted product's own. The campaign only reappeared when the sale ended.
+
+New order, and a **"When both are running"** setting (default `campaign`):
+
+1. This product's sale — on that product's page *(unchanged)*
+2. **The global campaign** — everywhere else
+3. "Flash Sale Active!" — only when no campaign is running
+
+The principle: most specific wins where it is specific, broadest wins everywhere else.
+A campaign is a deliberate editorial decision; the magnet is an automatic fallback that
+fills the bar when there is nothing else to say. Set the option to `sale` for the old
+behaviour. Either side is now skipped when its own message box is empty, so an unfilled
+field can't blank the bar while the other had something.
+
+The status card's warning is priority-aware — it now tells you which one is actually
+winning rather than always claiming the sale does.
+
+⚠️ Only sales with an **end date** (`Sale price dates`) ever trigger the magnet.
+
+### Coupons — no code change, but align the dates
+WooCommerce validates coupons on cart/checkout, which is never cached, so a coupon
+activates and expires live regardless of WP Rocket. The mismatch to watch is that
+**WooCommerce coupon expiry is date-only, and the coupon dies at 00:00 on the expiry
+date** — i.e. an expiry of 20 Mar stops working at the start of the 20th, not the end.
+Set the campaign bar's end time to match, or the bar advertises a dead code.
 
 ---
 

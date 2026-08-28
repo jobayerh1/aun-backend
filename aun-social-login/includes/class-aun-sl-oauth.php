@@ -25,11 +25,34 @@ class AUN_SL_OAuth {
 		add_action( 'init', array( __CLASS__, 'maybe_handle' ), 1 );
 	}
 
-	/** The exact redirect URI to register in the Google / Facebook console. */
+	/**
+	 * The site root, WITHOUT any translation plugin's language prefix.
+	 *
+	 * TranslatePress filters home_url(), so on a /bn/ page home_url('/') returns
+	 * https://example.com/bn/ . That silently changed the OAuth redirect URI by
+	 * language: English visitors got the URI registered in the Google console and
+	 * Bangla visitors got /bn/ , which is not registered — so Google refused the
+	 * sign-in with redirect_uri_mismatch and only Bangla appeared broken.
+	 *
+	 * get_option('home') is the raw stored value and is not filtered, so it is the
+	 * same for every language. set_url_scheme() keeps https correct.
+	 */
+	private static function base_url() {
+		$raw = get_option( 'home' );
+		if ( is_string( $raw ) && $raw !== '' ) {
+			return set_url_scheme( trailingslashit( $raw ) );
+		}
+		return home_url( '/' );   // no stored value (very unusual) — fall back
+	}
+
+	/**
+	 * The exact redirect URI to register in the Google / Facebook console.
+	 * One URI for the whole site, whatever language the visitor is reading.
+	 */
 	public static function callback_url( $provider ) {
 		return add_query_arg(
 			array( 'aun_sl' => 'callback', 'p' => $provider ),
-			home_url( '/' )
+			self::base_url()
 		);
 	}
 
@@ -39,7 +62,9 @@ class AUN_SL_OAuth {
 		if ( $redirect !== '' ) {
 			$args['redirect_to'] = rawurlencode( $redirect );
 		}
-		return add_query_arg( $args, home_url( '/' ) );
+		// Language-neutral for the same reason as callback_url(): the state we mint
+		// here is matched against the callback, so both ends must agree.
+		return add_query_arg( $args, self::base_url() );
 	}
 
 	/**
@@ -49,7 +74,7 @@ class AUN_SL_OAuth {
 	 */
 	public static function test_url( $provider ) {
 		return wp_nonce_url(
-			add_query_arg( array( 'aun_sl' => 'start', 'p' => $provider, 'test' => '1' ), home_url( '/' ) ),
+			add_query_arg( array( 'aun_sl' => 'start', 'p' => $provider, 'test' => '1' ), self::base_url() ),
 			'aun_sl_test_' . $provider
 		);
 	}

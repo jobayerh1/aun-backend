@@ -302,6 +302,48 @@ foreach ( array( 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_c
 }
 t( 'cart placement defaults ON', $defaults['at_wc_cart'], 1 );
 
+/* ------------------------------------------- G. TranslatePress / multilingual */
+
+echo "\nG. redirect URI must not change with the language\n";
+
+$home = untrailingslashit( get_option( 'home' ) );
+
+// TranslatePress adds the language slug by filtering home_url(). Reproduce that
+// exactly: this is what made Google refuse Bangla sign-ins with
+// redirect_uri_mismatch while English worked fine.
+$trp = function ( $url, $path ) use ( $home ) {
+	return $home . '/bn' . ( $path ? $path : '/' );
+};
+add_filter( 'home_url', $trp, 10, 2 );
+
+t( 'the simulation is real: home_url() is now /bn/', home_url( '/' ), $home . '/bn/' );
+
+foreach ( array( 'google', 'facebook' ) as $p ) {
+	$cb = AUN_SL_OAuth::callback_url( $p );
+	t( "$p callback URI ignores the language prefix", false === strpos( $cb, '/bn/' ), true );
+	t( "  $p callback URI is the registered one",
+		$cb, $home . '/?aun_sl=callback&p=' . $p );
+}
+
+$start = AUN_SL_OAuth::start_url( 'google' );
+t( 'the start URL is language-neutral too', false === strpos( $start, '/bn/' ), true );
+
+remove_filter( 'home_url', $trp, 10 );
+
+// And with no translation plugin at all, nothing changes.
+foreach ( array( 'google', 'facebook' ) as $p ) {
+	t( "$p callback URI is identical without TranslatePress",
+		AUN_SL_OAuth::callback_url( $p ), $home . '/?aun_sl=callback&p=' . $p );
+}
+
+// The settings page must print exactly what has to go in the provider console.
+t( 'the URI shown to the admin is the one used in the flow',
+	AUN_SL_OAuth::callback_url( 'google' ), $home . '/?aun_sl=callback&p=google' );
+
+// https must survive: get_option('home') is raw, so the scheme has to be reapplied.
+t( 'the callback URI keeps the site scheme',
+	0 === strpos( AUN_SL_OAuth::callback_url( 'google' ), parse_url( $home, PHP_URL_SCHEME ) . '://' ), true );
+
 /* -------------------------------------------------------------- teardown */
 
 set_opts( AUN_SL_Options::defaults() );
