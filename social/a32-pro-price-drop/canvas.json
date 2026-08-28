@@ -1,0 +1,40 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1080,
+      "h": 1080,
+      "title": "Feed post 1:1"
+    },
+    {
+      "file": "Specs.dc.html",
+      "x": 1200,
+      "y": 0,
+      "w": 1080,
+      "h": 1080,
+      "title": "Carousel slide 2"
+    },
+    {
+      "file": "Story.dc.html",
+      "x": 2400,
+      "y": 0,
+      "w": 1080,
+      "h": 1920,
+      "title": "Story / Reel cover 9:16"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -240,
+      "w": 1080,
+      "text": "AUN A32 Pro — Android 14 upgrade + new regular price, live 1 September 2026.\nHook: it got upgraded AND cheaper. 7,590 -> 6,990.\nWording is \"new regular price\", not \"permanent\" - price can move with factory/FX/freight.\nPost slide 1 + 2 as one carousel; story separately."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

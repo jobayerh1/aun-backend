@@ -3,7 +3,7 @@
  * Plugin Name:       AUN Alpha SMS OTP Login
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       Adds passwordless phone-number Login with OTP to the WooCommerce account login form, sending the code through the Alpha SMS (sms.net.bd) gateway. Reuses the Alpha SMS API key — no extra credentials needed. Helper for the Alpha SMS plugin.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -20,7 +20,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_ALPHA_OTP_VERSION', '1.0.1' );
+define( 'AUN_ALPHA_OTP_VERSION', '1.0.2' );
 define( 'AUN_ALPHA_OTP_FILE', __FILE__ );
 define( 'AUN_ALPHA_OTP_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_ALPHA_OTP_URL', plugin_dir_url( __FILE__ ) );

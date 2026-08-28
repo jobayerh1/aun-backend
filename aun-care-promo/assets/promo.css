@@ -146,28 +146,47 @@
   font-size:clamp(14px,3.5vw,21px);font-weight:600;letter-spacing:-.015em;line-height:1.3;
   text-wrap:balance;text-shadow:var(--cap-shadow)}
 .aun-promo-stage[data-ar="16:9"] .aun-promo-caption p{font-size:clamp(17px,2.5vw,28px)}
-.aun-promo-caption .w{display:inline-block;will-change:transform,opacity}
+/* No `will-change` here. It was promoting EVERY word to its own compositing
+   layer — around 40 permanent layers, which costs more memory and compositing
+   time than the repaint it saves. The Web Animations API already promotes what
+   it needs, only while a word is actually animating. */
+.aun-promo-caption .w{display:inline-block}
 .aun-promo-caption small{display:block;margin-top:8px;font-size:9.5px;font-weight:600;
   letter-spacing:.18em;text-transform:uppercase;color:var(--cap-sub);text-shadow:none}
 
 .aun-promo-note{max-width:64ch;font-size:13px;line-height:1.6;color:#8892A6;text-align:center;margin:0}
 
-/* ---- performance on modest Android hardware ----
-   The two animated blurs are the costly part: a blur cannot be cached while the
-   element under it is transforming, so it is recomputed every frame. Halving the
-   radius on small screens keeps the look and cuts most of the cost. */
-@media (max-width:700px){
-  .aun-promo-beam{filter:blur(10px)}
-  .aun-promo-spill{filter:blur(14px)}
-  .aun-promo-grain{opacity:calc(var(--grain) * .6)}
-}
+/* ================= PERFORMANCE TIERS =================
+   `.is-reduced` — every phone, and any weak hardware. Set by JS.
+   `.is-still`   — reduced-motion, data-saver, or a device the frame-rate
+                   watchdog measured as unable to keep up.
 
-/* `.is-lite` — set by JS on low-memory / low-core devices. Drops the blurs and the
-   blend layer entirely. The scene still reads correctly; it is just flatter. */
-.aun-promo-stage.is-lite .aun-promo-beam{filter:none;opacity:.85}
-.aun-promo-stage.is-lite .aun-promo-spill{filter:none;opacity:calc(var(--spill) * .8)}
-.aun-promo-stage.is-lite .aun-promo-grain{display:none}
-.aun-promo-stage.is-lite .aun-promo-phone{box-shadow:0 0 0 .6px rgba(150,170,196,.75),0 14px 30px rgba(0,0,0,.5)}
+   An animated `filter: blur()` cannot be cached: the browser re-renders it
+   every frame while the element transforms. Two of those plus a full-size
+   `mix-blend-mode` layer is what made scrolling stutter, so the reduced tier
+   removes them outright rather than just shrinking the radius. The beam and
+   spill are gradients already — without the blur they read as slightly
+   crisper light, not as a broken scene. */
+.aun-promo-stage.is-reduced .aun-promo-beam{filter:none;opacity:.8}
+.aun-promo-stage.is-reduced .aun-promo-spill{filter:none;opacity:calc(var(--spill) * .75)}
+.aun-promo-stage.is-reduced .aun-promo-grain{display:none}
+.aun-promo-stage.is-reduced .aun-promo-phone{
+  box-shadow:0 0 0 .6px rgba(150,170,196,.75),0 14px 30px rgba(0,0,0,.5)}
+/* the sheen and the screen's inner gloss are pure decoration; both force extra
+   paint work on a surface that is already moving in 3D */
+.aun-promo-stage.is-reduced .aun-promo-phone::before,
+.aun-promo-stage.is-reduced .aun-promo-gloss{display:none}
+
+/* Static poster: one readable frame, nothing animating at all. */
+.aun-promo-stage.is-still .aun-promo-beam,
+.aun-promo-stage.is-still .aun-promo-spill,
+.aun-promo-stage.is-still .aun-promo-grain,
+.aun-promo-stage.is-still .aun-promo-motes,
+.aun-promo-stage.is-still .aun-promo-gloss{display:none}
+.aun-promo-stage.is-still .aun-promo-phone{opacity:1;transform:none;
+  box-shadow:0 0 0 .6px rgba(150,170,196,.75),0 14px 30px rgba(0,0,0,.5)}
+.aun-promo-stage.is-still .aun-promo-view[data-view="home"]{opacity:1}
+.aun-promo-stage.is-still .aun-promo-caption p[data-c="1"]{opacity:1}
 
 /* ---- reduced motion: hold a single readable frame, no looping ---- */
 @media (prefers-reduced-motion: reduce){

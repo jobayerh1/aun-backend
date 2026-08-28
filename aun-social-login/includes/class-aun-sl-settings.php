@@ -182,7 +182,14 @@ class AUN_SL_Settings {
 				<?php self::redirect_field( 'facebook' ); ?>
 
 				<p style="margin:16px 0 0;color:#646970;">Also add your domain under <em>Authorised JavaScript origins</em> (Google) if it asks:
-					<code><?php echo esc_html( home_url() ); ?></code></p>
+					<code><?php echo esc_html( untrailingslashit( get_option( 'home' ) ) ); ?></code></p>
+
+				<p style="margin:14px 0 0;padding:10px 13px;background:#f0f6fc;border:1px solid #c5d9ed;border-radius:8px;color:#1f4e79;">
+					<strong>Multilingual sites:</strong> there is <strong>one</strong> Redirect URL for the whole site &mdash;
+					the ones above. Do <em>not</em> add a <code>/bn/</code> version. TranslatePress adds the language
+					prefix to normal links, but these URLs are deliberately built without it, so a visitor reading the
+					site in বাংলা signs in through exactly the same URL as an English visitor.
+				</p>
 			</div>
 
 			<form method="post" action="options.php">

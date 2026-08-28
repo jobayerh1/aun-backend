@@ -1,0 +1,40 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1080,
+      "h": 1080,
+      "title": "Feed post 1:1"
+    },
+    {
+      "file": "Schedule.dc.html",
+      "x": 1200,
+      "y": 0,
+      "w": 1080,
+      "h": 1080,
+      "title": "Carousel slide 2 - schedule"
+    },
+    {
+      "file": "Story.dc.html",
+      "x": 2400,
+      "y": 0,
+      "w": 1080,
+      "h": 1920,
+      "title": "Story 9:16"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "photo-needed",
+      "x": 0,
+      "y": -300,
+      "w": 1080,
+      "text": "Rooftop photo is IN (AI-generated, supplied by the client) - use as mood imagery, never captioned as a real customer setup.\nSCHEDULE CARD IS NOT READY TO POST: times show [সময়] placeholders.\nDates confirmed (India tour of Bangladesh, 1-13 Sept 2026). Start times and venues NOT announced by BCB as of 27 Aug.\nFill the six times, then post - or hold the card until the T20 leg on 9 Sept."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

@@ -82,20 +82,42 @@
       splitWords(p);
     });
 
-    /* Low-power mode. The expensive parts of this scene are the two animated
-       `filter: blur()` layers (a blur cannot be cached while the element it sits on
-       is transforming, so it is recomputed every frame) and the full-size
-       `mix-blend-mode` grain. `.is-lite` drops those in CSS.
-       deviceMemory / hardwareConcurrency are Chrome-only, which is exactly the
-       browser most Android phones in Bangladesh are running. */
-    var lite = (navigator.deviceMemory && navigator.deviceMemory <= 2) ||
-               (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
-    if (lite) stage.classList.add('is-lite');
+    /* ------------------------------------------------------------------
+       QUALITY TIER
 
-    /* dust motes — fewer on small screens, fewer still on weak hardware */
+       What actually costs frames here, in order:
+         1. animated `filter: blur()` — a blur cannot be cached while its
+            element is transforming, so it is re-rendered every frame. The
+            caption used to blur EVERY WORD (~40 animated blurs at once),
+            which is why even a flagship phone stuttered.
+         2. `mix-blend-mode` on the full-size grain — forces a blend layer.
+         3. sheer animation count (~80 running at once).
+
+       The old check only degraded phones with <=2GB RAM or <=4 cores, so a
+       Pixel 9 ran everything at full cost. Any PHONE now gets the reduced
+       tier regardless of how powerful it claims to be — a big screen is a
+       better signal of "can afford this" than a spec number.
+       ------------------------------------------------------------------ */
+    var conn = navigator.connection || {};
+    var weakHW = (navigator.deviceMemory && navigator.deviceMemory <= 3) ||
+                 (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+    var isPhone = window.innerWidth <= 820;
+
+    var tier = 'full';
+    if (isPhone || weakHW) tier = 'reduced';
+    if (reduced || conn.saveData) tier = 'still';
+    setTier(tier);
+
+    function setTier(t) {
+      tier = t;
+      stage.classList.toggle('is-reduced', t === 'reduced');
+      stage.classList.toggle('is-still', t === 'still');
+    }
+
+    /* dust motes — the cheapest thing here, but still a layer each */
     var motes = q('.aun-promo-motes');
     var MOTES = [];
-    var MOTE_N = lite ? 6 : (window.innerWidth < 600 ? 10 : 16);
+    var MOTE_N = tier === 'still' ? 0 : (tier === 'reduced' ? 6 : 16);
     for (var i = 0; i < MOTE_N; i++) {
       var m = document.createElement('span');
       var s = 2 + Math.random() * 4;
@@ -108,11 +130,18 @@
     }
 
     var at = function (t) { return Math.min(1, Math.max(0, t / D)); };
-    var A = function (el, kf, opt) {
+    /* `bg` marks a purely decorative layer — beam, light spill, dust, sheen.
+       These are the only things paused while the page scrolls, because nobody
+       is watching them. The phone, the screens and the captions keep running,
+       so the scene never visibly freezes under your finger. */
+    var bgAnims = [];
+    var A = function (el, kf, opt, bg) {
       if (!el) return;
       var o = { duration: D, iterations: Infinity, easing: 'linear' };
       for (var k in (opt || {})) o[k] = opt[k];
-      anims.push(el.animate(kf, o));
+      var an = el.animate(kf, o);
+      anims.push(an);
+      if (bg) bgAnims.push(an);
     };
 
     /* Size each scroll port from the REAL chrome heights. The screen box is a
@@ -136,6 +165,7 @@
     function stop() {
       anims.forEach(function (a) { a.cancel(); });
       anims.length = 0;
+      bgAnims.length = 0;
       running = false;
     }
 
@@ -149,7 +179,7 @@
         { transform: 'rotate(-9deg) scale(1.05)', opacity: .55 },
         { transform: 'rotate(9deg) scale(1.13)', opacity: .95, offset: .6 },
         { transform: 'rotate(-9deg) scale(1.05)', opacity: .55 }
-      ]);
+      ], {}, true);
 
       A(q('.aun-promo-phone'), [
         { opacity: 0, transform: 'translateY(26px) translateZ(-90px) rotateY(-13deg) rotateX(5deg) scale(.97)', easing: SPRING },
@@ -165,7 +195,7 @@
         { opacity: 1, transform: 'translate(-50%,-50%) scale(1.06)', offset: .5, easing: 'ease-in-out' },
         { opacity: .9, transform: 'translate(-50%,-50%) scale(1)', offset: .95 },
         { opacity: 0, transform: 'translate(-50%,-50%) scale(.82)' }
-      ]);
+      ], {}, true);
 
       MOTES.forEach(function (m, i) {
         var dx = (i % 2 ? 1 : -1) * (14 + (i * 7) % 26);
@@ -175,7 +205,7 @@
           { opacity: .5 + (i % 5) * .1, offset: .12 },
           { opacity: .35 + (i % 4) * .12, offset: .7 },
           { transform: 'translate(' + dx + 'px,' + dy + 'px)', opacity: 0 }
-        ], { delay: -(i * 900) % D });
+        ], { delay: -(i * 900) % D }, true);
       });
 
       A(q('.aun-promo-spin'), [
@@ -211,7 +241,7 @@
         gl.push({ opacity: 0, transform: 'translateX(70%)', offset: at(c + 620) });
       });
       gl.push({ opacity: 0, transform: 'translateX(-70%)', offset: 1 });
-      A(q('.aun-promo-gloss'), gl);
+      A(q('.aun-promo-gloss'), gl, {}, true);
 
       function scroll(name, a, b) {
         var v = view(name);
@@ -252,15 +282,24 @@
           { opacity: 0, offset: 0 }, { opacity: 0, offset: at(a - 1) }, { opacity: 1, offset: at(a + 60) },
           { opacity: 1, offset: at(b - 360), easing: EASE }, { opacity: 0, offset: at(b) }, { opacity: 0, offset: 1 }
         ]);
+        /* Per-word stagger is a desktop-only luxury.
+           It used to animate `filter: blur()` on every word — roughly 40
+           simultaneous animated blurs, the single most expensive thing in this
+           scene and the reason phones stuttered. Blur is gone entirely; the
+           stagger now uses transform + opacity, which the GPU handles for free.
+           On phones the whole line simply fades as one element (7 animations
+           instead of ~47). */
+        if (tier !== 'full') return;
+
         Array.prototype.slice.call(p.querySelectorAll('.w')).forEach(function (w, i) {
           var t0 = a + i * 55;
           A(w, [
-            { opacity: 0, transform: 'translateY(9px)', filter: 'blur(4px)', offset: 0 },
-            { opacity: 0, transform: 'translateY(9px)', filter: 'blur(4px)', offset: at(t0), easing: SPRING },
-            { opacity: 1, transform: 'none', filter: 'blur(0px)', offset: at(t0 + 420) },
-            { opacity: 1, transform: 'none', filter: 'blur(0px)', offset: at(b - 360), easing: EASE },
-            { opacity: 0, transform: 'translateY(-7px)', filter: 'blur(2px)', offset: at(b) },
-            { opacity: 0, transform: 'translateY(9px)', filter: 'blur(4px)', offset: 1 }
+            { opacity: 0, transform: 'translateY(9px)', offset: 0 },
+            { opacity: 0, transform: 'translateY(9px)', offset: at(t0), easing: SPRING },
+            { opacity: 1, transform: 'none', offset: at(t0 + 420) },
+            { opacity: 1, transform: 'none', offset: at(b - 360), easing: EASE },
+            { opacity: 0, transform: 'translateY(-7px)', offset: at(b) },
+            { opacity: 0, transform: 'translateY(9px)', offset: 1 }
           ]);
         });
       });
@@ -276,6 +315,59 @@
     }
     applyRatio();
 
+    /* ------------------------------------------------------------------
+       PAUSE WHILE THE PAGE IS SCROLLING
+
+       Scrolling and animating compete for the same compositor. Freezing the
+       loop while the finger is moving is what makes the page feel smooth as
+       you pass this section; the animation resumes a moment after the scroll
+       settles and nobody notices it stopped.
+       ------------------------------------------------------------------ */
+    var scrolling = false, scrollTimer;
+    function pauseForScroll() {
+      if (!running) return;
+      if (!scrolling) {
+        scrolling = true;
+        /* Only the decorative layers. Pausing everything froze the phone and the
+           captions mid-scroll, which was visible and worse than the jank it was
+           meant to cure. The scene keeps playing; only the beam, spill, dust and
+           sheen hold still, and nobody watches those. */
+        bgAnims.forEach(function (a) { a.pause(); });
+      }
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () {
+        scrolling = false;
+        if (running && onScreen) bgAnims.forEach(function (a) { a.play(); });
+      }, 120);
+    }
+    window.addEventListener('scroll', pauseForScroll, { passive: true });
+
+    /* ------------------------------------------------------------------
+       FRAME-RATE WATCHDOG
+
+       Device specs lie in both directions, so measure instead. Sample real
+       frame times for ~1.5s once the loop is running and step the quality
+       down if the device cannot keep up. Runs once, costs nothing after.
+       ------------------------------------------------------------------ */
+    function watchFrames() {
+      if (tier === 'still' || reduced) return;
+      var frames = 0, t0 = performance.now(), last = t0, slow = 0;
+      (function tick(now) {
+        if (!running || scrolling) { t0 = last = performance.now(); frames = slow = 0; }
+        else {
+          frames++;
+          if (now - last > 28) slow++;   // slower than ~36fps
+          last = now;
+        }
+        if (now - t0 < 1500) { requestAnimationFrame(tick); return; }
+        var fps = frames / ((now - t0) / 1000);
+        if (fps < 40 || slow > frames * 0.35) {
+          if (tier === 'full') { setTier('reduced'); run(); requestAnimationFrame(function (n) { t0 = last = n; frames = slow = 0; requestAnimationFrame(tick); }); }
+          else { setTier('still'); stop(); }
+        }
+      })(performance.now());
+    }
+
     /* only animate while visible — saves battery on phones */
     var onScreen = true;
     if ('IntersectionObserver' in window) {
@@ -285,7 +377,11 @@
           onScreen = e.isIntersecting;
           if (onScreen) {
             if (!running) run();
-            else anims.forEach(function (a) { a.play(); });
+            else {
+              anims.forEach(function (a) { a.play(); });
+              // a scroll may still be in flight — keep the decorative layers held
+              if (scrolling) bgAnims.forEach(function (a) { a.pause(); });
+            }
           } else if (running) {
             anims.forEach(function (a) { a.pause(); });
           }
@@ -314,7 +410,10 @@
     });
 
     /* images decide the layout, so wait for them */
-    function start() { if (onScreen || !('IntersectionObserver' in window)) run(); else layout(); }
+    function start() {
+      if (onScreen || !('IntersectionObserver' in window)) { run(); watchFrames(); }
+      else layout();
+    }
     if (document.readyState === 'complete') start();
     else window.addEventListener('load', start);
   }

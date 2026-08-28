@@ -2,13 +2,13 @@
 /**
  * Plugin Name: AUN Care App — Promo & Callouts
  * Description: Settings at Settings -> AUN Care App. Puts the AUN Care app on the website. [aun_care_promo] runs the promo as a live, responsive HTML animation (not a video). [aun_app_callout type="…" style="box|inline"] drops a page-appropriate app mention into any existing page. Also adds a slim, dismissible Android-only install bar.
- * Version: 1.5.0
+ * Version: 1.6.1
  * Author: AUN Projector Bangladesh
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'AUN_CARE_PROMO_VER', '1.5.0' );
+define( 'AUN_CARE_PROMO_VER', '1.6.1' );
 
 require_once plugin_dir_path( __FILE__ ) . 'settings.php';
 require_once plugin_dir_path( __FILE__ ) . 'callout.php';
