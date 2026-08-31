@@ -1,0 +1,486 @@
+/**
+ * Kohthai Product Page — front-end styles
+ * v1.0.0
+ *
+ * Every block is gated behind a body class so each fix can be switched off from
+ * the settings screen without this file being regenerated per request.
+ *
+ * Brand tokens (from the live Flatsome vars):
+ *   #654321 chocolate brown  — primary. 8.87:1 on white. Safe for button text.
+ *   #a08565 tan              — secondary. 3.48:1 on white. NEVER behind white text.
+ *   #FFBC00 gold             — accent only.
+ */
+
+:root {
+	--kt-brown: #654321;
+	--kt-brown-dark: #4c3219;
+	--kt-tan: #a08565;
+	--kt-gold: #ffbc00;
+	--kt-ink: #1f1a15;
+	--kt-muted: #6f6459;
+	--kt-line: #e8e2d9;
+	--kt-soft: #faf7f3;
+	--kt-green: #2f6b42;
+}
+
+/* ==========================================================================
+   1. Video gap  (body.kt-fix-video)
+   --------------------------------------------------------------------------
+   Flatsome's .video-fit reserves a 16:9 box with padding-top and absolutely
+   positions the IFRAME into it. WP Rocket's YouTube preview replaces that
+   iframe with <div class="rll-youtube-player">, which is NOT absolutely
+   positioned and brings its own padding-bottom:56.23% — so the two boxes
+   stack. Measured 978.56px where 489.19px belongs.
+
+   We pull Rocket's player into Flatsome's reserved box. This keeps the
+   reservation (no layout shift) and keeps Rocket's preview image (which
+   defers ~500KB-1MB of YouTube JS until someone actually clicks play).
+   ========================================================================== */
+
+body.kt-fix-video .video-fit > .rll-youtube-player {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	padding-bottom: 0 !important;
+}
+
+/* The YouTube poster is 4:3 (hqdefault), so crop it to the 16:9 box rather
+   than letting it overflow and be clipped unevenly. */
+body.kt-fix-video .video-fit > .rll-youtube-player img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* ==========================================================================
+   2. Colour swatch names  (body.kt-swatch-names)
+   --------------------------------------------------------------------------
+   The swatches are photographs of the real bag ON PURPOSE — a flat colour chip
+   promises a shade the bag may not be, and that causes disputes. But three
+   45px crops of the same bag are indistinguishable, and the name lived only in
+   a title tooltip, which does not exist on a phone.
+
+   Flatsome already emits data-name="Khaki" on every .ux-swatch, so this needs
+   no PHP at all.
+   ========================================================================== */
+
+body.kt-swatch-names .ux-swatches {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 10px;
+	align-items: flex-start;
+}
+
+body.kt-swatch-names .ux-swatch {
+	position: relative;
+	margin-bottom: 1.9em; /* room for the label below */
+}
+
+body.kt-swatch-names .ux-swatch::after {
+	content: attr(data-name);
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	width: 74px;
+	font-size: 11px;
+	line-height: 1.25;
+	text-align: center;
+	color: var(--kt-muted);
+	letter-spacing: 0.01em;
+	pointer-events: none;
+}
+
+body.kt-swatch-names .ux-swatch[aria-checked="true"]::after {
+	color: var(--kt-brown);
+	font-weight: 700;
+}
+
+/* Out-of-stock variations read as unavailable, not just faded. */
+body.kt-swatch-names .ux-swatch.out-of-stock::after,
+body.kt-swatch-names .ux-swatch.disabled::after {
+	text-decoration: line-through;
+	opacity: 0.55;
+}
+
+/* The name is now permanent, so the hover tooltip is pure duplication. */
+body.kt-swatch-names .ux-swatch.tooltip::before,
+body.kt-swatch-names .ux-swatch .tooltipster-base {
+	display: none !important;
+}
+
+/* "Colour: Tea Green" — injected by kt-pdp.js above the swatch row. */
+.kt-colour-line {
+	margin: 0 0 0.45em;
+	font-size: 12px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--kt-muted);
+}
+
+.kt-colour-line b {
+	color: var(--kt-ink);
+	font-weight: 700;
+	text-transform: none;
+	letter-spacing: 0;
+	font-size: 13px;
+}
+
+/* ==========================================================================
+   3. Buttons  (body.kt-fix-buttons)
+   --------------------------------------------------------------------------
+   Add to Cart was #a08565 behind white text = 3.48:1, below the WCAG AA 4.5:1
+   floor — and Buy Now was the darker of the two, so the secondary action read
+   as the primary one. Solid brown is 8.87:1.
+   ========================================================================== */
+
+body.kt-fix-buttons .single_add_to_cart_button,
+body.kt-fix-buttons form.cart button[type="submit"] {
+	background-color: var(--kt-brown);
+	border-color: var(--kt-brown);
+	color: #fff;
+	font-weight: 700;
+	letter-spacing: 0.09em;
+}
+
+body.kt-fix-buttons .single_add_to_cart_button:hover,
+body.kt-fix-buttons form.cart button[type="submit"]:hover {
+	background-color: var(--kt-brown-dark);
+	border-color: var(--kt-brown-dark);
+	color: #fff;
+}
+
+/* Buy Now steps back to an outline so the hierarchy reads correctly. */
+body.kt-fix-buttons .buy-now-button,
+body.kt-fix-buttons .wc-buy-now,
+body.kt-fix-buttons button[name="buy_now"] {
+	background-color: transparent;
+	border: 2px solid var(--kt-brown);
+	color: var(--kt-brown);
+	font-weight: 700;
+}
+
+body.kt-fix-buttons .buy-now-button:hover,
+body.kt-fix-buttons .wc-buy-now:hover,
+body.kt-fix-buttons button[name="buy_now"]:hover {
+	background-color: var(--kt-brown);
+	color: #fff;
+}
+
+body.kt-fix-buttons .single_add_to_cart_button:focus-visible,
+body.kt-fix-buttons .buy-now-button:focus-visible {
+	outline: 3px solid var(--kt-gold);
+	outline-offset: 2px;
+}
+
+/* ==========================================================================
+   4. Feature icon row  (body.kt-fix-features)
+   --------------------------------------------------------------------------
+   Flatsome's .stack-row computes to flex-wrap:nowrap. At 345px available width
+   five boxes get 69px each and "Adjustable Strap" breaks to one word per line.
+   ========================================================================== */
+
+@media (max-width: 549px) {
+	body.kt-fix-features .product-short-description .stack-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 14px 6px;
+	}
+
+	body.kt-fix-features .product-short-description .stack-row > br {
+		display: none;
+	}
+
+	body.kt-fix-features .product-short-description .stack-row .icon-box {
+		margin: 0;
+	}
+}
+
+/* Defensive: catches any empty heading the PHP filter could not reach
+   (e.g. content rendered outside woocommerce_short_description). */
+body.kt-fix-features .product-short-description h1:empty,
+body.kt-fix-features .product-short-description h2:empty,
+body.kt-fix-features .product-short-description h3:empty,
+body.kt-fix-features .product-short-description h4:empty,
+body.kt-fix-features .product-short-description h5:empty,
+body.kt-fix-features .product-short-description h6:empty,
+body.kt-fix-features .product-short-description p:empty {
+	display: none;
+}
+
+/* ==========================================================================
+   5. Stock line
+   ========================================================================== */
+
+.kt-stock {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin: 0 0 0.9em;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--kt-green);
+}
+
+.kt-stock .kt-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentColor;
+	flex: none;
+}
+
+.kt-stock--out {
+	color: #9a3b30;
+}
+
+/* ==========================================================================
+   6. Trust row
+   ========================================================================== */
+
+.kt-trust {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+	margin: 1.1em 0;
+}
+
+.kt-trust__item {
+	display: block;
+	text-align: center;
+	padding: 10px 6px;
+	border: 1px solid var(--kt-line);
+	border-radius: 3px;
+	background: var(--kt-soft);
+	font-size: 10px;
+	line-height: 1.35;
+	color: var(--kt-muted);
+	text-decoration: none;
+}
+
+a.kt-trust__item:hover {
+	border-color: var(--kt-tan);
+	color: var(--kt-muted);
+}
+
+a.kt-trust__item:focus-visible {
+	outline: 2px solid var(--kt-brown);
+	outline-offset: 2px;
+}
+
+.kt-trust__item svg {
+	width: 18px;
+	height: 18px;
+	display: block;
+	margin: 0 auto 5px;
+	color: var(--kt-brown);
+}
+
+.kt-trust__item b {
+	display: block;
+	color: var(--kt-ink);
+	font-size: 11px;
+	font-weight: 700;
+	margin-bottom: 1px;
+}
+
+/* ==========================================================================
+   7. WhatsApp / Messenger ordering
+   ========================================================================== */
+
+.kt-chat {
+	margin: 1.1em 0;
+}
+
+.kt-chat__lead {
+	display: block;
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--kt-muted);
+	margin-bottom: 6px;
+}
+
+.kt-chat__row {
+	display: flex;
+	gap: 7px;
+}
+
+.kt-chat__btn {
+	flex: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 11px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.kt-chat__btn svg {
+	width: 15px;
+	height: 15px;
+	flex: none;
+}
+
+/* #25D366 on #0a2e16 = 8.6:1. White on #25D366 would be 1.9:1 and unreadable. */
+.kt-chat__btn--wa {
+	background: #25d366;
+	color: #0a2e16;
+}
+
+.kt-chat__btn--wa:hover {
+	background: #1fb857;
+	color: #0a2e16;
+}
+
+/* #0084FF with white = 4.6:1, just over AA. */
+.kt-chat__btn--fb {
+	background: #0084ff;
+	color: #fff;
+}
+
+.kt-chat__btn--fb:hover {
+	background: #0069cc;
+	color: #fff;
+}
+
+.kt-chat__btn:focus-visible {
+	outline: 3px solid var(--kt-gold);
+	outline-offset: 2px;
+}
+
+/* ==========================================================================
+   8. Sticky buy bar
+   --------------------------------------------------------------------------
+   The page measures 4,052px on a 375px phone with 18 gallery images. Past the
+   buy box there was no way to purchase without scrolling all the way back up.
+   ========================================================================== */
+
+.kt-buybar {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 9999;
+	background: rgba(255, 255, 255, 0.98);
+	border-top: 1px solid var(--kt-line);
+	box-shadow: 0 -3px 16px rgba(40, 26, 12, 0.11);
+	transform: translateY(100%);
+	transition: transform 0.22s ease;
+	padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.kt-buybar[hidden] {
+	display: none;
+}
+
+.kt-buybar.is-visible {
+	transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.kt-buybar {
+		transition: none;
+	}
+}
+
+.kt-buybar__inner {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	max-width: 1080px;
+	margin: 0 auto;
+}
+
+.kt-buybar__thumb {
+	width: 40px;
+	height: 40px;
+	flex: none;
+	border-radius: 3px;
+	overflow: hidden;
+	background: var(--kt-soft);
+}
+
+.kt-buybar__thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.kt-buybar__meta {
+	flex: 1;
+	min-width: 0;
+	line-height: 1.25;
+}
+
+.kt-buybar__price {
+	display: block;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--kt-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+/* WooCommerce wraps prices in <del>/<ins> for sales — keep them inline. */
+.kt-buybar__price del {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--kt-muted);
+	margin-right: 4px;
+}
+
+.kt-buybar__price ins {
+	text-decoration: none;
+}
+
+.kt-buybar__variant {
+	display: block;
+	font-size: 11px;
+	color: var(--kt-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.kt-buybar__btn {
+	flex: none;
+	background: var(--kt-brown);
+	color: #fff;
+	border: 0;
+	border-radius: 3px;
+	padding: 12px 18px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+	min-height: 44px; /* comfortable tap target */
+}
+
+.kt-buybar__btn:hover {
+	background: var(--kt-brown-dark);
+	color: #fff;
+}
+
+.kt-buybar__btn:focus-visible {
+	outline: 3px solid var(--kt-gold);
+	outline-offset: -3px;
+}
+
+/* Desktop keeps the summary column in view on its own; the bar is for phones
+   and small tablets, where the scroll distance is the actual problem. */
+@media (min-width: 850px) {
+	.kt-buybar {
+		display: none;
+	}
+}

@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SL_OAuth {
 
+	/** True when this request is running inside the sign-in popup window. */
+	private static $in_popup = false;
+
 	/** Transient prefix for the one-time CSRF state. */
 	const STATE_PREFIX = 'aun_sl_st_';
 	const STATE_TTL    = 600;   // 10 minutes to complete the round-trip
@@ -99,6 +102,7 @@ class AUN_SL_OAuth {
 		}
 
 		if ( 'start' === $action ) {
+			self::$in_popup = ! empty( $_GET['popup'] );
 			$is_test = ! empty( $_GET['test'] );
 			if ( $is_test ) {
 				// Diagnostic run: administrators only, and the link must be signed.
@@ -134,7 +138,7 @@ class AUN_SL_OAuth {
 
 		set_transient(
 			self::STATE_PREFIX . hash( 'sha256', $state ),
-			array( 'p' => $provider, 'r' => $redirect, 't' => $is_test ? 1 : 0 ),
+			array( 'p' => $provider, 'r' => $redirect, 't' => $is_test ? 1 : 0, 'w' => self::$in_popup ? 1 : 0 ),
 			self::STATE_TTL
 		);
 
@@ -190,6 +194,9 @@ class AUN_SL_OAuth {
 			self::fail( 'expired' );
 		}
 
+		// Whether we are in a popup is read from OUR stored state, never the URL.
+		self::$in_popup = ! empty( $saved['w'] );
+
 		$is_test = ! empty( $saved['t'] );
 		if ( $is_test && ! current_user_can( 'manage_options' ) ) {
 			self::fail( 'testlink' );
@@ -221,8 +228,16 @@ class AUN_SL_OAuth {
 			self::fail( $user_id->get_error_code() );
 		}
 
-		$redirect = isset( $saved['r'] ) ? $saved['r'] : self::default_redirect();
-		wp_safe_redirect( wp_validate_redirect( $redirect, self::default_redirect() ) );
+		$redirect = wp_validate_redirect(
+			isset( $saved['r'] ) ? $saved['r'] : self::default_redirect(),
+			self::default_redirect()
+		);
+
+		if ( self::$in_popup ) {
+			self::close_popup( $redirect, '' );
+		}
+
+		wp_safe_redirect( $redirect );
 		exit;
 	}
 
@@ -512,6 +527,7 @@ class AUN_SL_OAuth {
 		do_action( 'wp_login', $user->user_login, $user );
 	}
 
+
 	/* ------------------------------------------------------------------ Helpers */
 
 	private static function default_redirect() {
@@ -568,7 +584,58 @@ class AUN_SL_OAuth {
 			self::log( 'unmapped failure code: ' . $code );
 			$code = 'incomplete';
 		}
+
+		// In a popup, hand the code to the opener and close, rather than leaving
+		// the visitor staring at an error page in a small detached window.
+		if ( self::$in_popup ) {
+			self::close_popup( '', $code );
+		}
+
 		wp_safe_redirect( add_query_arg( 'aun_sl_error', $code, self::default_redirect() ) );
+		exit;
+	}
+
+	/**
+	 * Last page of the popup: tell the opener what happened, then close.
+	 *
+	 * postMessage is addressed to our exact origin — never '*' — so the result
+	 * cannot be read by another window that happens to be listening. The opener
+	 * checks the origin again on its side.
+	 *
+	 * If there is no opener (the visitor landed here directly, or the popup was
+	 * turned into a tab), this degrades into the ordinary redirect.
+	 */
+	private static function close_popup( $redirect, $code ) {
+		$origin  = untrailingslashit( self::base_url() );
+		$payload = array(
+			'aun_sl'   => 'done',
+			'ok'       => ( $code === '' ),
+			'code'     => $code,
+			'redirect' => $redirect,
+		);
+
+		nocache_headers();
+		header( 'Content-Type: text/html; charset=utf-8' );
+		?><!doctype html><html><head><meta charset="utf-8"><title>Signing you in…</title></head>
+<body style="font:15px/1.5 system-ui,sans-serif;padding:24px;text-align:center;color:#374151;">
+<p>Signing you in…</p>
+<script>
+(function(){
+  var msg = <?php echo wp_json_encode( $payload ); ?>;
+  var origin = <?php echo wp_json_encode( $origin ); ?>;
+  var fallback = <?php echo wp_json_encode( $redirect !== '' ? $redirect : add_query_arg( 'aun_sl_error', $code, self::default_redirect() ) ); ?>;
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(msg, origin);
+      window.close();
+      return;
+    }
+  } catch (e) {}
+  /* No opener to talk to — behave like the plain redirect flow. */
+  window.location.replace(fallback);
+})();
+</script>
+</body></html><?php
 		exit;
 	}
 
