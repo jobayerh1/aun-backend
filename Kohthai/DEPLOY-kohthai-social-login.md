@@ -69,3 +69,89 @@ that Kohthai needs.
 
 Never live-tested against real credentials — the logic is lint- and
 harness-verified only. Step 6's Test button is the first real exercise of it.
+
+---
+
+# UPDATE — v1.9.1 (was 1.0.0)
+
+Resynced with `aun-social-login` **1.9.1**. Upload the new `kohthai-social-login/`
+over the old one, then **purge WP Rocket**.
+
+## Version numbering changed on purpose
+
+Kohthai now carries the **upstream AUN version number** (1.9.1) instead of its own
+1.0.0 line. This plugin is a straight mirror of AUN's, so matching the numbers makes
+"is Kohthai in sync?" answerable at a glance. The jump 1.0.0 → 1.9.1 is that
+renumbering, not nine releases of Kohthai work.
+
+## What arrived from upstream
+
+- **NEW `class-kt-sl-popup.php` (262 lines) — in-page sign-in.** Clicking a button
+  no longer navigates the whole page away. Google gets the browser's own FedCM
+  account dialog ("Sign in to kohthaibd.com with google.com", drawn by Chrome, no
+  address bar); Facebook opens a small popup window running our normal OAuth flow.
+  Falls back to the full-page redirect if a popup is blocked, JS is off, or the
+  visitor is in an in-app browser — which matters here, given the Facebook
+  in-app traffic. New setting `js_flow`, **default ON**.
+- **Google's own rendered button.** FedCM's dialog can only be raised by Google's
+  `renderButton()`, so in `native` mode Google draws it. New setting
+  `google_button`: `native` (FedCM dialog, Google's styling) or `custom` (our
+  styling, our popup, no dialog). Genuine either/or — sites that appear to have
+  both are on the retired `gapi.auth2` shim.
+- **`label_style`** — Google permits exactly four phrasings and no bare "Google";
+  Facebook's label mirrors whichever you pick so the pair reads consistently.
+- **CSS work to make the two buttons match**: our button measures Google's rendered
+  one (`--kt-sl-gw`, `--kt-sl-size`) instead of guessing, and once Google's button
+  mounts our hover drops its lift to match Google's, which cannot be restyled.
+- **Redirect-URI fix**: OAuth URLs are now built from `get_option('home')` rather
+  than `home_url()`. Upstream hit this because TranslatePress rewrites `home_url()`
+  to add `/bn/`, producing a redirect URI Google had never been given. Kohthai runs
+  no TranslatePress, so this was not biting here — but the fix is strictly more
+  correct and is kept for parity. (Any plugin that filters `home_url()` would have
+  caused the same failure.)
+
+## Kohthai deltas re-applied
+
+Re-applied on top of the new upstream, unchanged in intent:
+
+- palette — chocolate `#654321` focus ring and settings callout on cream
+  `#faf7f3`; tan `#a08565` divider caption on `#e6ded5` rules
+- the two copy edits that referenced AUN's phone-OTP plugin, which Kohthai does
+  not run
+- legacy Client ID adoption from `kohthai_google_client_id`
+- namespace: `KT_SL_*`, `kt_sl_*`, `.kt-sl-*`, `[kohthai_social_login]`
+
+One thing the bulk rename missed and I caught by hand: the new popup script sets
+and reads a `data-aun-g` attribute. Renamed to `data-kt-g`. It is self-contained
+within that one file, so nothing external depended on it.
+
+A provenance block at the top of `kohthai-social-login.php` now lists exactly these
+deltas, so the next resync is a diff rather than an investigation.
+
+## Verification
+
+Ported the upstream regression harness and ran it against this build on the bench:
+**159 passed, 0 failed**, covering the `decide()` account-linking matrix (including
+the unverified-email takeover case), avatar URL sanitisation, One Tap claim checks
+(`aud` above all), visitor-facing error codes, `current_url()`, placement toggles,
+the language-neutral redirect URI, and the whole new popup/FedCM surface.
+
+Harness: `kohthai-social-login/test-kohthai-social-login.php`
+
+    cd ~/wp-local
+    php -c php.ini wp-cli.phar --path=site eval-file "<path>/test-kohthai-social-login.php" --skip-themes
+
+## Settings to look at after upgrading
+
+Both new toggles default ON / `native`, so the sign-in experience changes on
+upload without you touching anything:
+
+| Setting | Default | If you want the old behaviour |
+|---|---|---|
+| `js_flow` | ON | turn OFF for full-page redirects everywhere |
+| `google_button` | `native` | `custom` to keep our styling, losing the FedCM dialog |
+| `label_style` | `continue_with` | — |
+
+Still true from the original build: never live-tested against real credentials.
+The **Test Google connection** button on the settings page remains the first real
+exercise of the flow.

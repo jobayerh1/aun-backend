@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Social Login
  * Description: Lightweight, security-first "Sign in with Google / Facebook" for WooCommerce, including Google One Tap. Renders brand icon buttons under the WooCommerce login, register and checkout forms. Replaces the abandoned Super Socializer plugin — social login only, no sharing/comments.
- * Version:     1.5.1
+ * Version:     1.9.1
  * Author:      Smart Living Bangladesh
  * Requires PHP: 7.4
  * License:     GPLv2 or later
@@ -30,7 +30,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SL_VERSION', '1.5.1' );
+define( 'AUN_SL_VERSION', '1.9.1' );
 define( 'AUN_SL_FILE', __FILE__ );
 define( 'AUN_SL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SL_URL', plugin_dir_url( __FILE__ ) );
@@ -45,12 +45,14 @@ define( 'AUN_SL_URL', plugin_dir_url( __FILE__ ) );
 require_once AUN_SL_DIR . 'includes/class-aun-sl-options.php';
 require_once AUN_SL_DIR . 'includes/class-aun-sl-oauth.php';
 require_once AUN_SL_DIR . 'includes/class-aun-sl-avatar.php';
+require_once AUN_SL_DIR . 'includes/class-aun-sl-popup.php';
 require_once AUN_SL_DIR . 'includes/class-aun-sl-onetap.php';
 require_once AUN_SL_DIR . 'includes/class-aun-sl-ui.php';
 
 AUN_SL_OAuth::init();
 AUN_SL_Avatar::init();
 AUN_SL_OneTap::init();
+AUN_SL_Popup::init();
 AUN_SL_UI::init();
 
 if ( is_admin() ) {

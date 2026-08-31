@@ -5,7 +5,7 @@
 
 ---
 
-## 1. `aun-social-login/` — NEW plugin, v1.5.0 ⚠️ NOT YET DEPLOYED
+## 1. `aun-social-login/` — NEW plugin, v1.9.1 ⚠️ NOT YET DEPLOYED
 
 Replaces **Super Socializer 7.14.5**, which was pulled from the WP directory with an
 unpatched **unauthenticated stored XSS** (+ auth bypass, + SQLi). It must be deleted.
@@ -74,8 +74,134 @@ output site remembering to escape it.
    the cart is the highest-intent visitor on the site; signing in there prefills
    checkout and attaches the order to an account.
 
-### Decided, not built
-- **Redirect vs popup — staying with redirect.** Google's `renderButton` and Facebook's
+### v1.6.0 — in-page sign-in (supersedes the "redirect only" decision below)
+Prompted by pickaboo.com. **The Google half was already built**: the dialogs there are
+Chrome's own FedCM UI, which One Tap drives, and `data-use_fedcm_for_prompt="true"` was
+already set — `onetap_enabled` just defaults to 0.
+
+New `class-aun-sl-popup.php`, option **`js_flow`** (default ON). **Both buttons open OUR
+OWN `/?aun_sl=start&popup=1` flow in a small window.** The server runs the identical
+audited OAuth path and finishes with a tiny page that `postMessage`s the result to the
+opener and closes; the parent then navigates.
+
+**Google's dialog needs GOOGLE'S OWN BUTTON — this was established from the docs after
+two wrong guesses.** The browser-drawn chooser is **FedCM Button Mode**, and per
+Google's JS reference it can only be raised by `google.accounts.id.renderButton()` with
+**`use_fedcm_for_button: true`**. A custom anchor cannot summon it by any means.
+
+- `use_fedcm_for_prompt`, which this plugin set from the start, is **deprecated and
+  ignored**. It was never doing anything.
+- `prompt()` is a *passive* surface (One Tap). It does not give a button the dialog.
+- `isNotDisplayed()` / `isSkippedMoment()` **throw** under FedCM.
+
+So Google's rendered button is mounted in place of ours and ours is hidden — but only
+once `host.firstChild` proves Google actually drew something, so a silent failure can
+never leave the page with no Google button. Trade-off: its look now comes from
+`GsiButtonConfiguration`, mapped from the plugin's shape/size settings, not our CSS.
+
+**v1.7.1 — the half-cut Google icon.** The host element was a bare `<span>`: inline by
+default, and a flex item under `align-items:stretch`, so Google's button was stretched
+and clipped by a box that never sized itself to its contents. `.aun-sl-gbtn` is now
+`inline-flex`, `flex:0 0 auto`, `overflow:visible`, with no width/height of its own.
+
+Google decides its own button's size and it cannot be overridden, so rather than fight
+it, `matchSiblings()` measures `host.offsetHeight` after render and sets the row's
+`--aun-sl-size` from it — **our** Facebook button resizes to match Google's, not the
+reverse. That stays correct if Google ever changes their dimensions.
+
+**v1.7.2 — Google's button came out smaller than Facebook's.** `matchSiblings()` was
+measuring immediately after `renderButton()`, which returns 0 because Google lays out
+asynchronously. Now it retries until the button has real size and keeps a
+`ResizeObserver` on it for later reflows.
+
+**Sizing, and why labelled buttons are the better design here:** the ICON button has no
+width option at all, so the only lever is measuring what Google drew. The STANDARD
+(labelled) button *does* accept `width`, so with `show_label` on both buttons can be
+pinned to the same 340px and matched exactly — `--aun-sl-gw` / `--aun-sl-size` are
+published from the measurement and consumed by our CSS.
+
+**v1.8.0 — button wording.** ⚠️ **Google's button cannot say just "Google".** Their
+`GsiButtonConfiguration.text` permits exactly four values and no more:
+`continue_with`, `signin_with`, `signup_with`, `signin` ("Sign in"). Don't try to
+shorten it — the button is rendered by Google.
+
+New `label_style` option exposing those four; Facebook's label mirrors the choice so
+the pair reads consistently. The settings page warns when the heading AND the button
+text would both say "…with Google", suggesting shortening the heading to "Or" or
+switching back to icons.
+
+**Design note:** with the "Or login with" heading kept, **icon-only is the coherent
+choice** — heading names the action, icons name the providers, nothing repeats. Use
+labels only if the heading is shortened or removed.
+
+**v1.9.0 — how pickaboo.com gets a plain "Google" label AND the dialog.** Inspected
+their live login page: they load **`apis.google.com/js/api.js`** with
+`m=auth2/...?le=scs,fedcm_migration_mod` — the **legacy `gapi.auth2` platform library**,
+which Google **retired on 31 March 2023**. It isn't `renderButton`, so they style the
+button freely; the FedCM dialog comes from Google's temporary migration shim. **Do not
+copy this** — it can stop working without notice.
+
+The honest trade-off is a genuine either/or, now a setting (`google_button`):
+- **`native`** (default) — Google renders the button: FedCM dialog, Google's wording.
+- **`custom`** — we render it: any label including a bare "Google", matches Facebook
+  exactly, opens our popup window, **no dialog**.
+
+Also added `label_style => 'brand'` ("Google" / "Facebook"), which only our own buttons
+can render; Google's button falls back to `signin_with`.
+
+**v1.9.1 — three cosmetic bugs in the wide-button mode, all ours:**
+1. **Icon shape was ignored.** A hard-coded `shape => 'pill'` and `border-radius:999px`
+   overrode the admin's setting. Wide buttons now have their own `--aun-sl-radius-w`
+   (50% is a lozenge on a 340px button, not a circle) and Google's shape follows the
+   setting. Google only offers `pill`/`rectangular` for wide buttons, so `rounded` and
+   `square` both land on rectangular — Google will not render a hard 0px corner.
+2. **Facebook stayed taller than Google.** `min-height:46px` simply beat the measured
+   height, so a 40px Google button could never be matched. Both `height` and
+   `min-height` now come from the measurement.
+3. **Hover behaviour differed** — ours lifted, Google's only shifts its background, and
+   Google's cannot be restyled. The script adds `.aun-sl-native` to the row once
+   Google's button mounts, and under that class ours drops the lift and matches. The
+   livelier hover is kept everywhere Google is not drawing.
+
+Refs: [FedCM Button Mode](https://privacysandbox.google.com/blog/fedcm-chrome-125-updates),
+[GIS JS reference](https://developers.google.com/identity/gsi/web/reference/js-reference).
+
+**The Google library now loads whenever Google sign-in is configured**, not only when
+`onetap_enabled` is on. Those are two different things: `onetap_enabled` controls the
+*automatic* prompt on page load; the button can open the same dialog on demand either
+way. Tying them together meant the native dialog was only reachable on sites that also
+wanted the prompt appearing by itself.
+
+⚠️ **Earlier attempts that failed on the live site. Do not go back to them:**
+- **Facebook JS SDK** → *"JSSDK Option is Not Toggled"*. `FB.login()` needs "Login with
+  JavaScript SDK" switched on in the Facebook app plus a domain allow-list, and the
+  failure appeared as a dead-end error page inside the popup, not a clean fallback.
+- **Google `prompt()` on a button click** → fell through to a full-page redirect every
+  time. One Tap's prompt is designed for automatic display; under FedCM the notification
+  callback no longer reports `isNotDisplayed`/`isSkippedMoment` reliably, so the button
+  always read "cannot show".
+
+Driving our own flow in a window needs no third-party script, no extra provider
+settings, and **removed the Facebook token-accepting endpoint entirely** — a real
+reduction in attack surface versus the SDK approach.
+
+`postMessage` is addressed to our exact origin (never `*`) and the opener re-checks
+`ev.origin`. The popup flag lives in the CSRF state transient, never in the URL.
+
+**Progressive enhancement is the design rule.** The buttons stay ordinary links to the
+redirect flow; the script only intercepts the click and hands control straight back on
+any failure — popup blocked, SDK not loaded, JS off, Facebook in-app browser, or
+Google's cool-off after a dismissal (detected via `isNotDisplayed` / `isSkippedMoment`).
+Worst case is the old redirect, which works everywhere.
+
+⚠️ **The Facebook token endpoint is new attack surface.** A token from the browser is
+verified with `debug_token` using our own app token, and **`app_id` must match ours** —
+without that, a token minted for any other Facebook app would sign its holder in here.
+That is the same class of bug the `aud` check prevents for Google One Tap. Also checked:
+`is_valid`, `expires_at`, and that the profile id matches the token's `user_id`.
+
+### Superseded — the earlier "redirect only" decision
+- **Redirect vs popup — was staying with redirect.** Google's `renderButton` and Facebook's
   JS SDK both default to a popup, which preserves cart/checkout form state. Rejected for
   this site: mobile-dominant traffic and heavy Facebook in-app-browser arrivals, where
   popups are blocked or broken most often; redirect also keeps both provider SDKs off
@@ -87,7 +213,7 @@ output site remembering to escape it.
   placement-neutral ("Sign in with") on the settings page, or give the cart its own
   title option.
 
-### Verified by harness (not by live login) — `test-social-login.php`, **69/69 pass**
+### Verified by harness (not by live login) — `test-social-login.php`, **159/159 pass**
 The harness is now a **file in the repo**, not something ad-hoc to re-type:
 
 ```bash

@@ -17,6 +17,21 @@ class KT_SL_Options {
 			// Providers
 			'google_enabled'       => 0,
 			'onetap_enabled'       => 0,
+			// In-page sign-in: Google's account chooser + a Facebook popup,
+			// each falling back to the redirect flow if it cannot run.
+			'js_flow'              => 1,
+			/*
+			 * How the Google button is drawn, and it is a genuine either/or:
+			 *   'native' — Google renders it. Gets the browser's FedCM account
+			 *              dialog, but Google controls the wording and styling.
+			 *   'custom' — we render it. Any label we like (e.g. just "Google"),
+			 *              opens our popup window, but NO FedCM dialog.
+			 * Sites showing a plain "Google" label AND the dialog are using the
+			 * legacy gapi.auth2 platform library, which Google retired in March
+			 * 2023 and keeps alive only through a migration shim. Not something to
+			 * build on.
+			 */
+			'google_button'        => 'native', // native | custom
 			'google_client_id'     => '',
 			'google_client_secret' => '',
 			'facebook_enabled'     => 0,
@@ -29,6 +44,10 @@ class KT_SL_Options {
 			'size'       => 44,         // px
 			'align'      => 'center',   // left | center | right
 			'show_label' => 0,          // 1 = wide buttons with text
+			// Google allows exactly four phrasings and no bare "Google" — see
+			// GsiButtonConfiguration. Facebook's label mirrors whichever is chosen
+			// so the two buttons read as a pair.
+			'label_style' => 'continue_with', // continue_with | signin_with | signup_with | signin
 
 			// Placement
 			'at_wc_login'        => 1,
@@ -110,7 +129,7 @@ class KT_SL_Options {
 		$old = self::all();
 		$out = array();
 
-		foreach ( array( 'google_enabled', 'onetap_enabled', 'facebook_enabled', 'show_label', 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_checkout', 'at_wc_cart', 'at_wp_login', 'allow_register', 'link_by_email', 'block_admins', 'notify_admin', 'use_avatar' ) as $k ) {
+		foreach ( array( 'google_enabled', 'onetap_enabled', 'js_flow', 'facebook_enabled', 'show_label', 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_checkout', 'at_wc_cart', 'at_wp_login', 'allow_register', 'link_by_email', 'block_admins', 'notify_admin', 'use_avatar' ) as $k ) {
 			$out[ $k ] = ( ! empty( $input[ $k ] ) ) ? 1 : 0;
 		}
 
@@ -129,6 +148,12 @@ class KT_SL_Options {
 
 		$shape        = isset( $input['shape'] ) ? $input['shape'] : $d['shape'];
 		$out['shape'] = in_array( $shape, array( 'round', 'rounded', 'square' ), true ) ? $shape : $d['shape'];
+
+		$gb = isset( $input['google_button'] ) ? $input['google_button'] : $d['google_button'];
+		$out['google_button'] = ( 'custom' === $gb ) ? 'custom' : 'native';
+
+		$ls = isset( $input['label_style'] ) ? $input['label_style'] : $d['label_style'];
+		$out['label_style'] = in_array( $ls, array( 'continue_with', 'signin_with', 'signup_with', 'signin', 'brand' ), true ) ? $ls : $d['label_style'];
 
 		$align        = isset( $input['align'] ) ? $input['align'] : $d['align'];
 		$out['align'] = in_array( $align, array( 'left', 'center', 'right' ), true ) ? $align : $d['align'];

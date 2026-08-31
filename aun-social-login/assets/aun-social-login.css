@@ -11,7 +11,19 @@
 .aun-sl-title:before,.aun-sl-title:after{content:"";flex:1;height:1px;background:#e5e7eb;}
 .aun-sl-align-left .aun-sl-title:before,.aun-sl-align-right .aun-sl-title:after{display:none;}
 
-.aun-sl-buttons{display:flex;flex-wrap:wrap;gap:12px;}
+.aun-sl-buttons{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+
+/* Host for Google's OWN rendered button (FedCM needs it — see class-aun-sl-popup.php).
+   The half-cut icon came from this being a bare <span>: inline by default, and a flex
+   item under the default align-items:stretch, so Google's button was stretched and
+   clipped by a box that never sized itself to its contents. Give it no dimensions of
+   our own and let Google's button decide its own size. */
+.aun-sl-gbtn{
+    display:inline-flex;align-items:center;justify-content:center;
+    flex:0 0 auto;line-height:0;overflow:visible;
+    width:auto;height:auto;max-width:none;max-height:none;
+}
+.aun-sl-gbtn iframe,.aun-sl-gbtn > div{max-width:none !important;}
 .aun-sl-align-center .aun-sl-buttons{justify-content:center;}
 .aun-sl-align-right .aun-sl-buttons{justify-content:flex-end;}
 
@@ -25,6 +37,16 @@
     transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
 }
 .aun-sl-btn:hover,.aun-sl-btn:focus{transform:translateY(-2px);box-shadow:0 6px 14px rgba(15,23,42,.18);text-decoration:none !important;}
+
+/* When Google draws its own button next to ours the two hovers must agree, and
+   Google's cannot be changed — it only shifts its background. So ours drops the
+   lift and does the same. The class is added by the script once Google's button
+   has actually mounted, so the livelier hover is kept everywhere else. */
+.aun-sl-native .aun-sl-btn:hover,.aun-sl-native .aun-sl-btn:focus{
+    transform:none;box-shadow:0 1px 3px rgba(15,23,42,.12);
+}
+.aun-sl-native .aun-sl-facebook:hover{background:#166FE5;filter:none;}
+.aun-sl-native .aun-sl-btn:active{transform:none;}
 .aun-sl-btn:focus-visible{outline:2px solid #0188fe;outline-offset:3px;}
 .aun-sl-btn:active{transform:translateY(0);}
 
@@ -39,12 +61,21 @@
 /* Wide "Continue with ..." variant */
 .aun-sl-labelled .aun-sl-buttons{flex-direction:column;gap:10px;}
 .aun-sl-labelled .aun-sl-btn{
-    width:100%;max-width:340px;height:auto;min-height:46px;
-    padding:11px 16px;gap:10px;border-radius:10px;
+    /* --aun-sl-gw is measured from Google's rendered button, so ours matches it
+       exactly rather than merely being close. Falls back to the old fixed size
+       when Google's button is not on the page. */
+    width:var(--aun-sl-gw,100%);max-width:340px;
+    /* Both height AND min-height come from the measurement. Leaving a fixed
+       min-height here meant a 40px Google button could never be matched: the
+       min-height simply won and ours stayed taller. */
+    height:var(--aun-sl-size,46px);min-height:var(--aun-sl-size,46px);
+    padding:0 16px;gap:10px;border-radius:var(--aun-sl-radius-w,999px);
     font-size:14.5px;font-weight:700;
 }
 .aun-sl-align-center.aun-sl-labelled .aun-sl-buttons{align-items:center;}
 .aun-sl-labelled .aun-sl-ico{width:20px;height:20px;flex:none;}
+/* Google's own button is the width reference, so it must not stretch with the row. */
+.aun-sl-labelled .aun-sl-gbtn{width:auto;align-self:center;}
 .aun-sl-labelled .aun-sl-google .aun-sl-btn-text{color:#3c4043;}
 .aun-sl-labelled .aun-sl-facebook .aun-sl-btn-text{color:#fff;}
 

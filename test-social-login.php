@@ -344,6 +344,155 @@ t( 'the URI shown to the admin is the one used in the flow',
 t( 'the callback URI keeps the site scheme',
 	0 === strpos( AUN_SL_OAuth::callback_url( 'google' ), parse_url( $home, PHP_URL_SCHEME ) . '://' ), true );
 
+/* -------------------------------------------------- H. popup sign-in */
+
+echo "
+H. popup sign-in
+";
+
+t( 'js_flow defaults ON', AUN_SL_Options::defaults()['js_flow'], 1 );
+t( 'js_flow survives a Save', AUN_SL_Options::sanitize( array( 'js_flow' => '1' ) )['js_flow'], 1 );
+t( 'js_flow can be turned off', AUN_SL_Options::sanitize( array() )['js_flow'], 0 );
+
+$popup = file_get_contents( WP_PLUGIN_DIR . '/aun-social-login/includes/class-aun-sl-popup.php' );
+$ui    = file_get_contents( WP_PLUGIN_DIR . '/aun-social-login/includes/class-aun-sl-ui.php' );
+$oauth = file_get_contents( WP_PLUGIN_DIR . '/aun-social-login/includes/class-aun-sl-oauth.php' );
+
+// The whole point of the rewrite: our own flow in a window, no provider SDKs.
+t( 'no Facebook JS SDK is loaded', false === strpos( $popup, 'connect.facebook.net' ), true );
+t( 'no Google GIS library is loaded by the buttons', false === strpos( $popup, 'accounts.google.com/gsi' ), true );
+t( 'the token-accepting endpoint is gone', false === strpos( $popup, 'aun_sl_fb_token' ), true );
+t( '  ...and is no longer registered', has_action( 'wp_ajax_nopriv_aun_sl_fb_token' ), false );
+t( 'the popup opens our own start URL', false !== strpos( $popup, "'popup=1'" ), true );
+
+// A popup must be opened inside the click or the browser blocks it, and a
+// blocked popup must let the plain link through.
+t( 'window.open runs in the click handler', false !== strpos( $popup, 'window.open(url' ), true );
+t( 'a blocked popup falls through to the link', false !== strpos( $popup, 'if (!opened || opened.closed' ), true );
+t( 'closing the window is not treated as an error', false !== strpos( $popup, 'win.closed' ), true );
+
+// postMessage must be origin-locked on both ends.
+t( 'the opener checks the message origin', false !== strpos( $popup, "ev.origin !== ORIGIN" ), true );
+t( 'the popup posts to our exact origin, not *',
+	false !== strpos( $oauth, 'window.opener.postMessage(msg, origin)' ) && false === strpos( $oauth, "postMessage(msg, '*')" ), true );
+
+// The server side must know it is in a popup from OUR state, not the URL.
+t( 'the popup flag is stored with the CSRF state', false !== strpos( $oauth, "'w' => self::\$in_popup ? 1 : 0" ), true );
+t( 'the callback reads it from the stored state', false !== strpos( $oauth, "self::\$in_popup = ! empty( \$saved['w'] )" ), true );
+t( 'a refusal closes the popup too', false !== strpos( $oauth, "self::close_popup( '', \$code )" ), true );
+t( 'no opener means a normal redirect', false !== strpos( $oauth, 'window.location.replace(fallback)' ), true );
+t( 'the closer page is not cached', false !== strpos( $oauth, 'nocache_headers()' ), true );
+
+// The redirect flow must be completely unaffected when the popup is not used.
+t( 'a non-popup callback still redirects', false !== strpos( $oauth, 'wp_safe_redirect( $redirect );' ), true );
+t( 'the start URL itself carries no popup flag',
+	false === strpos( AUN_SL_OAuth::start_url( 'google' ), 'popup' ), true );
+
+t( 'the inline script keeps the WP Rocket guards',
+	false !== strpos( $popup, 'data-no-optimize="1"' ) && false !== strpos( $popup, 'data-no-minify="1"' ), true );
+
+// GOOGLE: the browser's own dialog, which only Google's rendered button can raise.
+$onetap = file_get_contents( WP_PLUGIN_DIR . '/aun-social-login/includes/class-aun-sl-onetap.php' );
+
+t( "Google's own button is rendered", false !== strpos( $popup, 'google.accounts.id.renderButton' ), true );
+t( 'FedCM button mode is enabled', false !== strpos( $onetap, 'use_fedcm_for_button' ), true );
+t( 'the deprecated prompt flag is gone',
+	false === strpos( $onetap, 'use_fedcm_for_prompt: true' )
+	&& false === strpos( $onetap, 'data-use_fedcm_for_prompt' ), true );
+
+// Neither dead approach may come back: prompt() cannot give a button the dialog.
+t( 'no prompt()-on-click path remains', false === strpos( $popup, 'google.accounts.id.prompt' ), true );
+t( 'the FedCM-throwing methods are not called',
+	false === strpos( $popup, 'note.isNotDisplayed' ) && false === strpos( $popup, 'note.isSkippedMoment' ), true );
+
+// A silent failure must never leave the page with no Google button at all.
+t( 'ours is hidden only after Google actually draws', false !== strpos( $popup, 'if (host.firstChild)' ), true );
+t( 'a failed render removes the empty host', false !== strpos( $popup, 'host.parentNode.removeChild(host)' ), true );
+t( 'the async library is waited for', false !== strpos( $popup, 'waitForGoogle' ), true );
+t( '  ...but not forever', false !== strpos( $popup, 'if (tries <= 0) return;' ), true );
+
+// The rendered button has to be configured, since Google styles it, not our CSS.
+t( 'the button config is passed through', 1, preg_match( '/var GBTN\s*=/', $popup ) );
+foreach ( array( 'type', 'shape', 'theme', 'size', 'text', 'logo_alignment' ) as $k ) {
+	t( "  GBTN carries '$k'", false !== strpos( $popup, "'" . $k . "'" ), true );
+}
+
+// The half-cut icon: a bare <span> is inline, and a flex item under the default
+// align-items:stretch, so Google's button was stretched and clipped.
+$css = file_get_contents( WP_PLUGIN_DIR . '/aun-social-login/assets/aun-social-login.css' );
+t( 'the button row centres its items', false !== strpos( $css, 'align-items:center;' ), true );
+t( 'the Google host is not inline', false !== strpos( $css, '.aun-sl-gbtn{' ) && false !== strpos( $css, 'display:inline-flex' ), true );
+t( 'the host imposes no size of its own', false !== strpos( $css, 'width:auto;height:auto;max-width:none;max-height:none;' ), true );
+t( 'the host does not clip', false !== strpos( $css, 'overflow:visible' ), true );
+t( 'our buttons resize to match the Google button', false !== strpos( $popup, "row.style.setProperty('--aun-sl-size'" ), true );
+t( '  ...measured from what Google actually drew', false !== strpos( $popup, 'host.offsetHeight' ), true );
+
+// Google lays out asynchronously: measuring straight after renderButton() returns
+// 0, which is what left the Google icon smaller than the Facebook one.
+t( 'measurement retries until Google has laid out', false !== strpos( $popup, 'setInterval(function(){' ), true );
+t( '  ...and keeps watching for later reflows', false !== strpos( $popup, 'ResizeObserver' ), true );
+t( '  ...but gives up eventually', false !== strpos( $popup, 'tries > 40' ), true );
+t( 'the measured width is published too', false !== strpos( $popup, "'--aun-sl-gw'" ), true );
+
+// Only the standard button takes a width; the icon button has no such option.
+t( 'the labelled button is given an explicit width', false !== strpos( $popup, "\$gbtn['width'] = '340';" ), true );
+t( 'our labelled button uses the measured width', false !== strpos( $css, 'width:var(--aun-sl-gw,100%)' ), true );
+
+// Wording. Google permits exactly four phrasings and no bare "Google", so the
+// option must never offer or store anything outside that set.
+t( 'label_style defaults to continue_with', AUN_SL_Options::defaults()['label_style'], 'continue_with' );
+foreach ( array( 'continue_with', 'signin_with', 'signup_with', 'signin' ) as $v ) {
+	t( "  '$v' is accepted", AUN_SL_Options::sanitize( array( 'label_style' => $v ) )['label_style'], $v );
+}
+t( 'a bare "google" is rejected', AUN_SL_Options::sanitize( array( 'label_style' => 'google' ) )['label_style'], 'continue_with' );
+t( 'junk falls back to the default', AUN_SL_Options::sanitize( array( 'label_style' => '<x>' ) )['label_style'], 'continue_with' );
+t( 'the chosen wording reaches the Google button', false !== strpos( $popup, "\$o['label_style']" ), true );
+
+t( 'Facebook mirrors the same phrasing', false !== strpos( $ui, "sprintf( \$pattern, 'Facebook' )" ), true );
+
+// The either/or: Google's own button (dialog, their wording) vs ours (any
+// wording, popup window). Sites appearing to have both use the retired
+// gapi.auth2 library, which this plugin deliberately does not.
+t( 'google_button defaults to native', AUN_SL_Options::defaults()['google_button'], 'native' );
+t( 'custom is accepted', AUN_SL_Options::sanitize( array( 'google_button' => 'custom' ) )['google_button'], 'custom' );
+t( 'junk falls back to native', AUN_SL_Options::sanitize( array( 'google_button' => 'gapi' ) )['google_button'], 'native' );
+t( 'custom mode skips the rendered button', false !== strpos( $popup, 'if (!GNATIVE) { return true; }' ), true );
+t( 'the legacy library is never loaded', false === strpos( $popup, 'apis.google.com' ), true );
+
+// Brand-only wording is ours; Google has no such value and must get a legal one.
+t( 'brand-only wording is accepted', AUN_SL_Options::sanitize( array( 'label_style' => 'brand' ) )['label_style'], 'brand' );
+t( 'our buttons can render the bare brand name', false !== strpos( $ui, "'brand'         => '%s'" ), true );
+t( 'Google is given a legal phrasing instead',
+	false !== strpos( $popup, "( 'brand' === \$o['label_style'] ) ? 'signin_with'" ), true );
+
+// The wide buttons had three cosmetic bugs, all of them ours.
+t( 'the shape setting is not overridden by a hard-coded pill',
+	false === strpos( $popup, "\$gbtn['shape'] = 'pill';" ), true );
+t( 'Google is given the shape the admin chose',
+	false !== strpos( $popup, "( 'round' === \$o['shape'] ) ? 'pill' : 'rectangular'" ), true );
+t( 'wide buttons get their own radius variable', false !== strpos( $ui, '--aun-sl-radius-w:' ), true );
+t( '  ...and the stylesheet uses it', false !== strpos( $css, 'border-radius:var(--aun-sl-radius-w,999px)' ), true );
+
+t( 'a fixed min-height no longer beats the measurement',
+	false === strpos( $css, 'min-height:46px' ), true );
+t( '  ...both heights come from the measurement',
+	false !== strpos( $css, 'height:var(--aun-sl-size,46px);min-height:var(--aun-sl-size,46px)' ), true );
+
+t( 'the row is flagged once Google draws a button', false !== strpos( $popup, "classList.add('aun-sl-native')" ), true );
+t( '  ...and our hover then matches theirs', false !== strpos( $css, '.aun-sl-native .aun-sl-btn:hover' ), true );
+t( '  ...dropping the lift', false !== strpos( $css, 'transform:none;box-shadow:0 1px 3px' ), true );
+
+// Facebook is unaffected — it has no FedCM equivalent, so the window is right.
+t( 'Facebook still gets the window', false !== strpos( $popup, 'aun_sl_login' ), true );
+
+// The library must load whenever Google sign-in works, not only for the prompt.
+t( 'the library is no longer gated on onetap_enabled',
+	false === strpos( $onetap, "if ( ! AUN_SL_Options::get( 'onetap_enabled' ) || ! AUN_SL_Options::provider_ready( 'google' ) ) {" ), true );
+t( 'the auto-prompt div is gated on onetap_enabled', false !== strpos( $onetap, 'if ( $auto ) :' ), true );
+t( 'without the auto-prompt it still initialises for the button',
+	false !== strpos( $onetap, 'google.accounts.id.initialize' ), true );
+t( 'nothing loads when neither needs it', false !== strpos( $onetap, 'if ( ! $auto && ! $btn ) {' ), true );
+
 /* -------------------------------------------------------------- teardown */
 
 set_opts( AUN_SL_Options::defaults() );

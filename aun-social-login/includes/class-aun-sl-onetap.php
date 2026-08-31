@@ -15,6 +15,13 @@
  * email_verified. Without the aud check, a token minted for ANY other Google app
  * would be accepted — that is the classic One Tap mistake.
  *
+ * FedCM flags, from Google's own reference:
+ *   use_fedcm_for_prompt  is DEPRECATED and ignored — it was doing nothing here.
+ *   use_fedcm_for_button  enables the browser's account-chooser dialog for a BUTTON
+ *                         press (Chrome desktop M125+, Android M128+).
+ * The dialog can only be raised by Google's OWN rendered button — see
+ * class-aun-sl-popup.php. A custom anchor calling prompt() cannot produce it.
+ *
  * Caching: the CSRF nonce is fetched fresh over AJAX at click time, never printed
  * into the page. A nonce baked into WP-Rocket-cached HTML goes stale within a day
  * and One Tap would silently stop working for real visitors.
@@ -24,8 +31,16 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SL_OneTap {
 
+	/**
+	 * Two separate things, deliberately decoupled:
+	 *   - the endpoints and the Google library are needed whenever Google sign-in
+	 *     works at all, because the BUTTON can open the same browser dialog;
+	 *   - the automatic prompt on page load is what 'onetap_enabled' controls.
+	 * Tying the library to the automatic prompt meant the button could only show
+	 * the native dialog for sites that also wanted the prompt appearing by itself.
+	 */
 	public static function init() {
-		if ( ! AUN_SL_Options::get( 'onetap_enabled' ) || ! AUN_SL_Options::provider_ready( 'google' ) ) {
+		if ( ! AUN_SL_Options::provider_ready( 'google' ) ) {
 			return;
 		}
 		add_action( 'wp_footer', array( __CLASS__, 'render' ), 99 );
@@ -48,8 +63,15 @@ class AUN_SL_OneTap {
 		if ( $client_id === '' ) {
 			return;
 		}
+
+		$auto = (bool) AUN_SL_Options::get( 'onetap_enabled' );
+		$btn  = (bool) AUN_SL_Options::get( 'js_flow' );
+		if ( ! $auto && ! $btn ) {
+			return;   // nothing on this page needs the Google library
+		}
 		$ajax = admin_url( 'admin-ajax.php' );
 		?>
+		<?php if ( $auto ) : ?>
 		<div id="g_id_onload"
 			data-client_id="<?php echo esc_attr( $client_id ); ?>"
 			data-callback="aunSlOneTap"
@@ -57,7 +79,25 @@ class AUN_SL_OneTap {
 			data-cancel_on_tap_outside="false"
 			data-context="signin"
 			data-itp_support="true"
-			data-use_fedcm_for_prompt="true"></div>
+			data-use_fedcm_for_button="true"></div>
+		<?php else : ?>
+		<?php /* No automatic prompt: initialise only, so the button can open the
+		         same browser dialog on demand. */ ?>
+		<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">
+		window.addEventListener('load', function(){
+			if (!(window.google && google.accounts && google.accounts.id)) { return; }
+			try {
+				google.accounts.id.initialize({
+					client_id: <?php echo wp_json_encode( $client_id ); ?>,
+					callback: aunSlOneTap,
+					use_fedcm_for_button: true,
+					itp_support: true,
+					cancel_on_tap_outside: false
+				});
+			} catch (e) {}
+		});
+		</script>
+		<?php endif; ?>
 		<script src="https://accounts.google.com/gsi/client" async defer></script>
 		<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">
 		/* One Tap -> our own endpoint. The nonce is fetched at the moment of use

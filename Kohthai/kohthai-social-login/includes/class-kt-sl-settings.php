@@ -182,7 +182,14 @@ class KT_SL_Settings {
 				<?php self::redirect_field( 'facebook' ); ?>
 
 				<p style="margin:16px 0 0;color:#646970;">Also add your domain under <em>Authorised JavaScript origins</em> (Google) if it asks:
-					<code><?php echo esc_html( home_url() ); ?></code></p>
+					<code><?php echo esc_html( untrailingslashit( get_option( 'home' ) ) ); ?></code></p>
+
+				<p style="margin:14px 0 0;padding:10px 13px;background:#f0f6fc;border:1px solid #c5d9ed;border-radius:8px;color:#1f4e79;">
+					<strong>Multilingual sites:</strong> there is <strong>one</strong> Redirect URL for the whole site &mdash;
+					the ones above. Do <em>not</em> add a <code>/bn/</code> version. TranslatePress adds the language
+					prefix to normal links, but these URLs are deliberately built without it, so a visitor reading the
+					site in বাংলা signs in through exactly the same URL as an English visitor.
+				</p>
 			</div>
 
 			<form method="post" action="options.php">
@@ -215,6 +222,9 @@ class KT_SL_Settings {
 					<tr>
 						<th scope="row">One Tap</th>
 						<td>
+							<?php self::checkbox( 'js_flow', 'Sign in without leaving the page', $o,
+								'<strong>Recommended.</strong> Google opens the browser&rsquo;s own account chooser &mdash; a bottom sheet on Android, a small dialog on desktop &mdash; and Facebook opens a compact popup, instead of navigating the whole page away and back. '
+								. 'If anything blocks it (popup blocker, the Facebook in-app browser, Google&rsquo;s cool-off after a visitor dismisses the prompt, or JavaScript switched off) the button quietly falls back to the full-page redirect, which works everywhere. Nothing can leave a customer unable to sign in.' ); ?>
 							<?php self::checkbox( 'onetap_enabled', 'Show the Google One Tap prompt to signed-out visitors', $o, 'The floating &ldquo;Sign in as &hellip;&rdquo; card in the corner. Uses the same Client ID above and the same account rules as the buttons. Replaces the separate <em>Kohthai Google One Tap</em> plugin &mdash; <strong>deactivate that one</strong> or the prompt appears twice.' ); ?>
 						</td>
 					</tr>
@@ -309,7 +319,53 @@ class KT_SL_Settings {
 					</tr>
 					<tr>
 						<th scope="row">Button style</th>
-						<td><?php self::checkbox( 'show_label', 'Wide buttons with text ("Continue with Google")', $o, 'Off = compact brand icons, like the old plugin.' ); ?></td>
+						<td>
+							<?php self::checkbox( 'show_label', 'Wide buttons with text', $o, 'Off = compact brand icons, like the old plugin.' ); ?>
+
+							<?php $gb = $o['google_button']; ?>
+							<p style="margin:14px 0 4px;font-weight:600;">The Google button</p>
+							<select name="<?php echo esc_attr( self::name( 'google_button' ) ); ?>" style="min-width:340px;">
+								<option value="native" <?php selected( $gb, 'native' ); ?>>Google&rsquo;s own button &mdash; gets the in-page sign-in dialog</option>
+								<option value="custom" <?php selected( $gb, 'custom' ); ?>>Our button &mdash; our wording, opens a popup window</option>
+							</select>
+							<p class="description">A real either/or, not a style preference:</p>
+							<ul class="description" style="margin:4px 0 0 18px;list-style:disc;">
+								<li><strong>Google&rsquo;s own button</strong> is the only thing that can raise the browser&rsquo;s account
+									chooser (the dialog with no address bar). In exchange, Google controls its wording and appearance.</li>
+								<li><strong>Our button</strong> can say anything &mdash; including just &ldquo;Google&rdquo; &mdash; and matches
+									the Facebook button exactly, but the sign-in happens in a popup window instead.</li>
+							</ul>
+							<p class="description">Sites that appear to have both are using Google&rsquo;s <em>legacy</em> sign-in library,
+								which Google retired in March 2023 and keeps working only through a temporary migration shim. It can stop
+								at any time, so this plugin does not use it.</p>
+
+							<?php $ls = $o['label_style']; ?>
+							<p style="margin:14px 0 4px;font-weight:600;">Wording</p>
+							<select name="<?php echo esc_attr( self::name( 'label_style' ) ); ?>" style="min-width:280px;">
+								<option value="continue_with" <?php selected( $ls, 'continue_with' ); ?>>Continue with Google / Facebook</option>
+								<option value="signin_with"   <?php selected( $ls, 'signin_with' ); ?>>Sign in with Google / Facebook</option>
+								<option value="signup_with"   <?php selected( $ls, 'signup_with' ); ?>>Sign up with Google / Facebook</option>
+								<option value="signin"        <?php selected( $ls, 'signin' ); ?>>Sign in (shortest)</option>
+								<option value="brand"         <?php selected( $ls, 'brand' ); ?>>Google / Facebook &mdash; brand name only</option>
+							</select>
+							<p class="description">Applies to Facebook always, and to Google only when set to <strong>Google&rsquo;s own
+								button</strong> above &mdash; Google permits <strong>only these four phrasings</strong> and no bare
+								&ldquo;Google&rdquo;. With <strong>our button</strong> selected, Google simply shows
+								&ldquo;Google&rdquo; like Facebook shows &ldquo;Facebook&rdquo;.</p>
+
+							<?php
+							// The heading and the button text can easily say the same thing twice.
+							$title = trim( (string) $o['title'] );
+							if ( ! empty( $o['show_label'] ) && $title !== '' && 'signin' !== $ls ) :
+								?>
+								<p style="margin:10px 0 0;padding:9px 12px;border-radius:6px;background:#fcf0e4;border:1px solid #e8a33d;">
+									Your heading says &ldquo;<strong><?php echo esc_html( $title ); ?></strong>&rdquo; and the buttons will also
+									say &ldquo;<strong>Continue with&hellip;</strong>&rdquo;, so the wording repeats. Either shorten the heading to
+									<strong>Or</strong>, clear it entirely, or switch the buttons back to <strong>compact icons</strong> and let the
+									heading do the work.
+								</p>
+							<?php endif; ?>
+						</td>
 					</tr>
 				</table>
 

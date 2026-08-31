@@ -69,8 +69,18 @@ class AUN_SL_UI {
 		if ( 'rounded' === $o['shape'] ) { $radius = '10px'; }
 		if ( 'square' === $o['shape'] )  { $radius = '2px'; }
 
+		/*
+		 * Wide buttons need their own radius: 50% on a 340px-wide button is a
+		 * lozenge, not a circle. Same three shapes, expressed for that geometry.
+		 * An earlier build hard-coded a pill here and silently ignored the setting.
+		 */
+		$radius_wide = '999px';
+		if ( 'rounded' === $o['shape'] ) { $radius_wide = '10px'; }
+		if ( 'square' === $o['shape'] )  { $radius_wide = '2px'; }
+
 		// Only numbers/keywords reach the stylesheet, so nothing here is injectable.
-		$css = ':root{--aun-sl-size:' . $size . 'px;--aun-sl-radius:' . $radius . ';}';
+		$css = ':root{--aun-sl-size:' . $size . 'px;--aun-sl-radius:' . $radius
+			 . ';--aun-sl-radius-w:' . $radius_wide . ';}';
 		wp_add_inline_style( 'aun-social-login', $css );
 	}
 
@@ -88,9 +98,26 @@ class AUN_SL_UI {
 		$label = ! empty( $o['show_label'] );
 		$here  = self::current_url();
 
+		/*
+		 * Facebook's wording mirrors whatever phrasing Google is set to, so the two
+		 * buttons read as a pair. Google permits only these four (there is no way
+		 * to render a bare "Google"), so this list is theirs, not ours.
+		 */
+		$verbs = array(
+			'continue_with' => 'Continue with %s',
+			'signin_with'   => 'Sign in with %s',
+			'signup_with'   => 'Sign up with %s',
+			'signin'        => 'Sign in',
+			// Brand name only ("Google", "Facebook"). Reads best under a heading that
+			// already says "Or login with". Google's OWN button cannot do this, so it
+			// applies only when the Google button is set to 'custom'.
+			'brand'         => '%s',
+		);
+		$pattern = isset( $verbs[ $o['label_style'] ] ) ? $verbs[ $o['label_style'] ] : $verbs['continue_with'];
+
 		$brands = array(
-			'google'   => array( 'Google', 'Continue with Google' ),
-			'facebook' => array( 'Facebook', 'Continue with Facebook' ),
+			'google'   => array( 'Google', sprintf( $pattern, 'Google' ) ),
+			'facebook' => array( 'Facebook', sprintf( $pattern, 'Facebook' ) ),
 		);
 
 		echo '<div class="aun-sl aun-sl-align-' . esc_attr( $o['align'] ) . ( $label ? ' aun-sl-labelled' : '' ) . '">';

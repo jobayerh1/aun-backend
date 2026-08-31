@@ -1,0 +1,6 @@
+https://aun-projector.com.bd/post-sitemap.xml
+https://aun-projector.com.bd/page-sitemap.xml
+https://aun-projector.com.bd/product-sitemap.xml
+https://aun-projector.com.bd/category-sitemap.xml
+https://aun-projector.com.bd/product_cat-sitemap.xml
+https://aun-projector.com.bd/local-sitemap.xml
