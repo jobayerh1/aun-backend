@@ -29,6 +29,80 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (5) — DEVICE COMPATIBILITY: app 2.1.7+115
+
+minSdk 24 (Android 7) · target/compile 36 (Android 16) · Flutter 3.44.6. Target 36 is ahead of
+Play's floor (35), so nothing is due there. **Two real findings, both measured.**
+
+### ⚠️ The ARM-only filter has been a NO-OP since it was written
+
+`abiFilters += listOf("armeabi-v7a", "arm64-v8a")` adds to a set the **Flutter Gradle Plugin has
+already filled with all three ABIs** — `configureAbis()` → `configureAbiWithoutSplits()` does
+`abiFilters.clear(); abiFilters.addAll(PLATFORM_ABI_LIST)`, and `PLATFORM_ABI_LIST` is a hardcoded
+constant of arm32+arm64+x86_64, NOT derived from `--target-platform`. Its own comment claims a
+user's abiFilters "will take precedence"; they do not. Adding two entries that are already in the
+set does nothing.
+
+**Measured on the APK customers are downloading right now:**
+
+| ABI | compressed |
+|---|---|
+| x86_64 | **36.0 MB** |
+| arm64-v8a | 33.4 MB |
+| armeabi-v7a | 27.9 MB |
+| **total** | **110.1 MB** |
+
+A third of a 110 MB download, paid for over mobile data in Bangladesh, is x86 code no phone can
+execute — a month after the fix was committed (7282d7f, 2026-08-02) and never re-measured. **A
+silent no-op is the expensive kind of bug: nothing failed.** Fixed with `abiFilters.clear()` first.
+⚠️ This also drops x86_64 from the App Bundle, so Play will not offer the app on x86 Chromebooks or
+emulators — intended here, but it is a trade, and it is written down in the file.
+
+### ⚠️ The primary button overflowed at large system font
+
+`BusyButton` — the main action on nearly every screen — held a bare `Text(label)` in a Row. A Row
+will not shrink a bare Text, so at **160% font on a 320dp phone it overflowed by 18 px** and drew
+the yellow-and-black striped bar across itself. Android's slider goes to 200%, and plenty of
+customers over 40 have it part-way up without thinking of it as an accessibility setting.
+
+Now `Flexible` + wrapping — not ellipsis, because the labels are Bangla instructions like
+"কোড পাঠান" and a truncated instruction is worse than a two-line button.
+
+`test/screen_size_test.dart` covers four screen sizes × three font scales and fails on the old code.
+⚠️ **Use `pump()`, never `pumpAndSettle()`, in these tests** — the login screen animates forever, so
+"settled" never arrives and the run hangs (it burned ten minutes discovering that). Also restore
+`FlutterError.onError` **before** `expect()`, or the binding throws a confusing framework assertion
+instead of reporting the overflow.
+
+### 16 KB page sizes: PASS, checked properly
+
+Play requires 16 KB support for apps targeting 35+. Read the ELF program headers of all 36 native
+libraries in the shipped APK: **every arm64 library has max LOAD alignment ≥ 16,384** (libapp.so and
+libflutter.so are 65,536). Four armeabi-v7a libraries are 4 KB-aligned and that is irrelevant — 16 KB
+page devices are all 64-bit.
+
+### Packages: nothing that breaks on Android 14/15
+
+Two discontinued, both harmless: `flutter_secure_storage_macos` and `js` — transitive, neither
+reaches an Android build. Several majors behind (`file_picker` 8→12, `flutter_secure_storage` 9→11,
+`permission_handler` 11→13, `package_info_plus` 8→10, `connectivity_plus` 6→7, `share_plus` 12→13),
+but the Android-critical ones (Firebase, camerax, webview_flutter_android) are current-minor and
+build clean against compileSdk 36 with no plugin warnings in the build log.
+
+⚠️ **Do not do those major upgrades now.** `file_picker` 8→12 and `permission_handler` 11→13 both
+cross breaking changes in exactly the two flows that already have a device-only failure mode (ticket
+attachments; camera permission). Upgrade after the Play launch, one at a time, each with a scanner
+and attachment test on a real phone.
+
+### Old-device performance: the download is the problem, not the code
+
+The 110 MB APK (74 MB once ARM-only lands) matters more than any runtime cost on an entry-level
+phone. R8 stays off — see the pen-test entry for why, and it costs little in a Flutter app.
+minSdk 24 keeps Android 7 devices, which are still in use here.
+
+**Verified:** `flutter analyze` clean, **261 tests pass** (7 new). ⚠️ The ABI fix cannot be confirmed
+until the next build — **re-run the ABI check on the new APK and expect ~74 MB with no `lib/x86_64/`.**
+
 ## 2026-09-02 (4) — LOGIC AUDIT: app 2.1.6+114 / app-api 1.103.0
 
 Double taps, lost connections, unvalidated input. **Two real races in the shared cache; the
