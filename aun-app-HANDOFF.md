@@ -29,6 +29,72 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (4) — LOGIC AUDIT: app 2.1.6+114 / app-api 1.103.0
+
+Double taps, lost connections, unvalidated input. **Two real races in the shared cache; the
+double-tap question turned out to be already answered, twice over.**
+
+### ⚠️ Two races in `Cached`, both ending in wrong data rather than a crash
+
+That is why neither would ever arrive as a bug report anyone could reproduce.
+
+**1. A logout could be undone by a reply already in the air.** `AppState._clearToken()` calls
+`AppData.clear()`, but a request already sent cannot be recalled. Its answer landed afterwards and
+did `_value = v` — **putting the previous customer's devices back on a shared phone**, which is the
+single thing `clear()` exists to prevent. The rule was written down in this file and the code did
+not keep it.
+
+**2. `force` joined the request it was trying to replace.** `ensure()` was
+`return _inflight ??= _run()`, so a forced refresh reused whatever was already running. But `force`
+is only ever used *after the customer changed something* — approving a quote, registering a device —
+and a request sent BEFORE that change cannot contain it. Approve a quote while the list happened to
+be refreshing and you got pre-approval data stamped fresh: status still "quote sent", **no Pay
+button**, until something else refreshed it.
+
+Both fixed with one sequence number. Every fetch takes the next number; an answer is applied only if
+its number is still current. `clear()` bumps the number without starting anything, which is what lets
+a logout invalidate work already under way, and an older answer that overtakes a newer one is now
+dropped instead of winning. Two forced callers still share one request — a double pull-to-refresh is
+still one fetch. `test/store_race_test.dart` fails on the old code.
+
+⚠️ `set()` also claims the newest number: publishing a locally-mutated list must not be undone by an
+older request landing after it.
+
+### Double taps: already handled, and the second layer is the one that matters
+
+`BusyButton` sets `onPressed: null` while busy, and every submit handler sets its busy flag
+*synchronously* — no `await` before it — so the disable lands before a second tap can be delivered.
+Two handlers (`ticket _send`, `feedback _submit`) also check the flag on entry.
+
+**But the layer that actually protects the customer is on the server, and it is already there**:
+`create_part_request()` and `open_repair_for()` refuse a second open request for the same serial and
+hand back the existing ref. That is what covers the case a busy flag cannot — *connection drops after
+the row was created, the customer taps submit again.* No change made; recorded so it is not
+"fixed" again.
+
+### Unvalidated input: every check was a MINIMUM
+
+Address ≥ 8, issue ≥ 10, tracking ≥ 4 — and **no maximum anywhere** except the courier fields. Only
+2 of ~21 text fields had a `maxLength`. The ceiling was therefore the database: a TEXT column stops
+at 65,535 bytes and a strict-mode INSERT fails outright, so a customer who pasted something long
+lost the whole form — *after* uploading proof photos — to "Something went wrong."
+
+Capped at both ends: `maxLength` on address (300), note (1000), repair issue (2000), ticket message
+and reply (5000), plus `self::cap()` server-side at the same numbers. Counters are suppressed
+(`noCounter`) — every cap here guards against a PASTE, not against typing, and "0/300" on a form
+turns it into something that looks like it is grading you.
+
+⚠️ **`cap()` uses `mb_substr`, and its fallback is `preg` with `/u` — never `substr`.** A Bangla
+character is 3 bytes, so a byte-wise cut lands mid-character and produces invalid UTF-8, which MySQL
+rejects and `json_encode` turns into `null`. **Measured on this bench: of 101 cut lengths, 64 (63%)
+corrupted the string and `json_encode` failed with "Malformed UTF-8 characters".** The first draft of
+`cap()` fell back to plain `substr` — reintroducing, in the fallback, the exact bug the method exists
+to prevent. Worth knowing: this bench's PHP has **no mbstring**, which is how that was caught, and
+means the fallback is not theoretical.
+
+**Verified:** `flutter analyze` clean, **254 tests pass** (36 new across today's three audits), `php -l`
+clean. ⚠️ Deploy app-api 1.103.0 **before** the app build.
+
 ## 2026-09-02 (3) — ANDROID MANIFEST PEN-TEST (§5 of the readiness doc, done)
 
 Read from the **merged release manifest of the shipped 2.1.4 build**

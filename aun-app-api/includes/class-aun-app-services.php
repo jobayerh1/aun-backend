@@ -303,6 +303,45 @@ class AUN_App_Services {
 	}
 
 	/** Same unambiguous ref alphabet the spare-parts plugin uses. */
+	/**
+	 * Trim free text to something a TEXT column can hold, on a CHARACTER
+	 * boundary.
+	 *
+	 * ⚠️ Every length check in this file was a MINIMUM. There was no maximum
+	 * anywhere, so the only thing between a pasted document and the database
+	 * was the database: a TEXT column stops at 65,535 BYTES, and with MySQL in
+	 * strict mode the INSERT fails outright. The customer had filled in the
+	 * form, uploaded proof photos, and got "Something went wrong."
+	 *
+	 * ⚠️ mb_substr, never substr. A Bangla character is THREE bytes in UTF-8,
+	 * so a byte-wise cut can land in the middle of one and produce a string
+	 * that is no longer valid UTF-8 — which MySQL rejects and json_encode turns
+	 * into null. Cutting by characters cannot do that.
+	 *
+	 * The app caps the same fields as you type (maxLength on the field), so
+	 * this only ever fires for a caller that is not the app. It must still
+	 * exist: an API that trusts its client to enforce a limit has no limit.
+	 *
+	 * @param string $text  Already-sanitised text.
+	 * @param int    $chars Maximum characters to keep.
+	 * @return string
+	 */
+	private static function cap( $text, $chars ) {
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $text, 0, $chars, 'UTF-8' );
+		}
+		// ⚠️ The fallback must NOT be plain substr(). mbstring is normally
+		// present (WordPress recommends it, and this very bench turned out to
+		// be built without it), but a fallback that reintroduces the exact bug
+		// this method exists to prevent is worse than no fallback at all.
+		// preg's /u modifier matches whole UTF-8 characters, so `.{0,N}` cuts
+		// on a character boundary with no mbstring at all.
+		if ( preg_match( '/^.{0,' . (int) $chars . '}/us', $text, $m ) ) {
+			return $m[0];
+		}
+		return $text;
+	}
+
 	private static function generate_ref( $table, $prefix ) {
 		global $wpdb;
 		$alpha = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -366,7 +405,7 @@ class AUN_App_Services {
 			);
 		}
 
-		$address = sanitize_textarea_field( (string) $args['address'] );
+		$address = self::cap( sanitize_textarea_field( (string) $args['address'] ), 300 );
 		if ( strlen( $address ) < 8 ) {
 			return array(
 				'ok'      => false,
@@ -442,7 +481,7 @@ class AUN_App_Services {
 		$ref = self::generate_ref( $t_req, 'SP' );
 		$wpdb->update( $t_req, array( 'ref' => $ref ), array( 'id' => $request_id ) );
 
-		$note = sanitize_textarea_field( (string) $args['note'] );
+		$note = self::cap( sanitize_textarea_field( (string) $args['note'] ), 1000 );
 
 		// Quantities, clamped to the website's own 1..max_qty range. Anything
 		// missing or junk becomes 1, which is exactly the old behaviour.
@@ -720,7 +759,7 @@ class AUN_App_Services {
 			);
 		}
 
-		$issue = sanitize_textarea_field( (string) $args['issue'] );
+		$issue = self::cap( sanitize_textarea_field( (string) $args['issue'] ), 2000 );
 		if ( strlen( $issue ) < 10 ) {
 			return array(
 				'ok'      => false,
@@ -756,7 +795,7 @@ class AUN_App_Services {
 			'user_id'       => (int) $args['user_id'],
 			'customer_name' => sanitize_text_field( (string) $args['customer_name'] ),
 			'phone'         => (string) $args['phone'],
-			'address'       => sanitize_textarea_field( (string) $args['address'] ),
+			'address'       => self::cap( sanitize_textarea_field( (string) $args['address'] ), 300 ),
 			'serial'        => AUN_App_Warranty::sanitize_serial( (string) $args['serial'] ),
 			'model'         => $model,
 			'issue'         => $issue,
