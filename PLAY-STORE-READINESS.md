@@ -218,7 +218,7 @@ matters commercially in this market.
 
 | Change | Why |
 |---|---|
-| Produce an **AAB** (`flutter build appbundle --release`) | Play does not accept APKs for new apps. |
+| **Produce an AAB ✅ done** — double-click **`build-aun-app-aab.cmd`** | Play does not accept APKs for new apps. Deliberately a second script, not a flag on the APK one: the APK build is allowed to fall back to the debug key (test builds are useful), a Play bundle never is, so this one refuses to start without `android\key.properties`. Output is versioned (`AUN-Care-Bangladesh-2.1.4-112.aab`) and every older `.aab` in the folder is deleted first — the same stale-file trap that once cost weeks on the APK side. |
 | Keep the APK build too | You still side-load from the website while the listing is pending. |
 | `minSdkVersion` sanity check | Lower = more of the market. Confirm what the plugins force. |
 | `targetSdkVersion` current | Play enforces a minimum target each August–November. Check before upload. |
@@ -226,7 +226,7 @@ matters commercially in this market.
 | ~~Delete `update_sheet.dart`~~ **DONE differently, 1.95.0 — do not delete it** | The real problem was not the prompt, it was the DESTINATION: sending a Play install to a website APK breaks Play's Device and Network Abuse policy. Deleting the sheet would also have stripped the update path from every side-loaded copy the website still distributes. `AppState.updateUrl` now routes by `PackageInfo.installerStore` — Play listing for a Play install, APK for a side-loaded one — so one binary serves both. Three call sites (update sheet, force-update screen, **Settings**) all go through it. |
 | Remove/repoint the APK-download band on the website | Once the listing is live it should point at Play, not a direct APK. |
 | **Backups ✅ done, 1.95.0** | `allowBackup="false"` + `aun_backup_rules.xml` (≤11) + `aun_data_extraction_rules.xml` (12+). The login token's Keystore key is never backed up, so a restored copy is undecryptable ciphertext and the customer looks signed in while being signed out. ⚠️ `allowBackup="false"` alone does NOT stop `<device-transfer>` — the new-phone copy people actually use. |
-| **Verify the AAB is signed with the upload key** | `key.properties` absent ⇒ the build silently falls back to the DEBUG key. Check before upload: `keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab`. |
+| **Verify the AAB is signed with the upload key ✅ automatic** | `key.properties` absent ⇒ the build silently falls back to the DEBUG key. `build-aun-app-aab.cmd` now reads the certificate back **out of the finished file** — the only check a stale `key.properties` or a Gradle cache cannot fool — prints Owner + SHA-256, and hard-stops if it says `Android Debug`. ⚠️ Note the same command does **not** work on the APK: `keytool -printcert -jarfile AUN-Care-Bangladesh.apk` answers *"Not a signed jar file"*, because modern APKs carry only signature scheme v2/v3 and keytool reads v1 JAR signatures. Bundles are JAR-signed, so it works there. For an APK use `apksigner verify --print-certs`. |
 
 ---
 
