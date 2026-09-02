@@ -197,8 +197,19 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		// GET **and** POST, and the pair is deliberate.
+		//
+		// The app now POSTs, so the customer's phone number travels in the body
+		// and never reaches the site's access log or Cloudflare's request log —
+		// a query string is written to both in plain text, TLS or not.
+		//
+		// GET stays because every APK already on a phone still sends one, and
+		// side-loaded copies update whenever their owner gets round to it.
+		// Dropping it would break the purchase lookup for them with a 404. It
+		// costs nothing to keep: get_param() reads the query string and the
+		// JSON body identically, so there is ONE callback either way.
 		register_rest_route( $ns, '/devices/by-purchase-phone', array(
-			'methods'             => 'GET',
+			'methods'             => 'GET, POST',
 			'callback'            => array( $this, 'devices_by_purchase_phone' ),
 			'permission_callback' => $auth,
 		) );

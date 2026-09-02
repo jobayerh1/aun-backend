@@ -29,6 +29,87 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (2) — SECURITY AUDIT: app 2.1.5+113 / app-api 1.102.0
+
+A pass over all 40k lines of Dart against four questions: hardcoded secrets, local storage,
+network, and what leaks into logs. **Four of the six findings are real; the worst one is not the
+kind of bug a customer would ever report.**
+
+### What was already right (so nobody "fixes" it later)
+
+No hardcoded secrets anywhere — the SSLCommerz merchant credentials are on the server precisely
+because an APK is a zip file, and the WebView checkout exists to keep them there. The auth token is
+in `flutter_secure_storage` with `encryptedSharedPreferences: true`, never in SharedPreferences,
+which holds only locale, onboarding and the analytics queue. HTTPS with no certificate-validation
+override and no cleartext exception. **Not one `print()` in the whole app.** The token travels in
+headers, never a URL.
+
+### 1. ⚠️ `dev_otp` auto-fill was gated on the SERVER, not on the build
+
+The bench returns the OTP it just generated so nobody waits for an SMS, and the app fills it in.
+`env.dart` says "dev builds surface the bench-only dev_otp" — but the check was
+`if (result.devOtp.isNotEmpty)`. **There was no build gate.** The only thing standing between a
+release APK and a pre-filled login code was one constant in one wp-config: a copied config, a
+staging database promoted to live, or anyone able to define a constant would have turned the OTP
+step into a formality for every installed copy. Now `if (Env.dev && …)` — the client's own gate is
+the one an attacker cannot flip.
+
+### 2. ⚠️ Any link could ask the app to launch any scheme
+
+`launchExternal()` did `launchUrl(Uri.parse(url))` on strings that come from **outside** the app:
+banner links in the server config, hrefs in help articles, redirects requested by a page inside a
+WebView. Two schemes matter. `intent:` is Android's URL syntax for naming a package, component and
+extras — handing one to the OS starts a chosen component in another installed app, which is a much
+larger favour than "open this link". `file:` turns a link into a request against local storage. And
+`Uri.parse` **throws** on a malformed string, so one bad banner link took down whichever screen the
+customer was on.
+
+Now an allow-list (http, https, tel, mailto, sms, whatsapp) plus `tryParse`. The rule is extracted
+as `launchableUri()` and covered by `test/launch_url_test.dart` — *the security-relevant half took
+no BuildContext and no plugin, so there was no reason for it to be reachable only through a widget
+that needed both.*
+
+The payment WebView had the same hole and it is the worst place to have it: every URL there is
+decided by the gateway's page, then the customer's BANK's page, then whatever those redirect
+through. It now hands over only real wallet schemes (bkash, nagad, rocket, upay, tel, sms, mailto).
+
+### 3. The customer's phone number was in a URL query string
+
+`GET /devices/by-purchase-phone?phone=01…`. TLS hides a query string from the network but not from
+the places a URL is routinely **written down in plain text**: the site's access logs and — because
+the site is behind Cloudflare — the edge's request logs too. Two log estates nobody audits, retained
+on someone else's schedule. Now a POST with the number in the body.
+
+⚠️ **app-api 1.102.0 registers that route as `'GET, POST'`, and the pair must stay.** Every APK
+already on a phone still sends GET, and side-loaded copies update whenever their owner feels like
+it; dropping GET 404s the purchase lookup for all of them. `get_param()` reads query and JSON body
+identically, so it is one callback either way.
+
+### 4. 🐛 Analytics have NEVER been recorded — the URL had the namespace twice
+
+`Uri.parse('${Env.baseUrl}/wp-json/aun-app/v1/events')` — but `Env.baseUrl` **already ends in**
+`/wp-json/aun-app/v1`. Every batch went to `…/wp-json/aun-app/v1/wp-json/aun-app/v1/events`, 404'd,
+was pushed back onto the queue and retried for ever. **AUN App → Usage has been empty because
+nothing was ever delivered, not because nobody used the app** — worth knowing before reading
+anything into it, and `PLAY-STORE-READINESS.md` §11 tells you to judge the first week on exactly
+these numbers. Nothing was lost to a third party; the requests never left our own domain.
+
+### 5 & 6. Two smaller ones
+
+`aun_file_paths.xml` shared `path="."` — the ROOT of the internal files dir — so every private file
+was reachable through the FileProvider, not just the attachment being opened. Nothing leaked
+(MainActivity only mints a URI for a path our own Dart passes it), but that is a promise about
+today's code, and the provider is what decides what a bug in tomorrow's could hand out. Scoped to
+`aun-ticket-files/` and `aun-downloads/`. And `usesCleartextTraffic="false"` is now stated rather
+than assumed: the default disappears silently if any dependency merges in a `true`.
+
+**Known and accepted, not fixed:** `background_downloader` persists a task's headers — including the
+auth token on a ticket-attachment download — in its own unencrypted store for the life of the task.
+It is app-private storage, `allowBackup="false"` keeps it out of backups, and reading it needs root
+or physical access to an unlocked phone. Recorded so the next audit does not re-discover it.
+
+**Verified:** `flutter analyze` clean, **248 tests pass** (17 new). Not yet run on a phone.
+
 ## 2026-09-02 — BUILD TOOLING: `build-aun-app-aab.cmd`, and a signing check that actually holds
 
 Play does not accept an APK for a new app, so §9 of `PLAY-STORE-READINESS.md` needed a bundle
