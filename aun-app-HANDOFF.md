@@ -29,6 +29,39 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 — BUILD TOOLING: `build-aun-app-aab.cmd`, and a signing check that actually holds
+
+Play does not accept an APK for a new app, so §9 of `PLAY-STORE-READINESS.md` needed a bundle
+build. **No app or plugin code changed** — this is tooling only, app stays 2.1.4+112.
+
+**A second script, not a flag on the existing one.** `build-aun-app.cmd` is *allowed* to fall back
+to the debug key: side-loaded test builds are useful and anyone should be able to make one without
+holding the signing material. A Play bundle never is. So the new script **refuses to start** when
+`android\key.properties` is missing, with a message naming the keystore backup folder — on upload
+day a silent debug-key fallback reads as "Play is broken", not "the key file is missing".
+
+Output is **versioned** (`AUN-Care-Bangladesh-2.1.4-112.aab`) and every older `.aab` in the folder is
+deleted before the new one is written — the same trap that once cost weeks on the APK side, where a
+stale file with a similar name was the one that kept getting installed.
+
+### ⚠️ The check in the old doc did not work on an APK
+
+§9 said to verify with `keytool -printcert -jarfile`. Run against the shipped APK it answers
+**"Not a signed jar file"** — modern APKs carry only **signature scheme v2/v3**, and keytool reads
+v1 JAR signatures. An **.aab IS JAR-signed**, so the command is right for the bundle and wrong for
+the APK; for an APK it is `apksigner verify --print-certs`. Both corrected in the doc.
+
+Reading the certificate back **out of the finished file** is the point: it is the one check a stale
+`key.properties` or a warm Gradle cache cannot fool. The script prints Owner + SHA-256 and
+**hard-stops on `Android Debug`**. If the certificate is merely unreadable it warns and keeps the
+bundle rather than discarding a ten-minute build.
+
+⚠️ **NOT yet run end to end.** Gradle cannot open a loopback socket inside the assistant's session
+(it fails at daemon start, before any compilation, even with `--no-daemon`), so the bundle itself was
+never produced here. The script's own logic ran — clean, version parse, failure path — and the
+keytool behaviour above was measured. **Double-click it once and confirm the SHA-256 it prints
+matches the upload certificate**; that first comparison is the whole value of the check.
+
 ## 2026-08-22 (5) — app-api 1.99.0: the Chorki half of the rail keeps itself up to date
 
 Local picks were hand-typed in Settings and went stale the moment nobody remembered them. Chorki
