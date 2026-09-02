@@ -18,11 +18,12 @@ cd /d C:\dev\aun-app
 rem ---------------------------------------------------------------------
 rem  STOP before building if the upload key is missing.
 rem
-rem  Without android\key.properties Gradle SILENTLY falls back to the debug
-rem  key. Play rejects a debug-signed bundle, and on the day of upload that
-rem  reads as "Play is broken" rather than "the key file is missing". The APK
-rem  script is allowed to fall back (test builds are useful); a Play bundle
-rem  never is.
+rem  Without android\key.properties this build cannot be signed with the
+rem  upload key. build.gradle.kts already refuses the build in that case (its
+rem  "one-way door" guard), so nothing debug-signed can escape either way -
+rem  but a Gradle exception after a clean and minutes of compiling is a poor
+rem  way to learn it. Checking here fails in one second, before the clean,
+rem  with a message that says where the backup is.
 rem ---------------------------------------------------------------------
 if not exist "C:\dev\aun-app\android\key.properties" (
     echo.

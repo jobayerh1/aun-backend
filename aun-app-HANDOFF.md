@@ -29,6 +29,80 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (3) — ANDROID MANIFEST PEN-TEST (§5 of the readiness doc, done)
+
+Read from the **merged release manifest of the shipped 2.1.4 build**
+(`build/app/intermediates/merged_manifest/release/processReleaseMainManifest/`), not from our own
+manifest — the merged file is what is actually inside the APK, and it is the only place a plugin's
+contribution shows up. **One real finding, and it is on the store page rather than in the code.**
+
+### ⚠️ The app ships 17 permissions, not 3 — including "Microphone"
+
+Our manifest declares INTERNET, CAMERA, POST_NOTIFICATIONS, and the privacy policy, the Data safety
+form and §5 of the readiness doc all say "three permissions only". The merged manifest of 2.1.4
+declares **seventeen**. The one that matters:
+
+| permission | added by | Play shows it as |
+|---|---|---|
+| `RECORD_AUDIO` | `camera_android_camerax` | **Microphone** |
+| `READ_MEDIA_IMAGES/VIDEO/AUDIO` | `open_filex` | Photos and videos · Music and audio |
+| `READ/WRITE_EXTERNAL_STORAGE` (capped ≤28/≤32) | camerax, open_filex | Storage, on Android ≤12 |
+| `USE_BIOMETRIC`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, `ACCESS_NETWORK_STATE` | androidx.work, biometric, firebase_messaging | normal — not shown to shoppers |
+
+**Nothing in this app has ever recorded audio.** The AR preview builds its `CameraController` with
+`enableAudio: false` and the scanner is stills only. A shopper comparing us with a competitor would
+have seen "Microphone" on the listing of an app whose entire pitch includes a privacy promise.
+
+**Why removing them is safe, and how we know:** `permission_handler` is only ever asked for
+`Permission.camera` and `Permission.notification`. A dangerous permission that is declared but never
+*requested* is never granted — so nothing could have been relying on these. They were pure listing
+damage. Removed with `tools:node="remove"` and a comment per entry saying why.
+
+⚠️ **Left alone deliberately:** the two capped storage permissions (they only appear on Android ≤12,
+and `image_picker` on older devices may genuinely need READ_EXTERNAL_STORAGE — **test picking a
+photo on an Android 11/12 phone before removing**), and the normal-level ones, which are invisible
+to shoppers and are load-bearing for push and background downloads.
+
+### Exported components: six, and all six are correct
+
+`MainActivity` (MAIN/LAUNCHER — must be exported, and it carries **no other intent-filter**, so
+there is no deep link for another app to spoof or intercept); `SystemJobService` + `UIDTJobService`
+behind `BIND_JOB_SERVICE`; the two FCM receivers behind `com.google.android.c2dm.permission.SEND`;
+`RevocationBoundService` behind a GMS permission. **Every one of our nine content providers is
+`exported="false"`**, including both FileProviders.
+
+`ProfileInstallReceiver` and `DiagnosticsReceiver` are exported behind `android.permission.DUMP`,
+which is signature|privileged — reachable only from `adb shell` on a phone with USB debugging
+already enabled and authorised. Scanners flag them; the fix (`tools:node="remove"`) costs the
+baseline-profile startup improvement. **Not worth it: an attacker with authorised ADB access has
+better options than rebroadcasting a profile-install intent.**
+
+### The other two questions, answered
+
+**Backup:** `allowBackup="false"` already, plus `aun_backup_rules.xml` and
+`aun_data_extraction_rules.xml`. Correct, and for a sharper reason than "someone could `adb backup`
+the data": the login token's key lives in the Android **Keystore**, which is never backed up. A
+restored copy would therefore be undecryptable ciphertext, and the customer would look signed in
+while being signed out. ⚠️ `allowBackup="false"` alone does NOT cover `<device-transfer>` — the
+new-phone copy people actually use — which is why the two rules files exist.
+
+**Cleartext:** no HTTP anywhere; the one `http://` in the codebase is the emulator example in an
+`env.dart` comment. `usesCleartextTraffic="false"` was added earlier today so a merged `true` from
+some future dependency fails the build instead of silently unlocking it.
+
+### Not a finding, but know it: the release APK is not obfuscated
+
+R8 is off (`shrink=false` in gradle.properties) because it stripped the ML Kit / mobile_scanner
+classes and broke the barcode camera in release only. **Leave it off.** For a Flutter app the impact
+is small: the business logic is AOT-compiled to native ARM code, not Java classes, so R8 would
+obfuscate the thin platform layer and nothing else. The keep-rules in `proguard-rules.pro` are
+already written if it is ever revisited — with a scanner test on a real phone.
+
+**Verified:** merged-manifest parse + both XML files parse; `flutter analyze` clean; 248 tests pass.
+⚠️ The permission removals are a MERGE-TIME change — they cannot show up until the next release
+build. **Re-run this audit on the new merged manifest after building the AAB** and confirm the count
+drops from 17 to 13 with no RECORD_AUDIO.
+
 ## 2026-09-02 (2) — SECURITY AUDIT: app 2.1.5+113 / app-api 1.102.0
 
 A pass over all 40k lines of Dart against four questions: hardcoded secrets, local storage,
@@ -115,11 +189,13 @@ or physical access to an unlocked phone. Recorded so the next audit does not re-
 Play does not accept an APK for a new app, so §9 of `PLAY-STORE-READINESS.md` needed a bundle
 build. **No app or plugin code changed** — this is tooling only, app stays 2.1.4+112.
 
-**A second script, not a flag on the existing one.** `build-aun-app.cmd` is *allowed* to fall back
-to the debug key: side-loaded test builds are useful and anyone should be able to make one without
-holding the signing material. A Play bundle never is. So the new script **refuses to start** when
-`android\key.properties` is missing, with a message naming the keystore backup folder — on upload
-day a silent debug-key fallback reads as "Play is broken", not "the key file is missing".
+**A second script, not a flag on the existing one.** It **refuses to start** when
+`android\key.properties` is missing, naming the keystore backup folder.
+
+*(Correction to what this entry first claimed: a release build does NOT silently fall back to the
+debug key — `build.gradle.kts` has a "one-way door" guard that throws on any task containing
+"Release". The script's check is therefore not the last line of defence but an earlier, friendlier
+one: it fails in a second, before the clean, instead of as a Gradle exception minutes into a build.)*
 
 Output is **versioned** (`AUN-Care-Bangladesh-2.1.4-112.aab`) and every older `.aab` in the folder is
 deleted before the new one is written — the same trap that once cost weeks on the APK side, where a
