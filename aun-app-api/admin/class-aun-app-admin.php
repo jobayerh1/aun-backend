@@ -334,6 +334,7 @@ class AUN_App_Admin {
 		add_submenu_page( 'aun-app', 'AUN App Bug Reports', 'Bug Reports', self::CAP, 'aun-app-feedback', array( $this, 'page_feedback' ) );
 		add_submenu_page( 'aun-app', 'AUN App Messages', 'Messages', self::CAP, 'aun-app-messages', array( $this, 'page_messages' ) );
 		add_submenu_page( 'aun-app', 'AUN App Usage', 'Usage', self::CAP, 'aun-app-usage', array( $this, 'page_usage' ) );
+		add_submenu_page( 'aun-app', 'AUN App Dust Filters', 'Dust filters', self::CAP, 'aun-app-filters', array( $this, 'page_filters' ) );
 		add_submenu_page( 'aun-app', 'AUN App Settings', 'Settings', self::CAP, 'aun-app-settings', array( $this, 'page_settings' ) );
 	}
 
@@ -1633,6 +1634,127 @@ class AUN_App_Admin {
 			. 'and those visits are counted but cannot be attributed to anyone.</p>';
 
 		echo '</div>';
+	}
+
+
+	/**
+	 * AUN App → Dust filters.
+	 *
+	 * One row per model: where its filter is, or that it has none.
+	 *
+	 * ⚠️ The "No dust filter" choice does two things at once, and the page says
+	 * so out loud: it stops the animation AND it stops the monthly reminders for
+	 * that model. An admin who picks it to fix a picture would otherwise switch
+	 * off a customer's reminders without ever being told.
+	 */
+	public function page_filters() {
+		if ( ! current_user_can( self::CAP ) ) {
+			wp_die( 'Nope.' );
+		}
+
+		$notice = '';
+		if ( isset( $_POST['aun_filters_nonce'] )
+			&& wp_verify_nonce( $_POST['aun_filters_nonce'], 'aun_app_filters' ) ) {
+			$posted = isset( $_POST['filter'] ) && is_array( $_POST['filter'] )
+				? wp_unslash( $_POST['filter'] )
+				: array();
+
+			$map = array();
+			foreach ( $posted as $key => $choice ) {
+				$choice = sanitize_text_field( (string) $choice );
+				// '' is a real answer here — "not set yet" — and must be able to
+				// UNDO a wrong entry, so it is skipped rather than stored.
+				if ( '' === $choice ) {
+					continue;
+				}
+				$map[ sanitize_text_field( (string) $key ) ] = $choice;
+			}
+			AUN_App_Filters::save( $map );
+			$notice = '<div class="notice notice-success is-dismissible"><p>Dust-filter settings saved.</p></div>';
+		}
+
+		$map = AUN_App_Filters::map();
+
+		// The models an admin recognises: the planner catalogue (published
+		// projector products). Anything already in the map that is no longer in
+		// the catalogue is listed too, so a discontinued model's setting stays
+		// visible and editable instead of becoming an invisible orphan.
+		$rows = array();
+		if ( class_exists( 'AUN_App_Projectors' ) ) {
+			foreach ( (array) AUN_App_Projectors::catalogue() as $p ) {
+				$name = (string) ( $p['name'] ?? '' );
+				$key  = AUN_App_Filters::key( $name );
+				if ( '' !== $key ) {
+					$rows[ $key ] = $name;
+				}
+			}
+		}
+		foreach ( $map as $key => $choice ) {
+			if ( ! isset( $rows[ $key ] ) ) {
+				$rows[ $key ] = $key . ' (not in the current catalogue)';
+			}
+		}
+		ksort( $rows );
+
+		$unset_count = 0;
+		foreach ( $rows as $key => $name ) {
+			if ( ! isset( $map[ $key ] ) ) {
+				$unset_count++;
+			}
+		}
+
+		echo '<div class="wrap"><h1>Dust filters</h1>';
+		echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput
+
+		echo '<p style="max-width:760px">Customers are reminded once a month to clean the dust filter, '
+			. 'and the app plays a short animation showing them where it is. '
+			. 'Some models take the filter out of the <strong>back</strong>, some out of the '
+			. '<strong>underside</strong>, and some have none at all.</p>';
+
+		echo '<p style="max-width:760px"><strong>Choosing “No dust filter” also stops the monthly '
+			. 'reminders for that model.</strong> That is deliberate: telling someone to clean a filter '
+			. 'their projector does not have teaches them to ignore the next message we send.</p>';
+
+		if ( $unset_count > 0 ) {
+			echo '<div class="notice notice-warning inline"><p>'
+				. esc_html( sprintf(
+					'%d model%s not set yet. Those customers still get the reminders — the app just says '
+						. '“check the back or the underside” instead of pointing at one.',
+					$unset_count,
+					1 === $unset_count ? ' is' : 's are'
+				) )
+				. '</p></div>';
+		}
+
+		if ( empty( $rows ) ) {
+			echo '<p><em>No projector products found. Check the planner’s product categories in '
+				. 'AUN App → Settings.</em></p></div>';
+			return;
+		}
+
+		echo '<form method="post">';
+		wp_nonce_field( 'aun_app_filters', 'aun_filters_nonce' );
+		echo '<table class="widefat striped" style="max-width:760px;margin-top:12px">';
+		echo '<thead><tr><th>Model</th><th style="width:280px">Dust filter</th></tr></thead><tbody>';
+
+		foreach ( $rows as $key => $name ) {
+			$current = isset( $map[ $key ] ) ? $map[ $key ] : '';
+			echo '<tr><td><strong>' . esc_html( $name ) . '</strong>';
+			if ( '' === $current ) {
+				echo ' <span style="color:#b26200">— not set</span>';
+			}
+			echo '</td><td><select name="filter[' . esc_attr( $key ) . ']" style="width:100%">';
+			echo '<option value=""' . selected( $current, '', false ) . '>— not set —</option>';
+			foreach ( AUN_App_Filters::CHOICES as $value => $label ) {
+				echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>'
+					. esc_html( $label ) . '</option>';
+			}
+			echo '</select></td></tr>';
+		}
+
+		echo '</tbody></table>';
+		submit_button( 'Save dust-filter settings' );
+		echo '</form></div>';
 	}
 
 	public function page_settings() {

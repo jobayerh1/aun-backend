@@ -643,6 +643,20 @@ class AUN_App_Notices {
 				continue;
 			}
 
+			// ⚠️ Models with no user-serviceable filter get NO reminder.
+			//
+			// Telling someone to clean a filter their projector does not have
+			// is worse than saying nothing: they go looking, find no filter,
+			// and the next message we send — about a warranty, a repair,
+			// anything — reaches a customer who has already learnt that our
+			// reminders are not about their machine. Set per model in
+			// AUN App → Dust filters.
+			$model_name = (string) ( $device['model'] ?? '' );
+			if ( class_exists( 'AUN_App_Filters' )
+				&& ! AUN_App_Filters::reminders_enabled( $model_name ) ) {
+				continue;
+			}
+
 			$start = (string) ( $device['purchase_date'] ?? '' );
 			if ( '' === $start && ! empty( $device['warranty']['start'] ) ) {
 				$start = (string) $device['warranty']['start'];
@@ -665,8 +679,16 @@ class AUN_App_Notices {
 					'body_bn'    => $msg['body_bn'],
 					'data'       => array(
 						'serial' => $serial,
-						'model'  => (string) ( $device['model'] ?? '' ),
+						'model'  => $model_name,
 						'offset' => (int) $offset,
+						// Which animation the app should play beside this
+						// reminder: back | bottom | unknown. Carried on the
+						// NOTICE rather than looked up in the app, so the
+						// picture always matches what the admin set at the
+						// moment the reminder was raised.
+						'filter_location' => class_exists( 'AUN_App_Filters' )
+							? AUN_App_Filters::location( $model_name )
+							: 'unknown',
 					),
 					'dedup_key'  => 'maint:' . (int) $user_id . ':' . md5( $serial ) . ':' . (int) $offset,
 					'created_at' => date( 'Y-m-d 10:00:00', $due_ts ),
