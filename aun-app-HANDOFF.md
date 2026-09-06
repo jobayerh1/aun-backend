@@ -29,6 +29,34 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (7) — app 2.1.9+117: the quick actions were owner-only too
+
+Owner sent a screenshot of the new non-owner Home. The buying card was right; **the row above it was
+not, and no test would ever have caught it** — the tiles rendered perfectly, they were simply the
+wrong tiles for that customer.
+
+A non-owner was seeing **Register device · Book a repair · Spare parts**. All three are things you
+do to a projector you own:
+
+- **Book a repair** and **Spare parts** both land on `_NeedDevice()` — "add a projector first". Not a
+  crash, which is why it looked fine; a **dead end dressed as a primary action**, which is worse than
+  clutter because it costs a tap and returns nothing.
+- **Register device** is the big blue *Add your projector* hero repeated 40 px lower — so the one
+  thing we want a non-owner to do appeared **twice on one screen, competing with itself**.
+
+Now gated on ownership, and hidden **while loading** as well as when empty: showing them during the
+load would flash three owner tiles onto a non-owner's screen and take them away again, the same
+flicker the device rail's three-state rule exists to prevent. Devices are cached, so a returning
+owner never sees the gap.
+
+⚠️ **The lesson worth keeping.** Every automated check passed on the previous build — analyzer, 272
+tests, no overflow at any font scale — because *correct rendering of the wrong content is still
+correct rendering.* Audience-appropriateness is not a property a widget test can assert unless
+someone first decides who the audience is. **One screenshot on a real phone found what the whole
+suite could not.** The four new tests exist only because the screenshot told us what to write.
+
+**Verified:** `flutter analyze` clean, **276 tests pass** (15 in `home_nonowner_test.dart`).
+
 ## 2026-09-02 (6) — HOME, REDESIGNED FOR A NON-OWNER: app 2.1.8+116
 
 Owner's question: should the greeting and What-to-watch be hidden from customers with no projector?
