@@ -29,6 +29,47 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (12) — SSLCommerz CHECKOUT in landscape: app 2.1.15+123
+
+The one screen in the app where a layout bug costs a customer money. **Two real defects, and two
+things that were already right.**
+
+### ⚠️ The padlock band overflowed by 949 px
+
+The trust bar under the card form was a **bare `Text` in a centred `Row`** — holding a sentence with
+a **domain name** in it, in one of two languages, at whatever font size the customer chose. Measured
+on the old code: **949 px of overflow** at 160% font on a 320 dp phone. A yellow-and-black striped
+bar immediately under a card form is the worst place in this entire app to look broken; it is the
+exact moment someone decides whether to type their card number.
+
+Now `Flexible` + ellipsis, and extracted as **`PaymentTrustBar`** — ⚠️ *so that it can be tested at
+all.* `PaymentScreen` cannot be built in a unit test (`webview_flutter` has no platform
+implementation there), which means **the screen where a bug is most expensive is the screen a widget
+test cannot reach**. Anything liftable out of it should be lifted out. 14 tests now cover the band
+across four screen sizes, three font scales and a very long gateway host.
+
+### The app bar stacked two lines in a 56 dp toolbar
+
+Title + amount, both unbounded, in a fixed-height bar — overflows at a large font. One line each,
+ellipsised.
+
+### Two things checked and found ALREADY CORRECT — do not "tidy" either
+
+⭐ **`configChanges` covers `orientation|screenSize`**, so rotating mid-payment does **not** recreate
+the activity: the WebView keeps its page, its cookies and the gateway session. Had it not, a
+customer turning the phone during checkout would have reloaded the pay URL — a second payment
+attempt against a live order. It comes from the Flutter template, it is right, and nothing should
+remove those two flags.
+
+⭐ **The checkout WebView is deliberately NOT wrapped in `ReadableWidth`** — the only screen exempt
+from the app-wide rule. The page is **the gateway's to lay out, not ours**: capping to 640 would lie
+to SSLCommerz about the device *and* letterbox a card form between two grey gutters, and a checkout
+page that looks like it failed to render is a checkout page people abandon. This is written into the
+code at the exemption site so the next audit does not "fix" it.
+
+**Verified:** `flutter analyze` clean, **416 tests pass**. The gateway's own pages (card entry, bank
+OTP) are third-party HTML — responsive, and not ours to test.
+
 ## 2026-09-02 (11) — THE FULL LANDSCAPE AUDIT: app 2.1.14+122
 
 Owner reported four more and asked for a complete cross-check. **The audit found twice what was
