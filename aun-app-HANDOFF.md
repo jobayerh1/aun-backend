@@ -29,6 +29,53 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (11) — THE FULL LANDSCAPE AUDIT: app 2.1.14+122
+
+Owner reported four more and asked for a complete cross-check. **The audit found twice what was
+reported.**
+
+### The test that does the auditing — `test/landscape_audit_test.dart`
+
+It checks every pushed screen for **two** things: that it lays out, and that its content is inside a
+`ReadableWidth`. ⚠️ **The second check is the one that keeps finding things.** A screen that merely
+does not throw can still be wrong — the owner's reports were never "it crashed", they were *"this
+one opens full screen while the one behind it doesn't"*. A rule enforced only by whoever remembers
+it is not a rule, so it is now a test: a new screen fails until it is wrapped.
+
+**Reported: 2 screens (my-requests details, notifications). Found: 8.** Notifications ·
+spare-parts detail · repair detail · ticket thread · new ticket · video library · register a device ·
+firmware. All wrapped. The other six had the identical defect and simply had not been opened
+sideways yet.
+
+### Bottom sheets: four more, same shape as the add-device one
+
+`Column(mainAxisSize.min)` with no scrollable inside a sheet. Portrait is fine; landscape leaves a
+sheet ~350 dp and the content is taller. Fixed: **notification opt-in**, **update sheet**,
+**maintenance snooze**, **barcode help**.
+
+⚠️ The notification opt-in is the most expensive of the four to have got wrong. **Android grants
+exactly one system permission dialog per app, ever** — the whole `NotificationPrompt` back-off exists
+to spend it at the right moment — and the sheet that decides whether we spend it was overflowing on
+a rotated phone. Its art now scales to 30% of screen height and the sheet scrolls.
+
+### Help me choose — split, on the owner's suggestion
+
+Question and hint on the left, answers on the right. Stacked, the 52 px icon plus title plus hint
+pushed the answers themselves below the fold. ⚠️ Its `ReadableWidth` cap is **820, not the default
+640**: two columns inside 640 would give each about 300 dp — *narrower than the single column they
+replace*, which would be the opposite of the point.
+
+⚠️ `_OptionCard` is **not** a `Card`, so a test cannot find answers with `find.byType(Card)` — it
+finds zero and fails with "Bad state: No element". Match the option's text.
+
+**Verified:** `flutter analyze` clean, **402 tests pass** (34 in the audit file alone).
+
+### What is left, and it cannot be closed from here
+
+**Scanner and AR preview.** Both are camera-aspect driven, both need a real rotated phone, and no
+headless test can speak for either. They are the only two screens in the app that have never been
+checked sideways by anything.
+
 ## 2026-09-02 (10) — app 2.1.13+121: the landscape follow-ups, screen by screen
 
 Owner rotated the phone again and listed eight. All fixed. **85 landscape tests now.**
