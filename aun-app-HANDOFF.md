@@ -29,6 +29,64 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (8) — LANDSCAPE + design consistency: app 2.1.11+119
+
+Owner turned the phone sideways for the first time. **There is no orientation lock anywhere** — not
+in the manifest, not via `SystemChrome` — so every screen has always been rotatable and none had ever
+been laid out that way.
+
+### ⚠️ Do NOT "fix" this by locking to portrait
+
+The obvious one-line answer does not work any more. **Under targetSdk 36, Android 16 ignores
+`screenOrientation` on large screens (≥600 dp)** — tablets, unfolded foldables, desktop windowing.
+Locking would do nothing there while making the app worse on the phones where it still applies. The
+layouts have to work. (Worth confirming on a real large-screen device; the opt-out property lasts
+only until targetSdk 37 in any case.)
+
+### `test/landscape_test.dart` — 41 tests
+
+Eleven screens × landscape phone (915×412) × the same at 160% font × a short 640×320 landscape.
+Three bugs, all invisible in portrait:
+
+- **`_AddDeviceMiniCard`** overflowed the rail's fixed 132 px at a large font. ⚠️ **Third** instance
+  of one shape: *a `Text` inside a fixed-height `Column` with no flex* (after `BusyButton` and
+  `QuickAction`). When you add a fixed-height card, the label needs `Flexible`.
+- **The device serial chip** overflowed once the content column was capped — a serial is as long as
+  the factory made it.
+- **The header glow was a fixed 190 px.** A third of a portrait phone reads as a header; on a
+  ~412 px-tall landscape viewport the same decoration claimed **nearly half the screen before a
+  single word of content**, so the app looked like it had failed to load. Now capped at a quarter of
+  the viewport height.
+
+### `ReadableWidth` — the fix that is not an exception
+
+The real landscape failure is not an exception and no test reports it: a portrait layout stretched to
+915 dp gives **900-px lines of Bangla**. A comfortable measure is ~45–75 characters. Content on the
+four tabs is now capped at 640 dp and centred.
+
+⚠️ **Below the cap it does nothing**, so portrait — virtually all real traffic — renders exactly as
+before; there is a test pinning that a 412 dp phone still uses all 412. ⚠️ It wraps the CONTENT, not
+the Scaffold: app bar, background and bottom nav still span the full width, because a navigation bar
+floating in a 640 px column with empty gutters reads as a rendering fault.
+
+### Design consistency: two icon treatments on one app
+
+Every icon in this app sits in a soft tinted rounded square — Home's quick actions at 46 px, the
+service rows at 44. The four **"Other ways to reach us"** tiles were the only place an icon floated
+bare on a card. Same screen, two readings. They now use the tinted square at 40 px.
+
+⚠️ **Still inconsistent, and it is the owner's call:** section headings are mixed. "In progress"
+(bolt) and "What to watch tonight" (film) and now "Thinking about buying one?" (lightbulb) carry a
+glyph; "My projectors", "Video guides", "Other ways to reach us", "Already have a projector?" do not.
+`SectionHeader` now takes an optional icon, so unifying is cheap — but which way to unify is a design
+decision, not a bug. Also noted: Home's **"Register device"** quick action and the rail's **"Add
+device"** card are the same destination, twice, a few pixels apart.
+
+**Cannot be tested headlessly** — scanner, AR preview and the login video are camera/aspect-driven and
+need a real rotated phone.
+
+**Verified:** `flutter analyze` clean, **318 tests pass**.
+
 ## 2026-09-02 (7) — app 2.1.9+117: the quick actions were owner-only too
 
 Owner sent a screenshot of the new non-owner Home. The buying card was right; **the row above it was
