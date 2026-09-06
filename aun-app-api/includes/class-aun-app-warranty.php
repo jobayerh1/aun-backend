@@ -297,6 +297,14 @@ class AUN_App_Warranty {
 			// only if unsynced do we fall back to the exact selected model name.
 			'model_id'      => self::wp_product_id_from_serial( $r->serial )
 				?: self::resolve_model_id( (string) $r->product_model ),
+			// Where this model's dust filter is: back | bottom | none |
+			// unknown. Sent with the DEVICE as well as with the reminder so
+			// the "how do I clean it?" help can be reached from the projector
+			// itself, not only from a notification the customer may have
+			// already dismissed.
+			'filter_location' => class_exists( 'AUN_App_Filters' )
+				? AUN_App_Filters::location( (string) $r->product_model )
+				: 'unknown',
 			'status'        => (string) $r->status,
 			'purchase_date' => ! empty( $r->purchase_date ) && '0000-00-00' !== $r->purchase_date ? $r->purchase_date : '',
 			'dealer'        => (string) ( ! empty( $r->distributor_name ) ? $r->distributor_name : $r->dealer_name ),
@@ -337,6 +345,14 @@ class AUN_App_Warranty {
 			// linked; exact model name only as a fallback.
 			'model_id'      => self::wp_product_id_from_erp( $a->erp_product_id ?? 0 )
 				?: self::resolve_model_id( (string) $a->model ),
+			// Where this model's dust filter is: back | bottom | none |
+			// unknown. Sent with the DEVICE as well as with the reminder so
+			// the "how do I clean it?" help can be reached from the projector
+			// itself, not only from a notification the customer may have
+			// already dismissed.
+			'filter_location' => class_exists( 'AUN_App_Filters' )
+				? AUN_App_Filters::location( (string) $a->model )
+				: 'unknown',
 			'status'        => 'direct',
 			'purchase_date' => $start,
 			'dealer'        => 'AUN (direct purchase)',
