@@ -29,6 +29,74 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (6) — HOME, REDESIGNED FOR A NON-OWNER: app 2.1.8+116
+
+Owner's question: should the greeting and What-to-watch be hidden from customers with no projector?
+**Answered no, and built the version that addresses what was actually wrong.**
+
+### The decision, so it is not relitigated
+
+Hiding them is the wrong lever. Home already does the correct thing — every section with nothing to
+show collapses to `SizedBox.shrink()` (maintenance card, video rail, watch card), and the device
+rail becomes the add-projector hero. **Hide a section whose CONTENT is empty; never hide a section
+that merely does not require ownership.** No leading app gates home on "do you own one yet": Amazon
+recommends before your first order, Netflix fills a ten-second-old account. An empty screen does not
+read as clean to a new user, it reads as broken — and that judgement is made in the first ten
+seconds, by someone whose projector may simply not have arrived yet.
+
+It also cuts against this app's own strategy: it is **deliberately useful before purchase**
+(Planner, Help-me-choose, AR preview), and What-to-watch is the cheapest repeat-open a non-owner has.
+
+### What was actually wrong: the two features for non-owners were unreachable
+
+"Help me choose" and the Projector Planner lived **only in the Support tab** — two taps from a
+screen a non-owner has no other reason to open. The one audience they exist for was the audience
+least likely to find them. They are now a card on Home, shown **only when devices have loaded AND
+the list is empty**, and gone the moment a projector is registered (an owner has made this decision;
+a permanent "thinking about buying one?" card would repeat the update-card mistake).
+
+⚠️ Reuses the existing `servicesBuyingTitle` / `fdTitle` / `plannerTitle` strings — no ARB churn, and
+Bangla was already written. ⚠️ Fires the **same** analytics events as the Support tab
+(`service_opened` finder/planner, `finder_started`): Home is a second door onto one feature, and a
+separate event name would split one number in two and understate both.
+
+### Server-driven blocks moved BELOW the projector rail — for everyone
+
+Announcement, banners and discount note now sit under the rail and the buying card. Two reasons: the
+best space belongs to what the customer came for (the same call already recorded for the update
+card), and the order **no longer depends on load state**, so nothing re-arranges under the reader's
+thumb when `/devices` lands. ⚠️ This does mean a campaign banner is one scroll lower for owners —
+a deliberate trade, easy to flip back by moving the three blocks above the rail again.
+
+### ⚠️ Two pre-existing layout bugs the new tests caught
+
+Both invisible on a wide phone, which is exactly why they survived — *the developer's handset is not
+the cheap handset.*
+
+**`QuickAction` overflowed on a 320 dp screen.** The grid's `childAspectRatio: 1.05` fixes the cell
+HEIGHT to whatever the width makes it: 49 px of usable height for a tile whose icon alone is 46 px
+plus a 10 px gap. The most-tapped thing on Home wore a striped overflow bar on cheap handsets. The
+ratio is now **derived** from the height a tile actually needs (icon + gap + two label lines + Card
+margin and padding), with the text part scaled by the customer's font setting.
+
+**Its label had no flex**, so a two-line label overflowed wherever it wrapped. Same fix as
+`BusyButton` yesterday: `Flexible`.
+
+### ⚠️ A near-miss worth recording: the announcement block existed TWICE
+
+A half-applied edit left the old server-block copy above the rail as well as the new one below it.
+The screen still looked plausible. What caught it was a **strict finder** — `getTopLeft` throws when
+a finder matches twice — so the order test failed rather than quietly measuring the wrong widget.
+The test keeps no `.first` anywhere for this reason; do not "fix" a duplicate-match failure by
+adding one.
+
+`test/home_nonowner_test.dart` — 11 tests: who sees the card, that it does not flash while loading,
+both transitions (loading→empty reveals it, adding a projector removes it), the ordering, and layout
+at three font scales plus a tablet.
+
+**Verified:** `flutter analyze` clean, **272 tests pass**. ⚠️ Not seen on a phone — the ordering and
+the derived tile height are worth one look on a real handset after the next build.
+
 ## 2026-09-02 (5) — DEVICE COMPATIBILITY: app 2.1.7+115
 
 minSdk 24 (Android 7) · target/compile 36 (Android 16) · Flutter 3.44.6. Target 36 is ahead of
