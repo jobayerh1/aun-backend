@@ -29,6 +29,62 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (9) — app 2.1.12+120: the video screens in landscape, and one way to add a device
+
+### ⚠️ Both video screens lost their content when rotated — same bug, one cause
+
+Owner: *"the video plays half, I can't go down"* (how-to videos) and *"they all disappear and the
+video plays half"* (What to watch). One cause. Both screens were
+`Column [ AspectRatio(16/9), Expanded(details) ]`.
+
+Portrait is fine. Rotated, the arithmetic breaks: **a 915 dp-wide 16:9 box is 515 dp tall**, inside a
+viewport with roughly **356 dp** under the app bar. The player was clipped — and because it had
+already claimed more than the whole body, `Expanded` was left nothing, so the details did not scroll
+off, they had **zero height and ceased to exist**. Nothing to scroll back to, which is exactly what
+was reported.
+
+New `MediaDetailLayout` (ui/widgets.dart), used by both screens: portrait unchanged; in landscape a
+**side-by-side split** — the player takes the height it can actually have (`Center` + `AspectRatio`
+becomes height-bound instead of width-bound) and the details keep a readable column beside it.
+⚠️ The watch screen's **pinned CTA travels with the details**, not the player, or it would sit under
+the video in landscape with the details scrolling separately.
+
+⚠️ **`VideoPlayerScreen` cannot be built in a unit test** — `webview_flutter` has no platform
+implementation there and throws on build. `MediaDetailLayout` is therefore tested directly (it is
+where the bug lived); `WatchDetailScreen` covers the integration because its trailer-less path draws
+a still instead of a WebView.
+
+### Every section heading now carries a glyph
+
+16 headings across 7 screens. Previously three had one and the rest did not, on the same screens —
+which reads as accidental. `SectionHeader`'s optional `icon` (added in 2.1.10) made this a one-line
+change per heading.
+
+### Register device vs Add device: ONE entry point
+
+Home offered the same destination twice — the rail ends in a **"+ Add device"** card and a
+**"Register device"** quick action sat a few pixels below it. The convention in device-care apps is
+that the "+" belongs with the list it adds to, and a quick-action row is for what you DO with a
+device you already own. Two entry points also **split the analytics on the most important funnel
+step in the app**.
+
+Its slot went to **My service requests**. ⚠️ This reverses a documented decision — the old comment
+said "My requests isn't a button" because the status strip surfaces anything in progress. Half
+right: the strip shows what is **active**. A **finished** request — the receipt, what was replaced,
+what it cost — left the strip and was then reachable only from the Support tab, two taps away.
+
+### Tablets
+
+11 screens × tablet portrait (800×1280), tablet landscape (1280×800) and **split-screen half
+(600×1280)**. All clean, and `ReadableWidth` keeps a 1280 dp tablet to a 640 dp column.
+
+⚠️ Remember why this matters even though the app is phone-first: **targetSdk 36 means Android 16
+ignores orientation and resizability restrictions above 600 dp**, so a tablet can put any screen at
+any size regardless of the manifest. There is no "lock it and forget it" option available.
+
+**Verified:** `flutter analyze` clean, **358 tests pass**. Still untestable headlessly: scanner, AR
+preview, login video — all camera/aspect driven, all need a rotated phone.
+
 ## 2026-09-02 (8) — LANDSCAPE + design consistency: app 2.1.11+119
 
 Owner turned the phone sideways for the first time. **There is no orientation lock anywhere** — not
