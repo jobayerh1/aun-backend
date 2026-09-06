@@ -29,6 +29,37 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-02 (10) — app 2.1.13+121: the landscape follow-ups, screen by screen
+
+Owner rotated the phone again and listed eight. All fixed. **85 landscape tests now.**
+
+| # | screen | what was wrong |
+|---|---|---|
+| a, d, f | My service requests · Help me choose · Referral | Pushed **full-bleed** while the tabs behind them were already capped — the inconsistency he spotted. `ReadableWidth` on all three. |
+| b | Device detail | A ~180 dp summary card + a 48 dp tab bar stacked above the content left **~128 dp of a 356 dp body** for the firmware, manuals, videos and help the screen exists to show. Summary now sits **beside** the tabs. |
+| c | Add a projector → type the number / find by phone | The sheet had `isScrollControlled` and viewInsets padding, which is enough in portrait — but its `Column(mainAxisSize.min)` **cannot scroll**, and in landscape the keyboard leaves ~210 dp. The field the sheet exists to fill ended up under the keypad. Now a `SingleChildScrollView`. |
+| e | Planner | The 16:10 room view and the distance slider could not be on screen together — which **defeats the entire point of a live preview**: the value is watching the picture change as you drag. Side by side. |
+| g | Onboarding | Art stacked above copy, and the art alone filled a rotated phone on a screen that does not scroll. **Five welcome slides with no words on them.** Side by side. |
+| h | Login | A **9:16** promo stretched across a landscape phone is `cover`-cropped to a slice of the middle. Video beside the form now. ⚠️ `hasVideo` was renamed in meaning: it is "the form sits ON the video", which drives white text and the solid card. Side by side it must be false or the title is white on a light background. |
+
+### ⚠️ The bonus fix: every empty and error state in the app
+
+The referral test surfaced `ProjectorStateView` overflowing by **up to 163 px** sideways — 190 px of
+art plus two text blocks and a button, in the ~300 px a landscape phone has after padding. Every
+empty state and every error state in the app routes through this one widget, so all of them were
+broken sideways. The art now **scales to the height available** and the whole thing **scrolls** —
+both are needed: a smaller picture is still not enough at a large font, and an error message you
+cannot finish reading is worse than no picture.
+
+### Pattern worth naming, because it has now appeared six times
+
+*A fixed dimension chosen against a portrait phone.* `BusyButton`, `QuickAction`,
+`_AddDeviceMiniCard`, the 190 px header glow, the 16:9 players, and now the 190 px state art. **When
+you write a constant height, ask what it does at 412 dp tall and at 200% font.**
+
+**Verified:** `flutter analyze` clean, **368 tests pass**. Still untestable headlessly and still
+worth a look on the phone: **scanner and AR preview** (camera aspect).
+
 ## 2026-09-02 (9) — app 2.1.12+120: the video screens in landscape, and one way to add a device
 
 ### ⚠️ Both video screens lost their content when rotated — same bug, one cause
