@@ -23,7 +23,9 @@ function wp_register_style() {}
 function wp_enqueue_style() {}
 function wp_add_inline_style() {}
 function woocommerce_wp_text_input() {}
-function get_post_meta() { return ''; }
+function get_post_meta( $id = 0, $key = '', $single = true ) {
+	return isset( $GLOBALS['META'][ $key ] ) ? $GLOBALS['META'][ $key ] : '';
+}
 function update_post_meta() {}
 function delete_post_meta() {}
 function wp_unslash( $s ) { return $s; }
@@ -38,6 +40,13 @@ function get_option( $k, $d = false ) { return array_key_exists( $k, $GLOBALS['O
 function update_option( $k, $v ) { $GLOBALS['OPT'][ $k ] = $v; return true; }
 function absint( $v ) { return abs( (int) $v ); }
 function wp_kses_post( $s ) { return $s; }
+function wp_strip_all_tags( $s ) { return trim( strip_tags( (string) $s ) ); }
+function apply_filters( $t, $v ) { return $v; }
+function selected() {}
+function has_shortcode( $c, $t ) { return strpos( (string) $c, '[' . $t ) !== false; }
+function remove_action() { $GLOBALS['REMOVED'][] = func_get_args(); }
+function is_product() { return isset( $GLOBALS['IS_PRODUCT'] ) ? $GLOBALS['IS_PRODUCT'] : true; }
+$META = array();
 function do_shortcode( $s ) { return $s; }
 function wp_specialchars_decode( $s ) { return html_entity_decode( (string) $s, ENT_QUOTES ); }
 function esc_html__( $s, $d = '' ) { return $s; }
@@ -57,6 +66,8 @@ class WC_Product {
 	public function __construct( $bo = false, $in = true, $woo_html = '' ) {
 		$this->bo = $bo; $this->in = $in; $this->woo_html = $woo_html;
 	}
+	public $desc = '';
+	public function get_description() { return $this->desc; }
 	public function is_on_backorder() { return $this->bo; }
 	public function is_in_stock() { return $this->in; }
 	public function get_id() { return 1; }
@@ -125,7 +136,12 @@ ok( 'invalid align falls back', strpos( render( array( 'items' => 'zipper', 'ali
 // =========================================================================
 echo "--- icon system ---\n";
 $icons = Kohthai_Product_Blocks::icons();
-ok( 'ten icons', count( $icons ), 10 );
+// A bare count only catches an accidental deletion. Naming them also documents the set and
+// fails loudly if a key is ever renamed out from under the products that reference it.
+ok( 'every icon key is present', array_keys( $icons ), array(
+	'adjustable-strap', 'optional-strap', 'inner-pocket', 'outer-pocket', 'top-handle', 'card-slot',
+	'zipper', 'magnetic-flap', 'chain-strap', 'water-resistant', 'expandable', 'lightweight',
+) );
 foreach ( $icons as $key => $icon ) {
 	ok( "{$key} has a label", is_string( $icon[0] ) && '' !== $icon[0], true );
 	ok( "{$key} is path data only", strpos( $icon[1], '<' ), 0 );
@@ -233,7 +249,13 @@ ok( 'toggle moved to the right', strpos( $css, 'left:auto !important;right:0 !im
 ok( 'dead .kt-feat block is gone', preg_match( '/\.kt-feat\{/', $rules ), 0 );
 
 // Duplicates resolved — only the winning values survive.
-ok( 'kt-h declared once', substr_count( $css, '.kt-h{' ), 1 );
+// Counted as a BARE selector at the start of a line. The original bug was two unscoped
+// .kt-h rules with different font-sizes, the second silently winning. A scoped override like
+// `.kt-about .kt-h` is a different thing and is allowed - but a second bare rule still fails,
+// and the companion assertion below pins the property that actually broke.
+ok( 'kt-h declared once as a bare rule', preg_match_all( '/(^|\n)\.kt-h\{/', $css ), 1 );
+ok( 'no scoped override touches kt-h font-size',
+	preg_match( '/\.[a-z0-9_-]+ \.kt-h\{[^}]*font-size/i', $css ), 0 );
 ok( 'kt-h uses the winning 16px', strpos( $css, '.kt-h{font-size:16px' ) !== false, true );
 ok( 'spec value uses the winning 17px', strpos( $css, '.kt-spec b{display:block;font-size:17px' ) !== false, true );
 ok( 'superseded 19px is gone', strpos( $css, 'font-size:19px' ), false );
@@ -423,6 +445,340 @@ ok( 'stock css present', strpos( $scss, '.kt-stock{' ) !== false, true );
 ok( 'woo stock line is styled to match', strpos( $scss, 'div.product p.stock' ) !== false, true );
 ok( 'in-stock is green', strpos( $scss, 'p.stock.in-stock{color:#2f6b42}' ) !== false, true );
 ok( 'backorder is amber', strpos( $scss, 'p.stock.available-on-backorder{color:#8a6110}' ) !== false, true );
+
+// =========================================================================
+echo "\n--- key features ---\n";
+
+function kf( $m = '', $sz = '', $cl = '' ) {
+	$GLOBALS['META'] = array( '_kt_kf_material' => $m, '_kt_kf_size' => $sz, '_kt_kf_closure' => $cl );
+	ob_start();
+	Kohthai_Product_Blocks::render_key_features();
+	return ob_get_clean();
+}
+
+set_product( false );
+$k = kf( 'PU Leather', '28 x 19 x 11 cm', 'Magnetic Flap' );
+ok( 'three cards render', substr_count( $k, '<div><em>' ), 3 );
+ok( 'labels are fixed and in order', array_values( Kohthai_Product_Blocks::kf_fields() ),
+	array( 'Material', 'Size', 'Closure' ) );
+ok( 'value appears', strpos( $k, '<b>PU Leather</b>' ) !== false, true );
+ok( 'wrapper present', strpos( $k, '<div class="kt-kf">' ) !== false, true );
+
+// A partly filled product must not leave an empty card - three cards of which one is blank
+// reads as missing data, which is worse than two cards.
+ok( 'blank field is dropped', substr_count( kf( 'PU Leather', '', 'Zipper' ), '<div><em>' ), 2 );
+ok( 'all blank renders nothing', kf( '', '', '' ), '' );
+ok( 'whitespace-only counts as blank', kf( '   ', '   ', '   ' ), '' );
+
+ok( 'values are escaped', strpos( kf( '<script>x</script>', '', '' ), '<script>' ), false );
+
+// The row emits none of the tags that caused the empty-markup flood.
+$k3 = kf( 'a', 'b', 'c' );
+ok( 'emits no headings', preg_match( '#<h[1-6]#i', $k3 ), 0 );
+ok( 'emits no paragraphs', preg_match( '#<p[ >]#i', $k3 ), 0 );
+ok( 'emits no img', preg_match( '#<img#i', $k3 ), 0 );
+
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_keyfeatures' => 0 ) ) );
+ok( 'switch off renders nothing', kf( 'PU Leather', 'x', 'y' ), '' );
+reset_opts();
+
+clear_product();
+ok( 'no product renders nothing', kf( 'PU Leather', 'x', 'y' ), '' );
+set_product( false );
+
+// The switch must be stored as 0/1, not as the literal posted string.
+$san = Kohthai_Product_Blocks::sanitize( array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_keyfeatures' => 'on' ) ) );
+ok( 'enable_ sanitizes to 1', $san['enable_keyfeatures'], 1 );
+$san = Kohthai_Product_Blocks::sanitize( array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_about_move' => '' ) ) );
+ok( 'enable_ sanitizes to 0', $san['enable_about_move'], 0 );
+
+$kcss = Kohthai_Product_Blocks::css();
+ok( 'key features css present', strpos( $kcss, '.kt-kf{' ) !== false, true );
+// repeat(3,1fr), never auto-fit: the row exists to be compared side by side, so a 2+1
+// reflow would defeat it.
+ok( 'cards never reflow to two rows', strpos( $kcss, 'grid-template-columns:repeat(3,1fr)' ) !== false, true );
+
+// =========================================================================
+echo "\n--- about (short description moved below the button) ---\n";
+
+class KT_Post { public $post_excerpt = ''; public function __construct( $e ) { $this->post_excerpt = $e; } }
+function about( $excerpt ) {
+	$GLOBALS['post'] = new KT_Post( $excerpt );
+	ob_start();
+	Kohthai_Product_Blocks::render_about();
+	return ob_get_clean();
+}
+
+$a = about( '<p>A roomy crossbody bag.</p>' );
+ok( 'wrapper renders', strpos( $a, '<div class="kt-about">' ) !== false, true );
+ok( 'heading renders', strpos( $a, 'About this bag' ) !== false, true );
+ok( 'clamped by default', strpos( $a, 'kt-about__text kt-clamp' ) !== false, true );
+ok( 'body text survives intact', strpos( $a, '<p>A roomy crossbody bag.</p>' ) !== false, true );
+ok( 'toggle is present', strpos( $a, 'kt-about__more' ) !== false, true );
+// Hidden until the script confirms the text actually overflows, so a two-line description
+// does not get a pointless "View more" underneath it.
+ok( 'toggle starts hidden', strpos( $a, 'hidden data-more=' ) !== false, true );
+
+ok( 'empty excerpt renders nothing', about( '' ), '' );
+ok( 'whitespace excerpt renders nothing', about( '   ' ), '' );
+ok( 'markup with no words renders nothing', about( '<p></p>' ), '' );
+
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'about_title' => '' ) ) );
+ok( 'blank title drops the heading', strpos( about( '<p>x</p>' ), '<h4' ), false );
+reset_opts();
+
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'about_title' => '<script>x</script>' ) ) );
+ok( 'title is escaped', strpos( about( '<p>x</p>' ), '<script>' ), false );
+reset_opts();
+
+// The relocation must REMOVE WooCommerce's own excerpt hook. If it only added ours, the
+// description would render twice - once above the button and once below.
+$GLOBALS['REMOVED'] = array();
+$GLOBALS['IS_PRODUCT'] = true;
+Kohthai_Product_Blocks::relocate_short_description();
+$removed = array_map( function ( $c ) { return $c[1]; }, $GLOBALS['REMOVED'] );
+ok( 'woo excerpt hook is removed', in_array( 'woocommerce_template_single_excerpt', $removed, true ), true );
+
+$GLOBALS['REMOVED'] = array();
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_about_move' => 0 ) ) );
+Kohthai_Product_Blocks::relocate_short_description();
+ok( 'switch off leaves woo alone', $GLOBALS['REMOVED'], array() );
+reset_opts();
+
+$GLOBALS['REMOVED'] = array();
+$GLOBALS['IS_PRODUCT'] = false;
+Kohthai_Product_Blocks::relocate_short_description();
+ok( 'nothing removed off a product page', $GLOBALS['REMOVED'], array() );
+$GLOBALS['IS_PRODUCT'] = true;
+
+// WP Rocket delays and minifies JS on this site. Without the guards the toggle is dead
+// until the visitor interacts - exactly the bug that left the chat buttons pointing at '#'.
+ob_start();
+Kohthai_Product_Blocks::about_script();
+$js = ob_get_clean();
+ok( 'script carries the WP Rocket guards',
+	strpos( $js, '<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">' ) !== false, true );
+ok( 'script uses no jQuery', strpos( $js, 'jQuery' ), false );
+
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_about_move' => 0 ) ) );
+ob_start();
+Kohthai_Product_Blocks::about_script();
+ok( 'no script when switched off', ob_get_clean(), '' );
+reset_opts();
+
+$acss = Kohthai_Product_Blocks::css();
+// Strip comments first: the explanatory comments quote values the assertions look for, and
+// that false positive has bitten this harness twice already.
+$acss_r = preg_replace( '#/\*.*?\*/#s', '', $acss );
+ok( 'about css present', strpos( $acss_r, '.kt-about__text{' ) !== false, true );
+ok( 'clamp is three lines', strpos( $acss_r, '-webkit-line-clamp:3' ) !== false, true );
+// Visual clamp only - the full text stays in the DOM so Google still indexes it.
+ok( 'clamp does not hide the text', strpos( $acss_r, '.kt-about__text.kt-clamp{display:none' ), false );
+ok( 'toggle overrides the theme button style', strpos( $acss_r, '.kt-about__more{' ) !== false, true );
+
+clear_product();
+
+// =========================================================================
+echo "\n--- tab order ---\n";
+
+// WooCommerce's real defaults.
+function woo_tabs() {
+	return array(
+		'description'   => array( 'title' => 'Description', 'priority' => 10 ),
+		'reviews'       => array( 'title' => 'Reviews (1)', 'priority' => 30 ),
+		'ux_global_tab' => array( 'title' => 'Delivery & Returns', 'priority' => 50 ),
+	);
+}
+function tab_order( $tabs ) {
+	uasort( $tabs, function ( $a, $b ) { return $a['priority'] <=> $b['priority']; } );
+	return array_keys( $tabs );
+}
+
+ok( 'before: terms sit below the reviews', tab_order( woo_tabs() ),
+	array( 'description', 'reviews', 'ux_global_tab' ) );
+
+$ordered = Kohthai_Product_Blocks::order_tabs( woo_tabs() );
+// The reviews list grows every time a customer leaves one, so anything below it drifts
+// further down forever. Terms must not be that thing.
+ok( 'after: terms sit above the reviews', tab_order( $ordered ),
+	array( 'description', 'ux_global_tab', 'reviews' ) );
+ok( 'global tab is priority 25', $ordered['ux_global_tab']['priority'], 25 );
+
+// Everything else must be left exactly as found.
+ok( 'description priority untouched', $ordered['description']['priority'], 10 );
+ok( 'reviews priority untouched', $ordered['reviews']['priority'], 30 );
+ok( 'titles untouched', $ordered['ux_global_tab']['title'], 'Delivery & Returns' );
+ok( 'no tab added or dropped', count( $ordered ), 3 );
+
+// The tab only exists when the Customizer field is filled in; the filter must cope.
+$none = Kohthai_Product_Blocks::order_tabs( array(
+	'description' => array( 'title' => 'Description', 'priority' => 10 ),
+) );
+ok( 'absent global tab is not invented', array_keys( $none ), array( 'description' ) );
+ok( 'empty tab list survives', Kohthai_Product_Blocks::order_tabs( array() ), array() );
+
+// =========================================================================
+echo "\n--- accordion: more than one section open ---\n";
+
+function acc_js() {
+	ob_start();
+	Kohthai_Product_Blocks::accordion_script();
+	return ob_get_clean();
+}
+
+$aj = acc_js();
+ok( 'script renders', $aj !== '', true );
+// WP Rocket delays and minifies JS here; without the guards the accordion would be dead until
+// the visitor interacts, which is the bug that left the chat buttons pointing at '#'.
+ok( 'carries the WP Rocket guards',
+	strpos( $aj, '<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">' ) !== false, true );
+
+// Capture phase is the whole mechanism. Flatsome binds its handler to each .accordion-title,
+// and a capture listener on an ancestor is the only thing guaranteed to run first - which is
+// also why nothing has to be unbound, so a theme rebind cannot undo it.
+ok( 'listens in the capture phase', substr_count( $aj, '},true);' ), 1 );
+ok( 'listens on the container, not the title', strpos( $aj, 'acc.addEventListener("click"' ) !== false, true );
+ok( 'stops the theme handler', strpos( $aj, 'e.stopPropagation();' ) !== false, true );
+ok( 'does not unbind anything', strpos( $aj, '.off(' ), false );
+
+// It must TOGGLE the clicked section only. Any sign of a sweep over siblings would be the
+// exact behaviour being removed.
+ok( 'toggles the clicked section', strpos( $aj, 't.classList.toggle("active",!open)' ) !== false, true );
+ok( 'never closes siblings', strpos( $aj, 'querySelectorAll(".accordion-title")' ), false );
+ok( 'keeps aria in step', strpos( $aj, 'aria-expanded' ) !== false, true );
+
+// Sliders inside a panel (the video card) open at zero width unless something tells them to
+// re-measure. Flatsome's own handler did this; ours has to as well.
+ok( 'nudges sliders to re-layout', strpos( $aj, 'new Event("resize")' ) !== false, true );
+ok( 'works without jQuery too', strpos( $aj, 'p.style.display=open?"none":"block"' ) !== false, true );
+
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_accordion_multi' => 0 ) ) );
+ok( 'switch off renders nothing', acc_js(), '' );
+reset_opts();
+
+$GLOBALS['IS_PRODUCT'] = false;
+ok( 'nothing off a product page', acc_js(), '' );
+$GLOBALS['IS_PRODUCT'] = true;
+
+$san = Kohthai_Product_Blocks::sanitize( array_merge( Kohthai_Product_Blocks::defaults(), array( 'enable_accordion_multi' => 'on' ) ) );
+ok( 'switch sanitizes to 1', $san['enable_accordion_multi'], 1 );
+
+// =========================================================================
+echo "\n--- feature icons: field placement ---\n";
+
+function feat_field( $where, $items = 'zipper, inner-pocket', $desc = '' ) {
+	$GLOBALS['META'] = array( '_kt_features' => $items );
+	$GLOBALS['product'] = new WC_Product( false );
+	$GLOBALS['product']->desc = $desc;
+	return Kohthai_Product_Blocks::product_features_html( $where );
+}
+
+// Default is the details block. Under the button the row would be the fourth stacked block
+// in a 360px column, below the trust row, delivery estimate and chat buttons.
+ok( 'default position is the details block', Kohthai_Product_Blocks::defaults()['features_position'], 'details' );
+ok( 'renders in the details block', substr_count( feat_field( 'details' ), '<li>' ), 2 );
+ok( 'renders nothing in the summary', feat_field( 'summary' ), '' );
+
+update_option( 'kt_blocks_options', array_merge( Kohthai_Product_Blocks::defaults(), array( 'features_position' => 'summary' ) ) );
+ok( 'switched: renders in the summary', substr_count( feat_field( 'summary' ), '<li>' ), 2 );
+ok( 'switched: nothing in the details block', feat_field( 'details' ), '' );
+reset_opts();
+
+// The row must never appear twice. Before 1.6.3 the field and the shortcode rendered in two
+// different places, so using both produced two rows and the editor could not see why.
+ok( 'shortcode in the description suppresses the field',
+	feat_field( 'details', 'zipper', 'Some copy [kt_features items="zipper"] more copy' ), '' );
+ok( 'unrelated shortcodes do not suppress it',
+	substr_count( feat_field( 'details', 'zipper', '[kt_details length="1 cm"]' ), '<li>' ), 1 );
+
+ok( 'empty field renders nothing', feat_field( 'details', '' ), '' );
+$GLOBALS['product'] = null; unset( $GLOBALS['product'] );
+ok( 'no product renders nothing', Kohthai_Product_Blocks::product_features_html( 'details' ), '' );
+
+// The tab wrapper must PRINT FIRST and then run WooCommerce's own callback unchanged.
+$GLOBALS['META'] = array( '_kt_features' => 'zipper' );
+$GLOBALS['product'] = new WC_Product( false );
+$tabs = Kohthai_Product_Blocks::features_into_description( array(
+	'description' => array( 'title' => 'Description', 'priority' => 10,
+		'callback' => function () { echo 'ORIGINAL-DESCRIPTION'; } ),
+) );
+ob_start();
+call_user_func( $tabs['description']['callback'] );
+$out = ob_get_clean();
+ok( 'icon row is printed', strpos( $out, 'kt-features' ) !== false, true );
+ok( 'original description still runs', strpos( $out, 'ORIGINAL-DESCRIPTION' ) !== false, true );
+ok( 'icons come BEFORE the description',
+	strpos( $out, 'kt-features' ) < strpos( $out, 'ORIGINAL-DESCRIPTION' ), true );
+
+// A tab set without a description tab must pass through untouched, not fatal.
+$only = Kohthai_Product_Blocks::features_into_description( array( 'reviews' => array( 'title' => 'Reviews' ) ) );
+ok( 'tabs without a description survive', array_keys( $only ), array( 'reviews' ) );
+ok( 'empty tab list survives the wrapper', Kohthai_Product_Blocks::features_into_description( array() ), array() );
+
+// Free text must not reach the option.
+$san = Kohthai_Product_Blocks::sanitize( array_merge( Kohthai_Product_Blocks::defaults(), array( 'features_position' => 'nonsense' ) ) );
+ok( 'unknown position falls back to details', $san['features_position'], 'details' );
+$san = Kohthai_Product_Blocks::sanitize( array_merge( Kohthai_Product_Blocks::defaults(), array( 'features_position' => 'summary' ) ) );
+ok( 'summary is accepted', $san['features_position'], 'summary' );
+
+clear_product();
+
+// =========================================================================
+echo "\n--- swatch labels and spec icons ---\n";
+
+$css166 = Kohthai_Product_Blocks::css();
+// Strip comments first - they quote the old values while explaining the change, and that
+// false positive has bitten this harness twice.
+$r166 = preg_replace( '#/\*.*?\*/#s', '', $css166 );
+
+// The label is absolutely positioned, so it cannot push neighbours apart - it overlaps them.
+// The ONLY thing preventing overlap is label width < swatch pitch. Assert the arithmetic, not
+// just the presence of the declarations, so a future tweak to either number has to keep them
+// consistent.
+// Must be the DOUBLED class. Flatsome sets gap on a plain .ux-swatches at the same
+// specificity and loads later, so a single-class selector loses the cascade silently - that
+// is the 1.6.6 bug, and this assertion is what would have caught it.
+// X-Large is a Customizer setting, and it changes the CLASS. Naming only --large means the
+// colour names disappear the moment that setting is changed - which is a silent failure, so
+// it gets its own assertion.
+ok( 'colour names survive the X-Large setting',
+	strpos( $r166, '.ux-swatches--x-large .ux-swatch::after' ) !== false, true );
+ok( 'X-Large gets its own gap', 
+	preg_match( '/\.ux-swatches\.ux-swatches--x-large\{column-gap:\d+px\}/', $r166 ), 1 );
+// The swatch size belongs to the Customizer, not to this plugin.
+ok( 'plugin does not override the theme swatch size', strpos( $r166, '--swatch-size' ), false );
+ok( 'gap rule outranks the theme',
+	preg_match( '/\.ux-swatches\.ux-swatches--large\{column-gap:\d+px\}/', $r166 ), 1 );
+ok( 'gap rule is not a bare single-class selector',
+	preg_match( '/(^|\})\.ux-swatches\{column-gap/', $r166 ), 0 );
+preg_match( '/\.ux-swatches\.ux-swatches--large\{column-gap:(\d+)px\}/', $r166, $g );
+preg_match( '/\.ux-swatch::after\{[^}]*width:(\d+)px/', $r166, $w );
+$gap = isset( $g[1] ) ? (int) $g[1] : 0;
+$labelw = isset( $w[1] ) ? (int) $w[1] : 0;
+$pitch = 45 + $gap; // 45px is Flatsome's large swatch, measured on the live page
+ok( 'swatch column-gap is set', $gap > 0, true );
+ok( 'swatch label width is set', $labelw > 0, true );
+ok( 'label is narrower than the pitch, so labels cannot overlap', $labelw < $pitch, true );
+
+// nowrap was the other half of the bug: a long name ignored the width entirely and painted
+// over the swatch beside it.
+ok( 'label wraps instead of running over its neighbour',
+	preg_match( '/\.ux-swatch::after\{[^}]*white-space:normal/', $r166 ), 1 );
+ok( 'label no longer uses nowrap',
+	preg_match( '/\.ux-swatch::after\{[^}]*white-space:nowrap/', $r166 ), 0 );
+
+$icons166 = Kohthai_Product_Blocks::icons();
+// top-handle must not go back to the round drawing - it read as a padlock on a square handbag.
+ok( 'top-handle is not the round version', strpos( $icons166['top-handle'][1], '<circle' ), false );
+ok( 'top-handle keeps its arch', strpos( $icons166['top-handle'][1], 'a4 4 0 0 1 8 0' ) !== false, true );
+
+// The width icon must differ IN KIND from length and height, or it reads as a second length.
+$specs = Kohthai_Product_Blocks::css(); // spec icons are emitted through the shortcode
+$det = call_user_func( $GLOBALS['SC']['kt_details'], array( 'length' => '1 cm', 'width' => '2 cm', 'height' => '3 cm' ) );
+ok( 'width icon is a 3D box', strpos( $det, 'M15 7.5 20 4.5v11l-5 3' ) !== false, true );
+ok( 'width icon is no longer a horizontal arrow', strpos( $det, 'M17 5.5 20 12l-3 6.5' ), false );
+ok( 'length is still a horizontal rule', strpos( $det, 'M3 12h18' ) !== false, true );
+ok( 'height is still a vertical rule', strpos( $det, 'M12 3v18' ) !== false, true );
 
 // =========================================================================
 echo "\n" . str_repeat( '=', 46 ) . "\n";

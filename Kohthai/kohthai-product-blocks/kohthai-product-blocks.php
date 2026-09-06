@@ -4,10 +4,199 @@
  * Description: The Kohthai product page, in one place. Feature icons (per-product or shortcode),
  *              the trust row, the product-details type scale, and the theme fixes that used to
  *              live in Customizer → Additional CSS. Settings → Product Blocks.
- * Version:     1.5.1
+ * Version:     1.6.8
  * Author:      Smart Living Bangladesh
  * License:     GPLv2 or later
  * Requires PHP: 7.4
+ *
+ * v1.6.8
+ *   - Works with the theme's swatch-size setting instead of around it, and stops the row
+ *     looking sparse. He pointed out the 32px gap was too wide, and that Flatsome already
+ *     has an X-Large option - both correct.
+ *
+ *     The label needs about 72px of room and the Large swatch is 45px, so I had been
+ *     making up the difference with gap. That is why the row looked stretched. At X-Large
+ *     the swatch is 70px and the theme's own 10px gap is already enough - the fix stops
+ *     being a workaround.
+ *
+ *     ⚠ The size class is part of the selector: Large renders .ux-swatches--large and
+ *     X-Large renders .ux-swatches--x-large. Up to 1.6.7 these rules named only --large,
+ *     so switching the Customizer to X-Large would have silently removed every colour
+ *     name. Both are now matched, and the gap is set per size because their arithmetic
+ *     differs: 45+30=75 and 70+10=80, both clearing the 72px label.
+ *
+ *     Under 550px the X-Large gap drops to 8px. Four 70px swatches need 310px at the
+ *     theme's 10px and the summary column offers 308px on a 390px phone, so the row broke
+ *     3+1; at 8px it needs 304px and stays on one line. Five colours will still wrap, and
+ *     should.
+ *
+ *     The swatch SIZE is deliberately not set here. It belongs to the Customizer, where he
+ *     can see and change it.
+ *
+ * v1.6.7
+ *   - The swatch gap from 1.6.6 never took effect. My mistake, and an instructive one.
+ *
+ *     Every other declaration landed - the label wrapped, went to 11px, took its 72px
+ *     width - but column-gap stayed at 10px, so the pitch stayed 55px and a 72px label
+ *     still overlapped by 17px. Flatsome's flatsome-swatches-frontend.css sets gap on
+ *     .ux-swatches at the same specificity as mine (0,1,0) and loads AFTER this inline
+ *     style, so source order decided it.
+ *
+ *     I had verified 1.6.6 with !important on every line and then shipped it without.
+ *     The test passed because it only read the CSS this plugin emits; it cannot see a
+ *     rule in someone else's stylesheet winning the cascade.
+ *
+ *     Fixed with SPECIFICITY, not !important: .ux-swatches.ux-swatches--large is (0,2,0)
+ *     and beats the theme regardless of load order, while leaving the shop-loop swatches
+ *     (.ux-swatches-in-loop, 30px, no labels) untouched.
+ *
+ *     Measured live with the exact CSS below and nothing else: gap 32px, pitch 77px,
+ *     label 72px, 5px of clear space between labels, all four swatches on one row at
+ *     390px, no page overflow.
+ *
+ * v1.6.6 - three fixes he reported, all measured on the live page.
+ *
+ *   1. Swatch names overlapped. The label is absolutely positioned at width:78px on a
+ *      55px pitch (45px swatch + 10px gap), with white-space:nowrap - so it overlapped by
+ *      23px even for short names, and "Flower Style Coffee" painted about 100px wide and
+ *      ran straight over its neighbours. Fixed by letting it wrap and widening the gap
+ *      until the pitch exceeds the label: column-gap 30px gives a 75px pitch for a 72px
+ *      label. Measured after: no overlap, all four swatches still on one row at 390px
+ *      (308px of 390), and the block below moved down only 11px.
+ *
+ *   2. top-handle was drawn round, for the Round Pleated Clutch it was made for. On a
+ *      structured rectangular handbag it read as a padlock. Redrawn as a wide shallow
+ *      body with a prominent arch - shape-neutral, so it suits a round clutch and a
+ *      square handbag equally, and still distinct from inner-pocket, which is taller and
+ *      carries a flap and a dashed pocket.
+ *
+ *   3. The width icon was a horizontal double arrow, and length is a horizontal line with
+ *      end caps. Two horizontal marks for two different dimensions is not a drawing
+ *      problem, it is an ambiguity - which is what he spotted. Width is the front-to-back
+ *      dimension, so it is now a 3D box: different in KIND from the length and height
+ *      arrows, which is the whole point. Four candidates were compared at 26px on a real
+ *      page; a side-profile-with-arrows version was rejected because it read as the phone
+ *      icon in the Fits row.
+ *
+ * v1.6.5
+ *   - top-handle icon, for the round evening clutches.
+ *
+ *     The Round Pleated Dinner Clutch's own copy calls the gold arch handle "the highlight
+ *     of this bag", and there was no icon for it - so the feature row showed one icon, for
+ *     the detachable strap, and omitted the thing the bag is bought for.
+ *
+ *     Drawn as a ROUND body rather than the trapezoid the other bag icons use. That is the
+ *     whole reason it survives at 26px: every existing bag glyph (inner-pocket,
+ *     outer-pocket, magnetic-flap) is a boxy body with something added, and a fourth boxy
+ *     body would have been indistinguishable. The ball clasp dot is in it because these
+ *     clutches genuinely close with one, and it makes the silhouette unmistakable.
+ *
+ * v1.6.4
+ *   - card-slot icon. The Rodeo Crossbody lists a Card Slot and there was no key for it.
+ *
+ *     Four shapes were drawn and compared on a real page at the rendered 26px. Three of
+ *     them - a pocket with a card tab showing above it, in various forms - all read as a
+ *     briefcase at that size, and two were barely distinguishable from inner-pocket. The
+ *     one that ships is a card itself: a rounded rectangle with a full-width band and a
+ *     short number line. It is unmistakable at 26px and collides with nothing.
+ *
+ *     Same lesson as Inner vs Outer Pocket in Step 4 - an icon that is merely correct in
+ *     concept is useless if it reads as another icon at the size it is actually drawn.
+ *
+ * v1.6.3
+ *   - The Feature icons FIELD now renders at the top of the details block, not in the buy
+ *     column. His idea, and the right one: the field is where the data belongs, and where
+ *     the row appears is a design decision that belongs in code - not in which box he
+ *     happened to paste a shortcode into.
+ *
+ *     v1.6.0 shipped the field rendering at summary priority 31, under the button, where
+ *     the trust row, delivery estimate and chat buttons already stack four blocks deep in
+ *     a 360px column. Step 10 had decided the icons belong at the top of the details
+ *     block, which is Fossil's rhythm - key facts by the price, then the row that opens
+ *     the detail section. The instruction and the code disagreed; the code was wrong.
+ *
+ *     Done by wrapping the description tab's own callback, so the row is printed before
+ *     WooCommerce prints the description. No rendered HTML is filtered or rewritten.
+ *
+ *     And it removes a trap of my own making. Before this, the field and the
+ *     [kt_features] shortcode rendered in two different places, so using both silently
+ *     produced two rows and the docs had to warn about it. Now the field is skipped
+ *     automatically when the description already contains the shortcode - one input,
+ *     one row, whichever he uses.
+ *
+ * v1.6.2
+ *   - The accordion no longer closes the other sections when you open one.
+ *
+ *     Flatsome's handler is hardcoded exclusive. On opening a closed panel it runs
+ *     jQuery(this).parent().parent().find('.accordion-title').removeClass('active')
+ *     .next().slideUp() first - every sibling shuts. There is no Customizer option for it.
+ *
+ *     That is not a matter of taste here, because the Description panel is 1,448px tall.
+ *     Measured on a 390x844 phone, with the Reviews title sitting at viewport y=300:
+ *
+ *       tap Reviews -> Description collapses -> page 4388px -> 2940px
+ *                   -> the Reviews title lands at viewport y=-118
+ *
+ *     The section she tapped scrolled off the top of her screen. Flatsome's scroll
+ *     compensation does not cover collapsing a panel that large above the click.
+ *
+ *     Fixed by a capture-phase listener on .accordion. Capture on an ancestor always runs
+ *     before listeners bound to the target, so stopPropagation() reliably beats Flatsome's
+ *     per-title handler - and it keeps working if Flatsome ever rebinds, which unbinding
+ *     with .off() would not.
+ *
+ *     Measured after: title stays at viewport y=300, zero jump, and Description stays open.
+ *     The load state is unchanged - Description open, the rest shut - so the video is still
+ *     visible without a tap.
+ *
+ *     Fossil does the same thing: Product Details and Product Care are both open at once.
+ *
+ * v1.6.1
+ *   - Tab order. Flatsome's global custom tab (Delivery & Returns) was landing AFTER the
+ *     reviews: Description, Reviews (1), Delivery & Returns. Two things wrong with that.
+ *
+ *     The reviews list grows. It is 93px tall today with one review on it, and every
+ *     review earned from here pushes the delivery and returns terms further down the page,
+ *     permanently. Terms are what a first-time buyer checks before paying cash on delivery
+ *     to a shop she has not used before; they cannot be the thing that drifts.
+ *
+ *     And reviews belong last on principle - they are the customer's words, not the
+ *     shop's. Fossil ends its product page with Reviews and Questions; Charles & Keith
+ *     keeps Shipping & Returns up with the product information.
+ *
+ *     Priority 25 - after the description (10), before the reviews (30). Set by filter
+ *     rather than by touching the theme, so a Flatsome update cannot undo it, and it only
+ *     moves a tab that is actually present.
+ *
+ * v1.6.0
+ *   - Key Features, and the description moved below the button.
+ *
+ *     Measured on the live page before this change: the short description field renders at
+ *     y=838 and ADD TO CART at y=1090. The short description is ABOVE the button. That is
+ *     where a 506px description paragraph and a 108px icon row were sitting - 614px of
+ *     reassurance material standing between the price and the thing she came to click.
+ *
+ *     Both benchmarks put only the CHOICE above the button. Fossil's Add To Bag sits with
+ *     nothing above it but colour and personalisation; SKU, rating, description and Key
+ *     Features are all below. Charles & Keith is the same. So:
+ *
+ *       above the button   Key Features - material, size, closure
+ *       below the button   the short description, headed and clamped to 3 lines
+ *
+ *     Key Features stays ABOVE deliberately, against Fossil's own placement. A Fossil
+ *     buyer knows what Fossil leather is. Kohthai's does not, and "is it real leather"
+ *     and "is it big enough" are the two questions that stop the sale here - which is
+ *     Material and Size. For an unbranded bag those are part of the decision, not trivia.
+ *     Measured cost: 61px, against 108 for the icons and 506 for the description.
+ *
+ *     Result, measured at 390x844: ADD TO CART 1090 -> 966. Across the whole project,
+ *     1561 -> 966 - 1.85 screens down to 1.14.
+ *
+ *     The relocation is a remove_action/add_action pair on template_redirect, NOT a
+ *     content filter. Rewriting Flatsome's rendered HTML corrupted the document and took
+ *     the live page down once already; the field is moved intact and never parsed.
+ *
+ *     Both halves are behind ONE switch each, so either reverts in a click.
  *
  * v1.5.1
  *   - The description paragraph runs in TWO columns on desktop. Asked about four times, and each
@@ -148,9 +337,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Kohthai_Product_Blocks {
 
-	const VERSION = '1.5.1';
+	const VERSION = '1.6.8';
 	const OPTION  = 'kt_blocks_options';
 	const META    = '_kt_features';
+
+	/** Key Features meta keys are self::META_KF . $key — see kf_fields(). */
+	const META_KF = '_kt_kf_';
 
 	public static function init() {
 		add_shortcode( 'kt_features', array( __CLASS__, 'features_shortcode' ) );
@@ -166,11 +358,26 @@ final class Kohthai_Product_Blocks {
 		// Per-product icons — product data panel + front-end render.
 		add_action( 'woocommerce_product_options_general_product_data', array( __CLASS__, 'product_field' ) );
 		add_action( 'woocommerce_process_product_meta', array( __CLASS__, 'save_product_field' ) );
+		add_action( 'woocommerce_product_options_general_product_data', array( __CLASS__, 'key_features_field' ) );
+		add_action( 'woocommerce_process_product_meta', array( __CLASS__, 'save_key_features_field' ) );
 		add_action( 'woocommerce_single_product_summary', array( __CLASS__, 'render_product_features' ), 31 );
+		add_filter( 'woocommerce_product_tabs', array( __CLASS__, 'features_into_description' ), 99 );
 
 		// Priority 11: straight after the price (10), before the excerpt (20). That is where the
 		// design puts availability - price, then "can I actually get it", then colour.
 		add_action( 'woocommerce_single_product_summary', array( __CLASS__, 'render_stock_line' ), 11 );
+
+		// Priority 12: after the stock line, still above the colour swatches. The three facts
+		// she is deciding on sit with the price, not 1,800px further down the page.
+		add_action( 'woocommerce_single_product_summary', array( __CLASS__, 'render_key_features' ), 12 );
+
+		// Deferred to template_redirect because it has to remove one of WooCommerce's own
+		// hooks. Plugin load order is not guaranteed, so removing it at init could run before
+		// WooCommerce has registered it and silently do nothing.
+		add_action( 'template_redirect', array( __CLASS__, 'relocate_short_description' ) );
+		add_filter( 'woocommerce_product_tabs', array( __CLASS__, 'order_tabs' ), 98 );
+		add_action( 'wp_footer', array( __CLASS__, 'about_script' ) );
+		add_action( 'wp_footer', array( __CLASS__, 'accordion_script' ) );
 	}
 
 	/* =====================================================================
@@ -184,6 +391,14 @@ final class Kohthai_Product_Blocks {
 			'css_plugin_harmony'  => 1,
 			'enable_stock_line'   => 1,
 			'stock_text'          => 'In stock - ready to ship',
+
+			'enable_keyfeatures'  => 1,
+			'enable_about_move'   => 1,
+			'enable_accordion_multi' => 1,
+			'features_position'   => 'details',
+			'about_title'         => 'About this bag',
+			'about_more'          => 'View more',
+			'about_less'          => 'View less',
 			'trust_1_title' => 'Cash on Delivery', 'trust_1_sub' => 'Pay when it arrives',
 			'trust_2_title' => '7-Day Return',     'trust_2_sub' => 'If damaged or not as described',
 			'trust_3_title' => '100% Genuine',     'trust_3_sub' => 'Imported stock',
@@ -223,8 +438,12 @@ final class Kohthai_Product_Blocks {
 		foreach ( self::defaults() as $key => $default ) {
 			$raw = isset( $input[ $key ] ) ? $input[ $key ] : null;
 
-			if ( 0 === strpos( $key, 'css_' ) ) {
+			if ( 0 === strpos( $key, 'css_' ) || 0 === strpos( $key, 'enable_' ) ) {
 				$clean[ $key ] = empty( $raw ) ? 0 : 1;
+				continue;
+			}
+			if ( 'features_position' === $key ) {
+				$clean[ $key ] = ( 'summary' === $raw ) ? 'summary' : 'details';
 				continue;
 			}
 			if ( 'returns_url' === $key ) {
@@ -255,6 +474,22 @@ final class Kohthai_Product_Blocks {
 				'<path d="M4.6 8.6h14.8l-1.1 10.9a1.7 1.7 0 0 1-1.7 1.5H7.4a1.7 1.7 0 0 1-1.7-1.5z"/><path d="M8.6 8.6V6.4a3.4 3.4 0 0 1 6.8 0v2.2"/><path d="M9.2 12.9h5.6v4.2H9.2z" stroke-dasharray="2.4 1.8"/>' ),
 			'outer-pocket' => array( 'Outer Pocket',
 				'<path d="M4.6 8.6h14.8l-1.1 10.9a1.7 1.7 0 0 1-1.7 1.5H7.4a1.7 1.7 0 0 1-1.7-1.5z"/><path d="M8.6 8.6V6.4a3.4 3.4 0 0 1 6.8 0v2.2"/><path d="M6.9 13.8h10.2v7.2H6.9z"/>' ),
+			// Wide and shallow with a big arch, so it works on a round clutch and a square
+			// handbag alike. v1.6.5 drew it round, matching the one product it was made for, and
+			// on a rectangular handbag that read as a padlock. It stays clear of inner-pocket
+			// because that one is taller and carries a flap and a dashed pocket.
+			'top-handle' => array( 'Top Handle',
+				'<path d="M4 12h16v6.5a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 18.5z"/>'
+				. '<path d="M8 12a4 4 0 0 1 8 0"/>' ),
+
+			// A card, not a pocket holding one: at 26px every pocket-with-a-tab drawing read as
+			// a briefcase and two were indistinguishable from inner-pocket. Compared on a live
+			// page before choosing.
+			'card-slot' => array( 'Card Slot',
+				'<rect x="2.5" y="7.5" width="19" height="12" rx="2"/>'
+				. '<path d="M2.5 12h19"/>'
+				. '<path d="M6 15.5h4"/>' ),
+
 			'zipper' => array( 'Zipper',
 				'<path d="M12 3v10.4"/><path d="M9.6 5.6h4.8M9.6 8.2h4.8M9.6 10.8h4.8"/><rect x="9.9" y="13.6" width="4.2" height="6.8" rx="2.1"/>' ),
 			'magnetic-flap' => array( 'Magnetic Flap',
@@ -349,6 +584,211 @@ final class Kohthai_Product_Blocks {
 		) );
 	}
 
+	/**
+	 * The three Key Features fields.
+	 *
+	 * Deliberately fixed rather than a free-form list. Three cards fit one row at 390px and
+	 * four do not, and the whole value of the row is that it answers the same three questions
+	 * on every product, in the same place, so they can be compared at a glance.
+	 *
+	 * @return array key => label
+	 */
+	public static function kf_fields() {
+		return array(
+			'material' => 'Material',
+			'size'     => 'Size',
+			'closure'  => 'Closure',
+		);
+	}
+
+	public static function key_features_field() {
+		echo '<div class="options_group">';
+		$hints = array(
+			'material' => 'PU Leather',
+			'size'     => '28 x 19 x 11 cm',
+			'closure'  => 'Magnetic Flap',
+		);
+		foreach ( self::kf_fields() as $key => $label ) {
+			woocommerce_wp_text_input( array(
+				'id'          => self::META_KF . $key,
+				'label'       => __( 'Key feature: ', 'kohthai-product-blocks' ) . $label,
+				'placeholder' => $hints[ $key ],
+				'desc_tip'    => false,
+				'description' => 'material' === $key
+					? __( 'Shown as three cards under the price. Keep each value to two or three words - a longer value wraps to a second line and the cards go uneven. Leave all three empty to hide the row.', 'kohthai-product-blocks' )
+					: '',
+			) );
+		}
+		echo '</div>';
+	}
+
+	public static function save_key_features_field( $post_id ) {
+		foreach ( array_keys( self::kf_fields() ) as $key ) {
+			$meta = self::META_KF . $key;
+			// WooCommerce has already verified the nonce and capability for this hook.
+			$raw = isset( $_POST[ $meta ] ) ? sanitize_text_field( wp_unslash( $_POST[ $meta ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			if ( '' === trim( $raw ) ) {
+				delete_post_meta( $post_id, $meta );
+			} else {
+				update_post_meta( $post_id, $meta, $raw );
+			}
+		}
+	}
+
+	/** Split from render_key_features() so it can be exercised without post meta. */
+	public static function key_features_html( $rows ) {
+		$cards = '';
+		foreach ( $rows as $row ) {
+			list( $label, $value ) = $row;
+			if ( '' === trim( (string) $value ) ) {
+				continue;
+			}
+			$cards .= '<div><em>' . esc_html( $label ) . '</em><b>' . esc_html( $value ) . '</b></div>';
+		}
+		return '' === $cards ? '' : '<div class="kt-kf">' . $cards . '</div>';
+	}
+
+	public static function render_key_features() {
+		$o = self::options();
+		if ( empty( $o['enable_keyfeatures'] ) ) {
+			return;
+		}
+		global $product;
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
+		$id   = $product->get_id();
+		$rows = array();
+		foreach ( self::kf_fields() as $key => $label ) {
+			$rows[] = array( $label, (string) get_post_meta( $id, self::META_KF . $key, true ) );
+		}
+		echo self::key_features_html( $rows ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in key_features_html().
+	}
+
+	/* =====================================================================
+	 * Short description, moved below the button
+	 * ===================================================================== */
+
+	/**
+	 * WooCommerce prints the short description at priority 20, above the cart form. This
+	 * moves that same output to 36 - after the delivery estimate (35), before the meta (40).
+	 *
+	 * The field is moved, never rewritten. An earlier version of this plugin ran a regex over
+	 * Flatsome's rendered content and corrupted the document badly enough to take the live
+	 * product page down. Moving a hook touches no markup at all.
+	 */
+	public static function relocate_short_description() {
+		$o = self::options();
+		if ( empty( $o['enable_about_move'] ) || ! function_exists( 'is_product' ) || ! is_product() ) {
+			return;
+		}
+		remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_excerpt', 20 );
+		add_action( 'woocommerce_single_product_summary', array( __CLASS__, 'render_about' ), 36 );
+	}
+
+	/**
+	 * Puts Flatsome's global custom tab (Delivery & Returns) above the reviews.
+	 *
+	 * WooCommerce orders tabs by priority: description 10, additional information 20,
+	 * reviews 30. Flatsome registers ux_global_tab after all of them, so the shop's own
+	 * terms ended up below a list that grows every time a customer leaves a review.
+	 *
+	 * Priority 98 on the filter so this runs after everything has registered. Only touches
+	 * the tab if it exists, and leaves every other tab's priority alone.
+	 */
+	/**
+	 * Lets more than one accordion section stay open.
+	 *
+	 * Flatsome's own handler is bound to each .accordion-title and always closes the
+	 * siblings. A capture-phase listener on the container runs before it and stops the event
+	 * reaching it, which is why this does not need to unbind anything - and therefore keeps
+	 * working if the theme rebinds after a pjax load.
+	 *
+	 * The resize event on completion is for the sliders inside a panel (the video card),
+	 * which Flatsome's version relaid out and which would otherwise open at zero width.
+	 */
+	public static function accordion_script() {
+		$o = self::options();
+		if ( empty( $o['enable_accordion_multi'] ) || ! function_exists( 'is_product' ) || ! is_product() ) {
+			return;
+		}
+		echo '<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">'
+			. '(function(){var a=document.querySelectorAll(".accordion");if(!a.length)return;'
+			. 'Array.prototype.forEach.call(a,function(acc){'
+			. 'acc.addEventListener("click",function(e){'
+			. 'var t=e.target.closest?e.target.closest(".accordion-title"):null;'
+			. 'if(!t||!acc.contains(t))return;'
+			. 'e.preventDefault();e.stopPropagation();'
+			. 'var p=t.nextElementSibling;if(!p)return;'
+			. 'var open=t.classList.contains("active");'
+			. 't.classList.toggle("active",!open);'
+			. 't.setAttribute("aria-expanded",open?"false":"true");'
+			. 'if(window.jQuery){window.jQuery(p)[open?"slideUp":"slideDown"](200,function(){'
+			. 'window.dispatchEvent(new Event("resize"));});}'
+			. 'else{p.style.display=open?"none":"block";}'
+			. '},true);});})();'
+			. '</script>';
+	}
+
+	public static function order_tabs( $tabs ) {
+		if ( isset( $tabs['ux_global_tab'] ) ) {
+			$tabs['ux_global_tab']['priority'] = 25;
+		}
+		return $tabs;
+	}
+
+	public static function render_about() {
+		global $post;
+		if ( ! $post || '' === trim( (string) $post->post_excerpt ) ) {
+			return;
+		}
+		$o    = self::options();
+		// The same filter WooCommerce's own template applies, so shortcodes and formatting in
+		// the field behave exactly as they did before the move.
+		$body = apply_filters( 'woocommerce_short_description', $post->post_excerpt );
+		if ( '' === trim( wp_strip_all_tags( $body ) ) ) {
+			return;
+		}
+		$title = trim( (string) $o['about_title'] );
+
+		echo '<div class="kt-about">';
+		if ( '' !== $title ) {
+			echo '<h4 class="kt-h">' . esc_html( $title ) . '</h4>';
+		}
+		echo '<div class="kt-about__text kt-clamp">' . $body . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- post content, filtered exactly as WooCommerce does.
+		// Hidden by default and revealed by the script only when the text actually overflows,
+		// so a two-sentence description does not get a pointless "View more" under it.
+		printf(
+			'<button type="button" class="kt-about__more" hidden data-more="%s" data-less="%s">%s</button>',
+			esc_attr( $o['about_more'] ),
+			esc_attr( $o['about_less'] ),
+			esc_html( $o['about_more'] )
+		);
+		echo '</div>';
+	}
+
+	/**
+	 * WP Rocket delays and minifies JavaScript on this site, so the guards are not optional -
+	 * the chat plugin's buttons pointed at "#" for real customers until this was understood.
+	 * No jQuery, no dependency on anything the optimiser might reorder.
+	 */
+	public static function about_script() {
+		$o = self::options();
+		if ( empty( $o['enable_about_move'] ) || ! function_exists( 'is_product' ) || ! is_product() ) {
+			return;
+		}
+		echo '<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">'
+			. '(function(){var w=document.querySelector(".kt-about");if(!w)return;'
+			. 'var t=w.querySelector(".kt-about__text"),b=w.querySelector(".kt-about__more");'
+			. 'if(!t||!b)return;'
+			. 'function sync(){if(t.scrollHeight-t.clientHeight>4||!t.classList.contains("kt-clamp")){b.hidden=false;}else{b.hidden=true;}}'
+			. 'b.addEventListener("click",function(){var on=t.classList.toggle("kt-clamp");'
+			. 'b.textContent=on?b.dataset.more:b.dataset.less;sync();});'
+			. 'sync();window.addEventListener("resize",sync);'
+			. 'if(document.fonts&&document.fonts.ready){document.fonts.ready.then(sync);}})();'
+			. '</script>';
+	}
+
 	public static function save_product_field( $post_id ) {
 		// WooCommerce has already verified the nonce and capability for this hook.
 		if ( ! isset( $_POST[ self::META ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -365,20 +805,55 @@ final class Kohthai_Product_Blocks {
 	}
 
 	/**
-	 * Priority 31: after add_to_cart (30), before the Smart Delivery plugin (35).
-	 * That ordering is the whole point — the icons belong under the button, and the delivery
-	 * estimate belongs under them.
+	 * The icon row for the Feature icons product field.
+	 *
+	 * Returns '' unless there is something to draw, so both callers can simply echo it.
+	 * Skipped when the description already contains [kt_features]: the shortcode and the
+	 * field would otherwise both render, which is a trap the editor cannot see.
 	 */
-	public static function render_product_features() {
+	public static function product_features_html( $where ) {
+		$o = self::options();
+		if ( $o['features_position'] !== $where ) {
+			return '';
+		}
 		global $product;
 		if ( ! $product instanceof WC_Product ) {
-			return;
+			return '';
 		}
 		$items = get_post_meta( $product->get_id(), self::META, true );
 		if ( ! $items ) {
-			return;
+			return '';
 		}
-		echo self::render_features( $items ); // phpcs:ignore WordPress.Security.EscapeOutput -- labels escaped in render_features().
+		$content = $product->get_description();
+		if ( $content && function_exists( 'has_shortcode' ) && has_shortcode( $content, 'kt_features' ) ) {
+			return '';
+		}
+		return self::render_features( $items );
+	}
+
+	/** Kept for features_position = summary — the pre-1.6.3 placement, under the button. */
+	public static function render_product_features() {
+		echo self::product_features_html( 'summary' ); // phpcs:ignore WordPress.Security.EscapeOutput -- labels escaped in render_features().
+	}
+
+	/**
+	 * Prints the icon row at the top of the details block.
+	 *
+	 * Wraps the description tab's own callback rather than filtering its output: the row is
+	 * echoed first, then WooCommerce renders the description exactly as it always did.
+	 * Nothing that the theme or wpautop produced is read, matched against, or rewritten -
+	 * post-processing Flatsome's rendered HTML is what took the live page down at v1.0.0.
+	 */
+	public static function features_into_description( $tabs ) {
+		if ( empty( $tabs['description']['callback'] ) ) {
+			return $tabs;
+		}
+		$original = $tabs['description']['callback'];
+		$tabs['description']['callback'] = static function () use ( $original ) {
+			echo self::product_features_html( 'details' ); // phpcs:ignore WordPress.Security.EscapeOutput -- labels escaped in render_features().
+			call_user_func_array( $original, func_get_args() );
+		};
+		return $tabs;
 	}
 
 	/* =====================================================================
@@ -497,7 +972,8 @@ final class Kohthai_Product_Blocks {
 
 	public static function css() {
 		$o   = self::options();
-		$css = self::css_features() . self::css_stock() . self::css_frames() . self::css_trust();
+		$css = self::css_features() . self::css_stock() . self::css_frames() . self::css_trust()
+			. self::css_keyfeatures() . self::css_about();
 
 		if ( ! empty( $o['css_theme_fixes'] ) ) {
 			$css .= self::css_theme_fixes();
@@ -524,6 +1000,46 @@ final class Kohthai_Product_Blocks {
 .kt-features svg{width:26px;height:26px;color:#8a7358;flex:none}
 .kt-features span{font-size:13px;line-height:1.35;letter-spacing:.02em;color:#4a4038;font-weight:600}
 @media(max-width:549px){.kt-features{gap:16px 8px;padding:18px 0}}
+';
+	}
+
+	/**
+	 * Three cards, always one row. grid-template-columns:repeat(3,1fr) rather than auto-fit:
+	 * the row's whole job is side-by-side comparison, so it must never reflow to 2+1.
+	 * Measured: 110x61 each at 390px, 165x61 at 1440px, every value on one line.
+	 */
+	public static function css_keyfeatures() {
+		return '
+.kt-kf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 14px}
+.kt-kf>div{border:1px solid #e8e2d9;border-radius:3px;padding:10px 8px;text-align:center;background:#fff}
+.kt-kf em{display:block;font-style:normal;font-size:11px;letter-spacing:.08em;
+ text-transform:uppercase;color:#8a7f72;margin-bottom:4px}
+.kt-kf b{display:block;font-size:13px;line-height:1.35;font-weight:600;color:#3a3229}
+';
+	}
+
+	/**
+	 * -webkit-line-clamp is visual only - the full text stays in the DOM, so Google still
+	 * indexes every word of it. That is the point: the description keeps doing its SEO job
+	 * without costing 506px in the buy column.
+	 *
+	 * The type here follows the agreed scale (theme body 16). Do NOT carry px values over
+	 * from a phone mockup again - that mistake shipped twice and both times the text landed
+	 * 20-30%% too small.
+	 */
+	public static function css_about() {
+		return '
+.kt-about{margin:18px 0 4px}
+.kt-about .kt-h{margin:0 0 8px}
+.kt-about__text{font-size:15px;line-height:1.75;color:#4a4038;max-width:none}
+.kt-about__text p:last-child{margin-bottom:0}
+.kt-about__text.kt-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* Flatsome styles every <button>; all of this is undoing that, not decoration. */
+.kt-about__more{display:inline-block;background:none;border:0;box-shadow:none;padding:6px 0;margin:0;
+ min-height:0;line-height:1.4;font-size:14px;font-weight:400;letter-spacing:0;text-transform:none;
+ color:#654321;text-decoration:underline;cursor:pointer}
+.kt-about__more:hover{background:none;color:#8a6f4f}
+.kt-about__more[hidden]{display:none}
 ';
 	}
 
@@ -585,13 +1101,37 @@ a.kt-trust__i:focus-visible{outline:2px solid #654321;outline-offset:2px}
 /* Colour name under each swatch. The swatches are photographs of the real bag on purpose -- a flat
    colour chip promises a shade the bag may not be -- but three 45px crops look identical, and the
    name lived only in a title tooltip, which a phone does not have. */
-.ux-swatches--large .ux-swatch{position:relative;margin-bottom:1.9em}
-.ux-swatches--large .ux-swatch::after{content:attr(data-name);position:absolute;top:calc(100% + 6px);
- left:50%;transform:translateX(-50%);width:78px;font-size:12px;line-height:1.25;text-align:center;
- color:#6f6459;pointer-events:none}
-.ux-swatches--large .ux-swatch[aria-checked="true"]::after{color:#654321;font-weight:700}
+/* The label is absolutely positioned, so it does not push its neighbours apart - it just
+   overlaps them. It therefore has to be NARROWER THAN THE PITCH, and the pitch is the
+   swatch plus the gap. Both supported sizes clear the 72px label: 45+30=75, 70+10=80.
+   nowrap was the other half of the original bug -- a long name ignored the width entirely
+   and painted straight over the swatch beside it.
+
+   BOTH size classes are matched on purpose. Flatsome renders --large or --x-large from the
+   Customizer setting, and naming only one means the colour names vanish the moment that
+   setting is changed. The swatch SIZE itself is not set here: it belongs to the Customizer.
+
+   The doubled class is deliberate too. Flatsome sets gap on a plain .ux-swatches, which is
+   the same specificity as this rule and loads later, so a single-class selector silently
+   loses -- exactly what happened in 1.6.6. (0,2,0) wins whatever the load order, and it
+   leaves the shop-loop swatches alone: those are .ux-swatches-in-loop at 30px, no labels. */
+.ux-swatches.ux-swatches--large{column-gap:30px}
+.ux-swatches.ux-swatches--x-large{column-gap:10px}
+.ux-swatches--large .ux-swatch,
+.ux-swatches--x-large .ux-swatch{position:relative;margin-bottom:38px}
+.ux-swatches--large .ux-swatch::after,
+.ux-swatches--x-large .ux-swatch::after{content:attr(data-name);position:absolute;top:calc(100% + 6px);
+ left:50%;transform:translateX(-50%);width:72px;white-space:normal;overflow-wrap:break-word;
+ font-size:11px;line-height:1.3;text-align:center;color:#6f6459;pointer-events:none}
+.ux-swatches--large .ux-swatch[aria-checked="true"]::after,
+.ux-swatches--x-large .ux-swatch[aria-checked="true"]::after{color:#654321;font-weight:700}
 .ux-swatches--large .ux-swatch.out-of-stock::after,
-.ux-swatches--large .ux-swatch.disabled::after{text-decoration:line-through;opacity:.55}
+.ux-swatches--large .ux-swatch.disabled::after,
+.ux-swatches--x-large .ux-swatch.out-of-stock::after,
+.ux-swatches--x-large .ux-swatch.disabled::after{text-decoration:line-through;opacity:.55}
+/* Four 70px swatches need 310px at the theme gap of 10px; the summary column is 308px on a
+   390px phone, so the row broke 3+1. 304px at 8px keeps it on one line. */
+@media(max-width:549px){.ux-swatches.ux-swatches--x-large{column-gap:8px}}
 
 /* Accordion headers: text and a rule, no fill -- the way C&K and COS do it. The old Additional CSS
    set padding-left:0 !important, and Flatsome\'s toggle is position:absolute;left:0 and 47px wide,
@@ -720,7 +1260,11 @@ a.kt-trust__i:focus-visible{outline:2px solid #654321;outline-offset:2px}
 		return array(
 			'length'  => '<path d="M3 12h18"/><path d="M5.5 9v6M18.5 9v6"/>',
 			'height'  => '<path d="M12 3v18"/><path d="M9 5.5h6M9 18.5h6"/>',
-			'width'   => '<path d="M7 5.5 4 12l3 6.5"/><path d="M17 5.5 20 12l-3 6.5"/><path d="M5 12h14"/>',
+			// A 3D box, not a third arrow. Length is a horizontal line and height a vertical one;
+			// a horizontal double arrow for width read as a second length. Width is the
+			// front-to-back dimension, so the icon differs in kind rather than in arrowhead.
+			'width'   => '<rect x="4" y="7.5" width="11" height="11" rx="1.4"/>'
+				. '<path d="M15 7.5 20 4.5v11l-5 3"/><path d="M4 7.5 9 4.5h11"/>',
 			'weight'  => '<path d="M5.5 8.5h13l-1.2 11.5H6.7z"/><path d="M9 8.5V6.4a3 3 0 0 1 6 0v2.1"/>',
 			'material' => '<path d="M12 3.5 3.5 8 12 12.5 20.5 8z"/><path d="M3.5 12 12 16.5 20.5 12"/><path d="M3.5 16 12 20.5 20.5 16"/>',
 			'care'     => '<path d="M12 3.5s6 6.4 6 10a6 6 0 0 1-12 0c0-3.6 6-10 6-10z"/>',
@@ -913,11 +1457,47 @@ a.kt-trust__i:focus-visible{outline:2px solid #654321;outline-offset:2px}
 				<p>Set them <strong>per product</strong> — Products → edit → Product data → General →
 					<strong>Feature icons</strong>. They render just below the Add to Cart button.</p>
 				<p style="color:#6f6459">
-					The old shortcode still works if you prefer it in the short description:
-					<code>[kt_features items="adjustable-strap, zipper"]</code> — but that renders
-					<em>above</em> the button, because the short description is output before the cart
-					form. <strong>Use one or the other, not both, or the row appears twice.</strong>
+					<code>[kt_features items="adjustable-strap, zipper"]</code> still works if you would
+					rather write it in the Description field. You no longer have to be careful about
+					using both &mdash; if the description contains the shortcode, the field is skipped,
+					so the row can only ever appear once.
 				</p>
+				<p>
+					<label><strong>Where it appears</strong><br>
+					<select name="<?php echo esc_attr( self::OPTION ); ?>[features_position]">
+						<option value="details" <?php selected( 'details', $o['features_position'] ); ?>>Top of the details block (recommended)</option>
+						<option value="summary" <?php selected( 'summary', $o['features_position'] ); ?>>Under the Add to Cart button</option>
+					</select></label>
+				</p>
+				<p style="color:#6f6459">Under the button, the row is the fourth block in a 360px column,
+					below the trust row, the delivery estimate and the chat buttons. At the top of the
+					details block it opens the detail section instead &mdash; which is where Fossil puts
+					it, and it leaves the checkout area alone.</p>
+			</div>
+
+			<div class="card" style="max-width:840px;padding:20px;margin-top:20px;border-left:4px solid #654321">
+				<h2 style="margin-top:0">Which field goes where</h2>
+				<p>Each field now has exactly one job. This is the part worth remembering:
+					<strong>the short description renders above the Add to Cart button and the description
+					renders below it</strong> &mdash; which is why the two got swapped round.</p>
+				<table class="widefat striped">
+					<thead><tr><th style="width:230px">Field</th><th>What goes in it</th><th style="width:190px">Where it appears</th></tr></thead>
+					<tbody>
+						<tr><td><strong>Product data &rarr; Key feature</strong></td>
+							<td>Material, Size, Closure &mdash; two or three words each</td>
+							<td>above the button</td></tr>
+						<tr><td><strong>Short description</strong></td>
+							<td>the About paragraph, plain text, <strong>no blank lines</strong></td>
+							<td>moved below the button, clamped</td></tr>
+						<tr><td><strong>Description</strong></td>
+							<td><code>[kt_features]</code>, <code>[kohthai_shorts]</code>, <code>[kt_details]</code>, <code>[kt_frames]</code></td>
+							<td>full width, in the accordion</td></tr>
+						<tr><td><strong>Customize &rarr; WooCommerce &rarr; Product Page &rarr; Global custom tab</strong></td>
+							<td>Delivery &amp; Returns policy</td>
+							<td>every product, written once</td></tr>
+					</tbody></table>
+				<p style="margin:14px 0 0;color:#6f6459">The first sentence of the About paragraph has to earn
+					the rest of it &mdash; only three lines show before &ldquo;View more&rdquo;.</p>
 			</div>
 
 			<div class="card" style="max-width:840px;padding:20px;margin-top:20px;border-left:4px solid #a08565">
@@ -1031,6 +1611,39 @@ a.kt-trust__i:focus-visible{outline:2px solid #654321;outline-offset:2px}
 								<p class="description">The <code>[ux_video]</code> gap fix (still needed — most products
 									use it), the colour name under each swatch, and the accordion header
 									(no fill, toggle on the right so the arrow stops sitting on the title).</p></td>
+						</tr>
+						<tr>
+							<th scope="row">Key Features</th>
+							<td><label><input type="checkbox" value="1" name="<?php echo esc_attr( self::OPTION ); ?>[enable_keyfeatures]"
+								<?php checked( ! empty( $o['enable_keyfeatures'] ) ); ?>> On</label>
+								<p class="description">Three cards under the price &mdash; Material, Size, Closure.
+									Fill them in per product: <strong>Products &rarr; edit &rarr; Product data &rarr; General</strong>.
+									A product with none of the three filled in simply shows no row, so this is safe to
+									leave on while you work through the catalogue.</p></td>
+						</tr>
+						<tr>
+							<th scope="row">Description below the button</th>
+							<td><label><input type="checkbox" value="1" name="<?php echo esc_attr( self::OPTION ); ?>[enable_about_move]"
+								<?php checked( ! empty( $o['enable_about_move'] ) ); ?>> On</label>
+							<input type="text" class="regular-text" style="margin-left:10px"
+								name="<?php echo esc_attr( self::OPTION ); ?>[about_title]"
+								value="<?php echo esc_attr( $o['about_title'] ); ?>">
+								<p class="description">Moves the <strong>short description</strong> field from above the
+									Add to Cart button to below it, and clamps it to three lines with a
+									&ldquo;View more&rdquo; link. Measured on the live page: the short description was
+									rendering at 838px and the button at 1090px, so a 506px paragraph was standing
+									between the price and the button. Clamping is visual only &mdash; the whole text
+									stays on the page, so Google still reads all of it.</p></td>
+						</tr>
+						<tr>
+							<th scope="row">Keep accordions open</th>
+							<td><label><input type="checkbox" value="1" name="<?php echo esc_attr( self::OPTION ); ?>[enable_accordion_multi]"
+								<?php checked( ! empty( $o['enable_accordion_multi'] ) ); ?>> On</label>
+								<p class="description">Flatsome closes every other section when you open one, and there is
+									no theme setting for it. Because the Description panel is about 1,450px tall,
+									collapsing it threw the section the customer had just tapped <strong>off the top of
+									her screen</strong> on a phone. With this on, sections open independently and nothing
+									jumps. The page still loads with only Description open.</p></td>
 						</tr>
 						<tr>
 							<th scope="row">Stock line</th>
