@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: AUN App APK Downloader
- * Version: 1.2.0
+ * Version: 1.3.0
  * Description: Streams the AUN Care APK from a URL that does NOT end in .apk, so host/CDN/WAF rules that block the .apk extension can no longer 404 or reject it. Serves the real file at /get-aun-care-app/.
  *
  * INSTALL (cPanel File Manager, no wp-admin needed):
@@ -15,24 +15,50 @@
  *  5. Nothing to do in WP Rocket: this file sets DONOTCACHEPAGE for the download URL only.
  */
 
+/**
+ * Is the current request the APK download?
+ *
+ * The site runs TranslatePress, which serves translated pages under a language
+ * prefix — Bengali is /bn/get-aun-care-app/. An exact match on
+ * '/get-aun-care-app/' therefore missed every non-English visitor and let the
+ * request fall through to a 404.
+ *
+ * So: match the slug as the last path segment, optionally preceded by ONE
+ * language-code segment. That covers /get-aun-care-app/, /bn/get-aun-care-app/,
+ * and any language added later, without matching unrelated deeper URLs.
+ */
+function aun_apk_is_download_request() {
+
+	$path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+
+	$segments = array_values( array_filter( explode( '/', (string) $path ), 'strlen' ) );
+
+	if ( ! $segments || end( $segments ) !== 'get-aun-care-app' ) {
+		return false;
+	}
+
+	// Bare /get-aun-care-app
+	if ( 1 === count( $segments ) ) {
+		return true;
+	}
+
+	// /<lang>/get-aun-care-app  — e.g. bn, en, bn-bd, pt_BR
+	return 2 === count( $segments )
+		&& (bool) preg_match( '~^[a-z]{2,3}([_-][a-z]{2,4})?$~i', $segments[0] );
+}
+
 /*
  * Only the APK download URL must bypass the page cache. This define used to sit
  * at the top level, which marked EVERY page on the site as uncacheable, because
  * mu-plugins load on every request. Scope it to the download path.
  */
-$aun_apk_path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
-
-if ( in_array( $aun_apk_path, array( '/get-aun-care-app/', '/get-aun-care-app' ), true )
-	&& ! defined( 'DONOTCACHEPAGE' ) ) {
+if ( aun_apk_is_download_request() && ! defined( 'DONOTCACHEPAGE' ) ) {
 	define( 'DONOTCACHEPAGE', true );
 }
 
-unset( $aun_apk_path );
-
 add_action( 'init', function () {
-	$path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
 
-	if ( $path !== '/get-aun-care-app/' && $path !== '/get-aun-care-app' ) {
+	if ( ! aun_apk_is_download_request() ) {
 		return;
 	}
 
