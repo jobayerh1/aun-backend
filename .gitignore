@@ -36,6 +36,11 @@ inFlow_*
 *.aab
 *.zip
 *.log
+# renamed/backup copies slip past the rules above (a 106 MB .apk.bak
+# once blocked a push and had to be stripped from history)
+*.apk.bak
+*.aab.bak
+*.bak
 
 # ── Junk ───────────────────────────────────────────────────────────────────
 node_modules/
