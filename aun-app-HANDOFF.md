@@ -29,6 +29,54 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-07 (2) — "Where is the serial number?" now shows the BOX: app 2.2.4+128 / app-api 1.105.0
+
+### The sheet answered the wrong question
+
+It opened with the sticker enlarged on its own. That answers *what does it look
+like* — and the people who open this sheet are exactly the ones who have not found it. **A close-up
+of something you cannot locate is not help.** New `SerialLocationArt` draws the carton, sticker
+ringed in place; the close-up now comes second.
+
+### ⚠️ The photographs corrected the copy, not just the picture
+
+**Both numbers are on the SAME silver sticker** — the 12-digit under the barcode and a shorter one
+after `SN:`, centimetres apart — and the short one *looks more like a serial number than the long one
+does*. The sheet warned only about the serial under the projector: true, but not where most people go
+wrong. They are holding the right sticker and reading the wrong line off it. The struck-through `SN:`
+line now sits **on the mock sticker itself** — a demonstration rather than a warning.
+
+### Three drawing corrections, each from owner review
+
+1. **The box STANDS UP.** Drawn as a low wide carton, its top read as a lid on a table.
+2. **Depth was 0.76 foreshortening — a packing crate.** Rebuilt from real dimensions:
+   **10.5 × 9.5 × 6 in** → front 78 × 71 px at 7.43 px/in, depth 44.6 px true, drawn at 0.62 from a
+   raised viewpoint = offset **(14, −24)**. ⚠️ Derive box geometry from measurements; eyeballing a
+   depth axis is what produced two wrong drawings.
+3. **The front face carried a logo outline and a grey bar** — a cut-out and a smudge. It now carries
+   the projector itself: the one graphic that survives 40 px, needs no translation, and identifies
+   the carton in a cupboard before a word is read.
+
+⚠️ The sticker is always on top but **not always in the same corner**, so the copy says "near a
+corner" — naming one would be wrong for half the cartons — and the drawing rings one because a ring
+has to go somewhere.
+
+### The locator is a sonar ping, not a pulsing outline
+
+Rings that leave the sticker and fade outward: the eye follows the direction of travel back to the
+source. Two, half a loop apart, so one is always on screen; plus a steady ring on the sticker and a
+soft wash under it, because *a silver sticker on a white lid is the contrast problem that sends
+people hunting in the first place*.
+
+### ⚠️ Seventh instance of one bug
+
+The projector-serial row overflowed 9 px at 200% font — **a bare `Text` in a `Row`**. After
+`BusyButton`, `QuickAction`, `_AddDeviceMiniCard`, the serial chip, the payment trust bar and the
+contact tiles. **A `Text` in a `Row` or a fixed-height box needs `Flexible`.**
+
+**Verified:** analyze clean, **447 tests pass** (8 new). Nothing was deployed during review — the
+owner asked to approve drawings first, and that is the right order for anything visual.
+
 ## 2026-09-07 — DUST-FILTER GUIDE: app 2.2.0+124 / app-api 1.104.0
 
 Owner's idea: customers are told to clean the dust filter and many do not know where it is. **Drawn,
