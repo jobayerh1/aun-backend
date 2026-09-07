@@ -543,7 +543,7 @@ $(document).ready(function() {
             }
         });
 
-        $('.more_btn').click(function(){
+        $('.more_btn').off('click.more_btn').on('click.more_btn', function(){
             $($(this).data('target')).toggleClass('hide');
         });
         $('div.lead_additional_div').hide();
