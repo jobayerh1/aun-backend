@@ -29,6 +29,66 @@ Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
 
+## 2026-09-07 — DUST-FILTER GUIDE: app 2.2.0+124 / app-api 1.104.0
+
+Owner's idea: customers are told to clean the dust filter and many do not know where it is. **Drawn,
+settled over several rounds of review, and wired into the reminder.**
+
+### The drawing — `lib/src/ui/dust_filter_guide.dart`
+
+A hand-drawn `CustomPainter` in the `ProjectorSceneArt` house style. One six-second loop, four beats
+— find it (ring + pointer) · open it · clean it (brush, dust lifts) · close it (tick). **No text**, so
+nothing to translate and nothing to rot in Bangla while the English is updated.
+
+Four variants: `back`, `bottom` (wide tray), `bottomVertical` (thin slit, pleated card), `unknown`.
+
+⚠️ **The vertical variant was drawn twice from imagination and both were wrong.** The owner sent
+photographs and it was traced from those. What was wrong is worth keeping: the SLOT is narrow
+because the card is **thin**, not because the card is small — its face is broad, and the face is the
+part you clean. Also from the photos: a small tab at **each end** of the channel (the grip), and the
+**exhaust grille beside it**, which the filter has to be told apart from.
+
+⚠️ Two defects only the ANIMATION revealed, invisible in any still: the filter's edge stayed drawn in
+the channel while the card was 90% out (one part in two places), and the closing beat had the card
+clipped at a horizontal line so it read as a bar hovering over the machine. The card now
+**foreshortens** into the channel — it turns edge-on as it goes in, ending as the slot itself.
+`test/dust_filter_frames_test.dart` exports a full loop per variant for exactly this reason: stills
+answer "is the drawing right?", only the loop answers "does it read as an instruction?"
+
+⚠️ The rear view was 108×72 — near enough square that it read as a cabinet on end. A projector's back
+is about twice as wide as tall, and the **silhouette** says "projector" before any detail does. Now
+132×62, matched to the underside view's width.
+
+### The plugin — AUN App → Dust filters (app-api 1.104.0)
+
+One row per model: back panel · underside wide tray · underside tall card · **no dust filter**.
+
+⚠️ **"No dust filter" also suppresses the monthly reminders**, and the page says so out loud — an
+admin picking it to fix a picture would otherwise switch off a customer's reminders silently.
+Keyed on `AUN_App_Projectors::normalise_model()`, not a product id, because devices arrive from the
+ERP with typed strings. Unconfigured models keep their reminders and report `unknown` rather than
+guessing `back` — right about half the range and confidently wrong about the rest.
+
+### The sheet — `lib/src/screens/dust_filter_sheet.dart`
+
+Animation for THIS model, one sentence saying where the filter is, four numbered steps, and an
+honest notice. Reachable from **both** doors: above the Done/Later pair on the Home card — *by the
+time the eye reaches a pair of buttons the question has already been read as "done or later?"* — and
+on the notice sheet, because someone who arrived from the push never saw the card.
+
+⚠️ The disclaimer is not boilerplate. One drawing stands in for a whole range; saying so lets a
+customer whose machine looks slightly different think "close enough, keep going" instead of "this app
+is wrong about my projector", and it ends with **Ask support** rather than with them giving up.
+
+⚠️ An unrecognised `filter_location` — the plugin gaining a choice before the app knows it — falls to
+`unknown`. Never guess: a guess points someone at the wrong face with full confidence.
+
+**Verified:** analyze clean, **432 tests pass** (14 for the sheet, covering each model setting, both
+fallbacks, and landscape / 320 dp / tablet / 200% font).
+
+⚠️ **Deploy app-api 1.104.0 BEFORE the app build** — `filter_location` has to exist, and the per-model
+values have to be set, or every customer gets the `unknown` drawing.
+
 ## 2026-09-02 (12) — SSLCommerz CHECKOUT in landscape: app 2.1.15+123
 
 The one screen in the app where a layout bug costs a customer money. **Two real defects, and two
