@@ -148,6 +148,16 @@ class AUN_App_ERP {
 			// Dust-filter maintenance eligibility (product_custom_field1 ===
 			// 'MAINT_SMS', same rule as the ERP maintenance SMS service).
 			'maintenance'       => ! empty( $d['maintenance'] ),
+			// Which programme: 'filter' (MAINT_SMS) | 'vent' (MAINT_VENT) | ''.
+			//
+			// ⚠️ Falls back to 'filter' when the ERP is older than this field
+			// but says maintenance is on — the only thing an ERP without the
+			// field can mean is the original filter programme, and defaulting
+			// to '' instead would silently switch every reminder off the moment
+			// this plugin outran the ERP deploy.
+			'maintenance_type'  => isset( $d['maintenance_type'] ) && '' !== $d['maintenance_type']
+				? (string) $d['maintenance_type']
+				: ( ! empty( $d['maintenance'] ) ? 'filter' : '' ),
 			// Product warranty exactly as the sales invoice prints it.
 			'warranty_duration' => isset( $d['warranty_duration'] ) && null !== $d['warranty_duration']
 				? (int) $d['warranty_duration'] : null,
