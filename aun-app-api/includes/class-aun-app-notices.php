@@ -601,6 +601,43 @@ class AUN_App_Notices {
 	}
 
 	/**
+	 * The VENT programme — projectors with no dust filter (U002 family).
+	 *
+	 * Mirrors the ERP's MAINT_VENT SMS at 180 and 360 days, in the app's longer
+	 * voice. Same relationship the filter messages have to their SMS: the text
+	 * is not a copy, because here there is room to explain and a button to act.
+	 *
+	 * ⚠️ Two reminders in a year, not three in ninety days. There is no filter
+	 * filling up, so a monthly nag would teach people to dismiss it. Six-monthly
+	 * is roughly the rate at which an intake grille in this dust actually needs
+	 * attention.
+	 *
+	 * ⚠️ The first message AGREES with what the customer was sold. They bought a
+	 * projector advertised as dustproof, and it is — the optical engine is
+	 * sealed and no dust reaches the panel. Telling them "your projector gets
+	 * dusty" contradicts the box and invites an argument; telling them "the
+	 * inside is sealed, the vents are not" is both true and useful.
+	 *
+	 * @return array<int,array{title:string,title_bn:string,body:string,body_bn:string}>
+	 */
+	public static function vent_messages() {
+		return array(
+			180 => array(
+				'title'    => 'Time to clean your projector vents',
+				'title_bn' => 'প্রজেক্টরের ভেন্ট পরিষ্কার করার সময়',
+				'body'     => "Your projector has been with you six months. It has no dust filter to clean — the optical engine is sealed, which is why dust never reaches the picture.\n\nThe air vents are a different matter. They pull air across the lamp to keep it cool, and in Bangladesh's dust they slowly clog. Brush them clean from the outside and your projector keeps breathing.",
+				'body_bn'  => "ছয় মাস হলো আপনি প্রজেক্টরটি ব্যবহার করছেন। এতে পরিষ্কার করার মতো কোনো ডাস্ট ফিল্টার নেই — ভেতরের অপটিক্যাল অংশ সিল করা, তাই ছবিতে কখনো ধুলা পড়ে না।\n\nকিন্তু বাতাস চলাচলের ভেন্টগুলো আলাদা বিষয়। ল্যাম্প ঠান্ডা রাখতে এগুলো বাতাস টেনে নেয়, আর বাংলাদেশের ধুলায় ধীরে ধীরে বন্ধ হয়ে আসে। বাইরে থেকে ব্রাশ দিয়ে পরিষ্কার করে দিলেই প্রজেক্টর ঠিকমতো শ্বাস নিতে পারবে।",
+			),
+			360 => array(
+				'title'    => 'Important: blocked vents are not covered by warranty',
+				'title_bn' => 'গুরুত্বপূর্ণ: ভেন্ট বন্ধ হয়ে ক্ষতি হলে ওয়ারেন্টি প্রযোজ্য নয়',
+				'body'     => "One thing worth being straight about, because we have now seen it happen.\n\nA projector with blocked vents cannot get rid of its own heat. The fan works harder, the picture dims, and eventually the light engine burns out — we have had a unit come back at eighteen months with its vents packed solid. That repair is expensive, it is entirely preventable, and heat damage is not covered by warranty on any brand, because it comes from use rather than a defect.\n\nFive minutes with a soft brush, twice a year, is all it takes. Please give the vents a clean this week.",
+				'body_bn'  => "একটি বিষয় স্পষ্ট করে বলতে চাই, কারণ এটি আমরা বাস্তবে ঘটতে দেখেছি।\n\nভেন্ট বন্ধ হয়ে গেলে প্রজেক্টর নিজের তাপ বের করতে পারে না। ফ্যান বেশি চাপ নেয়, ছবি কম উজ্জ্বল হয়, এবং শেষমেশ লাইট ইঞ্জিন পুড়ে যায় — আঠারো মাস চলার পর ভেন্ট পুরো ধুলায় বন্ধ অবস্থায় একটি ইউনিট আমাদের কাছে ফেরত এসেছে। এই মেরামত ব্যয়বহুল, অথচ পুরোপুরি প্রতিরোধযোগ্য। আর অতিরিক্ত গরমে হওয়া ক্ষতি কোনো ব্র্যান্ডেই ওয়ারেন্টিতে কভার হয় না, কারণ এটি ত্রুটি নয় বরং ব্যবহারের ফল।\n\nবছরে দুইবার, নরম ব্রাশ দিয়ে মাত্র পাঁচ মিনিট — এটুকুই যথেষ্ট। এই সপ্তাহেই ভেন্টগুলো পরিষ্কার করে নিন।",
+			),
+		);
+	}
+
+	/**
 	 * Materialise due maintenance reminders for one user's devices.
 	 * created_at = the original due date (purchase + offset, 10:00) so late
 	 * app installers still see the earlier months' reminders. Throttled to
@@ -628,8 +665,7 @@ class AUN_App_Notices {
 		}
 		set_transient( $throttle, 1, 6 * HOUR_IN_SECONDS );
 
-		$now_ts   = current_time( 'timestamp' );
-		$messages = self::maintenance_messages();
+		$now_ts = current_time( 'timestamp' );
 
 		foreach ( (array) AUN_App_Warranty::get_devices( $canonical, $user_id ) as $device ) {
 			$serial = (string) ( $device['serial'] ?? '' );
@@ -637,22 +673,38 @@ class AUN_App_Notices {
 				continue;
 			}
 
-			// Same eligibility rule as the ERP SMS service.
+			// Same eligibility rule as the ERP SMS service — and the same
+			// PROGRAMME. A projector with a cleanable filter and one with none
+			// need different advice on a different rhythm, and the ERP's
+			// product marker is the single place that decides which.
 			$sale = AUN_App_ERP::lookup_serial( $serial );
-			if ( ! is_array( $sale ) || empty( $sale['maintenance'] ) ) {
+			if ( ! is_array( $sale ) ) {
 				continue;
 			}
 
-			// ⚠️ Models with no user-serviceable filter get NO reminder.
+			$programme = (string) ( $sale['maintenance_type'] ?? '' );
+			if ( '' === $programme && ! empty( $sale['maintenance'] ) ) {
+				$programme = 'filter'; // ERP older than maintenance_type.
+			}
+
+			if ( 'vent' === $programme ) {
+				$messages = self::vent_messages();
+			} elseif ( 'filter' === $programme ) {
+				$messages = self::maintenance_messages();
+			} else {
+				continue; // Not enrolled in either programme.
+			}
+
+			// ⚠️ An admin kill switch, no longer the programme selector.
 			//
-			// Telling someone to clean a filter their projector does not have
-			// is worse than saying nothing: they go looking, find no filter,
-			// and the next message we send — about a warranty, a repair,
-			// anything — reaches a customer who has already learnt that our
-			// reminders are not about their machine. Set per model in
-			// AUN App → Dust filters.
+			// AUN App → Dust filters can still silence a model outright, which
+			// stays useful for an accessory or a one-off. But WHICH programme a
+			// projector belongs to is now the ERP's product marker, not a
+			// WordPress setting — two places deciding the same thing is two
+			// places to disagree, and the ERP is the one the SMS already obeys.
 			$model_name = (string) ( $device['model'] ?? '' );
-			if ( class_exists( 'AUN_App_Filters' )
+			if ( 'filter' === $programme
+				&& class_exists( 'AUN_App_Filters' )
 				&& ! AUN_App_Filters::reminders_enabled( $model_name ) ) {
 				continue;
 			}
@@ -686,11 +738,21 @@ class AUN_App_Notices {
 						// NOTICE rather than looked up in the app, so the
 						// picture always matches what the admin set at the
 						// moment the reminder was raised.
-						'filter_location' => class_exists( 'AUN_App_Filters' )
-							? AUN_App_Filters::location( $model_name )
-							: 'unknown',
+						'filter_location' => 'vent' === $programme
+							? 'vents_only'
+							: ( class_exists( 'AUN_App_Filters' )
+								? AUN_App_Filters::location( $model_name )
+								: 'unknown' ),
+						// Which programme raised this, so the app can show the
+						// right guide without re-deriving it from the model.
+						'programme'       => $programme,
 					),
-					'dedup_key'  => 'maint:' . (int) $user_id . ':' . md5( $serial ) . ':' . (int) $offset,
+					// ⚠️ The programme is IN the dedup key. Without it a device
+					// that moved between programmes — or a day offset that ever
+					// appeared in both — would collide with a reminder from the
+					// other programme and silently never be raised.
+					'dedup_key'  => 'maint:' . (int) $user_id . ':' . md5( $serial )
+						. ':' . $programme . ':' . (int) $offset,
 					'created_at' => date( 'Y-m-d 10:00:00', $due_ts ),
 				) );
 
