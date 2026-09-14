@@ -24,24 +24,93 @@ class AUN_App_OTP {
 	const RL_IP    = 'aun_app_otp_rli_';  // + md5(ip)
 
 	/**
-	 * Best-effort client IP, Cloudflare-aware.
+	 * The visitor's IP, for rate limiting — Cloudflare-aware, and not spoofable.
+	 *
+	 * ⚠️ This used to take the first of CF-Connecting-IP, X-Forwarded-For and
+	 * REMOTE_ADDR that parsed. Both headers are plain text any client can send,
+	 * so anyone reaching the server directly (not through Cloudflare) could
+	 * put a new value in them on every request and get a fresh per-IP bucket
+	 * each time. Here that bucket is the daily OTP cap — the one limit standing
+	 * between a script and a bill for thousands of SMS.
+	 *
+	 * Same rule as aun_sp_client_ip() in AUN Spare Parts 0.43.0: the Cloudflare
+	 * header is believed only when REMOTE_ADDR really is a Cloudflare edge (or a
+	 * private/loopback proxy on the host itself). X-Forwarded-For is never used —
+	 * behind Cloudflare it adds nothing CF-Connecting-IP does not already give.
 	 *
 	 * @return string
 	 */
 	public static function client_ip() {
-		$candidates = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR' );
-		foreach ( $candidates as $key ) {
-			if ( empty( $_SERVER[ $key ] ) ) {
-				continue;
-			}
-			$value = sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) );
-			$value = trim( explode( ',', $value )[0] );
-			$ip    = filter_var( $value, FILTER_VALIDATE_IP );
-			if ( $ip ) {
-				return $ip;
+		$remote = self::unmap_ip( isset( $_SERVER['REMOTE_ADDR'] ) ? trim( (string) $_SERVER['REMOTE_ADDR'] ) : '' );
+		$cf     = isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ? trim( (string) $_SERVER['HTTP_CF_CONNECTING_IP'] ) : '';
+
+		if ( '' !== $cf && filter_var( $cf, FILTER_VALIDATE_IP ) && self::is_trusted_proxy( $remote ) ) {
+			return $cf;
+		}
+		return filter_var( $remote, FILTER_VALIDATE_IP ) ? $remote : '0.0.0.0';
+	}
+
+	/** "::ffff:1.2.3.4" (IPv4 written as IPv6, which some servers report) -> "1.2.3.4". */
+	private static function unmap_ip( $ip ) {
+		if ( 0 === stripos( (string) $ip, '::ffff:' ) && filter_var( substr( $ip, 7 ), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+			return substr( $ip, 7 );
+		}
+		return (string) $ip;
+	}
+
+	/**
+	 * Whether REMOTE_ADDR is a proxy whose forwarded-IP header may be believed.
+	 *
+	 * ⚠️ The list must stay complete. The OTP cap is PER DAY, so a Cloudflare
+	 * edge missing from it would pool every visitor arriving through that edge
+	 * into one bucket and lock them all out of login until tomorrow. It matched
+	 * cloudflare.com/ips-v4 and ips-v6 exactly (22 ranges) on 2026-09-10, and
+	 * is identical to the spare-parts plugin's list. Filterable, so a new range
+	 * can be added without a release.
+	 */
+	private static function is_trusted_proxy( $ip ) {
+		if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+			return false;
+		}
+		// Private / loopback / reserved = a proxy on the host's own network.
+		if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+			return true;
+		}
+		$ranges = apply_filters( 'aun_app_trusted_proxies', array(
+			'173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+			'141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+			'197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+			'104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+			'2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+			'2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32',
+		) );
+		foreach ( (array) $ranges as $cidr ) {
+			if ( self::ip_in_cidr( $ip, $cidr ) ) {
+				return true;
 			}
 		}
-		return '0.0.0.0';
+		return false;
+	}
+
+	/** IPv4 / IPv6 CIDR membership, compared byte by byte (no GMP/BCMath needed). */
+	private static function ip_in_cidr( $ip, $cidr ) {
+		$parts = explode( '/', (string) $cidr, 2 );
+		$ipb   = @inet_pton( (string) $ip );
+		$netb  = @inet_pton( $parts[0] );
+		if ( false === $ipb || false === $netb || strlen( $ipb ) !== strlen( $netb ) ) {
+			return false;
+		}
+		$bits  = isset( $parts[1] ) ? (int) $parts[1] : strlen( $ipb ) * 8;
+		$whole = intdiv( $bits, 8 );
+		if ( substr( $ipb, 0, $whole ) !== substr( $netb, 0, $whole ) ) {
+			return false;
+		}
+		$rest = $bits % 8;
+		if ( 0 === $rest ) {
+			return true;
+		}
+		$mask = ( 0xFF << ( 8 - $rest ) ) & 0xFF;
+		return ( ord( $ipb[ $whole ] ) & $mask ) === ( ord( $netb[ $whole ] ) & $mask );
 	}
 
 	/**
@@ -71,6 +140,12 @@ class AUN_App_OTP {
 		return $body;
 	}
 
+	/** Where a code is kept: login codes and "confirm this number" codes never share a slot. */
+	private static function store_key( $canonical, $purpose = '' ) {
+		$purpose = sanitize_key( (string) $purpose );
+		return self::STORE . ( '' !== $purpose ? $purpose . '_' : '' ) . md5( $canonical );
+	}
+
 	private static function hash_otp( $otp ) {
 		return hash_hmac( 'sha256', (string) $otp, wp_salt( 'auth' ) );
 	}
@@ -95,11 +170,15 @@ class AUN_App_OTP {
 	 *                          Only the APP sends this; website OTPs unchanged.
 	 * @return array{ok:bool,code:string,message:string,resend_wait?:int,expires_in?:int,dev_otp?:string}
 	 */
-	public static function request( $canonical, $app_hash = '' ) {
+	public static function request( $canonical, $app_hash = '', $purpose = '' ) {
+		// $purpose keeps a code for one job from ever being accepted for
+		// another: a "confirm this number" code (purpose 'purchase') lives in
+		// its own store, so it can never be used to LOG IN, and vice versa.
+		$store = self::store_key( $canonical, $purpose );
 		$cfg = aun_app_api_otp_settings();
 
 		// Resend cooldown.
-		$data = get_transient( self::STORE . md5( $canonical ) );
+		$data = get_transient( $store );
 		if ( is_array( $data ) && ! empty( $data['last_sent'] ) ) {
 			$remaining = ( (int) $data['last_sent'] + (int) $cfg['resend_wait'] ) - time();
 			if ( $remaining > 0 ) {
@@ -129,7 +208,7 @@ class AUN_App_OTP {
 		$otp = self::generate( $cfg['otp_length'] );
 
 		set_transient(
-			self::STORE . md5( $canonical ),
+			$store,
 			array(
 				'otp_hash'  => self::hash_otp( $otp ),
 				'expires'   => time() + (int) $cfg['otp_expiry'],
@@ -152,18 +231,21 @@ class AUN_App_OTP {
 			);
 		}
 
-		$minutes = max( 1, (int) round( (int) $cfg['otp_expiry'] / 60 ) );
-		$body    = str_replace(
+		$minutes  = max( 1, (int) round( (int) $cfg['otp_expiry'] / 60 ) );
+		$template = 'purchase' === $purpose
+			? '[otp] is your AUN Care code to confirm this number and find your purchases. Valid [min] min. Do not share it.'
+			: (string) $cfg['sms_template'];
+		$body     = str_replace(
 			array( '[site]', '[otp]', '[min]' ),
 			array( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ), $otp, (string) $minutes ),
-			(string) $cfg['sms_template']
+			$template
 		);
 
 		$body = self::append_app_hash( $body, $app_hash );
 
 		$sent = AUN_App_SMS::send( $canonical, $body );
 		if ( ! $sent['success'] ) {
-			delete_transient( self::STORE . md5( $canonical ) );
+			delete_transient( $store );
 			return array(
 				'ok'      => false,
 				'code'    => 'sms_failed',
@@ -186,9 +268,9 @@ class AUN_App_OTP {
 	 * @param string $otp       Submitted code.
 	 * @return array{ok:bool,code:string,message:string}
 	 */
-	public static function verify( $canonical, $otp ) {
+	public static function verify( $canonical, $otp, $purpose = '' ) {
 		$cfg = aun_app_api_otp_settings();
-		$key = self::STORE . md5( $canonical );
+		$key = self::store_key( $canonical, $purpose );
 
 		$data = get_transient( $key );
 		if ( ! is_array( $data ) || empty( $data['otp_hash'] ) ) {

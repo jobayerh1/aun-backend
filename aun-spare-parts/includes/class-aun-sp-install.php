@@ -170,17 +170,52 @@ class AUN_SP_Install {
 		// expired on the same clock as a new one instead of hanging for ever.
 		self::backfill_quote_expiry();
 
-		if ( ! wp_next_scheduled( 'aun_sp_daily_digest' ) ) {
-			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'aun_sp_daily_digest' );
-		}
-		// Tidying unpaid orders hung off the DAILY digest, so "remove after 6 hours"
-		// could take a day and a half to happen — and the shop's Orders list kept
-		// showing rows the setting said should be gone. It gets its own hourly run.
-		if ( ! wp_next_scheduled( 'aun_sp_hourly_tidy' ) ) {
-			wp_schedule_event( time() + 300, 'hourly', 'aun_sp_hourly_tidy' );
-		}
+		// Exactly one scheduled run per hook. (Tidying unpaid orders used to hang off
+		// the DAILY digest, so "remove after 6 hours" could take a day and a half —
+		// it has its own hourly run now.)
+		self::ensure_single_schedule();
 
 		update_option( 'aun_sp_db_version', self::DB_VERSION );
+	}
+
+	/**
+	 * Exactly ONE scheduled run per hook — no more, no less.
+	 *
+	 * `wp_schedule_event()` behind a `! wp_next_scheduled()` check looks safe but is
+	 * not. Two requests arriving together during an upgrade can both pass the check,
+	 * and the deactivation hook used to remove only the NEXT instance — so a
+	 * deactivate/reactivate cycle left an orphan behind and then added a fresh one.
+	 * Every extra entry fires the hook again on its own clock, which is exactly why
+	 * the daily digest email arrived twice, a few minutes apart.
+	 *
+	 * Counting first means the normal case (one entry) changes nothing. Also hooked
+	 * to the hourly tidy, so a site that already has duplicates heals itself without
+	 * needing a re-activation.
+	 *
+	 * @return int hooks that had to be corrected.
+	 */
+	public static function ensure_single_schedule() {
+		$wanted = array(
+			'aun_sp_daily_digest' => array( 'daily', HOUR_IN_SECONDS ),
+			'aun_sp_hourly_tidy'  => array( 'hourly', 300 ),
+		);
+
+		$fixed = 0;
+		foreach ( $wanted as $hook => $spec ) {
+			$found = 0;
+			foreach ( (array) _get_cron_array() as $events ) {
+				if ( isset( $events[ $hook ] ) ) {
+					$found += count( (array) $events[ $hook ] );
+				}
+			}
+			if ( 1 === $found ) {
+				continue; // healthy — leave its next run time alone
+			}
+			wp_clear_scheduled_hook( $hook ); // removes EVERY instance, not just the next
+			wp_schedule_event( time() + $spec[1], $spec[0], $hook );
+			$fixed++;
+		}
+		return $fixed;
 	}
 
 	/**

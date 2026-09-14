@@ -515,6 +515,15 @@ class AUN_SP_Admin {
 		}
 
 		$notice = '';
+		// "Compress waiting photos now" is its own small form, so it never saves settings.
+		if ( isset( $_POST['aun_sp_img_now_nonce'] ) && wp_verify_nonce( $_POST['aun_sp_img_now_nonce'], 'aun_sp_img_now' ) ) {
+			$res    = AUN_SP_Image::sweep( 25, 20 );
+			$notice = $this->notice(
+				sprintf( 'Compressed %d photo(s), saving %s.', (int) $res['done'], size_format( (int) $res['saved'], 1 ) )
+				. ( $res['left'] ? ' ' . (int) $res['left'] . ' still waiting &mdash; press again, or leave it to the hourly job.' : ' Nothing is waiting any more.' ),
+				'success'
+			);
+		}
 		if ( isset( $_POST['aun_sp_settings_nonce'] ) && wp_verify_nonce( $_POST['aun_sp_settings_nonce'], 'aun_sp_settings' ) ) {
 			update_option( 'aun_sp_warranty_months', max( 0, (int) ( $_POST['warranty_months'] ?? 12 ) ) );
 			update_option( 'aun_sp_warranty_grace_days', max( 0, (int) ( $_POST['grace_days'] ?? 4 ) ) );
@@ -528,6 +537,10 @@ class AUN_SP_Admin {
 			update_option( 'aun_sp_order_status_dispatched', sanitize_text_field( wp_unslash( $_POST['order_status_dispatched'] ?? '' ) ) );
 			update_option( 'aun_sp_order_status_delivered', sanitize_text_field( wp_unslash( $_POST['order_status_delivered'] ?? 'completed' ) ) );
 			update_option( 'aun_sp_mute_foreign_sms', empty( $_POST['mute_foreign_sms'] ) ? 0 : 1 );
+			// Photo compression (see AUN_SP_Image). Anything unexpected falls back safely.
+			$img_preset = sanitize_key( wp_unslash( $_POST['img_preset'] ?? 'balanced' ) );
+			update_option( 'aun_sp_img_preset', array_key_exists( $img_preset, AUN_SP_Image::presets() ) ? $img_preset : 'balanced' );
+			update_option( 'aun_sp_img_format', ( 'webp' === ( $_POST['img_format'] ?? '' ) ) ? 'webp' : 'jpeg' );
 			// Turning expiry ON must not retroactively lapse quotes that were sent
 			// under "no deadline" terms — that would expire a pile of live quotes (and
 			// text every one of those customers) the very next morning. They get the
@@ -606,9 +619,44 @@ class AUN_SP_Admin {
 			echo '<span style="color:#646970;">0 = quotes never expire; the customer is still reminded on day ' . (int) $qr1 . ' and day ' . (int) $qr2 . '.</span>';
 		}
 		echo '<p class="description" style="margin:6px 0 0;">An expired quote is <strong>not</strong> a rejection: it means the customer never answered. They keep a &ldquo;I still want this part&rdquo; button on their tracking page, which puts the request back in front of you for a fresh price.</p></td></tr>';
+		// Photo compression — on a shared server every byte counts.
+		$img_presets = AUN_SP_Image::presets();
+		$img_cur     = AUN_SP_Image::preset();
+		$img_webp_ok = AUN_SP_Image::webp_supported();
+		$img_fmt     = (string) get_option( 'aun_sp_img_format', 'webp' );
+		echo '<tr><th>Photo compression</th><td><select name="img_preset">';
+		foreach ( $img_presets as $key => $pr ) {
+			echo '<option value="' . esc_attr( $key ) . '"' . selected( $img_cur, $key, false ) . '>' . esc_html( $pr['label'] ) . '</option>';
+		}
+		echo '</select><p class="description">How hard customers&rsquo; photos are squeezed after upload. Every level keeps a printed serial or model number readable when the photo is taken close to the label. '
+			. 'Applies to <strong>new</strong> photos: a photo that is already compressed is never compressed again, because that would only lose detail.</p></td></tr>';
+		echo '<tr><th>Photo format</th><td><select name="img_format">';
+		echo '<option value="jpeg"' . selected( $img_fmt, 'jpeg', false ) . '>JPEG &mdash; opens everywhere</option>';
+		echo '<option value="webp"' . selected( $img_fmt, 'webp', false ) . ( $img_webp_ok ? '' : ' disabled' ) . '>WebP &mdash; about a third smaller'
+			. ( $img_webp_ok ? '' : ' (not supported on this server)' ) . '</option>';
+		echo '</select><p class="description"><strong>WebP is the default.</strong> It is typically 25&ndash;35% smaller than JPEG at the same quality and opens in every current browser, which is free disk space on a shared server. '
+			. ( $img_webp_ok ? 'This server can write WebP. ' : '<strong>This server&rsquo;s image library cannot write WebP, so JPEG is used whatever is chosen here.</strong> ' )
+			. 'Photos already stored keep the format they were saved in &mdash; only new ones change.</p></td></tr>';
 		echo '</tbody></table>';
 		echo '<p><button type="submit" class="button button-primary">Save settings</button></p>';
 		echo '</form>';
+
+		// Photo storage: what compression has saved so far, and a button to catch up
+		// now instead of waiting for the hourly job.
+		$img_st = AUN_SP_Image::stats();
+		echo '<div class="notice notice-info inline" style="max-width:640px;margin-top:18px;"><p style="margin:.6em 0;">';
+		echo '<strong>Photo storage</strong><br>';
+		echo 'Customer photos stored: <strong>' . (int) $img_st['total'] . '</strong> &middot; space they use: <strong>' . esc_html( size_format( $img_st['on_disk'], 1 ) ) . '</strong><br>';
+		echo 'Saved by compression so far: <strong>' . esc_html( size_format( $img_st['saved'], 1 ) ) . '</strong><br>';
+		echo 'Waiting to be compressed: <strong>' . (int) $img_st['pending'] . '</strong>'
+			. ( $img_st['pending'] ? ' <span style="color:#646970;">&mdash; done automatically every hour, 10 at a time</span>' : '' );
+		echo '</p>';
+		if ( $img_st['pending'] ) {
+			echo '<form method="post" style="margin:0 0 .7em;">';
+			wp_nonce_field( 'aun_sp_img_now', 'aun_sp_img_now_nonce' );
+			echo '<button type="submit" class="button">Compress waiting photos now</button> <span style="color:#646970;">up to 25 per press</span></form>';
+		}
+		echo '</div>';
 
 		// Payment bridge self-check: says plainly whether an approved quote can turn
 		// into a payable order, and which gateways the customer would be offered.

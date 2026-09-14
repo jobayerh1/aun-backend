@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.106.0
+ * Version:           1.113.4
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.106.0' );
+define( 'AUN_APP_API_VERSION', '1.113.4' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -45,7 +45,7 @@ define( 'AUN_APP_API_VERSION', '1.106.0' );
 // be indistinguishable from an ERP outage (both just skipped the row), so the
 // repair froze on the customer's screen for ever and could never adopt a
 // replacement sheet.
-define( 'AUN_APP_API_DB_VERSION', '21' );
+define( 'AUN_APP_API_DB_VERSION', '22' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -95,6 +95,7 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-projectors.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-filters.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-referrals.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-sslcommerz.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-transfers.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-rest.php';
 
 if ( is_admin() ) {
@@ -703,6 +704,57 @@ function aun_app_api_activate() {
 		wp_schedule_event( time() + 420, 'aun_app_ten_minutes', 'aun_app_repair_poll' );
 	}
 
+	// v22: ownership transfers between customers, and released direct
+	// purchases (see AUN_App_Transfers). The link token is stored ONLY as a
+	// keyed hash — a leaked database row cannot be turned back into a link.
+	$transfers = $wpdb->prefix . 'aun_app_transfers';
+	dbDelta( "CREATE TABLE IF NOT EXISTS $transfers (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		serial varchar(191) NOT NULL,
+		kind varchar(20) NOT NULL DEFAULT '',
+		ref_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		from_phone varchar(20) NOT NULL DEFAULT '',
+		from_user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		to_phone varchar(20) NOT NULL DEFAULT '',
+		to_user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		to_name varchar(191) NOT NULL DEFAULT '',
+		to_email varchar(191) NOT NULL DEFAULT '',
+		model varchar(191) NOT NULL DEFAULT '',
+		token_hash char(64) NOT NULL DEFAULT '',
+		status varchar(20) NOT NULL DEFAULT 'pending',
+		source varchar(10) NOT NULL DEFAULT 'app',
+		created_at datetime NOT NULL,
+		expires_at datetime NOT NULL,
+		decided_at datetime DEFAULT NULL,
+		decided_via varchar(10) NOT NULL DEFAULT '',
+		note varchar(255) NOT NULL DEFAULT '',
+		PRIMARY KEY (id),
+		UNIQUE KEY token_idx (token_hash),
+		KEY serial_status_idx (serial, status),
+		KEY to_phone_idx (to_phone),
+		KEY from_phone_idx (from_phone)
+	) $charset;" );
+
+	$releases = $wpdb->prefix . 'aun_app_releases';
+	dbDelta( "CREATE TABLE IF NOT EXISTS $releases (
+		serial varchar(191) NOT NULL,
+		from_user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		from_phone varchar(20) NOT NULL DEFAULT '',
+		model varchar(191) NOT NULL DEFAULT '',
+		purchase_date date DEFAULT NULL,
+		invoice_no varchar(100) NOT NULL DEFAULT '',
+		erp_contact_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		erp_product_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		warranty_duration int DEFAULT NULL,
+		warranty_unit varchar(20) NOT NULL DEFAULT '',
+		released_at datetime NOT NULL,
+		PRIMARY KEY (serial)
+	) $charset;" );
+
+	if ( ! wp_next_scheduled( 'aun_app_transfers_expire' ) ) {
+		wp_schedule_event( time() + 600, 'hourly', 'aun_app_transfers_expire' );
+	}
+
 	update_option( 'aun_app_api_db', AUN_APP_API_DB_VERSION );
 }
 register_activation_hook( __FILE__, 'aun_app_api_activate' );
@@ -782,6 +834,11 @@ function aun_app_api_repair_poll_cron() {
 add_action( 'aun_app_repair_poll', 'aun_app_api_repair_poll_cron' );
 
 add_action( 'aun_app_events_purge', array( 'AUN_App_Events', 'purge' ) );
+
+// Ownership transfers: expire unanswered requests hourly, and serve the
+// owner's accept/decline page (the link in their SMS) from any front-end URL.
+add_action( 'aun_app_transfers_expire', array( 'AUN_App_Transfers', 'expire_cron' ) );
+add_action( 'template_redirect', array( 'AUN_App_Transfers', 'maybe_render_page' ), 0 );
 
 // Deleting an account erases what it recorded too — otherwise "delete my
 // account" would leave a trail of that person's behaviour behind.

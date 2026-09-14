@@ -294,6 +294,27 @@
 .aun-sp-refimg{flex:none;text-decoration:none;text-align:center;}
 .aun-sp-refimg img{width:62px;height:62px;object-fit:cover;border-radius:8px;border:1px solid var(--aun-border);display:block;}
 .aun-sp-refimg span{display:block;font-size:11px;color:#0166c8;margin-top:3px;font-weight:600;}
+/* Thumbnails read as tappable: zoom cursor, a small lift on hover, visible focus. */
+.aun-sp-refimg{cursor:zoom-in;}
+.aun-sp-refimg img{transition:transform .15s ease,box-shadow .15s ease;}
+.aun-sp-refimg:hover img{transform:scale(1.04);box-shadow:0 4px 12px rgba(15,23,42,.15);}
+.aun-sp-refimg:focus-visible{outline:none;}
+.aun-sp-refimg:focus-visible img{outline:3px solid var(--aun-blue);outline-offset:2px;}
+/* The customer's OWN photo — deliberately the same thumbnail as "see example"
+   above, opening in the same lightbox. Beside the part name on tracking. */
+.aun-sp-track-pinfo{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 220px;}
+.aun-sp-track-pinfo .aun-sp-track-pname{min-width:0;overflow-wrap:anywhere;}
+.aun-sp-track-resent{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border:1px solid var(--aun-border);border-radius:10px;}
+.aun-sp-track-resent-t{font-size:13.5px;font-weight:600;color:var(--aun-ink);}
+/* Preview of a photo just picked (request form + re-upload box). */
+.aun-sp-upload-preview,.aun-sp-reupload-preview{display:flex;align-items:center;gap:10px;margin:10px 0 2px;}
+.aun-sp-upload-preview[hidden],.aun-sp-reupload-preview[hidden]{display:none;}
+.aun-sp-upload-warn{font-size:13px;font-weight:600;color:#b3261e;}
+.aun-sp-reupload .aun-sp-btn{margin-top:8px;}
+@media(prefers-reduced-motion:reduce){
+	.aun-sp-refimg img{transition:none;}
+	.aun-sp-refimg:hover img{transform:none;}
+}
 /* Image lightbox — fades the backdrop in and scales the photo up, rather than
    appearing instantly. Markup comes from assets/sp-lightbox.js. */
 .aun-sp-lb{

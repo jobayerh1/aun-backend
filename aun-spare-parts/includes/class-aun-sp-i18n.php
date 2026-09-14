@@ -251,6 +251,9 @@ class AUN_SP_I18N {
 					'jsf_dup_anyway'   => array( 'k' => 'dup_anyway',   'en' => 'This is a different problem — submit anyway', 'bn' => 'এটি ভিন্ন সমস্যা — তবুও জমা দিন' ),
 					'jsf_dup_cancel'   => array( 'k' => 'dup_cancel',   'en' => 'Cancel', 'bn' => 'বাতিল' ),
 					'jsf_lb_close'     => array( 'k' => 'lb_close',     'en' => 'Close', 'bn' => 'বন্ধ করুন' ),
+					// Preview of the photo the customer just picked — tap it to see it large.
+					'jsf_chosen_photo' => array( 'k' => 'chosen_photo', 'en' => 'Your photo', 'bn' => 'আপনার ছবি' ),
+					'jsf_too_large_1'  => array( 'k' => 'too_large_1',  'en' => 'That photo is over 15 MB — please choose a smaller one.', 'bn' => 'ছবিটি ১৫ MB-এর বেশি — অনুগ্রহ করে ছোট ছবি দিন।' ),
 				),
 			),
 
@@ -303,6 +306,10 @@ class AUN_SP_I18N {
 					'jst_declined_sub' => array( 'k' => 'declined_sub', 'en' => 'Nothing was ordered and nothing is owed. If you tapped Decline by mistake, or you have changed your mind, ask us for a new quote.', 'bn' => 'কিছু অর্ডার করা হয়নি এবং কোনো টাকাও বাকি নেই। ভুল করে বাতিল করে থাকলে, বা মত পরিবর্তন হলে, আমাদের কাছে নতুন কোটেশন চান।' ),
 					'jst_revive_decl'  => array( 'k' => 'revive_declined', 'en' => 'Changed my mind — quote me again', 'bn' => 'মত পরিবর্তন হয়েছে — আবার কোটেশন দিন' ),
 					'jst_lb_close'     => array( 'k' => 'lb_close',     'en' => 'Close', 'bn' => 'বন্ধ করুন' ),
+					// The customer's own photos — shown exactly like the "see example" thumbnail.
+					'jst_your_photo'   => array( 'k' => 'your_photo',   'en' => 'Your photo', 'bn' => 'আপনার ছবি' ),
+					'jst_resent_photo' => array( 'k' => 'resent_photo', 'en' => 'The new photo you sent us', 'bn' => 'আপনার পাঠানো নতুন ছবি' ),
+					'jst_too_large'    => array( 'k' => 'too_large',    'en' => 'That photo is over 15 MB — please choose a smaller one.', 'bn' => 'ছবিটি ১৫ MB-এর বেশি — অনুগ্রহ করে ছোট ছবি দিন।' ),
 				),
 			),
 

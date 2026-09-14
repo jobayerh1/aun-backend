@@ -214,6 +214,40 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		// v1.112: prove you own a number before its purchases are linked to you.
+		register_rest_route( $ns, '/devices/purchase-phone/otp', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'purchase_phone_otp' ),
+			'permission_callback' => $auth,
+		) );
+
+		// v1.112: ownership — take over a released projector, or ask its owner.
+		register_rest_route( $ns, '/devices/claim', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'devices_claim' ),
+			'permission_callback' => $auth,
+		) );
+		register_rest_route( $ns, '/transfers', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'transfers_list' ),
+			'permission_callback' => $auth,
+		) );
+		register_rest_route( $ns, '/transfers/request', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'transfers_request' ),
+			'permission_callback' => $auth,
+		) );
+		register_rest_route( $ns, '/transfers/decide', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'transfers_decide' ),
+			'permission_callback' => $auth,
+		) );
+		register_rest_route( $ns, '/transfers/cancel', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'transfers_cancel' ),
+			'permission_callback' => $auth,
+		) );
+
 		// PUBLIC on purpose: the projector planner is the one feature a customer
 		// uses BEFORE they own anything, so requiring a login would gate the
 		// only part of the app that can win a sale.
@@ -765,6 +799,11 @@ class AUN_App_REST {
 			return $this->err( 'invalid_serial', 'Please enter a valid serial number.', 400 );
 		}
 
+		// Someone else holds it: can this customer ask them for it?
+		if ( 'registered_other' === ( $result['state'] ?? '' ) && class_exists( 'AUN_App_Transfers' ) ) {
+			$result['transfer'] = AUN_App_Transfers::status_for( (string) $request->get_param( 'serial' ), $me );
+		}
+
 		return $this->ok( $result );
 	}
 
@@ -777,6 +816,27 @@ class AUN_App_REST {
 			return $this->err( 'rate_limited', 'Too many lookups today. Please try again tomorrow.', 429 );
 		}
 		set_transient( $key, $count + 1, DAY_IN_SECONDS );
+
+		// ⚠️ A number that is not the one they signed in with must be PROVED
+		// first. This used to link every direct purchase of ANY typed number to
+		// the asking account — so knowing a customer's phone was enough to take
+		// their projectors (and read their serials and purchase dates).
+		$typed = AUN_App_Phone::normalize( (string) $request->get_param( 'phone' ) );
+		if ( $typed && ! in_array( $typed, AUN_App_Phone::variants( $me['phone'] ), true ) ) {
+			$ok_key = 'aun_app_pbpv_' . (int) $me['user_id'] . '_' . md5( $typed );
+			if ( ! get_transient( $ok_key ) ) {
+				$otp = preg_replace( '/\D/', '', (string) $request->get_param( 'otp' ) );
+				if ( '' === $otp ) {
+					return $this->err( 'otp_required', 'We sent a code to that number. Enter it to show it is yours.', 403 );
+				}
+				$v = AUN_App_OTP::verify( $typed, $otp, 'purchase' );
+				if ( empty( $v['ok'] ) ) {
+					return $this->err( 'otp_invalid', $v['message'], 403 );
+				}
+				// Proven for half an hour — a retry does not need a new SMS.
+				set_transient( $ok_key, 1, 30 * MINUTE_IN_SECONDS );
+			}
+		}
 
 		$result = AUN_App_Warranty::purchases_by_phone(
 			(string) $request->get_param( 'phone' ),
@@ -1135,9 +1195,18 @@ class AUN_App_REST {
 
 		$existing = AUN_App_Services::payment_summary( (int) $row->id );
 		if ( ! empty( $existing['pay_url'] ) && empty( $existing['paid'] ) ) {
-			$same = abs( (float) str_replace( ',', '', (string) $existing['total'] ) - $payable ) < 0.01;
-			if ( $same ) {
-				$order = AUN_SP_Woo::order_for( (int) $row->id );
+			$order = AUN_SP_Woo::order_for( (int) $row->id );
+			$same  = abs( (float) str_replace( ',', '', (string) $existing['total'] ) - $payable ) < 0.01;
+			// ⚠️ Never hand back a FAILED order, even at the right price.
+			//
+			// A failed order still has a pay link (WooCommerce counts it as
+			// needing payment), so this shortcut used to reuse it. The website
+			// no longer does: spare parts 0.43.0 has create_order() delete a
+			// failed order and build a fresh one, so an abandoned attempt can
+			// never be paid by mistake. Falling through to create_order() here
+			// gives the app that same behaviour instead of a second rule.
+			$failed = $order && 'failed' === $order->get_status();
+			if ( $same && ! $failed ) {
 				return $this->ok(
 					$this->pay_payload( $order ? $order->get_id() : 0, $ref, $existing )
 				);
@@ -1811,6 +1880,107 @@ class AUN_App_REST {
 		);
 	}
 
+	/**
+	 * Send a "confirm this number" code before purchases of a number other
+	 * than the signed-in one can be looked up.
+	 */
+	public function purchase_phone_otp( $request ) {
+		$me    = $this->identity();
+		$typed = AUN_App_Phone::normalize( (string) $request->get_param( 'phone' ) );
+		if ( ! $typed ) {
+			return $this->err( 'invalid_phone', 'Please enter a valid mobile number (e.g. 01712345678).', 400 );
+		}
+		if ( in_array( $typed, AUN_App_Phone::variants( $me['phone'] ), true ) ) {
+			return $this->ok( array( 'required' => false ) );
+		}
+		$r = AUN_App_OTP::request( $typed, (string) $request->get_param( 'app_hash' ), 'purchase' );
+		if ( empty( $r['ok'] ) ) {
+			$extra = isset( $r['resend_wait'] ) ? array( 'resend_wait' => (int) $r['resend_wait'] ) : array();
+			return $this->err( $r['code'], $r['message'], in_array( $r['code'], array( 'rate_limited', 'resend_wait' ), true ) ? 429 : 400, $extra );
+		}
+		// otp_length: how many boxes the app shows — the same code length as
+		// the login code, never hardcoded in the app.
+		$out = array(
+			'required'   => true,
+			'expires_in' => (int) ( $r['expires_in'] ?? 0 ),
+			'otp_length' => (int) aun_app_api_otp_settings()['otp_length'],
+		);
+		if ( isset( $r['dev_otp'] ) ) {
+			$out['dev_otp'] = $r['dev_otp'];
+		}
+		return $this->ok( $out );
+	}
+
+	/** Take over a projector its previous owner released. */
+	public function devices_claim( $request ) {
+		$me = $this->identity();
+		if ( '' === $me['phone'] ) {
+			return $this->err( 'no_phone', 'Your account has no phone number.', 400 );
+		}
+		// Same daily cap as the serial lookup: claiming is also a way to probe
+		// serials, and it must not be the uncapped one.
+		$key   = 'aun_app_wchk_' . $me['user_id'];
+		$count = (int) get_transient( $key );
+		if ( $count >= 30 ) {
+			return $this->err( 'rate_limited', 'Too many lookups today. Please try again tomorrow.', 429 );
+		}
+		set_transient( $key, $count + 1, DAY_IN_SECONDS );
+
+		$res = AUN_App_Transfers::claim_released( (string) $request->get_param( 'serial' ), $me );
+		if ( is_wp_error( $res ) ) {
+			return $this->err( $res->get_error_code(), $res->get_error_message(), 409 );
+		}
+		return $this->ok( $res );
+	}
+
+	/** Ask the current owner to hand a projector over. */
+	public function transfers_request( $request ) {
+		$me = $this->identity();
+		if ( '' === $me['phone'] ) {
+			return $this->err( 'no_phone', 'Your account has no phone number.', 400 );
+		}
+		$res = AUN_App_Transfers::request( (string) $request->get_param( 'serial' ), array(
+			'user_id' => $me['user_id'],
+			'phone'   => $me['phone'],
+			'name'    => $me['customer_name'],
+			'email'   => $me['email'],
+			'source'  => 'app',
+		) );
+		if ( is_wp_error( $res ) ) {
+			$code = $res->get_error_code();
+			return $this->err( $code, $res->get_error_message(), in_array( $code, array( 'rate_limited', 'recently_declined' ), true ) ? 429 : 409 );
+		}
+		return $this->ok( $res, 201 );
+	}
+
+	/** Requests this customer made, and requests waiting for their answer. */
+	public function transfers_list( $request ) {
+		return $this->ok( AUN_App_Transfers::for_user( $this->identity() ) );
+	}
+
+	/** The owner accepts or declines from the app. */
+	public function transfers_decide( $request ) {
+		$decision = sanitize_key( (string) $request->get_param( 'decision' ) );
+		if ( ! in_array( $decision, array( 'accept', 'decline' ), true ) ) {
+			return $this->err( 'invalid', 'Invalid decision.', 400 );
+		}
+		$res = AUN_App_Transfers::decide_by_owner( (int) $request->get_param( 'id' ), $this->identity(), $decision );
+		if ( is_wp_error( $res ) ) {
+			$data = $res->get_error_data();
+			return $this->err( $res->get_error_code(), $res->get_error_message(), 'not_found' === $res->get_error_code() ? 404 : 409, is_array( $data ) ? $data : array() );
+		}
+		return $this->ok( $res );
+	}
+
+	/** The requester withdraws their request. */
+	public function transfers_cancel( $request ) {
+		$res = AUN_App_Transfers::cancel( (int) $request->get_param( 'id' ), $this->identity() );
+		if ( is_wp_error( $res ) ) {
+			return $this->err( $res->get_error_code(), $res->get_error_message(), 404 );
+		}
+		return $this->ok( $res );
+	}
+
 	private function err( $code, $message, $status = 400, $extra = array() ) {
 		$error = array_merge(
 			array(
@@ -2409,11 +2579,28 @@ class AUN_App_REST {
 			$invoice_url = $upload;
 		}
 
+		// Email as entered on the form (prefilled from the profile, editable) —
+		// the website form requires one too. An older app sends none and gets
+		// the profile email, as before.
+		//
+		// ⚠️ The PHONE is deliberately NOT read from the request. A device is
+		// registered to the number the customer signed in with, and nothing
+		// else. Warranty records are keyed on that phone, so accepting a
+		// different one split one customer's devices across two accounts: a
+		// projector registered under the number on the dealer's invoice then
+		// showed only when logged in with THAT number. The app shows the login
+		// number read-only; ignoring any phone sent here makes the rule hold for
+		// every client, an old or modified app included.
+		$raw_email = trim( (string) $request->get_param( 'email' ) );
+		if ( '' !== $raw_email && ! is_email( $raw_email ) ) {
+			return $this->err( 'invalid_email', 'Please enter a valid email address.', 400 );
+		}
+
 		$name = sanitize_text_field( (string) $request->get_param( 'name' ) );
 		if ( '' === $name ) {
 			$name = AUN_App_Profile::get_name( $user->ID );
 		}
-		$email = sanitize_email( (string) $request->get_param( 'email' ) );
+		$email = sanitize_email( $raw_email );
 		if ( '' === $email ) {
 			$email = AUN_App_Profile::get_email( $user->ID );
 		}
@@ -2422,6 +2609,7 @@ class AUN_App_REST {
 			'user_id'        => $user->ID,
 			'customer_name'  => $name,
 			'phone'          => $canonical,
+			'account_phone'  => $canonical,
 			'email'          => $email,
 			'serial'         => (string) $request->get_param( 'serial' ),
 			'model'          => (string) $request->get_param( 'model' ),

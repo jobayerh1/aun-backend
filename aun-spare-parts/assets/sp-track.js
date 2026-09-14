@@ -11,6 +11,8 @@
 			send_photo: 'Send photo', choose_first: 'Choose a photo first.',
 			uploading: 'Uploading…', upload_done: 'Thanks — we received your new photo.',
 			eta: 'ETA ',
+			your_photo: 'Your photo', resent_photo: 'The new photo you sent us',
+			too_large: 'That photo is over 15 MB — please choose a smaller one.',
 			quote_h: 'Quote — please review', total: 'Total', approve: 'Approve & proceed', decline: 'Decline',
 			price_h: 'Price for your parts', payable_h: 'Approved — amount payable',
 			delivery: 'Delivery', pay_online: 'Pay online now', pay_wait: 'Opening payment…',
@@ -43,6 +45,8 @@
 			send_photo: 'ছবি পাঠান', choose_first: 'প্রথমে একটি ছবি নির্বাচন করুন।',
 			uploading: 'আপলোড হচ্ছে…', upload_done: 'ধন্যবাদ — আমরা আপনার নতুন ছবি পেয়েছি।',
 			eta: 'আনুমানিক ',
+			your_photo: 'আপনার ছবি', resent_photo: 'আপনার পাঠানো নতুন ছবি',
+			too_large: 'ছবিটি ১৫ MB-এর বেশি — অনুগ্রহ করে ছোট ছবি দিন।',
 			quote_h: 'কোটেশন — অনুগ্রহ করে দেখুন', total: 'মোট', approve: 'অনুমোদন করুন', decline: 'বাতিল করুন',
 			price_h: 'আপনার পার্টসের মূল্য', payable_h: 'অনুমোদিত — প্রদেয় পরিমাণ',
 			delivery: 'ডেলিভারি চার্জ', pay_online: 'এখনই অনলাইনে পেমেন্ট করুন', pay_wait: 'পেমেন্ট পেজ খোলা হচ্ছে…',
@@ -67,6 +71,10 @@
 			ith: { pending: 'আমরা আপনার অনুরোধ পেয়েছি এবং পার্টটি ও তার প্রাপ্যতা যাচাই করছি।', quoted: 'আমরা আপনাকে মূল্য জানিয়েছি। আপনি অনুমোদন দিলেই আমরা পার্টটি অর্ডার করব।', applied: 'আমরা ফ্যাক্টরিতে অর্ডার দিয়েছি এবং তাদের নিশ্চিতকরণের অপেক্ষায় আছি।', at_factory: 'ফ্যাক্টরি আপনার পার্টটি নিশ্চিত করেছে এবং পাঠানোর জন্য প্রস্তুত করছে। সাধারণত এই ধাপেই সবচেয়ে বেশি সময় লাগে।', shipped: 'আপনার পার্টটি ফ্যাক্টরি থেকে রওনা হয়েছে এবং বাংলাদেশে আসছে। এটি এখনও আমাদের কাছে পৌঁছায়নি।', arrived: 'আপনার পার্টটি ঢাকায় আমাদের অফিসে পৌঁছেছে। এরপর আমরা কুরিয়ারে আপনার কাছে পাঠাব।', dispatched: 'আমরা আপনার পার্টটি কুরিয়ারে দিয়ে দিয়েছি। নিচের লিংক দিয়ে পার্সেলটি ট্র্যাক করতে পারবেন।', delivered: 'কুরিয়ার আপনার পার্টটি পৌঁছে দিয়েছে। AUN-এর সঙ্গে থাকার জন্য ধন্যবাদ।', unavailable: 'আমরা এই পার্টটি সরবরাহ করতে পারছি না। কারণ উপরে উল্লেখ করা হয়েছে।', cancelled: 'এই পার্টটি অর্ডার করা হয়নি। নতুন দাম জানতে চাইলে যেকোনো সময় আমাদের জানান।' }
 		}
 	};
+
+	// Same ceiling the server enforces — checked here too, so a too-big photo is
+	// refused at once instead of after a long upload on mobile data.
+	var MAX_BYTES = 15 * 1024 * 1024;
 
 	function statusClass( key ) {
 		if ( key === 'delivered' || key === 'arrived' || key === 'dispatched' || key === 'ready' || key === 'approved' ) { return 'in'; }
@@ -226,10 +234,16 @@
 				var list = el( 'div', 'aun-sp-track-parts' );
 				( r.parts || [] ).forEach( function ( p ) {
 					var row   = el( 'div', 'aun-sp-track-part' );
-					var pname = ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
+					var base  = ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
+					var pname = base;
 					// Show the quantity when more than one was requested.
 					if ( p.qty && p.qty > 1 ) { pname += ' × ' + p.qty; }
-					row.appendChild( el( 'span', 'aun-sp-track-pname', pname ) );
+					// The photo they sent for this part, shown exactly like the "see example"
+					// thumbnail and opening in the same lightbox.
+					var info = el( 'div', 'aun-sp-track-pinfo' );
+					if ( p.photo ) { info.appendChild( photoThumb( p.photo, t( 'your_photo' ) + ' · ' + base, t( 'your_photo' ) ) ); }
+					info.appendChild( el( 'span', 'aun-sp-track-pname', pname ) );
+					row.appendChild( info );
 					// Only show an ETA while the part is still on its way (not once it has
 					// arrived, been dispatched, delivered, or is unavailable).
 					var showEta = p.eta && ! hideEta[ p.key ];
@@ -254,6 +268,14 @@
 				} );
 				body.appendChild( list );
 
+				// The clearer photo they sent after we asked for one.
+				if ( r.resent_photo ) {
+					var rs = el( 'div', 'aun-sp-track-resent' );
+					rs.appendChild( photoThumb( r.resent_photo, t( 'resent_photo' ), t( 'your_photo' ) ) );
+					rs.appendChild( el( 'span', 'aun-sp-track-resent-t', t( 'resent_photo' ) ) );
+					body.appendChild( rs );
+				}
+
 				// Any priced request shows its cost; only a pending one shows the buttons.
 				if ( r.quote ) { body.appendChild( quoteBlock( r, chip ) ); }
 				if ( r.waiting ) { body.appendChild( reupload( r.ref, r.parts ) ); }
@@ -262,6 +284,27 @@
 				card.appendChild( body );
 				results.appendChild( card );
 			} );
+		}
+
+		/**
+		 * A photo thumbnail that opens in the shared lightbox (sp-lightbox.js binds
+		 * to .aun-sp-refimg by delegation, so nothing else needs wiring). Used for the
+		 * reference "take it like this" photos AND the customer's own photos.
+		 */
+		function photoThumb( src, caption, label ) {
+			var a = el( 'a', 'aun-sp-refimg' );
+			a.href = src;
+			a.setAttribute( 'data-full', src );
+			a.setAttribute( 'data-caption', caption ); // shown under the lightbox image
+			a.title = caption;
+			var img = el( 'img' );
+			img.src = src;
+			img.alt = caption;
+			img.loading = 'lazy';     // collapsed cards don't download their photos
+			img.decoding = 'async';
+			a.appendChild( img );
+			if ( label ) { a.appendChild( el( 'span', null, label ) ); }
+			return a;
 		}
 
 		function reupload( ref, parts ) {
@@ -275,18 +318,7 @@
 				var exWrap = el( 'div', 'aun-sp-reupload-examples' );
 				examples.forEach( function ( p ) {
 					var pname = ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
-					var a = el( 'a', 'aun-sp-refimg' );
-					a.href = p.ref_image;
-					a.setAttribute( 'data-full', p.ref_image );
-					a.setAttribute( 'data-caption', pname ); // shown under the lightbox image
-					a.title = pname;
-					var img = el( 'img' );
-					img.src = p.ref_image;
-					img.alt = pname;
-					img.loading = 'lazy';
-					a.appendChild( img );
-					a.appendChild( el( 'span', null, pname ) );
-					exWrap.appendChild( a );
+					exWrap.appendChild( photoThumb( p.ref_image, pname, pname ) );
 				} );
 				box.appendChild( exWrap );
 			}
@@ -297,6 +329,27 @@
 			send.type = 'button';
 			send.textContent = t( 'send_photo' );
 			var m = el( 'span', 'aun-sp-reupload-msg' );
+
+			// Show what they picked before they send it, so a blurry or wrong photo is
+			// caught on their side — the whole reason this box exists.
+			var preview = el( 'div', 'aun-sp-reupload-preview' );
+			preview.hidden = true;
+			var blobUrl = '';
+			file.addEventListener( 'change', function () {
+				m.textContent = '';
+				if ( blobUrl ) { URL.revokeObjectURL( blobUrl ); blobUrl = ''; }
+				preview.textContent = '';
+				preview.hidden = true;
+				var f = file.files && file.files[0];
+				if ( ! f ) { return; }
+				if ( f.size > MAX_BYTES ) { file.value = ''; m.textContent = t( 'too_large' ); return; }
+				if ( window.URL && URL.createObjectURL ) {
+					blobUrl = URL.createObjectURL( f );
+					preview.appendChild( photoThumb( blobUrl, t( 'your_photo' ), t( 'your_photo' ) ) );
+					preview.hidden = false;
+				}
+			} );
+
 			send.addEventListener( 'click', function () {
 				if ( ! file.files.length ) { m.textContent = t( 'choose_first' ); return; }
 				send.disabled = true;
@@ -318,6 +371,7 @@
 				} ).catch( function () { send.disabled = false; m.textContent = t( 'net_err' ); } );
 			} );
 			box.appendChild( file );
+			box.appendChild( preview );
 			box.appendChild( send );
 			box.appendChild( m );
 			return box;

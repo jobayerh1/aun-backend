@@ -128,6 +128,8 @@ class AUN_SP_Tracking {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_track_none' ) ) );
 		}
 
+		// The customer's own photos for every request shown — one query, not one per request.
+		$photos  = self::customer_photos( wp_list_pluck( $reqs, 'id' ) );
 		$t_event = AUN_SP_Install::table( 'events' );
 		$ov      = AUN_SP_Requests::overall_statuses();
 		$ist     = AUN_SP_Requests::item_statuses();
@@ -152,6 +154,9 @@ class AUN_SP_Tracking {
 				}
 				$parts[] = array(
 					'chargeable' => $chargeable,
+					// The photo the customer sent for this part ('' if none) — shown as a
+					// thumbnail that opens in the same lightbox as the reference photo.
+					'photo'      => $photos[ (int) $r->id ][ (int) $it->id ] ?? '',
 					'label'     => $it->part_label,
 					'label_bn'  => ( $cat && ! empty( $cat['label_bn'] ) ) ? $cat['label_bn'] : $it->part_label,
 					'qty'       => $qty,
@@ -256,6 +261,9 @@ class AUN_SP_Tracking {
 				) : null,
 				'timeline'     => $timeline,
 				'parts'        => $parts,
+				// Latest photo re-sent after we asked for a clearer one. Re-uploads aren't
+				// tied to a single part (item_id 0), so it is shown once per request.
+				'resent_photo' => $photos[ (int) $r->id ][0] ?? '',
 			);
 		}
 
@@ -265,7 +273,7 @@ class AUN_SP_Tracking {
 	public function ajax_reupload() {
 		$this->check_nonce();
 		if ( ! $this->rate_ok( 'reupload', 10 ) ) {
-			wp_send_json_error( array( 'message' => 'Too many uploads. Please wait a moment.' ), 429 );
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_rate_limited' ) ), 429 );
 		}
 
 		global $wpdb;
@@ -279,8 +287,24 @@ class AUN_SP_Tracking {
 		if ( ! $req ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_notfound' ) ) );
 		}
-		if ( (int) $_FILES['photo']['size'] > 15 * 1024 * 1024 ) {
+		// Validate the file BEFORE claiming the "waiting for a photo" state below.
+		// This used to check only the size here and leave the rest to the upload step,
+		// so a file the server refused (bigger than the host's upload limit, or not an
+		// image) still flipped the request to "in progress" and back again — and a
+		// photo that was simply too big was reported as the wrong file type.
+		$err = isset( $_FILES['photo']['error'] ) ? (int) $_FILES['photo']['error'] : UPLOAD_ERR_NO_FILE;
+		if ( UPLOAD_ERR_INI_SIZE === $err || UPLOAD_ERR_FORM_SIZE === $err
+			|| (int) $_FILES['photo']['size'] > 15 * 1024 * 1024 ) {
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_large' ) ) );
+		}
+		if ( UPLOAD_ERR_OK !== $err || empty( $_FILES['photo']['tmp_name'] ) ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_badtype' ) ) );
+		}
+		// Real content check (not just the file name) — same rule as the request form.
+		$type = wp_check_filetype_and_ext( $_FILES['photo']['tmp_name'], $_FILES['photo']['name'],
+			array( 'jpg|jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif' ) );
+		if ( empty( $type['ext'] ) || empty( $type['type'] ) ) {
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_badtype' ) ) );
 		}
 
 		// Anti-abuse: only accept a re-upload when the request is actually waiting for one,
@@ -444,6 +468,36 @@ class AUN_SP_Tracking {
 		wp_send_json_success( array( 'pay_url' => $summary['pay_url'], 'total' => $summary['total'] ) );
 	}
 
+	/**
+	 * The customer's own photos, ready for display: request_id => [ item_id => url ].
+	 * Key 0 holds the latest re-sent photo (re-uploads aren't tied to one part).
+	 *
+	 * Only URLs that resolve to a REAL file inside uploads/aun-spare-parts/ are
+	 * returned. A removed file then shows no broken thumbnail, and this public page
+	 * can never be made to display anything else, whatever the column holds.
+	 */
+	private static function customer_photos( $request_ids ) {
+		global $wpdb;
+		$ids = array_values( array_filter( array_map( 'intval', (array) $request_ids ) ) );
+		if ( ! $ids ) {
+			return array();
+		}
+		$t    = AUN_SP_Install::table( 'attachments' );
+		// Integers only (intval above), so they are safe to inline.
+		$rows = $wpdb->get_results( "SELECT request_id, item_id, file_url FROM $t WHERE request_id IN (" . implode( ',', $ids ) . ") ORDER BY id ASC" );
+		$dir  = DIRECTORY_SEPARATOR . 'aun-spare-parts' . DIRECTORY_SEPARATOR;
+		$out  = array();
+		foreach ( (array) $rows as $row ) {
+			$path = AUN_SP_Image::url_to_path( $row->file_url );
+			if ( '' === $path || false === strpos( $path, $dir ) ) {
+				continue;
+			}
+			// Oldest first, so a later photo for the same slot wins.
+			$out[ (int) $row->request_id ][ (int) $row->item_id ] = esc_url_raw( $row->file_url );
+		}
+		return $out;
+	}
+
 	/* --------------------------------------------------------------------- Helpers */
 
 	private function check_nonce() {
@@ -455,7 +509,7 @@ class AUN_SP_Tracking {
 	}
 
 	private function rate_ok( $action, $max ) {
-		$ip     = ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ) . '|' . ( $_SERVER['REMOTE_ADDR'] ?? 'unknown' );
+		$ip     = aun_sp_client_ip(); // spoof-proof — see aun_sp_client_ip()
 		$bucket = floor( time() / 60 );
 		$key    = 'aun_sp_rl_' . $action . '_' . md5( $ip . '_' . $bucket );
 		$count  = (int) get_transient( $key );
