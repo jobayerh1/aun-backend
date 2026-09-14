@@ -1,0 +1,547 @@
+/* Breo BD Store 2.0: design language after breo.com (dark header, full-screen
+ * sections) and us.breo.com (warm neutrals). Fonts are self-hosted. */
+
+@font-face {
+	font-family: "Breo Sans";
+	src: url("fonts/noto-sans-display-latin.woff2") format("woff2");
+	font-weight: 100 900;
+	font-stretch: 62.5% 100%;
+	font-display: swap;
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+.breo-bd {
+	--b-font: "Breo Sans", "Noto Sans Display", "Segoe UI", system-ui, -apple-system, "Nirmala UI", "Noto Sans Bengali", sans-serif;
+	--b-ink: #1c1c1c;
+	--b-text: #262626;
+	--b-muted: #6f6a63;
+	--b-line: #e8e2da;
+	--b-cream: #f7f2eb;
+	--b-sand: #efe6da;
+	--b-warm: #f5e2cb;
+	--b-night: #1b1a1d;
+	--b-hdr: #1c1c1c;
+	--b-mega: #242424;
+	--b-hdr-h: 60px;
+	--b-top: var(--wp-admin--admin-bar--height, 0px);
+	--accent: #e8692c;
+	--b-pill: 999px;
+	--b-r: 18px;
+	--b-screen: calc(100svh - var(--b-hdr-h) - var(--b-top));
+}
+
+/* ------------------------------------------------------------------ base */
+.breo-canvas { margin: 0; background: #fff; color: var(--b-text); font-family: var(--b-font); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.breo-canvas *, .breo-canvas *::before, .breo-canvas *::after,
+.breo-hdr *, .breo-ftr *, .breo-hdr, .breo-ftr { box-sizing: border-box; }
+.breo-canvas img, .breo-canvas video { max-width: 100%; }
+.breo-canvas h1, .breo-canvas h2, .breo-canvas h3 { font-family: var(--b-font); color: inherit; }
+.breo-main { display: block; overflow-x: clip; }
+.breo-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.breo-skip { position: absolute; left: -9999px; top: 8px; z-index: 3000; background: #fff; color: #000; padding: 8px 14px; border-radius: 8px; }
+.breo-skip:focus { left: 12px; }
+.breo-bd a:focus-visible, .breo-bd button:focus-visible, .breo-bd summary:focus-visible, .breo-bd input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.breo-wrap { width: min(1240px, 100% - 2 * clamp(20px, 4vw, 48px)); margin-inline: auto; }
+.breo-wrap.breo-narrow, .breo-narrow { width: min(820px, 100% - 40px); margin-inline: auto; }
+
+.breo-eyebrow { font-size: .78rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 .9rem; }
+.breo-title { font-size: clamp(1.9rem, 3.6vw, 3.1rem); font-weight: 600; line-height: 1.12; letter-spacing: -.015em; margin: 0 0 .55em; }
+.breo-lead { font-size: clamp(1rem, 1.25vw, 1.14rem); line-height: 1.7; color: var(--b-muted); margin: 0 0 1.5rem; max-width: 36em; }
+.breo-note { font-size: .8rem; color: var(--b-muted); margin: 1.2rem 0 0; opacity: .85; }
+.breo-points { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: .6rem; }
+.breo-points li { display: flex; gap: .6rem; align-items: flex-start; }
+.breo-points .breo-ico { color: var(--accent); margin-top: .2rem; flex: none; }
+.breo-ico { flex: none; }
+.breo-logo { display: inline-flex; color: inherit; }
+.breo-logo svg { display: block; height: 22px; width: auto; }
+.breo-link { display: inline-flex; align-items: center; gap: .4rem; color: inherit; font-weight: 600; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 2px; margin-top: .5rem; }
+.breo-link:hover { color: var(--accent); }
+.breo-center-link { text-align: center; margin-top: 2rem; }
+
+/* buttons */
+.breo-btn {
+	display: inline-flex; align-items: center; justify-content: center; gap: .5em; min-height: 48px; padding: .7em 1.7em;
+	border-radius: var(--b-pill); background: var(--b-ink); color: #fff !important; border: 0; cursor: pointer;
+	font: 600 .95rem/1.2 var(--b-font); text-decoration: none !important; white-space: nowrap;
+	transition: background .2s, color .2s, box-shadow .2s, transform .2s;
+}
+.breo-btn:hover { background: #000; transform: translateY(-1px); }
+.breo-btn--ghost { background: transparent; color: var(--b-ink) !important; box-shadow: inset 0 0 0 1.5px currentColor; }
+.breo-btn--ghost:hover { background: var(--b-ink); color: #fff !important; box-shadow: none; }
+.breo-btn--light { background: #fff; color: var(--b-ink) !important; }
+.breo-btn--light:hover { background: #f1f1f1; }
+.breo-btn--sm { min-height: 40px; padding: .5em 1.2em; font-size: .88rem; }
+.breo-btn .breo-ico--fill { width: 18px; height: 18px; }
+
+/* section canvas */
+.breo-s { position: relative; }
+.breo-s--tight { padding: clamp(40px, 6vw, 72px) 0; }
+.theme-white { background: #fff; }
+.theme-cream { background: var(--b-cream); }
+.theme-warm { background: var(--b-warm); }
+.theme-sand { background: var(--b-sand); }
+.theme-dark { background: var(--b-night); color: #f1efec; }
+.theme-dark .breo-lead, .theme-dark .breo-note { color: #b9b4ad; }
+.theme-dark .breo-btn { background: #fff; color: var(--b-ink) !important; }
+.theme-dark .breo-btn--ghost { background: transparent; color: #fff !important; }
+
+/* -------------------------------------------------------------- header */
+.breo-hdr { position: sticky; top: var(--b-top); z-index: 1000; background: var(--b-hdr); color: #fff; font-family: var(--b-font); }
+.breo-hdr__bar { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: var(--b-hdr-h); padding: 0 clamp(16px, 3vw, 40px); }
+.breo-hdr__brand { justify-self: start; display: inline-flex; align-items: center; gap: .7rem; color: #fff; text-decoration: none; }
+.breo-hdr__brand .breo-logo svg { height: 24px; }
+.breo-hdr__loc { font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: #bdbdbd; border-left: 1px solid #4a4a4a; padding-left: .7rem; line-height: 1; }
+.breo-hdr__nav ul { list-style: none; display: flex; gap: clamp(1.2rem, 2.6vw, 2.8rem); margin: 0; padding: 0; }
+.breo-hdr__item { position: relative; }
+.breo-hdr__item.is-mega { position: static; }
+.breo-hdr__link {
+	position: relative; display: inline-flex; align-items: center; gap: .3rem; height: var(--b-hdr-h); padding: 0;
+	background: none; border: 0; color: #e6e6e6; font: 400 .92rem var(--b-font); letter-spacing: .02em; text-decoration: none; cursor: pointer;
+}
+.breo-hdr__link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 16px; height: 1.5px; background: #fff; transform: scaleX(0); transition: transform .25s; }
+.breo-hdr__link:hover, .is-open > .breo-hdr__link { color: #fff; }
+.breo-hdr__link:hover::after, .is-open > .breo-hdr__link::after { transform: scaleX(1); }
+.breo-hdr__link .breo-ico { transition: transform .25s; opacity: .7; }
+.is-open > .breo-hdr__link .breo-ico { transform: rotate(180deg); }
+.breo-hdr__icons { justify-self: end; display: flex; align-items: center; gap: .2rem; }
+.breo-hdr__icon { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: none; border: 0; color: #e6e6e6; cursor: pointer; text-decoration: none; transition: background .2s; }
+.breo-hdr__icon:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.breo-hdr__wa .breo-ico--fill { color: #3ddc84; }
+.breo-cart-count { position: absolute; top: 3px; right: 1px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--accent); color: #fff; font-size: .64rem; font-weight: 700; display: grid; place-items: center; line-height: 1; }
+.breo-cart-count[data-count="0"] { display: none; }
+.breo-hdr__burger { display: none; }
+.breo-burger-close { display: none; }
+.breo-hdr__burger[aria-expanded="true"] .breo-burger-open { display: none; }
+.breo-hdr__burger[aria-expanded="true"] .breo-burger-close { display: block; }
+
+.breo-mega, .breo-drop { opacity: 0; visibility: hidden; transition: opacity .22s ease, transform .22s ease, visibility .22s; }
+.breo-mega { position: absolute; left: 0; right: 0; top: 100%; background: var(--b-mega); border-top: 1px solid #333; box-shadow: 0 30px 50px rgba(0, 0, 0, .35); transform: translateY(-6px); }
+.is-open > .breo-mega, .is-open > .breo-drop { opacity: 1; visibility: visible; }
+.is-open > .breo-mega { transform: none; }
+.breo-mega__in { width: min(1240px, 100% - 48px); margin: 0 auto; padding: 28px 0 34px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 210px; gap: 16px; }
+.breo-mega__card { display: flex; flex-direction: column; gap: .2rem; padding: 12px 12px 16px; border-radius: 16px; background: #2d2d2d; color: #fff; text-decoration: none; transition: background .2s, transform .2s; }
+.breo-mega__card:hover { background: #363636; transform: translateY(-2px); }
+.breo-mega__img { display: block; aspect-ratio: 4 / 3; border-radius: 11px; overflow: hidden; background: #f4f1ec; margin-bottom: .7rem; }
+.breo-mega__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-mega__name { font-size: 1.05rem; font-weight: 600; padding: 0 4px; }
+.breo-mega__sub { font-size: .82rem; color: #a8a8a8; padding: 0 4px; }
+.breo-mega__price { font-size: .86rem; color: #e0e0e0; padding: 0 4px; margin-top: .25rem; }
+.breo-mega__price del { color: #8a8a8a; }
+.breo-mega__price ins { text-decoration: none; }
+.breo-mega__side { display: flex; flex-direction: column; gap: .55rem; padding-left: 22px; border-left: 1px solid #3a3a3a; }
+.breo-mega__side a { color: #cfcfcf; text-decoration: none; font-size: .92rem; }
+.breo-mega__side a:hover { color: #fff; }
+.breo-mega__label { font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: #8c8c8c; margin: 4px 0 .4rem; }
+.breo-mega__all { display: inline-flex; align-items: center; gap: .4rem; margin-top: auto; color: #fff !important; font-weight: 600; }
+.breo-drop { position: absolute; top: 100%; left: 50%; transform: translate(-50%, -6px); min-width: 220px; padding: 10px; background: var(--b-mega); border-radius: 0 0 14px 14px; box-shadow: 0 20px 40px rgba(0, 0, 0, .3); display: flex; flex-direction: column; }
+.is-open > .breo-drop { transform: translate(-50%, 0); }
+.breo-drop a { padding: .6rem .9rem; border-radius: 8px; color: #d8d8d8; text-decoration: none; font-size: .92rem; }
+.breo-drop a:hover { background: #333; color: #fff; }
+
+.breo-mnav { position: fixed; left: 0; right: 0; bottom: 0; top: calc(var(--b-top) + var(--b-hdr-h)); background: #151515; overflow-y: auto; overscroll-behavior: contain; }
+.breo-mnav[hidden] { display: none; }
+.breo-mnav__in { padding: 16px 20px 40px; display: flex; flex-direction: column; }
+.breo-mnav__label { font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: #8c8c8c; margin: 18px 0 10px; }
+.breo-mnav__products { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.breo-mnav__products a { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: #242424; color: #fff; text-decoration: none; }
+.breo-mnav__products strong { display: block; font-size: 1rem; }
+.breo-mnav__products small { display: block; color: #a8a8a8; font-size: .78rem; line-height: 1.3; }
+.breo-mnav__img { aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: #f4f1ec; }
+.breo-mnav__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-mnav__link { padding: 13px 2px; color: #ececec; text-decoration: none; border-bottom: 1px solid #262626; font-size: 1.02rem; }
+.breo-mnav__wa { margin-top: 24px; }
+.breo-mnav__wa .breo-ico--fill { color: #1faa55; }
+html.breo-nav-open, html.breo-nav-open body { overflow: hidden; }
+
+/* -------------------------------------------------------------- footer */
+.breo-ftr { background: #151515; color: #aeaeae; font-family: var(--b-font); font-size: .92rem; line-height: 1.6; padding: clamp(48px, 7vw, 80px) 0 28px; }
+.breo-ftr__top { display: grid; grid-template-columns: 1.5fr repeat(3, 1fr) 1.4fr; gap: 36px; }
+.breo-ftr__brand .breo-logo { color: #fff; }
+.breo-ftr__brand .breo-logo svg { height: 28px; }
+.breo-ftr__brand p { margin: 1.1rem 0 1.2rem; max-width: 22rem; }
+.breo-ftr__social { display: flex; gap: 8px; }
+.breo-ftr__social a { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #242424; color: #ddd; transition: background .2s, color .2s; }
+.breo-ftr__social a:hover { background: #fff; color: #111; }
+.breo-ftr__h { color: #fff; font-weight: 600; font-size: .95rem; margin: 0 0 1rem; }
+.breo-ftr__col a, .breo-ftr__col span { display: flex; gap: .55rem; align-items: flex-start; color: #aeaeae; text-decoration: none; margin-bottom: .6rem; }
+.breo-ftr__col a:hover { color: #fff; }
+.breo-ftr__col .breo-ico { margin-top: .15rem; }
+.breo-ftr__contact .breo-ico--fill { width: 18px; height: 18px; color: #3ddc84; }
+.breo-ftr__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 32px; margin-top: 48px; padding-top: 22px; border-top: 1px solid #2a2a2a; font-size: .8rem; color: #858585; }
+.breo-ftr__bottom p { margin: 0; }
+
+.breo-wa { position: fixed; right: 18px; bottom: 18px; z-index: 950; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #fff !important; box-shadow: 0 10px 26px rgba(0, 0, 0, .22); transition: transform .2s; }
+.breo-wa:hover { transform: scale(1.07); }
+.breo-wa .breo-ico--fill { width: 28px; height: 28px; }
+
+/* ------------------------------------------------------- hero (product) */
+.breo-hero { display: flex; align-items: center; min-height: clamp(560px, var(--b-screen), 1000px); overflow: hidden; background: var(--b-cream); }
+.breo-hero__media { position: absolute; inset: 0; }
+.breo-hero__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-hero.theme-light::before, .breo-banner.theme-light::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.breo-hero.theme-light.align-left::before, .breo-banner.theme-light.align-left::before { background: linear-gradient(90deg, rgba(250, 245, 238, .92) 0%, rgba(250, 245, 238, .7) 28%, rgba(250, 245, 238, 0) 55%); }
+.breo-hero.theme-light.align-right::before, .breo-banner.theme-light.align-right::before { background: linear-gradient(270deg, rgba(250, 245, 238, .92) 0%, rgba(250, 245, 238, .7) 28%, rgba(250, 245, 238, 0) 55%); }
+.breo-hero__content { position: relative; z-index: 2; padding: 72px 0; }
+.breo-hero__content > * { max-width: 32rem; }
+.breo-hero.align-right .breo-hero__content > * { margin-left: auto; }
+.breo-hero__model { display: flex; align-items: baseline; flex-wrap: wrap; gap: .32em; margin: 0; font-size: clamp(2.6rem, 5.2vw, 4.4rem); font-weight: 500; line-height: 1.05; letter-spacing: -.02em; color: var(--b-ink); }
+.breo-hero__mark { display: inline-flex; align-items: baseline; gap: .32em; }
+.breo-hero__model .breo-logo svg { height: .74em; transform: translateY(.02em); }
+.breo-hero__title { margin: 1.1rem 0 .6rem; font-size: clamp(1.3rem, 2.2vw, 1.9rem); font-weight: 500; line-height: 1.3; color: var(--b-ink); }
+.breo-hero__text { margin: 0 0 2rem; font-size: 1.05rem; line-height: 1.65; color: var(--b-muted); }
+.breo-hero-cta { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem 1.4rem; }
+.breo-hero-cta__price, .breo-buy__price, .breo-pcard__price, .breo-ptile__price, .breo-sticky__price { font-weight: 600; }
+.breo-hero-cta__price { font-size: 1.25rem; color: var(--b-ink); }
+.breo-canvas del { color: var(--b-muted); font-weight: 400; font-size: .85em; margin-right: .3em; }
+.breo-canvas ins { text-decoration: none; }
+.breo-price-na { font-weight: 500; color: var(--b-muted); }
+
+.breo-hsplit { display: grid; grid-template-columns: 1fr 1fr; min-height: clamp(560px, var(--b-screen), 1000px); }
+.breo-hsplit__text { display: flex; align-items: center; padding: clamp(40px, 6vw, 96px); }
+.breo-hsplit__in { max-width: 32rem; margin-left: auto; }
+.breo-hsplit__media { position: relative; overflow: hidden; }
+.breo-hsplit__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* ------------------------------------------------------ content sections */
+.breo-center { padding: clamp(72px, 10vw, 130px) 0 0; text-align: center; }
+.breo-center:not(.is-full) { padding-bottom: clamp(56px, 7vw, 96px); }
+.breo-center.bg-white { background: #fff; }
+.breo-center.bg-cream { background: var(--b-cream); }
+.breo-center__text .breo-lead { margin-inline: auto; }
+.breo-center__media { margin-top: clamp(24px, 4vw, 48px); }
+.breo-center__media img { display: block; width: 100%; height: auto; }
+.breo-center:not(.is-full) .breo-center__media img { max-width: 1100px; margin-inline: auto; }
+
+.breo-split { display: grid; grid-template-columns: 1fr 1fr; min-height: min(92svh, 880px); }
+.breo-split__media { position: relative; overflow: hidden; min-height: 360px; }
+.breo-split__media img, .breo-split__media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-split.media-right .breo-split__media { order: 2; }
+.breo-split__text { display: flex; align-items: center; padding: clamp(40px, 7vw, 110px); }
+.breo-split__in { max-width: 31rem; }
+.breo-split.no-media { grid-template-columns: 1fr; min-height: 0; }
+.breo-split.no-media .breo-split__text { justify-content: center; text-align: center; padding: clamp(64px, 9vw, 120px) 24px; }
+.breo-split.no-media .breo-split__in { margin: 0 auto !important; }
+.breo-split.media-left .breo-split__in { margin-right: auto; }
+.breo-split.media-right .breo-split__in { margin-left: auto; }
+
+.breo-banner { display: flex; align-items: center; min-height: clamp(520px, 88svh, 880px); overflow: hidden; background: var(--b-cream); }
+.breo-banner__media { position: absolute; inset: 0; }
+.breo-banner__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-banner__content { position: relative; z-index: 2; padding: 64px 0; }
+.breo-banner__in { max-width: 30rem; }
+.breo-banner.align-right .breo-banner__in { margin-left: auto; }
+.breo-banner.theme-dark::before { content: ""; position: absolute; inset: 0; z-index: 1; background: rgba(0, 0, 0, .35); }
+
+.breo-stats { padding: clamp(64px, 8vw, 104px) 0; }
+.breo-stats__grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+.breo-stat { padding: 8px clamp(12px, 2vw, 32px); border-left: 1px solid rgba(128, 128, 128, .25); }
+.breo-stat:first-child { border-left: 0; }
+.breo-stat__v { margin: 0; font-size: clamp(2.3rem, 4.8vw, 4rem); font-weight: 600; line-height: 1; letter-spacing: -.03em; }
+.breo-stat__v span { font-size: .42em; font-weight: 500; letter-spacing: 0; margin-left: .15em; color: var(--accent); }
+.breo-stat__l { margin: .8rem 0 0; color: var(--b-muted); font-size: .95rem; }
+.theme-dark .breo-stat__l { color: #a8a39c; }
+
+.breo-cards { padding: clamp(72px, 9vw, 120px) 0; }
+.breo-cards__head { max-width: 40rem; margin-bottom: 40px; }
+.breo-cards__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.breo-card2 { background: #fff; border-radius: var(--b-r); padding: 28px 26px; }
+.theme-dark .breo-card2 { background: #262529; }
+.breo-card2__n { font-size: .8rem; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+.breo-card2 h3 { font-size: 1.15rem; font-weight: 600; margin: .7rem 0 .45rem; }
+.breo-card2 p { margin: 0; color: var(--b-muted); font-size: .95rem; line-height: 1.6; }
+
+.breo-duo { padding: clamp(72px, 9vw, 120px) 0; }
+.breo-duo__title { text-align: center; margin-bottom: 40px; }
+.breo-duo__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.breo-duo__item { background: var(--b-cream); border-radius: calc(var(--b-r) * 1.3); padding: clamp(28px, 4vw, 48px); }
+.breo-duo__n { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; margin-bottom: 1.2rem; }
+.breo-duo__item h3 { font-size: 1.4rem; font-weight: 600; margin: 0 0 .5rem; }
+.breo-duo__item p { margin: 0; color: var(--b-muted); line-height: 1.65; }
+
+/* ------------------------------------------------------------- buy panel */
+.breo-buy { padding: clamp(56px, 8vw, 100px) 0; background: #fff; scroll-margin-top: calc(var(--b-hdr-h) + var(--b-top)); }
+.breo-buy__grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(28px, 5vw, 72px); align-items: start; }
+.breo-buy__gallery { position: sticky; top: calc(var(--b-top) + var(--b-hdr-h) + 80px); }
+.breo-buy__main { position: relative; aspect-ratio: 1; border-radius: 22px; overflow: hidden; background: var(--b-cream); }
+.breo-buy__slide { position: absolute; inset: 0; margin: 0; opacity: 0; transition: opacity .4s; }
+.breo-buy__slide.is-active { opacity: 1; }
+.breo-buy__slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-buy__thumbs { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
+.breo-buy__thumbs button { flex: none; width: 72px; height: 72px; padding: 0; border-radius: 12px; overflow: hidden; border: 2px solid transparent; background: var(--b-cream); cursor: pointer; opacity: .75; transition: opacity .2s, border-color .2s; }
+.breo-buy__thumbs button.is-active, .breo-buy__thumbs button:hover { border-color: var(--b-ink); opacity: 1; }
+.breo-buy__thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.breo-buy__name { font-size: clamp(1.7rem, 3vw, 2.5rem); font-weight: 600; line-height: 1.15; letter-spacing: -.015em; margin: 0 0 .8rem; }
+.breo-buy__price { font-size: 1.6rem; margin-bottom: 1rem; color: var(--b-ink); }
+.breo-buy__short { color: var(--b-muted); line-height: 1.7; margin: 0 0 1.2rem; }
+.breo-badges { list-style: none; margin: 0 0 1.4rem; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.breo-badges li { display: inline-flex; align-items: center; gap: .45em; padding: .45em .9em; border-radius: 10px; background: var(--b-cream); color: var(--b-ink); font-size: .86rem; font-weight: 500; }
+.breo-badges .breo-ico { color: var(--accent); }
+.breo-buy__meta { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0 32px; margin: 0 0 1.6rem; padding: 1rem 0; border-top: 1px solid var(--b-line); border-bottom: 1px solid var(--b-line); }
+.breo-buy__meta dt { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--b-muted); }
+.breo-buy__meta dd { margin: .15rem 0 0; font-weight: 500; }
+.breo-buy__form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+.breo-buy__form .breo-btn { flex: 1 1 150px; }
+.breo-qty { display: inline-flex; align-items: center; border: 1.5px solid var(--b-line); border-radius: var(--b-pill); height: 48px; }
+.breo-qty button { width: 42px; height: 100%; border: 0; background: none; font-size: 1.2rem; cursor: pointer; color: var(--b-ink); }
+.breo-qty input { width: 40px; border: 0; background: none; text-align: center; font: 600 1rem var(--b-font); -moz-appearance: textfield; }
+.breo-qty input::-webkit-outer-spin-button, .breo-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.breo-buy__na { padding: 1rem 1.2rem; border-radius: 14px; background: var(--b-cream); margin: 0 0 1rem; }
+.breo-buy__wa { display: inline-flex; align-items: center; gap: .5rem; color: #128c47; font-weight: 600; text-decoration: none; margin: .2rem 0 1.4rem; }
+.breo-buy__wa .breo-ico--fill { width: 20px; height: 20px; }
+.breo-buy__trust { list-style: none; margin: 0; padding: 1.2rem 0 0; border-top: 1px solid var(--b-line); display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1.2rem; font-size: .9rem; }
+.breo-buy__trust li { display: flex; gap: .6rem; align-items: center; }
+.breo-buy__trust .breo-ico { color: var(--accent); }
+.breo-buy .woocommerce-message, .breo-buy .woocommerce-error, .breo-buy .woocommerce-info,
+.breo-buy .wc-block-components-notice-banner { list-style: none; margin: 0 0 1.4rem; padding: .9rem 1.1rem; border-radius: 12px; background: var(--b-cream); border-left: 4px solid var(--accent); font-size: .95rem; }
+.breo-buy .woocommerce-message a.button, .breo-buy .wc-forward { float: right; margin-left: 1rem; font-weight: 600; color: var(--b-ink); }
+.breo-buy .woocommerce-error { border-left-color: #d63638; }
+
+/* ------------------------------------------------ box · specs · faq */
+.breo-box { padding: clamp(64px, 8vw, 110px) 0; background: var(--b-cream); scroll-margin-top: 120px; }
+.breo-box__title { text-align: center; margin-bottom: 40px; }
+.breo-box__grid.has-photo { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 5vw, 64px); align-items: center; }
+.breo-box__photo img { width: 100%; height: auto; border-radius: 20px; display: block; }
+.breo-box__items { list-style: none; margin: 0 auto; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 200px)); justify-content: center; gap: 16px; max-width: 1000px; }
+.breo-box__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; font-size: 1.08rem; }
+.breo-box__list li { display: flex; align-items: center; gap: .8rem; padding: 1rem 0; border-bottom: 1px solid var(--b-line); font-weight: 500; }
+.breo-box__list .breo-ico { color: var(--accent); }
+.breo-hsplit.is-short { min-height: clamp(460px, 70svh, 720px); }
+.breo-box__items li { display: flex; flex-direction: column; align-items: center; gap: .8rem; text-align: center; font-weight: 500; font-size: .95rem; }
+.breo-box__img { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: 18px; background: #fff; padding: 18%; color: var(--accent); }
+.breo-box__img img { width: 100%; height: 100%; object-fit: contain; }
+
+.breo-specs { padding: clamp(64px, 8vw, 110px) 0; background: #fff; scroll-margin-top: 120px; }
+.breo-specs .breo-title { text-align: center; margin-bottom: 40px; }
+.breo-specs__grid { max-width: 820px; margin: 0 auto; }
+.breo-specs__grid.has-draw { max-width: none; display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+.breo-specs__draw { background: var(--b-cream); border-radius: 22px; padding: clamp(24px, 4vw, 48px); }
+.breo-specs__draw img { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
+.breo-specs__table { width: 100%; border-collapse: collapse; font-size: .98rem; }
+.breo-specs__table th, .breo-specs__table td { text-align: left; padding: .85rem 0; border-bottom: 1px solid var(--b-line); vertical-align: top; }
+.breo-specs__table th { width: 42%; font-weight: 400; color: var(--b-muted); padding-right: 1rem; }
+.breo-specs__table td { font-weight: 500; }
+
+.breo-uf { padding: clamp(64px, 8vw, 110px) 0; background: var(--b-cream); scroll-margin-top: 120px; }
+.breo-uf__grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(28px, 5vw, 72px); align-items: start; }
+.breo-uf .breo-title { font-size: clamp(1.6rem, 2.6vw, 2.2rem); }
+.breo-steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 1rem; }
+.breo-steps li { counter-increment: s; position: relative; padding-left: 3rem; line-height: 1.6; }
+.breo-steps li::before { content: counter(s); position: absolute; left: 0; top: -.1rem; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--b-ink); color: #fff; font-size: .85rem; font-weight: 700; }
+
+.breo-faq details, .breo-prose details { border-bottom: 1px solid var(--b-line); }
+.breo-faq summary, .breo-prose summary { position: relative; list-style: none; cursor: pointer; padding: 1.1rem 2.4rem 1.1rem 0; font-weight: 500; font-size: 1.04rem; }
+.breo-faq summary::-webkit-details-marker, .breo-prose summary::-webkit-details-marker { display: none; }
+.breo-faq summary::after, .breo-prose summary::after { content: "+"; position: absolute; right: .3rem; top: 50%; transform: translateY(-50%); font-size: 1.5rem; font-weight: 300; transition: transform .25s; }
+.breo-faq details[open] summary::after, .breo-prose details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.breo-faq details p, .breo-prose details p { margin: 0 0 1.2rem; color: var(--b-muted); line-height: 1.7; }
+
+.breo-related { padding: clamp(64px, 8vw, 110px) 0; background: #fff; }
+.breo-related .breo-title { text-align: center; margin-bottom: 40px; }
+
+/* ---------------------------------------------------------- cards/grids */
+.breo-grid { display: grid; gap: 18px; }
+.breo-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.breo-grid--4 { grid-template-columns: repeat(4, 1fr); }
+.breo-pcard { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--b-line); border-radius: var(--b-r); overflow: hidden; transition: box-shadow .25s, transform .25s; }
+.breo-pcard:hover { box-shadow: 0 18px 40px rgba(28, 28, 28, .09); transform: translateY(-3px); }
+.breo-pcard__img { display: block; aspect-ratio: 1; background: var(--b-cream); overflow: hidden; }
+.breo-pcard__img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+.breo-pcard:hover .breo-pcard__img img { transform: scale(1.03); }
+.breo-pcard__body { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; padding: 18px 20px 22px; flex: 1; }
+.breo-pcard__name { font-size: 1.25rem; font-weight: 600; margin: 0; }
+.breo-pcard__name a { color: inherit; text-decoration: none; }
+.breo-pcard__sub { margin: 0; color: var(--b-muted); font-size: .9rem; }
+.breo-pcard__price { margin: .3rem 0 .9rem; }
+.breo-pcard .breo-btn { margin-top: auto; }
+
+.breo-help { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.4rem; margin-top: clamp(40px, 6vw, 72px); padding: clamp(24px, 4vw, 40px); border-radius: 22px; background: var(--b-sand); color: var(--b-ink); }
+.breo-help h2 { font-size: clamp(1.25rem, 2.2vw, 1.7rem) !important; font-weight: 600; margin: 0 0 .3rem !important; }
+.breo-help p { margin: 0; color: var(--b-muted); }
+.breo-help__btns { display: flex; flex-wrap: wrap; gap: .7rem; }
+.breo-help .breo-btn .breo-ico--fill { color: #3ddc84; }
+
+/* ---------------------------------------------------------- sticky bar */
+.breo-sticky { position: fixed; left: 0; right: 0; top: calc(var(--b-top) + var(--b-hdr-h)); z-index: 900; background: rgba(255, 255, 255, .94); -webkit-backdrop-filter: saturate(1.6) blur(14px); backdrop-filter: saturate(1.6) blur(14px); border-bottom: 1px solid var(--b-line); transform: translateY(-110%); opacity: 0; transition: transform .35s ease, opacity .35s; }
+.breo-sticky.is-visible { transform: none; opacity: 1; }
+.breo-sticky__in { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 58px; }
+.breo-sticky__name { margin: 0; display: flex; align-items: baseline; gap: .6rem; white-space: nowrap; overflow: hidden; }
+.breo-sticky__name strong { font-size: 1.05rem; }
+.breo-sticky__name span { color: var(--b-muted); font-size: .88rem; }
+.breo-sticky__nav { display: flex; gap: 1.6rem; margin-left: auto; margin-right: 1.4rem; }
+.breo-sticky__nav a { color: var(--b-muted); text-decoration: none; font-size: .9rem; }
+.breo-sticky__nav a:hover { color: var(--b-ink); }
+.breo-sticky__act { display: flex; align-items: center; gap: 1rem; }
+
+/* ------------------------------------------------------------ homepage */
+.breo-slider { position: relative; height: clamp(560px, var(--b-screen), 1000px); overflow: hidden; background: var(--b-cream); }
+.breo-slider__track { position: absolute; inset: 0; }
+.breo-slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .9s ease, visibility .9s; }
+.breo-slide.is-active { opacity: 1; visibility: visible; }
+.breo-slide__media { position: absolute; inset: 0; }
+.breo-slide__media img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.04); transition: transform 7s ease; }
+.breo-slide.is-active .breo-slide__media img { transform: scale(1); }
+.breo-slide.layout-bleed.theme-light::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(250, 245, 238, .92) 0%, rgba(250, 245, 238, .65) 30%, rgba(250, 245, 238, 0) 56%); }
+.breo-slide.layout-split .breo-slide__media { left: 50%; }
+.breo-slide.layout-split.theme-warm { background: var(--b-warm); }
+.breo-slide.layout-split.theme-sand { background: var(--b-sand); }
+.breo-slide__content { position: relative; z-index: 2; height: 100%; display: flex; align-items: center; }
+.breo-slide__in { max-width: 32rem; opacity: 0; transform: translateY(24px); transition: opacity .8s .25s, transform .8s .25s; }
+.breo-slide.is-active .breo-slide__in { opacity: 1; transform: none; }
+.breo-slide.layout-split .breo-slide__in { max-width: min(30rem, 42vw); }
+.breo-slide .breo-hero__model { font-size: clamp(1.4rem, 2.2vw, 1.9rem); }
+.breo-slide__title { margin: 1rem 0 1rem; font-size: clamp(2.3rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.06; letter-spacing: -.025em; color: var(--b-ink); }
+.breo-slide__text { margin: 0 0 2rem; font-size: 1.1rem; line-height: 1.6; color: var(--b-muted); }
+.breo-slide__btns { display: flex; flex-wrap: wrap; gap: .8rem; }
+.breo-slider__ui { position: absolute; left: 50%; bottom: 26px; z-index: 3; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; }
+.breo-slider__arrow { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .8); color: var(--b-ink); cursor: pointer; transition: background .2s; }
+.breo-slider__arrow:hover { background: #fff; }
+.breo-slider__dots { display: flex; gap: 8px; }
+.breo-slider__dots button { width: 26px; height: 4px; padding: 0; border: 0; border-radius: 2px; background: rgba(28, 28, 28, .25); cursor: pointer; transition: width .3s, background .3s; }
+.breo-slider__dots button.is-active { width: 44px; background: var(--b-ink); }
+
+.breo-popular { padding: clamp(72px, 9vw, 120px) 0; background: #fff; }
+.breo-sec-head { text-align: center; margin-bottom: clamp(32px, 4vw, 48px); }
+.breo-popular__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.breo-ptile { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 22px 18px 26px; border-radius: 22px; background: #f5f2ee; color: var(--b-ink); text-decoration: none; transition: transform .3s, box-shadow .3s; }
+.breo-ptile:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(28, 28, 28, .1); }
+.breo-ptile__for { font-size: .74rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.breo-ptile__img { display: block; width: 100%; aspect-ratio: 1; margin: 16px 0 18px; border-radius: 16px; overflow: hidden; background: #fff; }
+.breo-ptile__img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+.breo-ptile:hover .breo-ptile__img img { transform: scale(1.04); }
+.breo-ptile__name { font-size: 1.45rem; font-weight: 600; line-height: 1.2; }
+.breo-ptile__sub { color: var(--b-muted); font-size: .92rem; margin: .2rem 0 .5rem; }
+
+.breo-home .breo-banner .breo-link, .breo-home .breo-split .breo-link { margin-top: 0; }
+.breo-home .theme-dark .breo-link { color: #fff; }
+
+.breo-brand { padding: clamp(80px, 10vw, 130px) 0; }
+.breo-brand .breo-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
+.breo-brand__stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #333; border-radius: 20px; overflow: hidden; }
+.breo-brand__stats div { background: #232226; padding: 30px 26px; }
+.breo-brand__stats strong { display: block; font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 600; color: #fff; line-height: 1.1; margin-bottom: .4rem; }
+.breo-brand__stats span { color: #aaa49c; font-size: .92rem; }
+
+.breo-why { padding: clamp(72px, 9vw, 120px) 0; background: var(--b-cream); }
+.breo-why__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.breo-why__grid > div { background: #fff; border-radius: 20px; padding: 30px 26px; }
+.breo-why__grid .breo-ico { color: var(--accent); }
+.breo-why__grid h3 { font-size: 1.12rem; font-weight: 600; margin: 1rem 0 .4rem; }
+.breo-why__grid p { margin: 0; color: var(--b-muted); font-size: .95rem; line-height: 1.6; }
+
+.breo-home-faq { padding: clamp(72px, 9vw, 120px) 0 0; background: #fff; }
+.breo-home-faq .breo-title { text-align: center; margin-bottom: 28px; }
+.breo-home-faq .breo-faq a { color: var(--b-ink); }
+
+/* --------------------------------------------------------- content pages */
+.breo-page__hero { padding: clamp(60px, 9vw, 120px) 0 clamp(40px, 6vw, 72px); background: var(--b-cream); }
+.breo-page__title { font-size: clamp(2.2rem, 4.6vw, 3.6rem); font-weight: 600; line-height: 1.08; letter-spacing: -.02em; margin: 0 0 1rem; }
+.breo-prose { padding: clamp(40px, 6vw, 72px) 0 8px; font-size: 1.05rem; line-height: 1.78; color: var(--b-text); }
+.breo-prose > :first-child { margin-top: 0; }
+.breo-prose h2 { font-size: clamp(1.35rem, 2.2vw, 1.7rem); font-weight: 600; line-height: 1.25; margin: 2.2em 0 .6em; }
+.breo-prose h3 { font-size: 1.2rem; font-weight: 600; margin: 1.8em 0 .5em; }
+.breo-prose p { margin: 0 0 1.1em; }
+.breo-prose ul, .breo-prose ol { padding-left: 1.3em; margin: 0 0 1.3em; }
+.breo-prose li { margin: .45em 0; }
+.breo-prose a { color: var(--b-ink); text-decoration: underline; text-underline-offset: 3px; }
+.breo-prose strong { color: var(--b-ink); }
+.breo-page .breo-help { margin-bottom: clamp(56px, 8vw, 96px); }
+
+.breo-contact { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 1.5rem 0; }
+.breo-contact__card { background: var(--b-cream); border-radius: 20px; padding: 26px 24px; }
+.breo-contact__ico { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: #fff; color: var(--accent); margin-bottom: 1rem; }
+.breo-contact__ico .breo-ico--fill { width: 24px; height: 24px; color: #1faa55; }
+.breo-contact__card h3 { margin: 0 0 .3rem !important; font-size: 1.15rem !important; }
+.breo-contact__card p { margin: 0 0 1rem !important; color: var(--b-muted); overflow-wrap: anywhere; }
+.breo-contact__card .breo-btn { text-decoration: none !important; }
+.breo-contact__hours { display: flex; align-items: center; gap: .5rem; color: var(--b-muted); }
+
+.breo-shop .breo-grid { margin-top: 8px; }
+.breo-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.4rem; }
+.breo-chips a { padding: .5em 1.1em; border-radius: var(--b-pill); background: #fff; color: var(--b-ink); text-decoration: none; font-size: .9rem; font-weight: 500; border: 1px solid var(--b-line); }
+.breo-chips a.is-active, .breo-chips a:hover { background: var(--b-ink); color: #fff; border-color: var(--b-ink); }
+
+/* ---------------------------------------------------- reveal animation */
+.js-breo [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .9s cubic-bezier(.2, .7, .2, 1), transform .9s cubic-bezier(.2, .7, .2, 1); }
+.js-breo [data-reveal].is-in { opacity: 1; transform: none; }
+.js-breo [data-reveal]:not(.is-in) { animation: breo-reveal-safety 0s 3.5s forwards; }
+@keyframes breo-reveal-safety { to { opacity: 1; transform: none; } }
+
+/* ------------------------------------ theme-rendered pages (cart, etc.) */
+body.breo-bd:not(.breo-canvas) { font-family: var(--b-font); }
+body.breo-bd:not(.breo-canvas) .wp-site-blocks > header.wp-block-template-part,
+body.breo-bd:not(.breo-canvas) .wp-site-blocks > footer.wp-block-template-part { margin: 0; padding: 0; }
+.breo-bd:not(.breo-canvas) .wp-element-button,
+.breo-bd:not(.breo-canvas) .wc-block-components-button:not(.is-link),
+.breo-bd:not(.breo-canvas) .woocommerce a.button,
+.breo-bd:not(.breo-canvas) .woocommerce button.button { background: var(--b-ink); color: #fff; border: 0; border-radius: var(--b-pill); font-family: var(--b-font); font-weight: 600; }
+
+/* ---------------------------------------------------------- responsive */
+@media (max-width: 1100px) {
+	.breo-mega__in { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	.breo-mega__side { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: .6rem 1.4rem; padding: 14px 0 0; border-left: 0; border-top: 1px solid #3a3a3a; }
+	.breo-mega__all { margin: 0 0 0 auto; }
+	.breo-ftr__top { grid-template-columns: 1fr 1fr 1fr; }
+	.breo-ftr__brand { grid-column: 1 / -1; }
+}
+@media (max-width: 960px) {
+	.breo-hdr__nav { display: none; }
+	.breo-hdr__burger { display: grid; }
+	.breo-hdr__bar { grid-template-columns: 1fr auto; }
+	.breo-hdr__loc { display: none; }
+	.breo-grid--4, .breo-popular__grid, .breo-why__grid { grid-template-columns: repeat(2, 1fr); }
+	.breo-cards__grid { grid-template-columns: repeat(2, 1fr); }
+	.breo-stats__grid { grid-template-columns: repeat(2, 1fr); row-gap: 36px; }
+	.breo-stat:nth-child(3) { border-left: 0; }
+	.breo-brand .breo-wrap, .breo-uf__grid, .breo-buy__grid, .breo-specs__grid.has-draw, .breo-box__grid.has-photo { grid-template-columns: 1fr; }
+	.breo-buy__gallery { position: static; }
+	.breo-sticky__nav { display: none; }
+}
+@media (max-width: 900px) {
+	/* full-screen sections stack: picture first, copy below */
+	.breo-hero, .breo-banner { display: block; min-height: 0; background: var(--b-cream); }
+	.breo-hero::before, .breo-banner::before { display: none; }
+	.breo-hero__media, .breo-banner__media { position: relative; aspect-ratio: 4 / 3; }
+	.breo-hero__content, .breo-banner__content { padding: 32px 0 52px; }
+	.breo-banner.align-right .breo-banner__in, .breo-hero.align-right .breo-hero__content > * { margin-left: 0; }
+	.breo-hsplit, .breo-split { grid-template-columns: 1fr; min-height: 0; }
+	.breo-hsplit__media { order: -1; aspect-ratio: 1; }
+	.breo-hsplit__in { margin: 0; }
+	.breo-hsplit__text { padding: 32px 20px 52px; }
+	.breo-split__media { order: -1 !important; aspect-ratio: 5 / 4; min-height: 0; }
+	.breo-split__text { padding: 36px 20px 56px; }
+	.breo-split__in { margin: 0 !important; }
+
+	.breo-slider { height: min(var(--b-screen), 780px); min-height: 600px; }
+	.breo-slide.layout-bleed.theme-light::before { background: linear-gradient(0deg, rgba(250, 245, 238, .97) 0%, rgba(250, 245, 238, .9) 38%, rgba(250, 245, 238, 0) 66%); }
+	.breo-slide__content { align-items: flex-end; padding-bottom: 84px; }
+	.breo-slide.layout-split .breo-slide__media { left: 0; bottom: 48%; }
+	.breo-slide.layout-split .breo-slide__in { max-width: none; }
+	.breo-slide__title { font-size: clamp(2rem, 8vw, 2.6rem); margin: .6rem 0; }
+	.breo-slide__text { font-size: 1rem; margin-bottom: 1.3rem; }
+	.breo-slide.layout-bleed .breo-slide__media img { object-position: 70% 50%; }
+	.breo-slider__arrow { display: none; }
+}
+@media (max-width: 700px) {
+	.breo-grid--3 { grid-template-columns: 1fr 1fr; }
+	.breo-grid, .breo-popular__grid { gap: 10px; }
+	.breo-pcard__body { padding: 14px 14px 18px; }
+	.breo-pcard__name { font-size: 1.05rem; }
+	.breo-ptile { padding: 16px 12px 20px; }
+	.breo-ptile__name { font-size: 1.15rem; }
+	.breo-duo__grid, .breo-cards__grid { grid-template-columns: 1fr; }
+	.breo-buy__trust { grid-template-columns: 1fr; }
+	.breo-ftr__top { grid-template-columns: 1fr 1fr; }
+	.breo-sticky__name span { display: none; }
+	.breo-sticky__price { font-size: .92rem; }
+	.breo-help { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 420px) {
+	.breo-why__grid { grid-template-columns: 1fr; }
+	.breo-hero__model { font-size: 2.4rem; }
+	.breo-buy__meta { grid-template-columns: repeat(2, auto); row-gap: .8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.breo-canvas *, .breo-canvas *::before, .breo-canvas *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+	.js-breo [data-reveal] { opacity: 1; transform: none; }
+}

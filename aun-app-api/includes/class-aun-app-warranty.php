@@ -279,7 +279,7 @@ class AUN_App_Warranty {
 	 * @param object $r Registration row joined with distributor name.
 	 * @return array
 	 */
-	private static function device_payload( $r ) {
+	public static function device_payload( $r ) {
 		$start = ! empty( $r->purchase_date ) && '0000-00-00' !== $r->purchase_date
 			? $r->purchase_date
 			: date( 'Y-m-d', strtotime( $r->created_at ) );
@@ -322,7 +322,7 @@ class AUN_App_Warranty {
 	 * @param object $a Row from aun_app_devices.
 	 * @return array
 	 */
-	private static function direct_payload( $a ) {
+	public static function direct_payload( $a ) {
 		$start = ! empty( $a->purchase_date ) && '0000-00-00' !== $a->purchase_date
 			? $a->purchase_date
 			: date( 'Y-m-d', strtotime( $a->created_at ) );
@@ -390,6 +390,17 @@ class AUN_App_Warranty {
 			return array( 'ok' => false, 'code' => 'owned_by_other' );
 		}
 
+		// A registration for this serial that someone ELSE holds (e.g. the
+		// buyer transferred it to a person without the app) wins over the ERP
+		// sale — the buyer's login sync must not pull it back.
+		if ( self::available() ) {
+			$reg = $wpdb->get_row( $wpdb->prepare( 'SELECT id, phone, status FROM ' . self::t_regs() . ' WHERE serial = %s', $serial ) );
+			if ( $reg && ! in_array( $reg->status, array( 'released', 'rejected' ), true )
+				&& ! in_array( (string) $reg->phone, AUN_App_Phone::variants( (string) $args['phone'] ), true ) ) {
+				return array( 'ok' => false, 'code' => 'owned_by_other' );
+			}
+		}
+
 		// The "brain" for removed devices:
 		//  - AUTO path (login/refresh sync): if the customer previously removed
 		//    THIS purchase, don't silently re-add it. A genuinely new purchase of
@@ -434,6 +445,10 @@ class AUN_App_Warranty {
 			return array( 'ok' => false, 'code' => 'db_error' );
 		}
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table WHERE id = %d", (int) $wpdb->insert_id ) );
+		// It has an owner again: the release marker (if any) is spent.
+		if ( class_exists( 'AUN_App_Transfers' ) ) {
+			AUN_App_Transfers::clear_release( $serial );
+		}
 		return array( 'ok' => true, 'code' => 'linked', 'device' => self::direct_payload( $row ) );
 	}
 
@@ -573,7 +588,7 @@ class AUN_App_Warranty {
 		// Registrations: serial → synced product id (authoritative), else the
 		// registered model name; then phone → app account(s).
 		$t_regs = self::t_regs();
-		foreach ( (array) $wpdb->get_results( "SELECT phone, serial, product_model FROM $t_regs" ) as $row ) {
+		foreach ( (array) $wpdb->get_results( "SELECT phone, serial, product_model FROM $t_regs WHERE status <> 'released'" ) as $row ) {
 			$mid = self::wp_product_id_from_serial( (string) $row->serial )
 				?: self::resolve_model_id( (string) $row->product_model );
 			if ( $mid !== $model_id ) {
@@ -784,6 +799,11 @@ class AUN_App_Warranty {
 			if ( class_exists( 'AUN_App_Notices' ) ) {
 				AUN_App_Notices::delete_for_serial( (int) $user_id, (string) $row->serial );
 			}
+			// RELEASED, not forgotten: the next person to add it takes over the
+			// warranty that is left, from the original sale date.
+			if ( class_exists( 'AUN_App_Transfers' ) ) {
+				AUN_App_Transfers::release_direct( $row );
+			}
 			return true;
 		}
 
@@ -794,11 +814,30 @@ class AUN_App_Warranty {
 		if ( ! $row || ! in_array( (string) $row->phone, $variants, true ) ) {
 			return false;
 		}
-		$wpdb->delete( $t_regs, array( 'id' => $id ), array( '%d' ) );
 		if ( class_exists( 'AUN_App_Notices' ) ) {
 			AUN_App_Notices::delete_for_serial( (int) $user_id, (string) $row->serial );
 		}
-		// Free the dealer serial so it (or the customer) can register again.
+		if ( 'approved' === $row->status ) {
+			// ⚠️ RELEASE, never delete, an approved registration. Deleting it
+			// let the serial be registered again with a NEW purchase date — a
+			// fresh warranty for a resold projector, or for the same owner
+			// simply removing and re-adding it. The record stays, with its
+			// original date; the next person to add it takes over the rest.
+			$wpdb->update(
+				$t_regs,
+				array(
+					'status' => 'released',
+					'notes'  => (string) $row->notes . ' | Released by the owner (' . $row->phone . ') via the app on ' . current_time( 'Y-m-d' ) . '.',
+				),
+				array( 'id' => $id )
+			);
+			if ( class_exists( 'AUN_App_Transfers' ) ) {
+				AUN_App_Transfers::cancel_pending( (string) $row->serial, 'owner released the projector' );
+			}
+		} else {
+			// Never approved, so no warranty exists to carry over — gone.
+			$wpdb->delete( $t_regs, array( 'id' => $id ), array( '%d' ) );
+		}
 		$wpdb->update( self::t_serials(), array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
 		return true;
 	}
@@ -882,7 +921,7 @@ class AUN_App_Warranty {
 					"SELECT r.*, d.name AS distributor_name
 					 FROM $t_regs r
 					 LEFT JOIN $t_dist d ON r.distributor_id = d.id
-					 WHERE r.phone IN ($placeholders)
+					 WHERE r.phone IN ($placeholders) AND r.status <> 'released'
 					 ORDER BY r.created_at DESC",
 					$variants
 				)
@@ -896,6 +935,56 @@ class AUN_App_Warranty {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * The warranty plugin's shop (slb_distributors.id) for a serial, so the app
+	 * can preselect it on the registration form EXACTLY — never guessed from a
+	 * name ("Star Tech Ltd." in the shop list is rarely spelled the same way as
+	 * the customer record in the ERP).
+	 *
+	 *  1. The serial's own row in the synced dealer stock. That is the shop the
+	 *     registration is checked against, so preselecting it can never cause a
+	 *     "sold by a different shop" mismatch.
+	 *  2. The ERP customer on the sale, via the Distributors page's ERP contact
+	 *     ID — for a unit sold since the last stock sync.
+	 *
+	 * @param string $serial         Clean serial.
+	 * @param int    $erp_contact_id ERP contact id on the sale (0 = unknown).
+	 * @return int 0 when neither is known.
+	 */
+	public static function distributor_for( $serial, $erp_contact_id = 0 ) {
+		global $wpdb;
+		$id = (int) $wpdb->get_var( $wpdb->prepare(
+			'SELECT distributor_id FROM ' . self::t_serials() . ' WHERE serial = %s',
+			(string) $serial
+		) );
+		if ( $id > 0 ) {
+			return $id;
+		}
+		$erp_contact_id = (int) $erp_contact_id;
+		if ( $erp_contact_id <= 0 ) {
+			return 0;
+		}
+		$t = self::t_dist();
+		// Membership test (SHOW COLUMNS ... LIKE is unreliable on SQLite); the
+		// column is optional on older installs.
+		if ( ! in_array( 'erp_customer_id', (array) $wpdb->get_col( "SHOW COLUMNS FROM $t" ), true ) ) {
+			return 0;
+		}
+		return (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT id FROM $t WHERE erp_customer_id = %d ORDER BY id ASC LIMIT 1",
+			$erp_contact_id
+		) );
+	}
+
+	/** A shop's name as the registration form lists it ('' when unknown). */
+	private static function distributor_name( $id ) {
+		global $wpdb;
+		if ( (int) $id <= 0 ) {
+			return '';
+		}
+		return (string) $wpdb->get_var( $wpdb->prepare( 'SELECT name FROM ' . self::t_dist() . ' WHERE id = %d', (int) $id ) );
 	}
 
 	/**
@@ -927,6 +1016,22 @@ class AUN_App_Warranty {
 			)
 		);
 
+		if ( $reg && 'released' === $reg->status ) {
+			// Its owner let it go: whoever adds it next takes over the rest of
+			// the ORIGINAL warranty — shown before they tap, nothing reset.
+			$preview         = clone $reg;
+			$preview->status = 'approved';
+			return array(
+				'state'  => 'released',
+				'device' => self::device_payload( $preview ),
+			);
+		}
+		if ( $reg && 'rejected' === $reg->status
+			&& ! in_array( (string) $reg->phone, AUN_App_Phone::variants( $canonical ), true ) ) {
+			// Staff turned down SOMEONE ELSE's claim. That must not block the
+			// real owner for ever — they register, and it goes to review.
+			$reg = null;
+		}
 		if ( $reg ) {
 			$variants = AUN_App_Phone::variants( $canonical );
 			if ( in_array( (string) $reg->phone, $variants, true ) ) {
@@ -959,6 +1064,8 @@ class AUN_App_Warranty {
 			return array(
 				'state'           => 'in_dealer_records',
 				'dealer'          => (string) $row->dealer_name,
+				'dealer_id'       => (int) ( $row->distributor_id ?? 0 ),
+				'suggested_model' => self::product_name_by_id( (int) ( $row->product_id ?? 0 ) ),
 				'shipped_date'    => $shipped,
 				// If never registered, warranty counts from the dealer sale date.
 				'warranty'        => self::warranty_from( $shipped, ...self::erp_warranty_for_serial( $serial ) ),
@@ -1065,12 +1172,104 @@ class AUN_App_Warranty {
 			);
 		}
 
+		// ⚠️ OWNERSHIP FIRST. A registration must never create a second owner,
+		// or restart a warranty, for a projector the ownership rules already
+		// cover. This endpoint is reachable directly (and by every older app),
+		// and it used to accept all three of these with a NEW purchase date:
+		//  - released by its owner  -> taken over, keeping the ORIGINAL date —
+		//    exactly what "Add device" does, so an older app's register form
+		//    lands in the same place instead of a dead end;
+		//  - held in the app as a direct purchase -> it is somebody's already;
+		//  - an unclaimed AUN direct sale -> it needs no registration at all.
+		if ( class_exists( 'AUN_App_Transfers' ) ) {
+			$acct  = ! empty( $args['account_phone'] ) ? $args['account_phone'] : $args['phone'];
+			$owner = AUN_App_Transfers::owner_of( $serial );
+			if ( in_array( $owner['kind'], array( 'released_registration', 'released_direct' ), true ) ) {
+				$claim = AUN_App_Transfers::claim_released( $serial, array(
+					'user_id'       => (int) $args['user_id'],
+					'phone'         => (string) $acct,
+					'customer_name' => (string) ( $args['customer_name'] ?? '' ),
+					'email'         => (string) ( $args['email'] ?? '' ),
+				) );
+				if ( is_wp_error( $claim ) ) {
+					return array(
+						'ok'           => false,
+						'code'         => 'already_registered',
+						'message'      => $claim->get_error_message(),
+						'owned_by_you' => false,
+					);
+				}
+				return array(
+					'ok'      => true,
+					'code'    => 'approved',
+					'message' => 'This projector was released by its previous owner. It is now yours, and its warranty continues from the original purchase date.',
+					'device'  => $claim['device'],
+				);
+			}
+			if ( 'direct' === $owner['kind'] ) {
+				return array(
+					'ok'           => false,
+					'code'         => 'already_registered',
+					'message'      => 'This serial number is already registered.',
+					'owned_by_you' => (int) $owner['user_id'] === (int) $args['user_id'],
+				);
+			}
+			if ( 'none' === $owner['kind'] ) {
+				$direct = AUN_App_Transfers::transferable_owner( $serial );
+				if ( ! is_wp_error( $direct ) && 'erp_direct' === $direct['kind'] ) {
+					return array(
+						'ok'      => false,
+						'code'    => 'direct_sale',
+						'message' => 'This projector was bought directly from AUN, so it needs no registration. Add it from "Add device" with its serial number.',
+					);
+				}
+			}
+		}
+
 		// Duplicate? (serial is UNIQUE in slb_registrations)
 		$existing = $wpdb->get_row(
-			$wpdb->prepare( "SELECT id, phone FROM $t_regs WHERE serial = %s", $serial )
+			$wpdb->prepare( "SELECT id, phone, status, notes FROM $t_regs WHERE serial = %s", $serial )
 		);
+		if ( $existing && 'released' === $existing->status ) {
+			// Its warranty is already running — taking it over keeps the
+			// original date, so it is done from "Add device", never by a new
+			// registration with a new date.
+			return array(
+				'ok'      => false,
+				'code'    => 'released',
+				'message' => 'This projector was released by its previous owner. Add it from "Add device" to take over its warranty.',
+			);
+		}
+		$replaced_rejected = '';
+		if ( $existing && 'rejected' === $existing->status
+			&& ! in_array( (string) $existing->phone, AUN_App_Phone::variants( ! empty( $args['account_phone'] ) ? $args['account_phone'] : $args['phone'] ), true ) ) {
+			// Staff rejected SOMEONE ELSE's claim. That must not lock the real
+			// owner out: their registration replaces it and always goes to a
+			// person (never auto-approved), with the history kept in the note.
+			$replaced_rejected = ' | [HELD FOR REVIEW] Replaces a registration by ' . $existing->phone . ' that staff had rejected.';
+			$wpdb->delete( $t_regs, array( 'id' => (int) $existing->id ), array( '%d' ) );
+			$existing = null;
+		}
+		$carry_hold     = false;
+		$corrected_note = '';
+		if ( $existing && in_array( (string) $existing->status, array( 'pending', 'not_found', 'mismatch' ), true )
+			&& in_array( (string) $existing->phone, AUN_App_Phone::variants( ! empty( $args['account_phone'] ) ? $args['account_phone'] : $args['phone'] ), true ) ) {
+			// ⚠️ Their OWN registration, still being checked: let them correct
+			// it, as the website form always has. The mismatch SMS says "please
+			// register again and select the correct model / shop" — and the app
+			// used to answer "already registered", with no way to do it.
+			//
+			// The history is kept, and a registration held for a PERSON stays
+			// held: correcting it must never become a way round the review.
+			$carry_hold     = false !== strpos( (string) $existing->notes, '[HELD FOR REVIEW]' );
+			$corrected_note = ' | Corrected by the customer on ' . current_time( 'Y-m-d' ) . ' — before: ' . (string) $existing->notes;
+			$wpdb->delete( $t_regs, array( 'id' => (int) $existing->id ), array( '%d' ) );
+			$existing = null;
+		}
 		if ( $existing ) {
-			$variants = AUN_App_Phone::variants( $args['phone'] );
+			// "Yours" means the SIGNED-IN account, even if a different contact
+			// number was typed on the form this time.
+			$variants = AUN_App_Phone::variants( ! empty( $args['account_phone'] ) ? $args['account_phone'] : $args['phone'] );
 			return array(
 				'ok'           => false,
 				'code'         => 'already_registered',
@@ -1173,8 +1372,61 @@ class AUN_App_Warranty {
 				: 'mismatch';
 		}
 
+		$hold_note = '';
+
+		// ⚠️ Same model/shop check as the website form. The app used to compare
+		// only the shop, so a registration with the WRONG model was
+		// auto-approved here while the website would have held it.
+		if ( 'approved' === $status && $serial_row && function_exists( 'slb_registration_match_status' ) ) {
+			$srow = $wpdb->get_row( $wpdb->prepare(
+				"SELECT s.*, d.name AS distributor_name, p.name AS product_name FROM $t_serials s
+				 LEFT JOIN $t_dist d ON s.distributor_id = d.id LEFT JOIN $t_prods p ON s.product_id = p.id
+				 WHERE s.serial = %s",
+				$serial
+			) );
+			if ( $srow ) {
+				$match = slb_registration_match_status( $model, $dealer_name, $srow, $rule );
+				if ( 'approved' !== $match['status'] ) {
+					$status    = $match['status'];
+					$hold_note = ' | ' . $match['note'];
+				}
+			}
+		}
+
+		// ⚠️ Late-date guard. The warranty counts from the date typed here, so
+		// a customer registering long after buying could type a recent date
+		// and gain months. A purchase dated more than 180 days after the
+		// dealer received the unit — or before it — is held for a person to
+		// check against the invoice instead of approving on its own.
+		$shipped = ( $serial_row && ! empty( $serial_row->shipped_date ) && '0000-00-00' !== $serial_row->shipped_date ) ? $serial_row->shipped_date : '';
+		if ( '' !== $shipped && in_array( $status, array( 'approved', 'mismatch' ), true ) ) {
+			$gap = (int) floor( ( $pdate_ts - strtotime( $shipped . ' 00:00:00' ) ) / DAY_IN_SECONDS );
+			if ( $gap < 0 || $gap > 180 ) {
+				$status     = 'pending';
+				$hold_note .= sprintf(
+					' | [HELD FOR REVIEW] Purchase date %s is %s the dealer received this unit (%s) — check the invoice date.',
+					$pdate,
+					$gap < 0 ? 'BEFORE' : $gap . ' days after',
+					$shipped
+				);
+			}
+		}
+		if ( '' !== $replaced_rejected || $carry_hold ) {
+			$status = 'pending';
+		}
+
 		$customer_name = sanitize_text_field( isset( $args['customer_name'] ) ? $args['customer_name'] : '' );
 		$email         = sanitize_email( isset( $args['email'] ) ? $args['email'] : '' );
+
+		// Registered to a different number than the one signed in? Say so in the
+		// record, so staff reading it know who submitted it for whom — the phone
+		// column alone would show only the number that now owns the device.
+		$note = self::APP_NOTE . ' (user #' . (int) $args['user_id'] . ')';
+		if ( ! empty( $args['account_phone'] )
+			&& ! in_array( (string) $args['phone'], AUN_App_Phone::variants( $args['account_phone'] ), true ) ) {
+			$note .= ' — registered to ' . $args['phone'] . ' by the app account ' . $args['account_phone'];
+		}
+		$note .= $hold_note . $replaced_rejected . $corrected_note;
 		// $invoice_no and $invoice_file were validated + sanitised above.
 
 		$ok = $wpdb->insert(
@@ -1192,7 +1444,7 @@ class AUN_App_Warranty {
 				'invoice_file'   => $invoice_file,
 				'product_photo'  => '',
 				'status'         => $status,
-				'notes'          => self::APP_NOTE . ' (user #' . (int) $args['user_id'] . ')',
+				'notes'          => $note,
 			)
 		);
 
@@ -1267,6 +1519,11 @@ class AUN_App_Warranty {
 	 * @param string $phone  Canonical phone.
 	 * @param string $email  Email (may be empty).
 	 */
+	/** Registration status SMS/email, for callers outside this class. */
+	public static function notify_status( $status, $vars, $phone, $email = '' ) {
+		self::notify( $status, $vars, $phone, $email );
+	}
+
 	private static function notify( $status, $vars, $phone, $email ) {
 		$slb = self::slb_opts();
 
@@ -1390,8 +1647,29 @@ class AUN_App_Warranty {
 
 		// 2. Already registered on the website/app (dealer registration)?
 		$existing = self::check_serial( $clean, $user_args['phone'] );
-		if ( 'registered_own' === $existing['state'] || 'registered_other' === $existing['state'] ) {
+		if ( in_array( $existing['state'], array( 'registered_own', 'registered_other', 'released' ), true ) ) {
 			return $existing;
+		}
+
+		// 2b. A direct purchase its owner removed from the app: released, so
+		// it is theirs to take over, warranty continuing from the original date.
+		if ( class_exists( 'AUN_App_Transfers' ) ) {
+			$owner = AUN_App_Transfers::owner_of( $clean );
+			if ( 'released_direct' === $owner['kind'] ) {
+				$rel = $owner['row'];
+				list( $wd, $wu ) = null !== $rel->warranty_duration && '' !== (string) $rel->warranty_unit
+					? array( (int) $rel->warranty_duration, (string) $rel->warranty_unit )
+					: self::erp_warranty_for_serial( $clean );
+				return array(
+					'state'  => 'released',
+					'device' => array(
+						'serial'        => $clean,
+						'model'         => (string) $rel->model,
+						'purchase_date' => (string) $rel->purchase_date,
+						'warranty'      => self::warranty_from( (string) $rel->purchase_date, $wd, $wu ),
+					),
+				);
+			}
 		}
 
 		// 3. Ask the ERP (authoritative for the dealer-vs-direct distinction).
@@ -1408,10 +1686,16 @@ class AUN_App_Warranty {
 			if ( AUN_App_ERP::is_dealer_sale( $sale ) ) {
 				// Dealer stock → the customer registers (they set the real
 				// purchase date). Notifications are the warranty plugin's job.
-				$product = self::product_from_erp( $sale['product_id'], $sale['product_name'] );
+				$product   = self::product_from_erp( $sale['product_id'], $sale['product_name'] );
+				$dealer_id = self::distributor_for( $clean, (int) ( $sale['contact_id'] ?? 0 ) );
+				$shop      = self::distributor_name( $dealer_id );
 				return array(
 					'state'           => 'dealer_stock',
-					'dealer'          => $sale['contact_name'],
+					// The shop as the registration form lists it, so the card
+					// and the form never name it differently; the ERP's own
+					// name only when the shop is not in the list.
+					'dealer'          => '' !== $shop ? $shop : $sale['contact_name'],
+					'dealer_id'       => $dealer_id,
 					'shipped_date'    => $sale['sale_date'],
 					'suggested_model' => $product['matched'] ? $product['name'] : '',
 					'warranty'        => self::warranty_from(
@@ -1420,6 +1704,21 @@ class AUN_App_Warranty {
 						(string) ( $sale['warranty_unit'] ?? '' )
 					),
 					'prompt_register' => true,
+				);
+			}
+
+			// ⚠️ A direct purchase links ONLY to the person who bought it.
+			//
+			// This used to link to whoever typed the serial first — and the
+			// serial is printed on the box, so a shop hand, a repairer or a
+			// visitor could take a projector before its buyer ever opened the
+			// app. Now the ERP buyer's mobile must match the signed-in number;
+			// anyone else can ask the buyer to transfer it to them.
+			$buyer = AUN_App_Phone::normalize( (string) ( $sale['contact_mobile'] ?? '' ) );
+			if ( ! $buyer || ! in_array( $buyer, AUN_App_Phone::variants( $user_args['phone'] ), true ) ) {
+				return array(
+					'state'        => 'registered_other',
+					'masked_phone' => $buyer ? AUN_App_Phone::mask( $buyer ) : '',
 				);
 			}
 
@@ -1452,6 +1751,14 @@ class AUN_App_Warranty {
 		}
 
 		// 4. ERP unreachable or no hit → local synced dealer stock, else unknown.
+		//
+		// ⚠️ "Not found" and "could not ask" are different answers. When the ERP
+		// did not respond, the serial was never checked: say so, and the app
+		// offers "try again" instead of telling a real customer their projector
+		// is not in our records.
+		if ( is_wp_error( $sale ) && 'unknown' === ( $existing['state'] ?? '' ) ) {
+			$existing['lookup_failed'] = true;
+		}
 		return $existing; // in_dealer_records (dealer form) or unknown.
 	}
 
@@ -1530,6 +1837,10 @@ class AUN_App_Warranty {
 				'is_dealer'  => false,
 				'linked'     => in_array( $link['code'], array( 'linked', 'exists' ), true ),
 				'taken'      => 'owned_by_other' === $link['code'],
+				// Was on this account BEFORE this search (e.g. the login
+				// number, whose purchases are added at sign-in) — so the app
+				// says "already on your account", not "added".
+				'already'    => 'exists' === $link['code'],
 				'dismissed'  => 'dismissed' === $link['code'],
 			);
 		}

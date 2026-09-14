@@ -4,7 +4,7 @@
  * Description: Repair tracking shortcode + secure ERP proxy for AUN Projector.
  *              A Pathao consignment ID written in an engineer's note (e.g. "Pathao DA200826WQJCJ5")
  *              is rendered as a tappable parcel-tracking chip on the front end.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Smart Living Bangladesh
  *
  * v1.3.0: • Repair log is a TIMELINE on phones. It was a 600px-wide four-column table inside a
@@ -332,7 +332,20 @@ class SLB_Repair_Tracker {
         .slb-track-chip-id{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.4px;}
         .slb-track-chip-go{font-size:10px;opacity:.75;}
         .slb-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid #e5e7eb;background:#fff;}
-        .slb-table-scroll table{min-width:600px;width:100%;border-collapse:collapse;}
+        .slb-table-scroll table{min-width:600px;width:100%;border-collapse:collapse;table-layout:fixed;}
+        /* Pinned column widths. Without table-layout:fixed the table used AUTO
+           layout, so every column was sized from its content — expanding a note
+           with "Show more" made the browser hand width from ACTION to NOTE, and
+           the Action column visibly shrank (wrapping onto an extra line) purely
+           because the note next to it got longer. Fixed layout sizes from these
+           widths instead, so the columns stay put whatever the note does. */
+        .slb-table-scroll th:nth-child(1),.slb-table-scroll td:nth-child(1){width:20%;}
+        .slb-table-scroll th:nth-child(2),.slb-table-scroll td:nth-child(2){width:26%;}
+        .slb-table-scroll th:nth-child(3),.slb-table-scroll td:nth-child(3){width:16%;}
+        .slb-table-scroll th:nth-child(4),.slb-table-scroll td:nth-child(4){width:38%;}
+        /* Fixed layout will not widen a cell for a long unbroken string, so make
+           sure notes and IDs wrap rather than spill over the next column. */
+        .slb-table-scroll td{overflow-wrap:anywhere;}
         .slb-table-scroll th{background:#f9fafb;padding:14px 16px;text-align:left;color:#4b5563;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;}
         .slb-table-scroll td{padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;color:#374151;}
         .slb-table-scroll tr:last-child td{border-bottom:none;}

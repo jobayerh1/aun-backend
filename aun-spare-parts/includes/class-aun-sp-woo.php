@@ -75,6 +75,13 @@ class AUN_SP_Woo {
 		// the customer chose to pay online.
 		add_filter( 'woocommerce_available_payment_gateways', array( __CLASS__, 'filter_gateways' ), 99 );
 
+		// The classic pay page is not the only way to pay an existing order: the Store
+		// API route /wc/store/v1/checkout/<id> pays one too, and it runs the gateway
+		// filter WITHOUT the 'order-pay' query var — so filter_gateways() could not see
+		// the order and COD stayed on offer there. This closes that path (see the
+		// method) so cash on delivery is refused for our orders in EVERY context.
+		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'guard_store_api_payment' ), 10, 3 );
+
 		if ( is_admin() ) {
 			add_filter( 'manage_edit-shop_order_columns', array( __CLASS__, 'order_column' ) );
 			add_action( 'manage_shop_order_posts_custom_column', array( __CLASS__, 'order_column_value' ), 10, 2 );
@@ -272,23 +279,53 @@ class AUN_SP_Woo {
 		return self::is_ours( $order ) ? 'processing' : $status;
 	}
 
-	/** Strip cash on delivery from the pay page of an AUN order. */
+	/** Strip cash on delivery from the classic pay page of an AUN order. */
 	public static function filter_gateways( $gateways ) {
 		if ( is_admin() || empty( $gateways ) ) {
 			return $gateways;
 		}
-		$order_id = 0;
-		if ( isset( $GLOBALS['wp']->query_vars['order-pay'] ) ) {
-			$order_id = absint( $GLOBALS['wp']->query_vars['order-pay'] );
-		}
-		if ( ! $order_id ) {
-			return $gateways;
-		}
-		$order = wc_get_order( $order_id );
-		if ( self::is_ours( $order ) ) {
+		$order_id = isset( $GLOBALS['wp']->query_vars['order-pay'] ) ? absint( $GLOBALS['wp']->query_vars['order-pay'] ) : 0;
+		if ( $order_id && self::is_ours( wc_get_order( $order_id ) ) ) {
 			unset( $gateways['cod'] );
 		}
 		return $gateways;
+	}
+
+	/** Remove cash on delivery from the list (used by the Store-API guard). */
+	public static function strip_cod( $gateways ) {
+		unset( $gateways['cod'] );
+		return $gateways;
+	}
+
+	/**
+	 * Refuse cash on delivery when the Store API is used to pay one of OUR orders.
+	 *
+	 * The customer is always sent to the classic pay page, where filter_gateways()
+	 * already strips COD. But the same order can be paid through the Store API route
+	 * /wc/store/v1/checkout/<id> (the newer Checkout block's "pay for order" flow),
+	 * whose payment-method validation consults the very same gateway list — only
+	 * without the 'order-pay' query var, so filter_gateways() left COD in place. An
+	 * order here means "paying online"; letting it settle as COD would mark parts
+	 * paid that were never paid for. We hook the route BEFORE it dispatches and, when
+	 * the target order is ours, strip COD from the gateways it will validate against —
+	 * so WooCommerce itself rejects payment_method=cod with its normal error.
+	 *
+	 * @param mixed           $result  Short-circuit response, or null to continue.
+	 * @param WP_REST_Server  $server  Unused.
+	 * @param WP_REST_Request $request The incoming request.
+	 * @return mixed Untouched — we only add a filter as a side effect.
+	 */
+	public static function guard_store_api_payment( $result, $server, $request ) {
+		if ( null !== $result || ! ( $request instanceof WP_REST_Request ) ) {
+			return $result;
+		}
+		if ( ! preg_match( '#^/wc/store/v[0-9]+/checkout/(\d+)$#', (string) $request->get_route(), $m ) ) {
+			return $result;
+		}
+		if ( self::is_ours( wc_get_order( (int) $m[1] ) ) ) {
+			add_filter( 'woocommerce_available_payment_gateways', array( __CLASS__, 'strip_cod' ), 100 );
+		}
+		return $result;
 	}
 
 	/* ------------------------------------------------------------------ Creating */
@@ -414,6 +451,16 @@ class AUN_SP_Woo {
 			}
 			if ( $o && ! in_array( $o->get_status(), array( 'cancelled', 'refunded', 'failed' ), true ) ) {
 				$order = $o; // reuse the shell, refresh its contents below
+			} elseif ( $o && self::is_ours( $o ) ) {
+				// The old order is failed/cancelled and unpaid, so we are about to build
+				// a fresh one. Delete the old one first — a FAILED order keeps a live
+				// pay link (needs_payment() is true for it), so leaving it behind means
+				// two payable orders for one request: the customer could pay the stale
+				// link, the money would land on an order the request no longer tracks,
+				// and the Pay button would still be sitting on their tracking page.
+				$dead = $o->get_order_number();
+				$o->delete( true );
+				self::log( (int) $request_id, 'wc_order', 'Replaced abandoned order #' . $dead . ' with a fresh payment order.' );
 			}
 		}
 		if ( ! $order ) {

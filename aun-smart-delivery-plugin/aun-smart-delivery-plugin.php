@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       AUN Smart Delivery Plugin
  * Description:       Handles intelligent, context-aware delivery estimates and backorder notices with cart splitting. Includes holiday date skipping and a configurable backorder dispatch lead time (global default + per-product override via a dedicated product meta box) with an optional per-product live countdown. A per-product ETA is a one-time setting: once the product restocks it reverts to the global default until set again. Modern card-based settings UI with live preview.
- * Version:           20.0.0
+ * Version:           20.1.0
  * Author:            Smart Living Bangladesh
  */
 
@@ -34,6 +34,10 @@ class AUN_Smart_Delivery {
 
         add_action( 'wp_ajax_get_product_page_delivery_estimate',        [ $this, 'ajax_get_product_page_estimate' ] );
         add_action( 'wp_ajax_nopriv_get_product_page_delivery_estimate', [ $this, 'ajax_get_product_page_estimate' ] );
+
+        // Fresh-nonce endpoint — see ajax_mint_nonce().
+        add_action( 'wp_ajax_aun_delivery_nonce',        [ $this, 'ajax_mint_nonce' ] );
+        add_action( 'wp_ajax_nopriv_aun_delivery_nonce', [ $this, 'ajax_mint_nonce' ] );
 
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_frontend_assets' ] );
 
@@ -485,18 +489,52 @@ class AUN_Smart_Delivery {
                         var $est   = $("#aun-delivery-estimate-text-product");
                         if (!zoneId) return;
                         $est.html("<p>Calculating...</p>");
-                        $.ajax({
-                            url:  AUN_DELIVERY.ajax_url,
-                            type: "POST",
-                            data: {
-                                action:  "get_product_page_delivery_estimate",
-                                zone_id: zoneId,
-                                nonce:   AUN_DELIVERY.nonce
-                            },
-                            success: function(res){
-                                $est.html(res.success ? res.data : "<p>Could not get estimate.</p>");
-                            }
-                        });
+
+                        /* WP ROCKET: the localized nonce is baked into cached
+                           product-page HTML and goes stale within a day. A
+                           bad_nonce refusal means exactly that, so mint a fresh
+                           one and replay the request once. Previously there was
+                           no error branch at all, so a stale nonce left this
+                           stuck on "Calculating..." forever. */
+                        function aunEstimate(retried){
+                            $.ajax({
+                                url:  AUN_DELIVERY.ajax_url,
+                                type: "POST",
+                                dataType: "json",
+                                data: {
+                                    action:  "get_product_page_delivery_estimate",
+                                    zone_id: zoneId,
+                                    nonce:   AUN_DELIVERY.nonce
+                                },
+                                success: function(res){
+                                    $est.html(res && res.success ? res.data : "<p>Could not get estimate.</p>");
+                                },
+                                error: function(xhr){
+                                    var d = xhr && xhr.responseJSON && xhr.responseJSON.data;
+                                    var stale = d && d.code === "bad_nonce";
+
+                                    if (!stale || retried) {
+                                        $est.html("<p>Could not get estimate.</p>");
+                                        return;
+                                    }
+
+                                    $.post(AUN_DELIVERY.ajax_url, { action: "aun_delivery_nonce" }, null, "json")
+                                        .done(function(n){
+                                            if (n && n.success && n.data && n.data.nonce) {
+                                                AUN_DELIVERY.nonce = n.data.nonce;
+                                                aunEstimate(true);
+                                            } else {
+                                                $est.html("<p>Could not get estimate.</p>");
+                                            }
+                                        })
+                                        .fail(function(){
+                                            $est.html("<p>Could not get estimate.</p>");
+                                        });
+                                }
+                            });
+                        }
+
+                        aunEstimate(false);
                     });
                 });
             ' );
@@ -1154,8 +1192,28 @@ class AUN_Smart_Delivery {
         return 'between <strong>' . esc_html( $start_short ) . '</strong> and <strong>' . esc_html( $end_short ) . '</strong>';
     }
 
+    /**
+     * Hand out a freshly minted nonce.
+     *
+     * WP ROCKET: this nonce is localized into product-page HTML, which is
+     * cached. A nonce lives ~12-24h but the cached page is served far longer,
+     * after which every shopper sends a dead token and the delivery estimate
+     * sticks on "Calculating..." forever. This lets the browser mint a fresh
+     * one at the moment of use and retry.
+     *
+     * Not nonce-guarded itself: requiring a nonce to obtain a nonce would defeat
+     * the purpose, and it reveals nothing a page load does not already reveal.
+     */
+    public function ajax_mint_nonce() {
+        wp_send_json_success( [ 'nonce' => wp_create_nonce( 'aun_delivery_nonce' ) ] );
+    }
+
     public function ajax_get_product_page_estimate() {
-        check_ajax_referer( 'aun_delivery_nonce', 'nonce' );
+        // Soft check: a hard check_ajax_referer() would wp_die('-1'), which this
+        // widget cannot distinguish from a network failure. See ajax_mint_nonce().
+        if ( ! check_ajax_referer( 'aun_delivery_nonce', 'nonce', false ) ) {
+            wp_send_json_error( [ 'code' => 'bad_nonce' ], 403 );
+        }
 
         $zone_id = isset( $_POST['zone_id'] ) ? sanitize_text_field( wp_unslash( $_POST['zone_id'] ) ) : null;
         if ( $zone_id === null ) {

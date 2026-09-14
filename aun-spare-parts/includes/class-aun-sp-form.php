@@ -783,12 +783,12 @@ class AUN_SP_Form {
 	}
 
 	/**
-	 * Fixed-bucket rate limit per IP (mirrors the repair tracker). Keyed on the
-	 * CF header AND REMOTE_ADDR together, so a direct-to-origin client can't rotate
-	 * buckets by spoofing X-CF-Connecting-IP.
+	 * Fixed-bucket rate limit per visitor IP — see aun_sp_client_ip() for how the
+	 * IP is decided, and why the Cloudflare header is only believed when the
+	 * request really came through Cloudflare.
 	 */
 	private function rate_ok( $action, $max ) {
-		$ip     = ( $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '' ) . '|' . ( $_SERVER['REMOTE_ADDR'] ?? 'unknown' );
+		$ip     = aun_sp_client_ip();
 		$bucket = floor( time() / 60 );
 		$key    = 'aun_sp_rl_' . $action . '_' . md5( $ip . '_' . $bucket );
 		$count  = (int) get_transient( $key );

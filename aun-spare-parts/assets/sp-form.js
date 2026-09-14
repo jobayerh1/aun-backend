@@ -19,7 +19,9 @@
 			dup_body: 'We are still working on your earlier request. Sending it again will not make it faster — it only creates a second request we have to cancel.',
 			dup_track: 'Track my existing request',
 			dup_anyway: 'This is a different problem — submit anyway',
-			dup_cancel: 'Cancel'
+			dup_cancel: 'Cancel',
+			chosen_photo: 'Your photo',
+			too_large_1: 'That photo is over 15 MB — please choose a smaller one.'
 		},
 		bn: {
 			searching: 'খোঁজা হচ্ছে…', submitting: 'জমা হচ্ছে…',
@@ -38,9 +40,14 @@
 			dup_body: 'আপনার আগের অনুরোধটি নিয়ে আমরা এখনো কাজ করছি। আবার পাঠালে দ্রুত হবে না — বরং একটি দ্বিতীয় অনুরোধ তৈরি হবে যা আমাদের বাতিল করতে হবে।',
 			dup_track: 'আমার চলমান অনুরোধ ট্র্যাক করুন',
 			dup_anyway: 'এটি ভিন্ন সমস্যা — তবুও জমা দিন',
-			dup_cancel: 'বাতিল'
+			dup_cancel: 'বাতিল',
+			chosen_photo: 'আপনার ছবি',
+			too_large_1: 'ছবিটি ১৫ MB-এর বেশি — অনুগ্রহ করে ছোট ছবি দিন।'
 		}
 	};
+
+	// Same ceiling the server enforces (see ajax_submit).
+	var MAX_BYTES = 15 * 1024 * 1024;
 
 	function init( root ) {
 		var input     = root.querySelector( '.aun-sp-q' );
@@ -377,6 +384,59 @@
 		foundForm.querySelectorAll( '.aun-sp-qty-in' ).forEach( function ( sel ) {
 			sel.addEventListener( 'change', function () {
 				sel.closest( '.aun-sp-qty' ).classList.toggle( 'is-multi', parseInt( sel.value, 10 ) > 1 );
+			} );
+		} );
+
+		// Show the photo the customer just picked, as the same thumbnail as the
+		// "see example" photo — tap it to see it large in the same lightbox. This lets
+		// them check the serial is actually readable BEFORE sending, and an oversize
+		// file is refused right here instead of after a long upload on mobile data.
+		foundForm.querySelectorAll( '.aun-sp-upload input[type=file]' ).forEach( function ( fi ) {
+			var up   = fi.closest( '.aun-sp-upload' );
+			var part = up ? up.getAttribute( 'data-part' ) : '';
+			var cb   = part ? foundForm.querySelector( '.aun-sp-part input[type=checkbox][value="' + part + '"]' ) : null;
+			var nm   = cb && cb.parentNode.querySelector( 'span' );
+			var pname = nm ? nm.textContent.trim() : '';
+
+			var box = document.createElement( 'div' );
+			box.className = 'aun-sp-upload-preview';
+			box.hidden = true;
+			fi.parentNode.insertBefore( box, fi.nextSibling );
+
+			var blob = '';
+			fi.addEventListener( 'change', function () {
+				if ( blob ) { URL.revokeObjectURL( blob ); blob = ''; }
+				box.textContent = '';
+				box.hidden = true;
+				var f = fi.files && fi.files[0];
+				if ( ! f ) { return; }
+				if ( f.size > MAX_BYTES ) {
+					fi.value = '';
+					var w = document.createElement( 'span' );
+					w.className = 'aun-sp-upload-warn';
+					w.textContent = t( 'too_large_1' );
+					box.appendChild( w );
+					box.hidden = false;
+					return;
+				}
+				if ( ! window.URL || ! URL.createObjectURL ) { return; }
+				blob = URL.createObjectURL( f );
+				var cap = pname ? t( 'chosen_photo' ) + ' · ' + pname : t( 'chosen_photo' );
+				var a = document.createElement( 'a' );
+				a.className = 'aun-sp-refimg';
+				a.href = blob;
+				a.setAttribute( 'data-full', blob );
+				a.setAttribute( 'data-caption', cap );
+				a.title = cap;
+				var img = document.createElement( 'img' );
+				img.src = blob;
+				img.alt = cap;
+				a.appendChild( img );
+				var lb = document.createElement( 'span' );
+				lb.textContent = t( 'chosen_photo' );
+				a.appendChild( lb );
+				box.appendChild( a );
+				box.hidden = false;
 			} );
 		} );
 

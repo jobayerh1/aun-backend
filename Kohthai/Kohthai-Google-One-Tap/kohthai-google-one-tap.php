@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Kohthai Google One Tap Login
  * Description: A lightning-fast, seamless Google One Tap sign-in integration for WordPress and WooCommerce.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Smart Living Bangladesh
  */
 
@@ -20,6 +20,10 @@ class AUN_Google_One_Tap {
 
         // AJAX Handler for Login
         add_action('wp_ajax_nopriv_kohthai_verify_google_login', [__CLASS__, 'process_login']);
+
+        // Fresh-nonce endpoint — see mint_nonce().
+        add_action('wp_ajax_nopriv_kohthai_google_nonce', [__CLASS__, 'mint_nonce']);
+        add_action('wp_ajax_kohthai_google_nonce',        [__CLASS__, 'mint_nonce']);
     }
 
     /**
@@ -95,8 +99,15 @@ class AUN_Google_One_Tap {
 
         <script>
             function kohthaiHandleGoogleCredential(response) {
-                // Use modern fetch API for lightning fast, dependency-free AJAX
-                fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                /* WP ROCKET: the nonce is fetched at the moment of use rather
+                   than printed here. A nonce baked into cached HTML goes stale
+                   within a day, after which One Tap sign-in fails for every
+                   visitor until the cache is cleared. */
+                var ktAjax = '<?php echo esc_url( admin_url('admin-ajax.php') ); ?>';
+
+                fetch(ktAjax + '?action=kohthai_google_nonce', { credentials: 'same-origin' })
+                .then(res => res.json())
+                .then(n => fetch(ktAjax, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -104,9 +115,9 @@ class AUN_Google_One_Tap {
                     body: new URLSearchParams({
                         action: 'kohthai_verify_google_login',
                         credential: response.credential,
-                        security: '<?php echo wp_create_nonce('kohthai_google_nonce'); ?>'
+                        security: (n && n.data && n.data.nonce) ? n.data.nonce : ''
                     })
-                })
+                }))
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
@@ -123,10 +134,25 @@ class AUN_Google_One_Tap {
     }
 
     /**
+     * Hand out a freshly minted nonce.
+     *
+     * Not nonce-guarded itself: requiring a nonce to obtain a nonce would defeat
+     * the purpose. It reveals nothing a page load does not already reveal, and
+     * the login it protects still verifies the Google credential with Google.
+     */
+    public static function mint_nonce() {
+        wp_send_json_success(['nonce' => wp_create_nonce('kohthai_google_nonce')]);
+    }
+
+    /**
      * Process the Login/Registration securely on the Backend
      */
     public static function process_login() {
-        check_ajax_referer('kohthai_google_nonce', 'security');
+        // Soft check: a hard check_ajax_referer() would wp_die('-1'), which the
+        // JS can only surface as a generic network error.
+        if ( ! check_ajax_referer('kohthai_google_nonce', 'security', false) ) {
+            wp_send_json_error(['message' => 'Your session expired. Please reload the page.'], 403);
+        }
 
         $credential = isset($_POST['credential']) ? sanitize_text_field($_POST['credential']) : '';
         if (empty($credential)) {

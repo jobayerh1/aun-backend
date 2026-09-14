@@ -493,6 +493,7 @@ class AUN_App_Services {
 			$qty[ $key ]  = max( 1, min( $max_qty, $n ) );
 		}
 
+		$has_photo = false;
 		foreach ( $selected as $key ) {
 			$wpdb->insert( $t_item, array(
 				'request_id'  => $request_id,
@@ -511,14 +512,29 @@ class AUN_App_Services {
 				$url = self::store_upload( $args['photos'][ $key ], 'aun-spare-parts' );
 				if ( $url ) {
 					$wpdb->insert( AUN_SP_Install::table( 'attachments' ), array(
-						'request_id' => $request_id,
-						'item_id'    => $item_id,
-						'kind'       => 'proof',
-						'file_url'   => $url,
-						'created_at' => $now,
+						'request_id'   => $request_id,
+						'item_id'      => $item_id,
+						'kind'         => 'proof',
+						'file_url'     => $url,
+						'bytes_before' => self::stored_size( $url ),
+						'created_at'   => $now,
 					) );
+					$has_photo = true;
 				}
 			}
+		}
+
+		// ⚠️ Ask the spare-parts plugin to compress these photos, exactly as its
+		// own form does after an upload.
+		//
+		// The app used to write the rows and stop there, so every photo sent
+		// from a phone stayed on disk at full size — spare parts 0.43.0 had to
+		// add an hourly sweep specifically to find them. The sweep is only a
+		// safety net: it takes 10 an hour and ignores anything under 10 minutes
+		// old. Queuing here compresses them straight after this response, the
+		// same as a website upload.
+		if ( ! empty( $has_photo ) && method_exists( 'AUN_SP_Image', 'queue' ) ) {
+			AUN_SP_Image::queue( $request_id );
 		}
 
 		// Spell the order out in the event log the way the website does, so a
@@ -1522,6 +1538,9 @@ class AUN_App_Services {
 				array_merge( $variants, $variants )
 			) );
 
+			// The customer's own photos for every request listed — one query.
+			$photos = self::customer_photos( wp_list_pluck( (array) $rows, 'id' ) );
+
 			foreach ( (array) $rows as $r ) {
 				// Safety net for statuses the admin sets directly (ready, closed,
 				// rejected, waiting_customer) which don't fire aun_sp_status_changed.
@@ -1541,8 +1560,9 @@ class AUN_App_Services {
 				}
 
 				$items = $wpdb->get_results(
-					$wpdb->prepare( "SELECT part_label, qty, line_status, eta, unit_price, tracking_no FROM $t_item WHERE request_id = %d", $r->id )
+					$wpdb->prepare( "SELECT id, part_label, qty, line_status, eta, unit_price, tracking_no FROM $t_item WHERE request_id = %d", $r->id )
 				);
+				$req_photos = $photos[ (int) $r->id ] ?? array();
 
 				// Status-history timeline — same event filter as the website
 				// tracker (skip raw SMS logs and contact edits).
@@ -1642,6 +1662,9 @@ class AUN_App_Services {
 
 				$spare[] = array(
 					'ref'          => (string) $r->ref,
+					// Latest photo re-sent after we asked for a clearer one. Re-uploads
+					// are not tied to one part (item_id 0), so it belongs to the request.
+					'resent_photo' => (string) ( $req_photos[0] ?? '' ),
 					'model'        => (string) $r->model,
 					// The projector this was raised against. The app needs it to
 					// tell the customer "you already have a request for THIS
@@ -1744,7 +1767,7 @@ class AUN_App_Services {
 						)
 					),
 					'timeline'     => $timeline,
-					'items'        => array_map( function ( $i ) use ( $ist ) {
+					'items'        => array_map( function ( $i ) use ( $ist, $req_photos ) {
 						// `price` is PER PIECE (the website quotes it that way),
 						// so the app is also given the line total — otherwise a
 						// customer ordering 3 sees one piece's price next to a
@@ -1772,6 +1795,8 @@ class AUN_App_Services {
 							// The courier page for this consignment, so the number in
 							// the app is tappable exactly like the website's link.
 							'tracking_url' => self::courier_tracking_url( (string) $i->tracking_no ),
+							// The photo the customer sent for this part ('' if none).
+							'photo'        => (string) ( $req_photos[ (int) $i->id ] ?? '' ),
 						);
 					}, (array) $items ),
 				);
@@ -1867,6 +1892,57 @@ class AUN_App_Services {
 	 */
 	public static function store_public_upload( $file, $subdir ) {
 		return self::store_upload( $file, $subdir );
+	}
+
+	/**
+	 * The customer's own photos: request_id => [ item_id => url ].
+	 * Key 0 holds the latest re-sent photo (re-uploads are not tied to one part).
+	 *
+	 * ⚠️ The SAME rule as the website tracker (AUN_SP_Tracking::customer_photos,
+	 * spare parts 0.43.0), which is private there so it is restated here: only
+	 * URLs that resolve to a REAL file inside uploads/aun-spare-parts/ are
+	 * returned. A photo that was removed then shows no broken thumbnail, and
+	 * nothing else can ever be put in front of the customer, whatever the
+	 * column holds. Keeping the rule identical means the app and the website
+	 * can never disagree about which photos a customer sees.
+	 *
+	 * @param int[] $request_ids
+	 * @return array<int,array<int,string>>
+	 */
+	private static function customer_photos( $request_ids ) {
+		global $wpdb;
+		$ids = array_values( array_filter( array_map( 'intval', (array) $request_ids ) ) );
+		if ( ! $ids || ! method_exists( 'AUN_SP_Image', 'url_to_path' ) ) {
+			return array();
+		}
+		$t    = AUN_SP_Install::table( 'attachments' );
+		// Integers only (intval above), so they are safe to inline.
+		$rows = $wpdb->get_results( "SELECT request_id, item_id, file_url FROM $t WHERE request_id IN (" . implode( ',', $ids ) . ') ORDER BY id ASC' );
+		$dir  = DIRECTORY_SEPARATOR . 'aun-spare-parts' . DIRECTORY_SEPARATOR;
+		$out  = array();
+		foreach ( (array) $rows as $row ) {
+			$path = AUN_SP_Image::url_to_path( $row->file_url );
+			if ( '' === $path || false === strpos( $path, $dir ) ) {
+				continue;
+			}
+			// Oldest first, so a later photo for the same slot wins.
+			$out[ (int) $row->request_id ][ (int) $row->item_id ] = esc_url_raw( $row->file_url );
+		}
+		return $out;
+	}
+
+	/**
+	 * Size on disk of a file we just stored, from its URL (0 if unknown).
+	 *
+	 * Recorded as bytes_before so the spare-parts Settings page can report what
+	 * compression saved on app photos too, the same as website ones.
+	 */
+	private static function stored_size( $url ) {
+		if ( ! method_exists( 'AUN_SP_Image', 'url_to_path' ) ) {
+			return 0;
+		}
+		$path = AUN_SP_Image::url_to_path( $url );
+		return ( '' !== $path && is_file( $path ) ) ? (int) filesize( $path ) : 0;
 	}
 
 	private static function store_upload( $file, $subdir ) {

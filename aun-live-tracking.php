@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Live Tracking (Pathao)
  * Description: Live order tracking via API. Features public tracking links, smart phone search, robust security, and a beautiful timeline. Fully responsive (stacked form + full-width button on mobile).
- * Version: 2.9.10
+ * Version: 2.10.0
  * Author: Smart Living Bangladesh
  */
 
@@ -17,6 +17,27 @@ class AUN_Pathao_Live_Tracking {
         // AJAX Endpoints
         add_action('wp_ajax_aun_track_order', [__CLASS__, 'handle_ajax_tracking']);
         add_action('wp_ajax_nopriv_aun_track_order', [__CLASS__, 'handle_ajax_tracking']);
+
+        // Fresh-nonce endpoint — see mint_nonce() for why this has to exist.
+        add_action('wp_ajax_aun_track_nonce', [__CLASS__, 'mint_nonce']);
+        add_action('wp_ajax_nopriv_aun_track_nonce', [__CLASS__, 'mint_nonce']);
+    }
+
+    /**
+     * Hand out a freshly minted nonce.
+     *
+     * WP ROCKET: the tracking form's nonce is printed into HTML that WP Rocket
+     * caches. A nonce only lives ~12-24h, but a cached page is served for far
+     * longer — after which every visitor gets the same dead nonce and the form
+     * answers "Connection error" for everyone. This endpoint lets the browser
+     * mint a fresh one at the moment of use and retry.
+     *
+     * Deliberately not behind a nonce check of its own: requiring a valid nonce
+     * to obtain a nonce would defeat the purpose. It reveals nothing a page load
+     * does not already reveal, and the action it protects is IP rate-limited.
+     */
+    public static function mint_nonce() {
+        wp_send_json_success( [ 'nonce' => wp_create_nonce( 'aun_tracking_nonce' ) ] );
     }
 
     public static function enqueue_scripts() {
@@ -136,27 +157,72 @@ class AUN_Pathao_Live_Tracking {
                     btn.text('Tracking...').prop('disabled', true);
                     $('#aun-tracking-result').html('<div class="aun-notice aun-info"><i class="fa-solid fa-spinner fa-spin"></i> Fetching your delivery updates...</div>');
                     
-                    $.ajax({
-                        url: aun_tracking_obj.ajax_url,
-                        type: 'POST',
-                        data: {
+                    /*
+                     * The nonce is printed into HTML that WP Rocket caches, so on a
+                     * page cached longer than the nonce lives it arrives already
+                     * stale and every visitor gets the same dead token. Rather than
+                     * dead-end a real customer, a 'bad_nonce' refusal mints a fresh
+                     * nonce and replays the request exactly once.
+                     */
+                    function finish(html) {
+                        btn.text('Track Order').prop('disabled', false);
+                        $('#aun-tracking-result').html(html);
+                    }
+
+                    function errorBox(msg) {
+                        return '<div class="aun-notice aun-error"><i class="fa-solid fa-circle-exclamation"></i> ' + msg + '</div>';
+                    }
+
+                    function settle(res, retried) {
+                        res = res || { success: false, data: '' };
+
+                        if (res.success) {
+                            finish(res.data.html);
+                            return;
+                        }
+
+                        var d = res.data;
+                        var stale = d && typeof d === 'object' && d.code === 'bad_nonce';
+
+                        if (stale && !retried) {
+                            $.post(aun_tracking_obj.ajax_url, { action: 'aun_track_nonce' }, null, 'json')
+                                .done(function(n) {
+                                    if (n && n.success && n.data && n.data.nonce) {
+                                        aun_tracking_obj.nonce = n.data.nonce;
+                                        send(true);
+                                    } else {
+                                        finish(errorBox('Security check failed. Please reload the page.'));
+                                    }
+                                })
+                                .fail(function() {
+                                    finish(errorBox('Connection error. Please try again.'));
+                                });
+                            return;
+                        }
+
+                        // Other refusals: server sends a plain string message.
+                        finish(errorBox(typeof d === 'string' ? d : (d && d.message) || 'Something went wrong. Please try again.'));
+                    }
+
+                    function send(retried) {
+                        $.post(aun_tracking_obj.ajax_url, {
                             action: 'aun_track_order',
                             search: search,
                             nonce: aun_tracking_obj.nonce
-                        },
-                        success: function(res) {
-                            btn.text('Track Order').prop('disabled', false);
-                            if (res.success) {
-                                $('#aun-tracking-result').html(res.data.html);
-                            } else {
-                                $('#aun-tracking-result').html('<div class="aun-notice aun-error"><i class="fa-solid fa-circle-exclamation"></i> ' + res.data + '</div>');
-                            }
-                        },
-                        error: function() {
-                            btn.text('Track Order').prop('disabled', false);
-                            $('#aun-tracking-result').html('<div class="aun-notice aun-error">Connection error. Please try again.</div>');
-                        }
-                    });
+                        }, null, 'json')
+                            .done(function(res) { settle(res, retried); })
+                            .fail(function(xhr) {
+                                // wp_send_json_error() can return a non-200 with a JSON
+                                // body; jQuery routes that to .fail(), so read it back.
+                                if (xhr && xhr.responseJSON) {
+                                    settle(xhr.responseJSON, retried);
+                                } else {
+                                    finish('<div class="aun-notice aun-error">Connection error. Please try again.</div>');
+                                }
+                            });
+                    }
+
+                    send(false);
                 });
             });
         </script>
@@ -211,8 +277,17 @@ class AUN_Pathao_Live_Tracking {
      * Handle the AJAX Request
      */
     public static function handle_ajax_tracking() {
-        check_ajax_referer('aun_tracking_nonce', 'nonce');
-        
+        // Soft check: a hard check_ajax_referer() would wp_die('-1') with a bare
+        // 403, which the browser can only report as "Connection error". Returning
+        // a coded JSON refusal instead lets the form mint a fresh nonce and retry
+        // once — the stale-cached-nonce case described in mint_nonce().
+        if ( ! check_ajax_referer( 'aun_tracking_nonce', 'nonce', false ) ) {
+            wp_send_json_error( [
+                'code'    => 'bad_nonce',
+                'message' => 'Security check failed. Please reload the page.',
+            ], 403 );
+        }
+
         // --- SECURITY: IP Rate Limiting (fixed 5-minute window) ---
         $ip       = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
         $bucket   = floor( time() / ( MINUTE_IN_SECONDS * 5 ) ); // changes every 5 min

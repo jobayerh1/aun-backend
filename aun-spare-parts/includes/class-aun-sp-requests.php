@@ -1980,6 +1980,24 @@ class AUN_SP_Requests {
 			return;
 		}
 
+		// ONE digest per day, whatever happens upstream.
+		//
+		// This hook can fire more than once a day: a duplicate entry in the cron
+		// array, a host cron hitting wp-cron.php while WordPress's own loopback is
+		// already running it, or a manual run. Nothing here is harmful when repeated
+		// — but the admin got the same summary email twice, minutes apart, which is
+		// just noise. The claim is written BEFORE the mail goes out, so a second run
+		// finds the day already taken and stops.
+		//
+		// Deliberately NOT claimed on a "nothing to report" day (we return above
+		// without ever reaching this), so if something does need attention later the
+		// same day, that run can still send.
+		$today = current_time( 'Y-m-d' );
+		if ( (string) get_option( 'aun_sp_digest_sent_on', '' ) === $today ) {
+			return;
+		}
+		update_option( 'aun_sp_digest_sent_on', $today, false );
+
 		$ov      = self::overall_statuses();
 		$lines   = array();
 		$lines[] = 'Spare parts — daily summary';

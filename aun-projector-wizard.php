@@ -11,7 +11,7 @@
  *              budget thresholds, admin labels and the premium tie-breaker adapt to the
  *              store's WooCommerce currency. v3.2.0 — recommends Backorder products
  *              (admin-toggleable), in-stock preferred, backorder items labelled.)
- * Version:     3.5.0
+ * Version:     3.6.0
  * Author:      Smart Living Bangladesh
  */
 
@@ -32,6 +32,10 @@ class AUN_Projector_Wizard {
         add_shortcode( 'aun_projector_finder',    [ __CLASS__, 'render_wizard' ] );
         add_action( 'wp_ajax_aun_get_projector_recommendation',        [ __CLASS__, 'process_recommendation' ] );
         add_action( 'wp_ajax_nopriv_aun_get_projector_recommendation', [ __CLASS__, 'process_recommendation' ] );
+
+        // Fresh-nonce endpoint — see mint_nonce().
+        add_action( 'wp_ajax_aun_wizard_nonce',        [ __CLASS__, 'mint_nonce' ] );
+        add_action( 'wp_ajax_nopriv_aun_wizard_nonce', [ __CLASS__, 'mint_nonce' ] );
         add_shortcode( 'aun_finder_notice',            [ __CLASS__, 'render_finder_notice_shortcode' ] );
         add_shortcode( 'aun_hide_if_discontinued',     [ __CLASS__, 'render_hide_if_discontinued_shortcode' ] );
         add_action( 'admin_menu',  [ __CLASS__, 'admin_menu' ] );
@@ -1014,23 +1018,57 @@ class AUN_Projector_Wizard {
                 loadStart = Date.now();
                 startLoadingAnimation();
 
-                jQuery.ajax({
-                    url:  '<?php echo esc_url( $ajax_url ); ?>',
-                    type: 'POST',
-                    data: {
-                        action:  'aun_get_projector_recommendation',
-                        nonce:   '<?php echo $nonce; ?>',
-                        answers: ans
-                    },
-                    success: function (r) {
-                        var elapsed   = Date.now() - loadStart;
-                        var remaining = Math.max(0, 2800 - elapsed); // minimum 2.8 s of "AI thinking"
-                        setTimeout(function () { aunShowResults(r); }, remaining);
-                    },
-                    error: function () {
-                        aunShowResults('<p style="text-align:center;color:#ef4444;padding:30px;">Something went wrong. Please try again.</p>');
-                    }
-                });
+                /*
+                 * WP ROCKET: the nonce below is baked into cached HTML and goes
+                 * stale within a day, after which every visitor sends a dead
+                 * token. A 403 'AUN_BAD_NONCE' reply means exactly that — mint a
+                 * fresh nonce and replay the request once, so the customer gets
+                 * their recommendation instead of an error.
+                 */
+                var aunNonce = '<?php echo esc_js( $nonce ); ?>';
+                var aunAjax  = '<?php echo esc_url( $ajax_url ); ?>';
+
+                function aunRender(r) {
+                    var elapsed   = Date.now() - loadStart;
+                    var remaining = Math.max(0, 2800 - elapsed); // minimum 2.8 s of "AI thinking"
+                    setTimeout(function () { aunShowResults(r); }, remaining);
+                }
+
+                function aunFail() {
+                    aunRender('<p style="text-align:center;color:#ef4444;padding:30px;">Something went wrong. Please try again.</p>');
+                }
+
+                function aunSend(retried) {
+                    jQuery.ajax({
+                        url:  aunAjax,
+                        type: 'POST',
+                        data: {
+                            action:  'aun_get_projector_recommendation',
+                            nonce:   aunNonce,
+                            answers: ans
+                        },
+                        success: function (r) { aunRender(r); },
+                        error: function (xhr) {
+                            var stale = xhr && xhr.status === 403 &&
+                                        (xhr.responseText || '').indexOf('AUN_BAD_NONCE') !== -1;
+
+                            if (!stale || retried) { aunFail(); return; }
+
+                            jQuery.post(aunAjax, { action: 'aun_wizard_nonce' }, null, 'json')
+                                .done(function (n) {
+                                    if (n && n.success && n.data && n.data.nonce) {
+                                        aunNonce = n.data.nonce;
+                                        aunSend(true);
+                                    } else {
+                                        aunFail();
+                                    }
+                                })
+                                .fail(aunFail);
+                        }
+                    });
+                }
+
+                aunSend(false);
             }
 
             /* ── RESET ── */
@@ -1320,11 +1358,31 @@ class AUN_Projector_Wizard {
         ];
     }
 
+    /**
+     * Hand out a freshly minted nonce.
+     *
+     * WP ROCKET: the wizard's nonce is printed into HTML that WP Rocket caches.
+     * A nonce lives ~12-24h but a cached page is served far longer, after which
+     * every visitor carries the same dead token and the wizard silently fails.
+     * This lets the browser mint a fresh one at the moment of use and retry.
+     *
+     * Not nonce-guarded itself: requiring a nonce to obtain a nonce would defeat
+     * the purpose, and it reveals nothing a page load does not already reveal.
+     */
+    public static function mint_nonce() {
+        wp_send_json_success( [ 'nonce' => wp_create_nonce( self::NONCE_KEY ) ] );
+    }
+
     public static function process_recommendation() {
 
-        // Security: verify nonce before processing anything
+        // Security: verify nonce before processing anything.
+        // A stale nonce answers with a distinct 403 marker so the browser can
+        // mint a fresh one and retry, instead of the bare wp_die() that used to
+        // return an empty 200 and leave the customer staring at a blank result.
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], self::NONCE_KEY ) ) {
-            wp_die();
+            status_header( 403 );
+            nocache_headers();
+            exit( 'AUN_BAD_NONCE' );
         }
         if ( ! function_exists( 'wc_get_products' ) ) wp_die();
 

@@ -2,14 +2,14 @@
 /**
  * Plugin Name: AUN Spare Parts
  * Description: Spare-parts request intake + per-part tracking for AUN Projector. Reads sales/warranty from the UltimatePOS ERP and a legacy inFlow sales archive; lets customers request parts (no device sent in) and track each part. Phase 1: legacy import + phone/order/serial lookup + warranty calc + image compression.
- * Version: 0.41.0
+ * Version: 0.44.0
  * Author: Smart Living Bangladesh
  * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SP_VERSION', '0.41.0' );
+define( 'AUN_SP_VERSION', '0.44.0' );
 define( 'AUN_SP_FILE', __FILE__ );
 define( 'AUN_SP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SP_URL', plugin_dir_url( __FILE__ ) );
@@ -79,6 +79,87 @@ function aun_sp_phone_where( $column, $raw ) {
 	);
 }
 
+/**
+ * The visitor's IP, for rate limiting.
+ *
+ * Behind Cloudflare, REMOTE_ADDR is a Cloudflare edge that thousands of visitors
+ * share, so the real address has to come from CF-Connecting-IP. But that header is
+ * only TRUE when the request actually arrived from Cloudflare: anyone who reaches
+ * the origin directly can put any value in it. Mixing it into the rate-limit key
+ * (as this plugin used to) let such a client get a fresh bucket on every request
+ * simply by changing the header — switching off the limits on approve, decline,
+ * pay and re-upload.
+ *
+ * So the header is believed only when REMOTE_ADDR is a Cloudflare edge, or a
+ * private/loopback address (a proxy on the host itself, which an outside client
+ * cannot impersonate). Otherwise REMOTE_ADDR is used as it is.
+ */
+function aun_sp_client_ip() {
+	$remote = aun_sp_unmap_ip( isset( $_SERVER['REMOTE_ADDR'] ) ? trim( (string) $_SERVER['REMOTE_ADDR'] ) : '' );
+	$cf     = isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ? trim( (string) $_SERVER['HTTP_CF_CONNECTING_IP'] ) : '';
+
+	if ( '' !== $cf && filter_var( $cf, FILTER_VALIDATE_IP ) && aun_sp_is_trusted_proxy( $remote ) ) {
+		return $cf;
+	}
+	return filter_var( $remote, FILTER_VALIDATE_IP ) ? $remote : 'unknown';
+}
+
+/** "::ffff:1.2.3.4" (IPv4 written as IPv6, which some servers report) -> "1.2.3.4". */
+function aun_sp_unmap_ip( $ip ) {
+	if ( 0 === stripos( (string) $ip, '::ffff:' ) && filter_var( substr( $ip, 7 ), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+		return substr( $ip, 7 );
+	}
+	return (string) $ip;
+}
+
+/** Whether REMOTE_ADDR is a proxy whose forwarded-IP header may be believed. */
+function aun_sp_is_trusted_proxy( $ip ) {
+	if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+		return false;
+	}
+	// Private / loopback / reserved = a proxy on the host's own network.
+	if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+		return true;
+	}
+	// Cloudflare's published edge ranges (cloudflare.com/ips). They change rarely;
+	// filterable so they can be updated without editing the plugin.
+	$ranges = apply_filters( 'aun_sp_trusted_proxies', array(
+		'173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+		'141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+		'197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+		'104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+		'2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+		'2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32',
+	) );
+	foreach ( (array) $ranges as $cidr ) {
+		if ( aun_sp_ip_in_cidr( $ip, $cidr ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/** IPv4 / IPv6 CIDR membership, compared byte by byte (no GMP/BCMath needed). */
+function aun_sp_ip_in_cidr( $ip, $cidr ) {
+	$parts = explode( '/', (string) $cidr, 2 );
+	$ipb   = @inet_pton( (string) $ip );
+	$netb  = @inet_pton( $parts[0] );
+	if ( false === $ipb || false === $netb || strlen( $ipb ) !== strlen( $netb ) ) {
+		return false;
+	}
+	$bits  = isset( $parts[1] ) ? (int) $parts[1] : strlen( $ipb ) * 8;
+	$whole = intdiv( $bits, 8 );
+	if ( substr( $ipb, 0, $whole ) !== substr( $netb, 0, $whole ) ) {
+		return false;
+	}
+	$rest = $bits % 8;
+	if ( 0 === $rest ) {
+		return true;
+	}
+	$mask = ( 0xFF << ( 8 - $rest ) ) & 0xFF;
+	return ( ord( $ipb[ $whole ] ) & $mask ) === ( ord( $netb[ $whole ] ) & $mask );
+}
+
 require_once AUN_SP_DIR . 'includes/class-aun-sp-install.php';
 require_once AUN_SP_DIR . 'includes/class-aun-sp-parts.php';
 require_once AUN_SP_DIR . 'includes/class-aun-sp-i18n.php';
@@ -106,14 +187,26 @@ add_action( 'aun_sp_daily_digest', array( 'AUN_SP_Requests', 'process_quotes' ),
 // list only keeps real sales (the window is set in Spare Parts -> Settings).
 add_action( 'aun_sp_hourly_tidy', array( 'AUN_SP_Woo', 'cancel_abandoned' ) );
 
+// Hourly: compress any photo the upload path never queued — chiefly those sent
+// from the AUN Care app, which were stored at full phone size. Bounded, so a
+// shared server never spends long on it (see AUN_SP_Image::sweep).
+add_action( 'aun_sp_hourly_tidy', array( 'AUN_SP_Image', 'sweep_hourly' ) );
+
+// Hourly: make sure each of our cron hooks has exactly ONE scheduled run. A second
+// entry makes every hook fire twice — which is how the daily digest email started
+// arriving twice, minutes apart. Cheap: it counts, and only acts if something is
+// wrong (see AUN_SP_Install::ensure_single_schedule).
+add_action( 'aun_sp_hourly_tidy', array( 'AUN_SP_Install', 'ensure_single_schedule' ) );
+
 // Background retry for failed customer SMS (Alpha busy/down) — scheduled by AUN_SP_SMS::send_tracked.
 add_action( 'aun_sp_sms_retry', array( 'AUN_SP_SMS', 'retry' ), 10, 5 );
 register_deactivation_hook( __FILE__, function () {
 	foreach ( array( 'aun_sp_daily_digest', 'aun_sp_hourly_tidy' ) as $hook ) {
-		$ts = wp_next_scheduled( $hook );
-		if ( $ts ) {
-			wp_unschedule_event( $ts, $hook );
-		}
+		// wp_clear_scheduled_hook(), NOT wp_next_scheduled() + wp_unschedule_event():
+		// the latter removes only the NEXT run, so if a hook ever ended up scheduled
+		// twice, deactivating left one behind — and re-activating added another. That
+		// is how a hook accumulates duplicates and starts firing twice a day.
+		wp_clear_scheduled_hook( $hook );
 	}
 } );
 

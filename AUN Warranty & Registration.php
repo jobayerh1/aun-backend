@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Warranty Registration
  * Description: Manage distributors, products, and CF7 warranty registrations with auto-approval, SMS and email notifications.
- * Version:     2.6.3
+ * Version:     2.8.1
  * Author:      Smart Living Bangladesh
  * License:     GPLv2 or later
  */
@@ -322,10 +322,19 @@ function slb_admin_settings(){
 
         $email_templates = $opts['email_templates'] ?? [];
         foreach(['received','approved','rejected','duplicate','not_found','mismatch','model_mismatch','shop_mismatch'] as $k){
-            $subject_field = $_POST['email_'.$k.'_subject'] ?? '';
-            $email_templates[$k.'_subject'] = sanitize_text_field( $subject_field );
-            $raw_body = $_POST['email_'.$k] ?? '';
-            $email_templates[$k] = wp_kses_post( $raw_body );
+            // Fall back to what is already stored when a field is ABSENT from the
+            // POST - exactly what the SMS loop above does. Without this, any save
+            // that did not carry these fields overwrote the template with an empty
+            // string, and an empty template makes slb_send_templated_email() return
+            // false without a word: customers simply stop receiving email, with
+            // nothing logged anywhere. A field that is present but deliberately
+            // cleared is still honoured.
+            $email_templates[$k.'_subject'] = isset($_POST['email_'.$k.'_subject'])
+                ? sanitize_text_field( $_POST['email_'.$k.'_subject'] )
+                : ( $email_templates[$k.'_subject'] ?? '' );
+            $email_templates[$k] = isset($_POST['email_'.$k])
+                ? wp_kses_post( $_POST['email_'.$k] )
+                : ( $email_templates[$k] ?? '' );
         }
         $opts['email_templates'] = $email_templates;
 
@@ -1168,6 +1177,14 @@ function slb_admin_registrations(){
         $id = intval($_GET['id']);
         $action = sanitize_text_field($_GET['action']);
         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $t_regs WHERE id=%d",$id));
+        // A RELEASED record belongs to nobody until the next owner takes it over
+        // (from the app or this site's form). Approving it would silently hand it
+        // back to the person who let it go; deleting it would let the serial be
+        // registered with a NEW date — a fresh warranty. Neither is allowed.
+        if ( $row && 'released' === $row->status ) {
+            echo '<div class="notice notice-warning"><p><strong>Registration #' . intval( $id ) . ' is released.</strong> Its previous owner let it go; the next owner takes it over (with the remaining warranty) from the app or the registration form. It cannot be approved, rejected or deleted.</p></div>';
+            $row = null;
+        }
         if($row){
             if($action==='approve'){
                 $wpdb->update($t_regs,['status'=>'approved'],['id'=>$id]);
@@ -1176,7 +1193,7 @@ function slb_admin_registrations(){
                 $tpl_sms = $opts['sms_templates']['approved'] ?? '';
                 $tpl_email = $opts['email_templates']['approved'] ?? '';
                 $start = $row->purchase_date ?: date('Y-m-d');
-                $end = date('Y-m-d', strtotime($start.' +12 months'));
+                $end = slb_warranty_end( $start, $row->serial );
                 $vars = ['serial'=>$row->serial,'start'=>$start,'end'=>$end,'invoice'=>$row->invoice_no,'name'=>$row->customer_name,'phone'=>$row->phone];
                 if($tpl_sms)   slb_send_templated_sms($row->phone, $tpl_sms, $vars);
                 if($tpl_email) slb_send_templated_email($row->email, $tpl_email, $vars, 'approved');
@@ -1256,6 +1273,7 @@ function slb_admin_registrations(){
         'duplicate'  => 'background:#e0e7ff;color:#3730a3;',
         'not_found'  => 'background:#f3f4f6;color:#374151;',
         'mismatch'   => 'background:#fff7ed;color:#9a3412;',
+        'released'   => 'background:#ede9fe;color:#5b21b6;',
     ];
 
     $base_url = add_query_arg(['page' => 'slb-warranty-registrations'], admin_url('admin.php'));
@@ -1268,7 +1286,7 @@ function slb_admin_registrations(){
     echo '<input name="search_q" value="'.esc_attr($search_q).'" placeholder="Search serial, name, phone, invoice…" style="min-width:260px;">';
     echo '<select name="status_filter">';
     echo '<option value="">All statuses</option>';
-    foreach(['approved','pending','rejected','duplicate','not_found','mismatch'] as $st){
+    foreach(['approved','pending','rejected','duplicate','not_found','mismatch','released'] as $st){
         echo '<option value="'.esc_attr($st).'"'.selected($status_filter,$st,false).'>'.ucfirst(str_replace('_',' ',$st)).'</option>';
     }
     echo '</select>';
@@ -1302,6 +1320,21 @@ function slb_admin_registrations(){
 
         $status_style = $status_styles[$r->status] ?? 'background:#f3f4f6;color:#374151;';
         $status_badge = '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;'.$status_style.'">'.esc_html(ucfirst(str_replace('_',' ',$r->status))).'</span>';
+        // Why this one waits for a PERSON. The reason lives in the notes, which
+        // this table does not otherwise show — without this, a held registration
+        // looked like any other pending one and staff could approve it blind.
+        $r_notes = (string) ( $r->notes ?? '' );
+        if ( in_array( $r->status, ['pending','not_found','mismatch'], true ) ) {
+            $held_at = strrpos( $r_notes, '[HELD FOR REVIEW]' );
+            if ( false !== $held_at ) {
+                $why = trim( explode( ' | ', trim( substr( $r_notes, $held_at + 17 ) ) )[0] );
+                $status_badge .= '<br><span title="'.esc_attr($why).'" style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;cursor:help">Held for review</span>'
+                    . '<br><small style="color:#666">'.esc_html( wp_html_excerpt( $why, 140, '…' ) ).'</small>';
+            }
+            if ( false !== strpos( $r_notes, 'Conflicting submission from' ) ) {
+                $status_badge .= '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;background:#fff7ed;color:#9a3412">Another number also submitted this serial</span>';
+            }
+        }
 
         echo '<tr>';
         echo '<td>'.intval($r->id).'</td>';
@@ -1315,11 +1348,18 @@ function slb_admin_registrations(){
         echo '<td>'.$file_html.'</td>';
         echo '<td>'.$status_badge.'</td>';
         echo '<td><div class="slb-action-group">';
-        echo '<a class="button button-small button-primary" href="'.esc_url($approve).'">Approve</a>';
-        echo '<a class="button button-small slb-btn-reject" href="'.esc_url($reject).'">Reject</a>';
-        echo '<a class="button button-small" href="'.esc_url($dup).'">Duplicate</a>';
-        if ( $r->status !== 'approved' ) {
-            echo '<a class="button button-small slb-btn-delete" href="'.esc_url($del).'" onclick="return confirm(\'Delete this registration?\')">Delete</a>';
+        if ( $r->status === 'released' ) {
+            // Nothing to act on: the next owner takes it over from the app or
+            // the form, keeping the original warranty. (The actions are refused
+            // for released rows anyway — these buttons only invited the error.)
+            echo '<span style="font-size:12px;color:#5b21b6">Waiting for the next owner</span>';
+        } else {
+            echo '<a class="button button-small button-primary" href="'.esc_url($approve).'">Approve</a>';
+            echo '<a class="button button-small slb-btn-reject" href="'.esc_url($reject).'">Reject</a>';
+            echo '<a class="button button-small" href="'.esc_url($dup).'">Duplicate</a>';
+            if ( $r->status !== 'approved' ) {
+                echo '<a class="button button-small slb-btn-delete" href="'.esc_url($del).'" onclick="return confirm(\'Delete this registration?\')">Delete</a>';
+            }
         }
         echo '</div></td></tr>';
     }
@@ -1388,6 +1428,7 @@ function slb_registration_match_status( $model, $dealer_name, $srow, $auto_rule 
    ----------------------------------------------------------------------- */
 add_action('wpcf7_mail_sent', 'slb_cf7_process_warranty_registration_v2');
 function slb_cf7_process_warranty_registration_v2($contact_form){
+    slb_cf7_outcome( '' ); // this submission's on-screen message starts as CF7's own
     try {
 
         if ( ! class_exists('WPCF7_Submission') ) {
@@ -1459,6 +1500,49 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
         // as an update further down (the serial column is UNIQUE, so we update
         // the same row rather than creating a duplicate).
         $existing = $wpdb->get_row( $wpdb->prepare("SELECT * FROM $t_regs WHERE serial=%s", $serial) );
+
+        // ⚠️ OWNERSHIP RULES — the same ones the app follows (AUN_App_Transfers
+        // in the AUN App API plugin): the warranty belongs to the projector and
+        // is never reset; a projector someone owns only moves with their consent.
+        // Each branch below closes a way this form used to let one customer take
+        // or reset another's warranty. When the App API plugin is not active the
+        // form behaves exactly as it did before.
+        $engine            = class_exists( 'AUN_App_Transfers' ) && class_exists( 'AUN_App_Phone' );
+        $force_pending     = false;
+        $replaced_rejected = '';
+
+        // Released by its previous owner: whoever registers next takes over the
+        // REST of the original warranty — never a fresh one from today's date.
+        if ( $existing && 'released' === $existing->status ) {
+            if ( $engine ) {
+                $res = AUN_App_Transfers::claim_released_for_web( $serial, $phone, $name, $email );
+                if ( is_wp_error( $res ) ) {
+                    slb_send_sms( $phone, 'SmartLiving: We could not register serial ' . $serial . ' just now. Please contact AUN support.' );
+                    slb_cf7_outcome( 'We could not register this serial just now. Please contact AUN support. · এই মুহূর্তে সিরিয়ালটি রেজিস্টার করা যায়নি। অনুগ্রহ করে AUN সাপোর্টে যোগাযোগ করুন।' );
+                } else {
+                    slb_send_sms( $phone, sprintf( 'SmartLiving: Serial %s is now registered to you. It continues the original warranty, valid until %s.', $serial, $res['warranty_end'] ) );
+                    slb_cf7_outcome( sprintf( 'Registered to you. Its previous owner released it, so the original warranty continues until %1$s. · রেজিস্টার হয়েছে। আগের মালিক ছেড়ে দিয়েছেন, তাই মূল ওয়ারেন্টি %1$s পর্যন্ত চলবে।', $res['warranty_end'] ) );
+                }
+            }
+            return;
+        }
+
+        // Registered to SOMEONE ELSE: ask them to transfer it, instead of a dead
+        // end. They get an SMS link; nothing moves unless they accept.
+        if ( $engine && $existing && 'approved' === $existing->status && ! slb_same_phone( $phone, $existing->phone ) ) {
+            slb_web_transfer_request( $serial, $name, $phone, $email );
+            return;
+        }
+
+        // Staff rejected someone ELSE's claim: that must not lock the real owner
+        // out for ever. Their submission replaces it and always goes to a person.
+        if ( $existing && 'rejected' === $existing->status && ! slb_same_phone( $phone, $existing->phone ) ) {
+            $replaced_rejected = 'Replaces a registration by ' . $existing->phone . ' that staff had rejected.';
+            $wpdb->delete( $t_regs, ['id' => $existing->id] );
+            $existing      = null;
+            $force_pending = true;
+        }
+
         if ( $existing && in_array( $existing->status, ['approved','rejected'], true ) ) {
             $key       = ( $existing->status === 'rejected' ) ? 'rejected' : 'duplicate';
             $tpl_sms   = $opts['sms_templates'][$key]   ?? ( $opts['sms_templates']['duplicate']   ?? '' );
@@ -1467,6 +1551,57 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
             if ( $tpl_sms )   slb_send_templated_sms($phone, $tpl_sms, $vars);
             if ( $tpl_email ) slb_send_templated_email($email, $tpl_email, $vars, $key);
             return;
+        }
+
+        // ⚠️ Still being verified, but submitted from a DIFFERENT number: never
+        // overwrite it. This used to replace the pending registration outright —
+        // name, phone, invoice — so a second person could put their number on
+        // someone else's projector just before staff approved it. The attempt is
+        // recorded for staff instead, and nothing changes.
+        if ( $existing && ! slb_same_phone( $phone, $existing->phone ) ) {
+            $wpdb->update( $t_regs, [ 'notes' => (string) $existing->notes . ' | Conflicting submission from ' . $phone . ' (' . $name . ') on ' . current_time( 'Y-m-d H:i' ) . ' — not applied.' ], [ 'id' => $existing->id ] );
+            slb_send_sms( $phone, 'SmartLiving: Serial ' . $serial . ' already has a registration being verified. AUN support will contact you.' );
+            slb_cf7_outcome( 'This serial already has a registration being verified. AUN support will contact you. · এই সিরিয়ালের একটি রেজিস্ট্রেশন যাচাই চলছে। AUN সাপোর্ট আপনার সাথে যোগাযোগ করবে।' );
+            return;
+        }
+
+        // Not registered on the website: is it an AUN DIRECT purchase, or one a
+        // customer holds in the app? Those need no registration here, and must
+        // never get a second owner through this form.
+        if ( $engine && ! $existing ) {
+            $owner = AUN_App_Transfers::owner_of( $serial );
+            if ( 'released_direct' === $owner['kind'] ) {
+                $res = AUN_App_Transfers::claim_released_for_web( $serial, $phone, $name, $email );
+                slb_send_sms( $phone, is_wp_error( $res )
+                    ? 'SmartLiving: We could not register serial ' . $serial . ' just now. Please contact AUN support.'
+                    : sprintf( 'SmartLiving: Serial %s is now registered to you. It continues the original warranty, valid until %s.', $serial, $res['warranty_end'] ) );
+                slb_cf7_outcome( is_wp_error( $res )
+                    ? 'We could not register this serial just now. Please contact AUN support. · এই মুহূর্তে সিরিয়ালটি রেজিস্টার করা যায়নি। অনুগ্রহ করে AUN সাপোর্টে যোগাযোগ করুন।'
+                    : sprintf( 'Registered to you. Its previous owner released it, so the original warranty continues until %1$s. · রেজিস্টার হয়েছে। আগের মালিক ছেড়ে দিয়েছেন, তাই মূল ওয়ারেন্টি %1$s পর্যন্ত চলবে।', $res['warranty_end'] ) );
+                return;
+            }
+            if ( 'direct' === $owner['kind'] ) {
+                if ( slb_same_phone( $phone, $owner['phone'] ) ) {
+                    slb_send_sms( $phone, 'SmartLiving: Serial ' . $serial . ' is already registered to you in the AUN Care app. No registration is needed.' );
+                    slb_cf7_outcome( 'This projector is already registered to you in the AUN Care app — nothing more to do. · প্রজেক্টরটি AUN Care অ্যাপে আগে থেকেই আপনার নামে রেজিস্টার করা — আর কিছু করতে হবে না।' );
+                } else {
+                    slb_web_transfer_request( $serial, $name, $phone, $email );
+                }
+                return;
+            }
+            if ( 'none' === $owner['kind'] ) {
+                $to = AUN_App_Transfers::transferable_owner( $serial );
+                if ( ! is_wp_error( $to ) && 'erp_direct' === $to['kind'] ) {
+                    if ( slb_same_phone( $phone, $to['phone'] ) ) {
+                        $w_end = AUN_App_Transfers::warranty_end_for( $serial, (string) $to['sale']['sale_date'] );
+                        slb_send_sms( $phone, sprintf( 'SmartLiving: You bought serial %s directly from AUN, so no registration is needed. Your warranty is active until %s.', $serial, $w_end ) );
+                        slb_cf7_outcome( sprintf( 'You bought this projector directly from AUN, so no registration is needed. Your warranty is active until %1$s. · প্রজেক্টরটি সরাসরি AUN থেকে কেনা, তাই রেজিস্ট্রেশন লাগবে না। ওয়ারেন্টি %1$s পর্যন্ত চালু আছে।', $w_end ) );
+                    } else {
+                        slb_web_transfer_request( $serial, $name, $phone, $email );
+                    }
+                    return;
+                }
+            }
         }
 
         $row = $wpdb->get_row( $wpdb->prepare("SELECT s.*, d.name as distributor_name, p.name as product_name FROM $t_serials s LEFT JOIN $t_dist d ON s.distributor_id=d.id LEFT JOIN $t_prods p ON s.product_id=p.id WHERE s.serial=%s", $serial) );
@@ -1491,6 +1626,24 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
             }
         } else {
             $status = 'not_found';
+        }
+
+        // ⚠️ Late-date guard (same as the app). The warranty counts from the date
+        // typed on this form, so registering long after buying and typing a
+        // recent date would buy extra months. A purchase dated more than 180
+        // days after the dealer received the unit — or before it — is held for
+        // a person to check against the invoice.
+        if ( $row && $pdate && ! empty( $row->shipped_date ) && '0000-00-00' !== $row->shipped_date
+            && in_array( $status, [ 'approved', 'mismatch' ], true ) ) {
+            $gap = (int) floor( ( strtotime( $pdate ) - strtotime( $row->shipped_date ) ) / DAY_IN_SECONDS );
+            if ( $gap < 0 || $gap > 180 ) {
+                $status      = 'pending';
+                $system_note = trim( $system_note . ' [HELD FOR REVIEW] Purchase date ' . $pdate . ' is ' . ( $gap < 0 ? 'BEFORE' : $gap . ' days after' ) . ' the dealer received this unit (' . $row->shipped_date . ') — check the invoice date.' );
+            }
+        }
+        if ( $force_pending ) {
+            $status      = 'pending';
+            $system_note = trim( $system_note . ' [HELD FOR REVIEW] ' . $replaced_rejected );
         }
 
         // handle uploaded invoice/file -> move to uploads
@@ -1578,7 +1731,7 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
             $tpl_sms = $tpls_sms['approved'] ?? '';
             $tpl_email = $tpls_email['approved'] ?? '';
             $start = $pdate ?: date('Y-m-d');
-            $end = date('Y-m-d', strtotime($start.' +12 months'));
+            $end = slb_warranty_end( $start, $serial ); // the product's real warranty length, not always 12 months
             if($tpl_sms) slb_send_templated_sms($phone,$tpl_sms,['serial'=>$serial,'start'=>$start,'end'=>$end,'invoice'=>$invoice,'name'=>$name,'phone'=>$phone]);
             if($tpl_email) slb_send_templated_email($email,$tpl_email,['serial'=>$serial,'start'=>$start,'end'=>$end,'invoice'=>$invoice,'name'=>$name,'phone'=>$phone], 'approved');
         } else {
@@ -1636,9 +1789,15 @@ function slb_reconcile_pending_registrations( $serial = null, $limit = 100 ) {
 
     // Gather the waiting registrations to examine. 'mismatch' is intentionally
     // excluded here — those are held for manual review by design.
+    //
+    // ⚠️ So is anything marked HELD FOR REVIEW. The late-date guard and the
+    // "replaces someone else's rejected claim" rule both park a registration as
+    // 'pending' FOR A PERSON. Without this exclusion the next sweep (daily, or
+    // the moment the serial syncs) auto-approved them on model + shop alone,
+    // quietly undoing both guards within a day.
     if ( $serial !== null ) {
         $regs = $wpdb->get_results( $wpdb->prepare(
-            "SELECT * FROM $t_regs WHERE serial=%s AND status IN ('not_found','pending')", $serial
+            "SELECT * FROM $t_regs WHERE serial=%s AND status IN ('not_found','pending') AND ( notes IS NULL OR notes NOT LIKE '%%[HELD FOR REVIEW]%%' )", $serial
         ) );
     } else {
         // Bulk sweep — lift the time limit and cap the batch so one run stays
@@ -1646,7 +1805,7 @@ function slb_reconcile_pending_registrations( $serial = null, $limit = 100 ) {
         if ( function_exists( 'set_time_limit' ) ) { @set_time_limit( 0 ); }
         $limit = max( 1, (int) $limit );
         $regs  = $wpdb->get_results( $wpdb->prepare(
-            "SELECT * FROM $t_regs WHERE status IN ('not_found','pending') ORDER BY created_at ASC LIMIT %d", $limit
+            "SELECT * FROM $t_regs WHERE status IN ('not_found','pending') AND ( notes IS NULL OR notes NOT LIKE '%%[HELD FOR REVIEW]%%' ) ORDER BY created_at ASC LIMIT %d", $limit
         ) );
     }
 
@@ -1688,12 +1847,27 @@ function slb_reconcile_pending_registrations( $serial = null, $limit = 100 ) {
             continue;
         }
 
+        // ⚠️ The late-date guard, here too. A registration made BEFORE its
+        // serial synced had no dealer date to check against, so it was never
+        // held — and would be approved right here the moment the serial
+        // arrives, with whatever purchase date was typed. Same rule as at
+        // registration time: more than 180 days after the dealer received the
+        // unit, or before it, waits for a person.
+        if ( $reg->purchase_date && ! empty( $srow->shipped_date ) && '0000-00-00' !== $srow->shipped_date ) {
+            $gap = (int) floor( ( strtotime( $reg->purchase_date ) - strtotime( $srow->shipped_date ) ) / DAY_IN_SECONDS );
+            if ( $gap < 0 || $gap > 180 ) {
+                $held = ' | [HELD FOR REVIEW] Purchase date ' . $reg->purchase_date . ' is ' . ( $gap < 0 ? 'BEFORE' : $gap . ' days after' ) . ' the dealer received this unit (' . $srow->shipped_date . ') — check the invoice date.';
+                $wpdb->update( $t_regs, ['status'=>'pending', 'notes'=>(string) $reg->notes . $held], ['id'=>$reg->id] );
+                continue;
+            }
+        }
+
         // -- Qualifies -> auto-approve, link the serial, notify the customer --
         $wpdb->update( $t_regs,    ['status'=>'approved', 'distributor_id'=>$srow->distributor_id], ['id'=>$reg->id] );
         $wpdb->update( $t_serials, ['registered'=>1, 'registration_id'=>$reg->id], ['id'=>$srow->id] );
 
         $start = $reg->purchase_date ?: date('Y-m-d');
-        $end   = date('Y-m-d', strtotime( $start.' +12 months' ));
+        $end   = slb_warranty_end( $start, $reg->serial );
         $vars  = ['serial'=>$reg->serial,'start'=>$start,'end'=>$end,'invoice'=>$reg->invoice_no,'name'=>$reg->customer_name,'phone'=>$reg->phone];
 
         $tpl_sms   = $tpls_sms['approved'] ?? '';
@@ -2136,6 +2310,84 @@ function slb_compress_pdf_file( $path, $setting = 'ebook' ): bool {
 /* -----------------------------------------------------------------------
    SMS helpers
    ----------------------------------------------------------------------- */
+/**
+ * Whether two phone numbers are the same line, however they were typed
+ * (01XXXXXXXXX, 8801XXXXXXXXX, +880 1XXX-XXXXXX).
+ */
+function slb_same_phone( $a, $b ) {
+    if ( class_exists( 'AUN_App_Phone' ) ) {
+        $x = AUN_App_Phone::normalize( (string) $a );
+        $y = AUN_App_Phone::normalize( (string) $b );
+        return $x && $x === $y;
+    }
+    $d = function ( $p ) { return substr( preg_replace( '/\D/', '', (string) $p ), -10 ); };
+    return '' !== $d( $a ) && $d( $a ) === $d( $b );
+}
+
+/**
+ * Warranty end date for a serial. Uses the product's REAL warranty from the ERP
+ * (via the App API plugin) — this used to be start + 12 months for every
+ * product, so any other warranty length went out in the SMS wrong.
+ */
+function slb_warranty_end( $start, $serial = '' ) {
+    $start = $start ? $start : date( 'Y-m-d' );
+    if ( class_exists( 'AUN_App_Warranty' ) && '' !== (string) $serial ) {
+        list( $wd, $wu ) = AUN_App_Warranty::erp_warranty_for_serial( (string) $serial );
+        $w = AUN_App_Warranty::warranty_from( $start, $wd, $wu );
+        if ( ! empty( $w['end'] ) ) {
+            return $w['end'];
+        }
+    }
+    return date( 'Y-m-d', strtotime( $start . ' +12 months' ) );
+}
+
+/**
+ * The website form met a projector someone else owns: ask that owner to
+ * transfer it, and tell the person who submitted the form what happens next.
+ */
+function slb_web_transfer_request( $serial, $name, $phone, $email ) {
+    $res = AUN_App_Transfers::request( $serial, array( 'user_id' => 0, 'phone' => $phone, 'name' => $name, 'email' => $email, 'source' => 'web' ) );
+    if ( is_wp_error( $res ) ) {
+        slb_send_sms( $phone, 'SmartLiving: ' . $res->get_error_message() );
+        slb_cf7_outcome( $res->get_error_message() );
+        return;
+    }
+    slb_send_sms( $phone, sprintf(
+        'SmartLiving: Serial %s is registered to another customer (%s). We have asked them to transfer it to you - you will get an SMS when they answer.',
+        $serial,
+        $res['owner_phone']
+    ) );
+    slb_cf7_outcome( sprintf(
+        'This projector is registered to another customer (%1$s). We have asked them to transfer it to you — you will get an SMS when they answer. · প্রজেক্টরটি অন্য একজন গ্রাহকের (%1$s) নামে রেজিস্টার করা। আমরা তাঁকে হস্তান্তরের অনুরোধ পাঠিয়েছি — উত্তর দিলে SMS পাবেন।',
+        $res['owner_phone']
+    ) );
+}
+
+/**
+ * What the registration form should say ON SCREEN for this submission.
+ *
+ * ⚠️ The handler runs on wpcf7_mail_sent, after CF7 has decided the submission
+ * succeeded — so without this the visitor always saw the form's normal
+ * "registered" message, even when the projector turned out to be someone
+ * else's, already theirs in the app, or needing no registration at all. The
+ * SMS told the truth; the screen did not. Set during the handler, applied to
+ * CF7's reply by the filter below; empty = CF7's own message, as before.
+ */
+function slb_cf7_outcome( $message = null ) {
+    static $current = '';
+    if ( null !== $message ) {
+        $current = (string) $message;
+    }
+    return $current;
+}
+add_filter( 'wpcf7_feedback_response', function ( $response, $result = null ) {
+    $m = slb_cf7_outcome();
+    if ( '' !== $m && is_array( $response ) && 'mail_sent' === ( $response['status'] ?? '' ) ) {
+        $response['message'] = $m;
+    }
+    return $response;
+}, 10, 2 );
+
 function slb_send_templated_sms($to, $template, $vars = []){
     if(empty($template)) return false;
     $message = $template;
@@ -2244,6 +2496,12 @@ function slb_send_templated_email($to_email, $template, $vars = [], $subject_key
     $headers[] = 'Content-Type: text/html; charset=UTF-8';
 
     $sent = wp_mail($to_email, $subject, $body_html, $headers);
+    if ( ! $sent ) {
+        // wp_mail() returning false means WordPress could not hand the message to a
+        // mail server at all. Silence here is what made "customers stopped getting
+        // emails" so hard to notice, so leave a trail in the PHP error log.
+        error_log( 'SLB WARRANTY: wp_mail() failed for ' . $to_email . ' (subject: ' . $subject . ') - check the SMTP plugin / mail settings.' );
+    }
     return $sent;
 }
 
@@ -2359,3 +2617,114 @@ add_action('wp_head', function(){
     </style>
     <?php
 });
+
+/* -----------------------------------------------------------------------
+   TOOLBAR BADGE - registrations waiting for a human
+   -----------------------------------------------------------------------
+   Registration is automatic, so the only thing worth interrupting the admin
+   for is the exception: a serial we could not find, a dealer that did not
+   match, or anything still sitting at 'pending'. Those need a decision.
+
+   Deliberately shows NOTHING when there is nothing to do - no node, no zero
+   badge, no styles - so its presence always means "something is waiting".
+   ----------------------------------------------------------------------- */
+add_action( 'admin_bar_menu', 'slb_admin_bar_node', 80 );
+add_action( 'wp_head',    'slb_admin_bar_styles' );
+add_action( 'admin_head', 'slb_admin_bar_styles' );
+
+/**
+ * How many registrations need a human, by status.
+ *
+ * Cached for a minute: the toolbar renders on EVERY page load (front end too,
+ * for logged-in staff), so this must never become a per-request query.
+ *
+ * @return array{pending:int,not_found:int,mismatch:int,total:int}
+ */
+function slb_manual_action_counts() {
+    $cached = get_transient( 'slb_manual_counts' );
+    if ( is_array( $cached ) ) {
+        return $cached;
+    }
+
+    global $wpdb;
+    $t   = $wpdb->prefix . 'slb_registrations';
+    $out = [ 'pending' => 0, 'not_found' => 0, 'mismatch' => 0, 'total' => 0 ];
+
+    // The table does not exist until the plugin has been activated once; querying
+    // it before then would throw a DB error on every single page load.
+    if ( (string) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $t ) ) === $t ) {
+        $rows = $wpdb->get_results(
+            "SELECT status, COUNT(*) n FROM $t WHERE status IN ('pending','not_found','mismatch') GROUP BY status"
+        );
+        foreach ( (array) $rows as $r ) {
+            if ( isset( $out[ $r->status ] ) ) {
+                $out[ $r->status ] = (int) $r->n;
+                $out['total']     += (int) $r->n;
+            }
+        }
+    }
+
+    set_transient( 'slb_manual_counts', $out, MINUTE_IN_SECONDS );
+    return $out;
+}
+
+/** Drop the cached count so a just-handled registration clears straight away. */
+function slb_flush_manual_counts() {
+    delete_transient( 'slb_manual_counts' );
+}
+
+function slb_admin_bar_node( $bar ) {
+    if ( ! current_user_can( 'manage_options' ) || ! is_admin_bar_showing() ) {
+        return;
+    }
+    $c = slb_manual_action_counts();
+    if ( $c['total'] < 1 ) {
+        return; // nothing needs a human - say nothing at all
+    }
+
+    $base  = admin_url( 'admin.php?page=slb-warranty-registrations' );
+    $title = '<span class="ab-icon dashicons dashicons-shield" style="top:2px;"></span>'
+           . '<span class="ab-label">Warranty</span>'
+           . '<span class="slb-ab-bubble">' . (int) $c['total'] . '</span>';
+
+    $bar->add_node( [
+        'id'    => 'slb-warranty-alert',
+        'title' => $title,
+        'href'  => $base,
+        'meta'  => [ 'title' => $c['total'] . ' registration' . ( 1 === $c['total'] ? '' : 's' ) . ' need your decision' ],
+    ] );
+
+    $subs = [
+        [ 'pending',   'Waiting for review',      $c['pending'] ],
+        [ 'not_found', 'Serial not found',        $c['not_found'] ],
+        [ 'mismatch',  'Dealer / model mismatch', $c['mismatch'] ],
+    ];
+    foreach ( $subs as $sub ) {
+        list( $status, $label, $n ) = $sub;
+        if ( $n < 1 ) {
+            continue; // only list the kinds that actually have something
+        }
+        $bar->add_node( [
+            'parent' => 'slb-warranty-alert',
+            'id'     => 'slb-warranty-alert-' . $status,
+            'title'  => $label . ' <span class="slb-ab-n">' . (int) $n . '</span>',
+            'href'   => add_query_arg( 'status_filter', $status, $base ),
+        ] );
+    }
+}
+
+/** Bubble styling. Emitted only when the node is actually there. */
+function slb_admin_bar_styles() {
+    if ( ! current_user_can( 'manage_options' ) || ! is_admin_bar_showing() ) {
+        return;
+    }
+    $c = slb_manual_action_counts();
+    if ( $c['total'] < 1 ) {
+        return;
+    }
+    echo '<style id="slb-ab-css" data-no-optimize="1" data-no-minify="1" data-cfasync="false">'
+       . '#wpadminbar .slb-ab-bubble{display:inline-block;min-width:16px;height:16px;margin:0 0 0 5px;padding:0 5px;border-radius:8px;background:#d63638;color:#fff;font-size:11px;line-height:16px;text-align:center;font-weight:600;vertical-align:1px;}'
+       . '#wpadminbar .slb-ab-n{display:inline-block;min-width:16px;padding:0 5px;margin-left:4px;border-radius:8px;background:rgba(255,255,255,0.18);color:#fff;font-size:11px;line-height:16px;text-align:center;}'
+       . '#wpadminbar #wp-admin-bar-slb-warranty-alert .ab-icon:before{color:#f0f0f1;}'
+       . '</style>';
+}

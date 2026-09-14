@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Google One Tap Login
  * Description: A lightning-fast, seamless Google One Tap sign-in integration for WordPress and WooCommerce.
- * Version:     1.2.0
+ * Version:     1.3.0
  * Author:      Smart Living Bangladesh
  */
 
@@ -18,6 +18,10 @@ class AUN_Google_One_Tap {
         // Logged-in handler — returns a graceful "already logged in" response
         // rather than WordPress's default -1 / 400 for unregistered actions.
         add_action( 'wp_ajax_aun_verify_google_login',    [ __CLASS__, 'process_login' ] );
+
+        // Fresh-nonce endpoint — see mint_nonce().
+        add_action( 'wp_ajax_nopriv_aun_google_nonce', [ __CLASS__, 'mint_nonce' ] );
+        add_action( 'wp_ajax_aun_google_nonce',        [ __CLASS__, 'mint_nonce' ] );
     }
 
     // -------------------------------------------------------------------------
@@ -103,15 +107,25 @@ class AUN_Google_One_Tap {
         </div>
 
         <script>
+        /* WP ROCKET: the nonce is fetched at the moment of use rather than
+           printed here. A nonce baked into cached HTML goes stale within a day,
+           after which One Tap sign-in fails for every visitor until the cache is
+           cleared. Same approach as the AUN Social Login One Tap. */
         function aunHandleGoogleCredential(response) {
-            fetch('<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    action:     'aun_verify_google_login',
-                    credential: response.credential,
-                    security:   '<?php echo wp_create_nonce( 'aun_google_nonce' ); ?>'
-                })
+            var aunAjax = '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>';
+
+            fetch(aunAjax + '?action=aun_google_nonce', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(n) {
+                return fetch(aunAjax, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        action:     'aun_verify_google_login',
+                        credential: response.credential,
+                        security:   (n && n.data && n.data.nonce) ? n.data.nonce : ''
+                    })
+                });
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
@@ -149,13 +163,28 @@ class AUN_Google_One_Tap {
     // AJAX — token verification and login
     // -------------------------------------------------------------------------
 
+    /**
+     * Hand out a freshly minted nonce.
+     *
+     * Not nonce-guarded itself: requiring a nonce to obtain a nonce would defeat
+     * the purpose. It reveals nothing a page load does not already reveal, and
+     * the login it protects still verifies the Google credential with Google.
+     */
+    public static function mint_nonce() {
+        wp_send_json_success( [ 'nonce' => wp_create_nonce( 'aun_google_nonce' ) ] );
+    }
+
     public static function process_login() {
         // If the user is already logged in (e.g. from a cached page), exit gracefully.
         if ( is_user_logged_in() ) {
             wp_send_json_success( [ 'redirect' => self::get_redirect_url(), 'message' => 'Already logged in.' ] );
         }
 
-        check_ajax_referer( 'aun_google_nonce', 'security' );
+        // Soft check: a hard check_ajax_referer() would wp_die('-1'), which the
+        // JS can only surface as a generic network error.
+        if ( ! check_ajax_referer( 'aun_google_nonce', 'security', false ) ) {
+            wp_send_json_error( [ 'message' => 'Your session expired. Please reload the page.' ], 403 );
+        }
 
         // Validate JWT format: three base64url-encoded segments separated by dots.
         // This rejects obviously malformed payloads before sending anything to Google.
