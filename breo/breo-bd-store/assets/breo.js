@@ -100,16 +100,146 @@
 		Array.prototype.forEach.call(vids, function (v) { vio.observe(v); });
 	}
 
-	/* ---------- product gallery */
+	/* ---------- product gallery: thumbs, hover zoom and a full-screen viewer */
+	function hydrate(img) {
+		// WP Rocket lazy-loads the slides that start hidden; show one and it must be real.
+		if (!img) return;
+		var s = img.getAttribute('data-lazy-src');
+		if (s) { img.src = s; img.removeAttribute('data-lazy-src'); }
+		var ss = img.getAttribute('data-lazy-srcset');
+		if (ss) { img.srcset = ss; img.removeAttribute('data-lazy-srcset'); }
+		var sz = img.getAttribute('data-lazy-sizes');
+		if (sz) { img.sizes = sz.replace(/^auto,\s*/, ''); img.removeAttribute('data-lazy-sizes'); }
+	}
+
 	each('[data-breo-gallery]', function (g) {
 		var thumbs = g.querySelectorAll('[data-thumb]'), slides = g.querySelectorAll('[data-slide]');
-		Array.prototype.forEach.call(thumbs, function (t) {
-			t.addEventListener('click', function () {
-				var k = t.getAttribute('data-thumb');
-				Array.prototype.forEach.call(slides, function (s) { s.classList.toggle('is-active', s.getAttribute('data-slide') === k); });
-				Array.prototype.forEach.call(thumbs, function (x) { x.classList.toggle('is-active', x === t); });
+		var main = g.querySelector('[data-breo-zoom]');
+		var at = 0;
+
+		function show(k) {
+			at = k;
+			Array.prototype.forEach.call(slides, function (s) {
+				var on = +s.getAttribute('data-slide') === k;
+				s.classList.toggle('is-active', on);
+				if (on) hydrate(s.querySelector('img'));
 			});
+			Array.prototype.forEach.call(thumbs, function (x) {
+				var on = +x.getAttribute('data-thumb') === k;
+				x.classList.toggle('is-active', on);
+				x.setAttribute('aria-selected', on ? 'true' : 'false');
+			});
+		}
+		Array.prototype.forEach.call(thumbs, function (t) {
+			t.addEventListener('click', function () { show(+t.getAttribute('data-thumb')); });
 		});
+
+		/* hover zoom, desktop pointers only */
+		if (main && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+			main.addEventListener('mousemove', function (e) {
+				var img = g.querySelector('.breo-buy__slide.is-active img');
+				if (!img) return;
+				var r = main.getBoundingClientRect();
+				img.style.transformOrigin = ((e.clientX - r.left) / r.width * 100) + '% ' + ((e.clientY - r.top) / r.height * 100) + '%';
+			});
+			main.addEventListener('mouseenter', function () { main.classList.add('is-zoom'); });
+			main.addEventListener('mouseleave', function () {
+				main.classList.remove('is-zoom');
+				var img = g.querySelector('.breo-buy__slide.is-active img');
+				if (img) img.style.transformOrigin = '';
+			});
+		}
+
+		/* full-screen viewer */
+		var box, boxImg, cnt, keys, opener;
+		function render() {
+			var fig = slides[at];
+			if (!fig) return;
+			var img = fig.querySelector('img');
+			// on a phone the page-sized image is already downloaded: don't pull the full one too
+			var full = fig.getAttribute('data-full');
+			boxImg.src = (window.innerWidth < 700 && img && img.currentSrc) ? img.currentSrc : (full || (img || {}).currentSrc || '');
+			boxImg.alt = (img || {}).alt || '';
+			if (cnt) cnt.textContent = (at + 1) + ' / ' + slides.length;
+			show(at);
+		}
+		function go(step) { at = (at + step + slides.length) % slides.length; render(); }
+		function close() {
+			if (!box) return;
+			box.classList.remove('is-open');
+			if (opener && document.contains(opener)) opener.focus({ preventScroll: true });
+			box.style.pointerEvents = 'none'; // belt and braces if the stylesheet is stale
+			document.documentElement.style.overflow = '';
+			document.removeEventListener('keydown', keys);
+			setTimeout(function () { if (box && !box.classList.contains('is-open')) box.hidden = true; }, 200);
+		}
+		function open(k) {
+			if (!slides.length) return;
+			at = k;
+			// fall back to the expand button: a click does not always leave focus behind
+			opener = ( document.activeElement && document.activeElement !== document.body )
+				? document.activeElement
+				: ( main && main.querySelector('[data-breo-open]') ) || main;
+			if (main) main.classList.remove('is-zoom'); // the overlay swallows mouseleave
+			if (!box) {
+				box = document.createElement('div');
+				box.className = 'breo-lb';
+				box.setAttribute('role', 'dialog');
+				box.setAttribute('aria-modal', 'true');
+				box.setAttribute('aria-label', 'Product images');
+				box.innerHTML = '<button type="button" class="breo-lb__x" aria-label="Close">&times;</button>'
+					+ '<button type="button" class="breo-lb__nav breo-lb__prev" aria-label="Previous image">&#8249;</button>'
+					+ '<figure class="breo-lb__stage"><img alt=""></figure>'
+					+ '<button type="button" class="breo-lb__nav breo-lb__next" aria-label="Next image">&#8250;</button>'
+					+ '<p class="breo-lb__count"></p>';
+				document.body.appendChild(box);
+				boxImg = box.querySelector('img');
+				cnt = box.querySelector('.breo-lb__count');
+				box.querySelector('.breo-lb__x').addEventListener('click', close);
+				box.querySelector('.breo-lb__prev').addEventListener('click', function () { go(-1); });
+				box.querySelector('.breo-lb__next').addEventListener('click', function () { go(1); });
+				box.addEventListener('click', function (e) { if (e.target === box || e.target.classList.contains('breo-lb__stage')) close(); });
+				var x0 = null;
+				box.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+				box.addEventListener('touchend', function (e) {
+					if (x0 === null) return;
+					var dx = e.changedTouches[0].clientX - x0;
+					if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+					x0 = null;
+				});
+				if (slides.length < 2) {
+					box.querySelector('.breo-lb__prev').hidden = true;
+					box.querySelector('.breo-lb__next').hidden = true;
+				}
+			}
+			keys = function (e) {
+				if (e.key === 'Escape') close();
+				else if (e.key === 'ArrowRight') go(1);
+				else if (e.key === 'ArrowLeft') go(-1);
+				else if (e.key === 'Tab') { // keep the keyboard inside the viewer
+					var f = Array.prototype.filter.call(box.querySelectorAll('button'), function (b) { return !b.hidden; });
+					if (!f.length) return;
+					var i = f.indexOf(document.activeElement);
+					e.preventDefault();
+					f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+				}
+			};
+			document.addEventListener('keydown', keys);
+			box.hidden = false;
+			box.style.pointerEvents = '';
+			// rAF gives the fade a frame to start from; the timer covers a throttled/background tab,
+			// where rAF may not run and the viewer would stay invisible and unclickable.
+			var reveal = function () { box.classList.add('is-open'); };
+			requestAnimationFrame(reveal);
+			setTimeout(reveal, 50);
+			document.documentElement.style.overflow = 'hidden';
+			render();
+			box.querySelector('.breo-lb__x').focus({ preventScroll: true });
+		}
+		if (main) {
+			// the expand button already covers the keyboard, so click is enough here
+			main.addEventListener('click', function () { open(at); });
+		}
 	});
 
 	/* ---------- quantity stepper */

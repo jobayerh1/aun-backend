@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       AUN Smart Delivery Plugin
  * Description:       Handles intelligent, context-aware delivery estimates and backorder notices with cart splitting. Includes holiday date skipping and a configurable backorder dispatch lead time (global default + per-product override via a dedicated product meta box) with an optional per-product live countdown. A per-product ETA is a one-time setting: once the product restocks it reverts to the global default until set again. Modern card-based settings UI with live preview.
- * Version:           20.1.0
+ * Version:           20.3.1
  * Author:            Smart Living Bangladesh
  */
 
@@ -381,6 +381,37 @@ class AUN_Smart_Delivery {
             .aun-db-divider   { width:1px; background:#e2e8f0; align-self:stretch; flex-shrink:0; }
             .aun-db-pill--backorder .aun-db-cell { color:#b91c1c; border-color:#fecaca; }
             .aun-db-pill--backorder { border-color:#fecaca; background:#fff5f5; }
+            /* Delivery options for the chosen area: name + price + when.
+               The price is the point of the row, so it holds the right edge and
+               never wraps; the name/estimate column is what shrinks. */
+            .aun-db-opts      { list-style:none; margin:0; padding:0; display:flex;
+                                flex-direction:column; gap:6px; }
+            .aun-db-opt       { display:flex; align-items:flex-start; gap:10px;
+                                padding:10px 14px; background:#fff;
+                                border:1px solid #e2e8f0; border-radius:8px;
+                                transition:border-color .15s ease, box-shadow .15s ease; }
+            .aun-db-opt:hover { border-color:#bfdbfe; box-shadow:0 1px 4px rgba(1,136,254,.10); }
+            .aun-db-opt-icon  { font-size:16px; color:#0188fe; flex:none; margin-top:2px; }
+            .aun-db-opt-main  { display:flex; flex-direction:column; gap:2px;
+                                flex:1 1 auto; min-width:0; }
+            /* Name on the left, price pinned right, both on the same line. */
+            .aun-db-opt-top   { display:flex; align-items:baseline; gap:10px;
+                                justify-content:space-between; }
+            .aun-db-opt-name  { font-size:14px; font-weight:600; line-height:1.25;
+                                color:#0f172a; overflow-wrap:anywhere; }
+            .aun-db-opt-when  { font-size:12.5px; line-height:1.35; color:#64748b;
+                                overflow-wrap:anywhere; }
+            .aun-db-opt-when strong { color:#334155; font-weight:600; }
+            .aun-db-opt-cost  { flex:none; font-size:14px; font-weight:700;
+                                color:#0f172a; white-space:nowrap; }
+            .aun-db-opt-cost--free { color:#15803d; }
+            .aun-db-opt-cost .amount,
+            .aun-db-opt-cost bdi { color:inherit; font-weight:inherit; }
+            @media (max-width:420px){
+                .aun-db-opt      { padding:9px 11px; gap:8px; }
+                .aun-db-opt-name { font-size:13.5px; }
+                .aun-db-opt-when { font-size:12px; }
+            }
             /* Location selector below the badge */
             .aun-db-location  { margin-top:8px; font-size:12px; color:#64748b; }
             .aun-db-location a { color:#0188fe; text-decoration:underline; cursor:pointer; }
@@ -474,12 +505,24 @@ class AUN_Smart_Delivery {
             // Pass ajax URL and nonce via wp_localize_script — never inline in HTML.
             wp_register_script( 'aun-delivery-js', false, [ 'jquery' ] );
             wp_enqueue_script( 'aun-delivery-js' );
+            // The product id matters: a flat rate can price per shipping class or
+            // by [qty], and free shipping can have a minimum spend. Pricing an empty
+            // package would quote the wrong number, or wrongly show "Free".
             wp_localize_script( 'aun-delivery-js', 'AUN_DELIVERY', [
-                'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'aun_delivery_nonce' ),
+                'ajax_url'   => admin_url( 'admin-ajax.php' ),
+                'nonce'      => wp_create_nonce( 'aun_delivery_nonce' ),
+                'product_id' => (int) get_queried_object_id(),
             ] );
             wp_add_inline_script( 'aun-delivery-js', '
                 jQuery(document).ready(function($){
+                    var $estPanel = $("#aun-delivery-estimate-text-product");
+
+                    /* The generic estimate the page was rendered with. Kept so that
+                       clearing the area restores exactly that, instead of leaving the
+                       options and prices for the previous area on screen under a
+                       dropdown that says nothing is selected. */
+                    var aunDefaultPanel = $estPanel.html();
+
                     $("#aun-change-location-link-product").on("click", function(e){
                         e.preventDefault();
                         $("#aun-location-options-product").slideToggle();
@@ -487,7 +530,14 @@ class AUN_Smart_Delivery {
                     $("#aun-location-select-product").on("change", function(){
                         var zoneId = $(this).val();
                         var $est   = $("#aun-delivery-estimate-text-product");
-                        if (!zoneId) return;
+
+                        /* "Select area..." is value="" -- the only falsy option.
+                           The default zone is "0", which is a non-empty string and
+                           therefore truthy, so it still asks the server. */
+                        if (!zoneId) {
+                            $est.html(aunDefaultPanel);
+                            return;
+                        }
                         $est.html("<p>Calculating...</p>");
 
                         /* WP ROCKET: the localized nonce is baked into cached
@@ -502,9 +552,10 @@ class AUN_Smart_Delivery {
                                 type: "POST",
                                 dataType: "json",
                                 data: {
-                                    action:  "get_product_page_delivery_estimate",
-                                    zone_id: zoneId,
-                                    nonce:   AUN_DELIVERY.nonce
+                                    action:     "get_product_page_delivery_estimate",
+                                    zone_id:    zoneId,
+                                    product_id: AUN_DELIVERY.product_id,
+                                    nonce:      AUN_DELIVERY.nonce
                                 },
                                 success: function(res){
                                     $est.html(res && res.success ? res.data : "<p>Could not get estimate.</p>");
@@ -605,7 +656,17 @@ class AUN_Smart_Delivery {
         return trim( wp_strip_all_tags( $full_phrase ) );
     }
 
-    public function split_cart_by_stock_status($packages) { $instock_items = []; $backorder_items = []; if ( empty( WC()->cart->get_cart() ) ) return []; foreach ( WC()->cart->get_cart() as $item_key => $item ) { if ( ! isset( $item['data'] ) ) continue; $product = $item['data']; if ( $product->is_on_backorder() ) { $backorder_items[ $item_key ] = $item; } else { $instock_items[ $item_key ] = $item; } } $new_packages = []; if ( ! empty( $instock_items ) ) { $new_packages[] = [ 'contents' => $instock_items, 'contents_cost' => array_sum( wp_list_pluck( $instock_items, 'line_total' ) ), 'applied_coupons'=> WC()->cart->get_applied_coupons(), 'user' => [ 'ID' => get_current_user_id() ], 'destination' => WC()->customer->get_shipping(), 'package_type' => 'in_stock', ]; } if ( ! empty( $backorder_items ) ) { $new_packages[] = [ 'contents' => $backorder_items, 'contents_cost' => array_sum( wp_list_pluck( $backorder_items, 'line_total' ) ), 'applied_coupons'=> WC()->cart->get_applied_coupons(), 'user' => [ 'ID' => get_current_user_id() ], 'destination' => WC()->customer->get_shipping(), 'package_type' => 'backorder', ]; } return $new_packages; }
+    /**
+     * Ship backordered items as their own package.
+     *
+     * WooCommerce charges shipping PER PACKAGE, so a cart holding one in-stock and
+     * one backordered item is quoted the delivery fee TWICE (measured: 60 + 60 = 120
+     * on a flat-rate zone). That is correct if the two parcels really do travel
+     * separately, and wrong if they are held and sent together -- which is why it is
+     * now a setting rather than a permanent assumption. Default 'yes' keeps the
+     * behaviour this site has always had.
+     */
+    public function split_cart_by_stock_status($packages) { $r = $this->get_rules(); if ( isset( $r['split_backorders'] ) && 'no' === $r['split_backorders'] ) return $packages; $instock_items = []; $backorder_items = []; if ( empty( WC()->cart->get_cart() ) ) return $packages; foreach ( WC()->cart->get_cart() as $item_key => $item ) { if ( ! isset( $item['data'] ) ) continue; $product = $item['data']; if ( $product->is_on_backorder() ) { $backorder_items[ $item_key ] = $item; } else { $instock_items[ $item_key ] = $item; } } $new_packages = []; if ( ! empty( $instock_items ) ) { $new_packages[] = [ 'contents' => $instock_items, 'contents_cost' => array_sum( wp_list_pluck( $instock_items, 'line_total' ) ), 'applied_coupons'=> WC()->cart->get_applied_coupons(), 'user' => [ 'ID' => get_current_user_id() ], 'destination' => WC()->customer->get_shipping(), 'package_type' => 'in_stock', ]; } if ( ! empty( $backorder_items ) ) { $new_packages[] = [ 'contents' => $backorder_items, 'contents_cost' => array_sum( wp_list_pluck( $backorder_items, 'line_total' ) ), 'applied_coupons'=> WC()->cart->get_applied_coupons(), 'user' => [ 'ID' => get_current_user_id() ], 'destination' => WC()->customer->get_shipping(), 'package_type' => 'backorder', ]; } return $new_packages; }
     
     public function rename_shipping_packages($name, $index, $package) { if (isset($package['package_type'])) { if ($package['package_type'] === 'in_stock') { return __('Items Available Now', 'woocommerce'); } if ($package['package_type'] === 'backorder') { return __('Items on Backorder', 'woocommerce'); } } return $name; }
     
@@ -625,6 +686,14 @@ class AUN_Smart_Delivery {
         $out = [];
         if ( ! is_array( $input ) ) return $out;
 
+        // An unticked checkbox posts NOTHING. The hidden companion field proves the
+        // form was submitted, so an absent checkbox means "off" rather than "leave
+        // it alone" -- without this the toggle could be switched on but never off.
+        if ( ! empty( $input['split_backorders_present'] ) ) {
+            $input['split_backorders'] = ! empty( $input['split_backorders'] ) ? 'yes' : 'no';
+        }
+        unset( $input['split_backorders_present'] );
+
         foreach ( $input as $key => $value ) {
             if ( $key === 'default_message' ) {
                 $out['default_message'] = sanitize_text_field( $value );
@@ -640,6 +709,10 @@ class AUN_Smart_Delivery {
             }
             if ( $key === 'backorder_label' ) {
                 $out['backorder_label'] = sanitize_text_field( $value );
+                continue;
+            }
+            if ( $key === 'split_backorders' ) {
+                $out['split_backorders'] = ( 'no' === $value ) ? 'no' : 'yes';
                 continue;
             }
             if ( $key === 'holidays' ) {
@@ -751,6 +824,15 @@ class AUN_Smart_Delivery {
                 </div>
                 <div class="aun-dlv-preview">Customers will see: <span class="aun-dlv-chip" id="aun-bo-preview">…</span></div>
                 <p class="aun-dlv-help">Leave days blank for the built-in default (7–14). Leave text blank to auto-format from the days — <code>3</code>–<code>5</code> → &ldquo;3-5 days&rdquo;, <code>7</code>–<code>14</code> → &ldquo;1-2 weeks&rdquo;. At checkout these days are added to each method's transit time to compute a real delivery date.</p>
+
+                <?php $split = ( $rules['split_backorders'] ?? 'yes' ) !== 'no'; ?>
+                <hr style="border:0;border-top:1px solid #eef1f6;margin:16px 0 12px">
+                <label style="display:flex;gap:9px;align-items:flex-start;font-size:13.5px;cursor:pointer">
+                    <input type="checkbox" name="aun_delivery_rules[split_backorders]" value="yes" <?php checked( $split ); ?> style="margin-top:3px">
+                    <span><strong>Ship backordered items separately</strong><br>
+                    <span style="color:#6b7280">When a cart mixes in-stock and backordered items they become two parcels, so WooCommerce quotes the delivery charge <strong>twice</strong> — the customer pays for both. Untick this to hold the whole order and charge delivery once.</span></span>
+                </label>
+                <input type="hidden" name="aun_delivery_rules[split_backorders_present]" value="1">
             </div>
 
             <div class="aun-dlv-card">
@@ -1093,11 +1175,23 @@ class AUN_Smart_Delivery {
     // Cutoff time parser — extracted to avoid triple duplication
     // -------------------------------------------------------------------------
 
-    private function parse_cutoff_time( string $cutoff ): array {
-        $h = 0; $m = 0;
-        if ( preg_match( '/^(\d{1,2}):(\d{2})$/', $cutoff, $mm ) ) {
-            $h = (int) $mm[1];
-            $m = (int) $mm[2];
+    /**
+     * A cutoff as hours+minutes, or null when the stored value is not a real time.
+     *
+     * The settings screen validates the FORMAT (\d{1,2}:\d{2}) but not the range, so
+     * "25:99" saves happily -- and setTime(25,99) rolls into tomorrow, quietly making
+     * the cutoff unreachable. Anything that fails to parse now returns null and is
+     * treated as "no cutoff", instead of becoming 00:00 and pushing every estimate a
+     * day later for ever.
+     */
+    private function parse_cutoff_time( string $cutoff ): ?array {
+        if ( ! preg_match( '/^(\d{1,2}):(\d{2})$/', trim( $cutoff ), $mm ) ) {
+            return null;
+        }
+        $h = (int) $mm[1];
+        $m = (int) $mm[2];
+        if ( $h > 23 || $m > 59 ) {
+            return null;
         }
         return [ 'h' => $h, 'm' => $m ];
     }
@@ -1122,8 +1216,8 @@ class AUN_Smart_Delivery {
         $now = new \DateTime( 'now', $tz );
 
         $start_day_offset = 0;
-        if ( $cutoff !== '' ) {
-            $ct = $this->parse_cutoff_time( $cutoff );
+        $ct = ( $cutoff !== '' ) ? $this->parse_cutoff_time( $cutoff ) : null;
+        if ( $ct !== null ) {
             $cutoff_dt = ( clone $now )->setTime( $ct['h'], $ct['m'], 0 );
             if ( $now > $cutoff_dt ) $start_day_offset = 1;
         }
@@ -1145,14 +1239,20 @@ class AUN_Smart_Delivery {
             return false;
         };
 
-        $add_business_days = function ( \DateTime $date, $days_to_add ) use ( $is_day_off ) {
-            $d = clone $date;
+        // Every walk forward is capped. These loops are driven by admin-entered
+        // holiday rows; one careless range (or a start date later than its end) would
+        // otherwise spin a customer-facing page for as long as PHP allows.
+        $MAX_STEPS = 400; // > a year of skipping, and still bounded
+
+        $add_business_days = function ( \DateTime $date, $days_to_add ) use ( $is_day_off, $MAX_STEPS ) {
+            $d     = clone $date;
+            $steps = 0;
             if ( $days_to_add === 0 ) {
-                while ( $is_day_off( $d ) ) $d->modify( '+1 day' );
+                while ( $is_day_off( $d ) && $steps++ < $MAX_STEPS ) $d->modify( '+1 day' );
                 return $d;
             }
             $added = 0;
-            while ( $added < $days_to_add ) {
+            while ( $added < $days_to_add && $steps++ < $MAX_STEPS ) {
                 $d->modify( '+1 day' );
                 if ( ! $is_day_off( $d ) ) $added++;
             }
@@ -1161,7 +1261,8 @@ class AUN_Smart_Delivery {
 
         $delivery_start = clone $now;
         if ( $start_day_offset > 0 ) $delivery_start->modify( '+1 day' );
-        while ( $is_day_off( $delivery_start ) ) $delivery_start->modify( '+1 day' );
+        $steps = 0;
+        while ( $is_day_off( $delivery_start ) && $steps++ < $MAX_STEPS ) $delivery_start->modify( '+1 day' );
 
         $start_date = $add_business_days( $delivery_start, $min_days );
         $end_date   = $add_business_days( $start_date, max( 0, $max_days - $min_days ) );
@@ -1169,15 +1270,20 @@ class AUN_Smart_Delivery {
         $locale = $this->current_request_locale();
 
         $cutoff_str = '';
-        if ( $cutoff !== '' ) {
-            $ct2        = $this->parse_cutoff_time( $cutoff );
-            $cutoff_dt2 = ( clone $now )->setTime( $ct2['h'], $ct2['m'], 0 );
+        if ( $ct !== null ) {
+            $cutoff_dt2 = ( clone $now )->setTime( $ct['h'], $ct['m'], 0 );
             $cutoff_str = $this->with_locale( $locale, function () use ( $cutoff_dt2 ) {
                 return $this->wp_format_dt( get_option( 'time_format' ) ?: 'g:ia', $cutoff_dt2 );
             } );
         }
 
-        if ( $min_days === 0 && $max_days === 0 && $start_day_offset === 0 ) {
+        // "Today" is only true when the day we actually deliver IS today. This used
+        // to test the RULE (0-0 days, before cutoff) and never look at the computed
+        // date -- so on a Friday, or on any declared holiday, the shop promised
+        // same-day delivery on a day it was closed. The weekend/holiday skip above
+        // had already moved $start_date forward; nothing read it.
+        if ( $min_days === 0 && $max_days === 0
+             && $start_date->format( 'Y-m-d' ) === $now->format( 'Y-m-d' ) ) {
             return '<strong>Today</strong>'
                 . ( $cutoff_str ? ' (if you order before ' . esc_html( $cutoff_str ) . ')' : '' );
         }
@@ -1208,6 +1314,132 @@ class AUN_Smart_Delivery {
         wp_send_json_success( [ 'nonce' => wp_create_nonce( 'aun_delivery_nonce' ) ] );
     }
 
+    /**
+     * The rates a shipping method would actually offer for this package.
+     *
+     * Asking the METHOD is the whole point. The widget used to list every enabled
+     * method in the zone, which advertised Free Shipping to everyone even when it is
+     * set to "requires a valid free shipping coupon" -- the customer saw a free
+     * option they could not have. WC_Shipping_Free_Shipping::get_rates_for_package()
+     * returns nothing until its condition is met, so an unavailable method simply
+     * stops being listed.
+     *
+     * Reading the method's own "cost" field instead would be wrong: a flat rate can
+     * price per shipping class or with a [qty] formula, and that raw field then reads
+     * 0 -- which would show "Free" while checkout charged the real amount.
+     *
+     * @return array list of [ 'label' => string, 'cost' => float|null ]
+     *               empty  = not available here. cost null = method could not price
+     *               it without a real cart (a courier plugin, say) -> show no price
+     *               rather than a wrong one.
+     */
+    private function method_rates( $method, array $package ): array {
+        if ( ! is_callable( [ $method, 'get_rates_for_package' ] ) ) {
+            return [ [ 'label' => $method->get_title(), 'cost' => null ] ];
+        }
+        try {
+            $rates = (array) $method->get_rates_for_package( $package );
+        } catch ( \Throwable $e ) {
+            return [ [ 'label' => $method->get_title(), 'cost' => null ] ];
+        }
+
+        $out = [];
+        foreach ( $rates as $rate ) {
+            if ( ! $rate instanceof \WC_Shipping_Rate ) continue;
+            $cost = (float) $rate->get_cost();
+            if ( wc_tax_enabled() && 'incl' === get_option( 'woocommerce_tax_display_shop' ) ) {
+                $cost += array_sum( (array) $rate->get_taxes() );
+            }
+            $label = $rate->get_label() ?: $method->get_title();
+            $out[] = [ 'label' => $label, 'cost' => $cost ];
+        }
+        return $out;
+    }
+
+    /** A one-item package for this product, addressed inside the chosen zone. */
+    private function pseudo_package( $product, $zone ): array {
+        $price    = ( $product instanceof \WC_Product ) ? (float) $product->get_price() : 0.0;
+        $contents = [];
+        if ( $product instanceof \WC_Product ) {
+            $contents[ 'aun_' . $product->get_id() ] = [
+                'key'               => 'aun_' . $product->get_id(),
+                'product_id'        => $product->get_id(),
+                'variation_id'      => 0,
+                'variation'         => [],
+                'quantity'          => 1,
+                'data'              => $product,
+                'line_total'        => $price,
+                'line_subtotal'     => $price,
+                'line_tax'          => 0,
+                'line_subtotal_tax' => 0,
+            ];
+        }
+        // Free shipping asks the cart about coupons and totals; on a product page
+        // there may not be one yet.
+        if ( is_null( WC()->cart ) && function_exists( 'wc_load_cart' ) ) {
+            wc_load_cart();
+        }
+        return [
+            'contents'        => $contents,
+            'contents_cost'   => $price,
+            'applied_coupons' => ( WC()->cart ) ? WC()->cart->get_applied_coupons() : [],
+            'user'            => [ 'ID' => get_current_user_id() ],
+            'destination'     => $this->zone_destination( $zone ),
+            'cart_subtotal'   => $price,
+        ];
+    }
+
+    /** An address inside the zone, so each method prices it the way checkout will. */
+    private function zone_destination( $zone ): array {
+        $dest = [ 'country' => '', 'state' => '', 'postcode' => '', 'city' => '',
+                  'address' => '', 'address_1' => '', 'address_2' => '' ];
+
+        foreach ( (array) $zone->get_zone_locations() as $loc ) {
+            if ( 'country' === $loc->type && ! $dest['country'] ) {
+                $dest['country'] = $loc->code;
+            } elseif ( 'state' === $loc->type ) {
+                $parts           = explode( ':', $loc->code );
+                $dest['country'] = $parts[0];
+                $dest['state']   = $parts[1] ?? '';
+            } elseif ( 'city' === $loc->type && ! $dest['city'] ) {
+                $dest['city'] = $loc->code;
+            } elseif ( 'postcode' === $loc->type && ! $dest['postcode'] && ! preg_match( '/[^0-9]/', $loc->code ) ) {
+                $dest['postcode'] = $loc->code;
+            }
+        }
+        if ( ! $dest['country'] ) {
+            // "Locations not covered by your other zones" has no locations of its own.
+            $dest['country'] = WC()->countries->get_base_country();
+        }
+        return $dest;
+    }
+
+    /** One option row: name, price, and when it arrives. */
+    private function render_option_row( string $label, $cost, string $estimate, bool $is_pickup ): string {
+        $icon = $is_pickup ? 'fa-store' : 'fa-truck-fast';
+
+        $price_html = '';
+        if ( null !== $cost ) {
+            $price_html = ( (float) $cost > 0 )
+                ? '<span class="aun-db-opt-cost">' . wp_kses_post( wc_price( $cost ) ) . '</span>'
+                : '<span class="aun-db-opt-cost aun-db-opt-cost--free">Free</span>';
+        }
+
+        // The price belongs beside the NAME, not beside the middle of a two-line
+        // estimate -- which is where a row-level vertical centre puts it once the
+        // text wraps on a phone.
+        return '<li class="aun-db-opt">'
+             . '<i class="fa-solid ' . esc_attr( $icon ) . ' aun-db-opt-icon" aria-hidden="true"></i>'
+             . '<span class="aun-db-opt-main">'
+             . '<span class="aun-db-opt-top">'
+             . '<span class="aun-db-opt-name">' . esc_html( $label ) . '</span>'
+             . $price_html
+             . '</span>'
+             . ( $estimate ? '<span class="aun-db-opt-when">' . wp_kses_post( $estimate ) . '</span>' : '' )
+             . '</span>'
+             . '</li>';
+    }
+
     public function ajax_get_product_page_estimate() {
         // Soft check: a hard check_ajax_referer() would wp_die('-1'), which this
         // widget cannot distinguish from a network failure. See ajax_mint_nonce().
@@ -1220,34 +1452,39 @@ class AUN_Smart_Delivery {
             wp_send_json_error( 'No zone selected.' );
         }
 
+        $product_id = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0;
+        $product    = $product_id ? wc_get_product( $product_id ) : null;
+
         $zone    = new WC_Shipping_Zone( $zone_id );
         $methods = $zone->get_shipping_methods( true );
         $rules   = $this->get_rules();
-        $html    = '';
+        $package = $this->pseudo_package( $product instanceof WC_Product ? $product : null, $zone );
 
-        if ( empty( $methods ) ) {
-            $html = '<div class="aun-db-pill"><div class="aun-db-cell"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i>'
-                  . '<span>No shipping options found for this area.</span></div></div>';
-        } else {
-            $html .= '<p class="aun-db-label" style="margin-top:2px">Delivery options for ' . esc_html( $zone->get_zone_name() ) . '</p>';
-            foreach ( $methods as $instance_id => $method ) {
-                $method_key = $zone_id . ':' . $instance_id;
-                $rule       = $rules[ $method_key ] ?? null;
-                if ( empty( $rule ) ) continue;
-                $is_pickup      = isset( $rule['pickup'] ) && $rule['pickup'] === '1';
-                $pickup_message = ! empty( $rule['pickup_message'] ) ? esc_html( $rule['pickup_message'] ) : 'Ready for pickup';
-                $estimate       = $is_pickup
-                    ? $pickup_message . ' ' . $this->calculate_estimate_text( $rule )
-                    : 'Get it ' . $this->calculate_estimate_text( $rule );
-                if ( $estimate ) {
-                    // wp_kses_post: estimate contains intentional <strong> tags from calculate_estimate_text()
-                    $icon  = $is_pickup ? 'fa-store' : 'fa-truck-fast';
-                    $html .= '<div style="margin-bottom:6px"><div class="aun-db-pill"><div class="aun-db-cell">'
-                           . '<i class="fa-solid ' . esc_attr( $icon ) . '" aria-hidden="true"></i>'
-                           . '<span><strong>' . esc_html( $method->get_title() ) . ':</strong> ' . wp_kses_post( $estimate ) . '</span>'
-                           . '</div></div></div>';
-                }
+        $rows = '';
+        foreach ( $methods as $instance_id => $method ) {
+            $method_key = $zone_id . ':' . $instance_id;
+            $rule       = $rules[ $method_key ] ?? null;
+            if ( empty( $rule ) ) continue;
+
+            $is_pickup = isset( $rule['pickup'] ) && $rule['pickup'] === '1';
+            $estimate  = $is_pickup
+                ? ( ( ! empty( $rule['pickup_message'] ) ? esc_html( $rule['pickup_message'] ) : 'Ready for pickup' )
+                    . ' ' . $this->calculate_estimate_text( $rule ) )
+                : 'Get it ' . $this->calculate_estimate_text( $rule );
+
+            // An empty list means the method is not available for this package --
+            // free shipping still waiting on its coupon, most often.
+            foreach ( $this->method_rates( $method, $package ) as $r ) {
+                $rows .= $this->render_option_row( $r['label'], $r['cost'], $estimate, $is_pickup );
             }
+        }
+
+        if ( '' === $rows ) {
+            $html = '<div class="aun-db-pill"><div class="aun-db-cell"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i>'
+                  . '<span>No delivery options for this area yet &mdash; we will confirm at checkout.</span></div></div>';
+        } else {
+            $html = '<p class="aun-db-label" style="margin-top:2px">Delivery options for ' . esc_html( $zone->get_zone_name() ) . '</p>'
+                  . '<ul class="aun-db-opts">' . $rows . '</ul>';
         }
 
         wp_send_json_success( $html );

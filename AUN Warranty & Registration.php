@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Warranty Registration
  * Description: Manage distributors, products, and CF7 warranty registrations with auto-approval, SMS and email notifications.
- * Version:     2.8.1
+ * Version:     2.9.0
  * Author:      Smart Living Bangladesh
  * License:     GPLv2 or later
  */
@@ -1057,8 +1057,10 @@ function slb_admin_serials(){
     }
 
     $where = $where_clauses ? implode(' AND ', $where_clauses) : '1=1';
-    $sql = $wpdb->prepare("SELECT s.*, d.name as distributor_name, d.address as distributor_address FROM $t_serials s LEFT JOIN $t_dist d ON s.distributor_id=d.id WHERE $where ORDER BY s.created_at DESC LIMIT 500", ...$params);
-    $rows = $wpdb->get_results($sql);
+    // prepare() with no placeholders raises "called incorrectly" on WP 6.x, and this
+    // screen has no filter by default -- so it complained on a plain page load.
+    $sql = "SELECT s.*, d.name as distributor_name, d.address as distributor_address FROM $t_serials s LEFT JOIN $t_dist d ON s.distributor_id=d.id WHERE $where ORDER BY s.created_at DESC LIMIT 500";
+    $rows = $wpdb->get_results( $params ? $wpdb->prepare( $sql, ...$params ) : $sql );
     $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $t_serials");
 
     $dists = $wpdb->get_results("SELECT * FROM $t_dist ORDER BY name ASC");
@@ -1157,6 +1159,191 @@ function slb_admin_serials(){
 /* -----------------------------------------------------------------------
    Registrations admin (UPDATED: AUTO-DB REPAIR for product_model)
    ----------------------------------------------------------------------- */
+/**
+ * Row actions (approve / reject / duplicate / delete), handled BEFORE any output.
+ *
+ * Previously this lived inside the page renderer and acted on a plain GET, which
+ * meant the action URL stayed in the address bar: one press of F5 -- or the back
+ * button -- re-ran the decision and sent the customer another SMS and another
+ * email. It also threw the admin back to the unfiltered list, so a decision made
+ * from the toolbar's filtered view looked like it had done nothing.
+ *
+ * Now it acts once, then redirects back to the list the admin came from with a
+ * short result code. Refreshing that URL repeats nothing.
+ */
+add_action( 'admin_init', 'slb_handle_registration_action' );
+function slb_handle_registration_action() {
+    if ( ! isset( $_GET['page'], $_GET['action'], $_GET['id'] ) ) return;
+    if ( 'slb-warranty-registrations' !== $_GET['page'] ) return;
+    if ( ! current_user_can( 'manage_options' ) ) return;
+    check_admin_referer( 'slb_reg_action', 'slb_reg_nonce' );
+
+    global $wpdb;
+    $t_regs    = $wpdb->prefix . 'slb_registrations';
+    $t_serials = $wpdb->prefix . 'slb_serials';
+
+    $id     = intval( $_GET['id'] );
+    $action = sanitize_key( $_GET['action'] );
+    $row    = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $t_regs WHERE id=%d", $id ) );
+
+    $code = '';
+    $arg  = '';
+
+    if ( ! $row ) {
+        $code = 'missing';
+    } elseif ( 'released' === $row->status ) {
+        // A RELEASED record belongs to nobody until the next owner takes it over
+        // (from the app or this site's form). Approving it would silently hand it
+        // back to the person who let it go; deleting it would let the serial be
+        // registered with a NEW date -- a fresh warranty. Neither is allowed.
+        $code = 'released';
+    } elseif ( in_array( $action, array( 'approve', 'reject', 'duplicate' ), true ) ) {
+        $target = array( 'approve' => 'approved', 'reject' => 'rejected', 'duplicate' => 'duplicate' );
+        $want   = $target[ $action ];
+
+        if ( $row->status === $want ) {
+            // Already there. Doing it again would only text the customer a second
+            // time about a decision that has not changed.
+            $code = 'nochange';
+            $arg  = $want;
+        } elseif ( 'approve' === $action && ! slb_serial_free_for( $row->serial, $id ) ) {
+            // One serial, one live warranty. Without this a second registration for
+            // the same serial could also be approved, and the serial row would point
+            // at whichever was approved last while BOTH claimed to be approved.
+            $code = 'taken';
+            $arg  = (string) slb_serial_owner( $row->serial );
+        } else {
+            $data = array( 'status' => $want );
+            $data['notes'] = slb_stamp_decision( $row->notes, $want );
+
+            if ( 'approved' === $want ) {
+                $srow = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $t_serials WHERE serial=%s", $row->serial ) );
+                // The auto-approver records which shop the unit actually came from;
+                // a manual approval used to leave this unset, so the Distributor
+                // column stayed blank on exactly the rows a person had checked.
+                if ( $srow && ! empty( $srow->distributor_id ) ) {
+                    $data['distributor_id'] = (int) $srow->distributor_id;
+                }
+                $wpdb->update( $t_regs, $data, array( 'id' => $id ) );
+                $wpdb->update( $t_serials, array( 'registered' => 1, 'registration_id' => $id ), array( 'serial' => $row->serial ) );
+            } else {
+                $wpdb->update( $t_regs, $data, array( 'id' => $id ) );
+                // Rejecting or duplicating a row that HAD the serial must release it,
+                // or the serial stays flagged as registered to a dead claim and the
+                // real owner can never register it.
+                $wpdb->update( $t_serials, array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
+            }
+
+            slb_notify_decision( $row, $want );
+            slb_flush_manual_counts();
+            $code = $want;
+        }
+    } elseif ( 'delete' === $action ) {
+        if ( 'approved' === $row->status ) {
+            $code = 'nodelete';
+        } else {
+            $files_removed = 0;
+            if ( ! empty( $row->invoice_file ) )  { $files_removed += slb_delete_uploaded_file( $row->invoice_file )  ? 1 : 0; }
+            if ( ! empty( $row->product_photo ) ) { $files_removed += slb_delete_uploaded_file( $row->product_photo ) ? 1 : 0; }
+            $wpdb->delete( $t_regs, array( 'id' => $id ) );
+            $wpdb->update( $t_serials, array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
+            slb_flush_manual_counts();
+            $code = 'deleted';
+            $arg  = (string) $files_removed;
+        }
+    } else {
+        return; // not one of ours
+    }
+
+    wp_safe_redirect( slb_registrations_url( array(
+        'slb_done' => $code,
+        'slb_id'   => $id,
+        'slb_arg'  => $arg,
+    ) ) );
+    exit;
+}
+
+/** Is this serial free to be approved for $reg_id (nobody else holds it)? */
+function slb_serial_free_for( $serial, $reg_id ) {
+    $owner = slb_serial_owner( $serial );
+    return ( 0 === $owner || (int) $reg_id === $owner );
+}
+
+/** Which registration currently holds this serial, if any. 0 = none. */
+function slb_serial_owner( $serial ) {
+    global $wpdb;
+    $t_regs = $wpdb->prefix . 'slb_registrations';
+    if ( '' === (string) $serial ) return 0;
+    return (int) $wpdb->get_var( $wpdb->prepare(
+        "SELECT id FROM $t_regs WHERE serial=%s AND status='approved' ORDER BY id ASC LIMIT 1", $serial
+    ) );
+}
+
+/**
+ * Append a line to notes saying who decided what, and when. The table had no
+ * record of this at all: a rejected registration looked identical whether a
+ * person had checked it or the reconciler had.
+ */
+function slb_stamp_decision( $notes, $status ) {
+    $user = wp_get_current_user();
+    $who  = ( $user && $user->display_name ) ? $user->display_name : 'admin';
+    $line = sprintf( '[DECISION] %s by %s on %s', $status, $who, current_time( 'Y-m-d H:i' ) );
+    $notes = (string) $notes;
+    return '' === trim( $notes ) ? $line : $notes . ' | ' . $line;
+}
+
+/** The one place a decision SMS + email is sent, so every path behaves alike. */
+function slb_notify_decision( $row, $status ) {
+    $opts  = get_option( 'slb_warranty_opts', array() );
+    $tpl   = $opts['sms_templates'][ $status ]   ?? '';
+    $eml   = $opts['email_templates'][ $status ] ?? '';
+    $start = $row->purchase_date ?: date( 'Y-m-d' );
+    $vars  = array(
+        'serial'  => $row->serial,
+        'invoice' => $row->invoice_no,
+        'name'    => $row->customer_name,
+        'phone'   => $row->phone,
+        'start'   => $start,
+        'end'     => slb_warranty_end( $start, $row->serial ),
+    );
+    if ( $tpl ) slb_send_templated_sms( $row->phone, $tpl, $vars );
+    if ( $eml ) slb_send_templated_email( $row->email, $eml, $vars, $status );
+}
+
+/** The registrations URL, keeping whatever the admin was filtered/searched on. */
+function slb_registrations_url( $extra = array() ) {
+    $keep = array( 'page' => 'slb-warranty-registrations' );
+    foreach ( array( 'search_q', 'status_filter', 'paged' ) as $k ) {
+        if ( ! empty( $_GET[ $k ] ) ) {
+            $keep[ $k ] = sanitize_text_field( wp_unslash( $_GET[ $k ] ) );
+        }
+    }
+    return add_query_arg( array_filter( array_merge( $keep, $extra ), 'strlen' ), admin_url( 'admin.php' ) );
+}
+
+/** Render the result of the last action, carried in the URL after the redirect. */
+function slb_render_action_notice() {
+    $code = isset( $_GET['slb_done'] ) ? sanitize_key( $_GET['slb_done'] ) : '';
+    if ( '' === $code ) return;
+    $id  = intval( $_GET['slb_id'] ?? 0 );
+    $arg = sanitize_text_field( wp_unslash( $_GET['slb_arg'] ?? '' ) );
+
+    $map = array(
+        'approved'  => array( 'success', "Registration #$id approved. The customer has been notified." ),
+        'rejected'  => array( 'warning', "Registration #$id rejected. The customer has been notified." ),
+        'duplicate' => array( 'warning', "Registration #$id marked as duplicate. The customer has been notified." ),
+        'deleted'   => array( 'success', "Registration #$id deleted." . ( $arg > 0 ? ' Uploaded file removed from the server.' : '' ) ),
+        'nochange'  => array( 'info',    "Registration #$id was already " . esc_html( $arg ) . " &mdash; nothing changed and no message was sent." ),
+        'nodelete'  => array( 'error',   'Cannot delete an approved registration &mdash; warranty integrity is protected.' ),
+        'missing'   => array( 'error',   "Registration #$id no longer exists." ),
+        'released'  => array( 'warning', "<strong>Registration #$id is released.</strong> Its previous owner let it go; the next owner takes it over (with the remaining warranty) from the app or the registration form. It cannot be approved, rejected or deleted." ),
+        'taken'     => array( 'error',   "Serial already approved under registration #" . intval( $arg ) . ". One serial can hold only one live warranty &mdash; mark this one as <em>Duplicate</em>, or reject the other first." ),
+    );
+    if ( ! isset( $map[ $code ] ) ) return;
+    list( $kind, $text ) = $map[ $code ];
+    echo '<div class="notice notice-' . esc_attr( $kind ) . ' is-dismissible"><p>' . $text . '</p></div>';
+}
+
 function slb_admin_registrations(){
     if(!current_user_can('manage_options')) wp_die('No permission');
     global $wpdb;
@@ -1173,68 +1360,10 @@ function slb_admin_registrations(){
         update_option('slb_db_regs_version', '1.4');
     }
 
-    if(isset($_GET['action']) && isset($_GET['id']) && check_admin_referer('slb_reg_action','slb_reg_nonce')){
-        $id = intval($_GET['id']);
-        $action = sanitize_text_field($_GET['action']);
-        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $t_regs WHERE id=%d",$id));
-        // A RELEASED record belongs to nobody until the next owner takes it over
-        // (from the app or this site's form). Approving it would silently hand it
-        // back to the person who let it go; deleting it would let the serial be
-        // registered with a NEW date — a fresh warranty. Neither is allowed.
-        if ( $row && 'released' === $row->status ) {
-            echo '<div class="notice notice-warning"><p><strong>Registration #' . intval( $id ) . ' is released.</strong> Its previous owner let it go; the next owner takes it over (with the remaining warranty) from the app or the registration form. It cannot be approved, rejected or deleted.</p></div>';
-            $row = null;
-        }
-        if($row){
-            if($action==='approve'){
-                $wpdb->update($t_regs,['status'=>'approved'],['id'=>$id]);
-                $wpdb->update($t_serials,['registered'=>1,'registration_id'=>$id],['serial'=>$row->serial]);
-                $opts = get_option('slb_warranty_opts',[]);
-                $tpl_sms = $opts['sms_templates']['approved'] ?? '';
-                $tpl_email = $opts['email_templates']['approved'] ?? '';
-                $start = $row->purchase_date ?: date('Y-m-d');
-                $end = slb_warranty_end( $start, $row->serial );
-                $vars = ['serial'=>$row->serial,'start'=>$start,'end'=>$end,'invoice'=>$row->invoice_no,'name'=>$row->customer_name,'phone'=>$row->phone];
-                if($tpl_sms)   slb_send_templated_sms($row->phone, $tpl_sms, $vars);
-                if($tpl_email) slb_send_templated_email($row->email, $tpl_email, $vars, 'approved');
-                echo '<div class="notice notice-success"><p><strong>Registration #'.$id.' approved.</strong> SMS and email notifications sent to '.esc_html($row->customer_name).'.</p></div>';
-            } elseif($action==='reject'){
-                $wpdb->update($t_regs,['status'=>'rejected'],['id'=>$id]);
-                $opts = get_option('slb_warranty_opts',[]);
-                $tpl_sms = $opts['sms_templates']['rejected'] ?? '';
-                $tpl_email = $opts['email_templates']['rejected'] ?? '';
-                $vars = ['serial'=>$row->serial,'invoice'=>$row->invoice_no,'name'=>$row->customer_name,'phone'=>$row->phone];
-                if($tpl_sms)   slb_send_templated_sms($row->phone, $tpl_sms, $vars);
-                if($tpl_email) slb_send_templated_email($row->email, $tpl_email, $vars, 'rejected');
-                echo '<div class="notice notice-warning"><p><strong>Registration #'.$id.' rejected.</strong> Customer notified.</p></div>';
-            } elseif($action==='duplicate'){
-                $wpdb->update($t_regs,['status'=>'duplicate'],['id'=>$id]);
-                $opts = get_option('slb_warranty_opts',[]);
-                $tpl_sms = $opts['sms_templates']['duplicate'] ?? '';
-                $tpl_email = $opts['email_templates']['duplicate'] ?? '';
-                $vars = ['serial'=>$row->serial,'invoice'=>$row->invoice_no,'name'=>$row->customer_name,'phone'=>$row->phone];
-                if($tpl_sms)   slb_send_templated_sms($row->phone, $tpl_sms, $vars);
-                if($tpl_email) slb_send_templated_email($row->email, $tpl_email, $vars, 'duplicate');
-                echo '<div class="notice notice-warning"><p><strong>Registration #'.$id.' marked as duplicate.</strong> Customer notified.</p></div>';
-            } elseif($action==='delete'){
-                if ( $row->status !== 'approved' ) {
-                    // Remove the uploaded invoice/photo files from disk too, so deleting a
-                    // registration actually reclaims its storage instead of leaving orphans.
-                    $files_removed = 0;
-                    if ( ! empty($row->invoice_file) )  { $files_removed += slb_delete_uploaded_file($row->invoice_file)  ? 1 : 0; }
-                    if ( ! empty($row->product_photo) ) { $files_removed += slb_delete_uploaded_file($row->product_photo) ? 1 : 0; }
-
-                    $wpdb->delete($t_regs, ['id'=>$id]);
-                    $wpdb->update($t_serials, ['registered'=>0, 'registration_id'=>NULL], ['registration_id'=>$id]);
-
-                    $file_note = $files_removed ? ' Uploaded file removed from the server.' : '';
-                    echo '<div class="notice notice-success"><p>Registration #'.intval($id).' deleted.'.$file_note.'</p></div>';
-                } else {
-                    echo '<div class="notice notice-error"><p>Cannot delete an approved registration — warranty integrity is protected.</p></div>';
-                }
-            }
-        }
-    }
+    // Row actions are handled on admin_init (see slb_handle_registration_action)
+    // and the result arrives back here as a code in the URL, so refreshing the
+    // page cannot repeat the decision.
+    slb_render_action_notice();
 
     // Search / filter
     $search_q    = sanitize_text_field($_GET['search_q'] ?? '');
@@ -1294,12 +1423,33 @@ function slb_admin_registrations(){
     if($search_q || $status_filter) echo ' <a class="button" href="'.esc_url($base_url).'">Clear</a>';
     echo '</form>';
 
+    // Say plainly what this list is showing. Arriving from the toolbar lands on a
+    // FILTERED list, and without a line like this it just looks like the same table
+    // with most of the rows missing -- as though the two screens disagreed.
+    if ( $search_q || $status_filter ) {
+        $bits = [];
+        if ( $status_filter ) { $bits[] = '<strong>' . esc_html( ucfirst( str_replace('_',' ', $status_filter) ) ) . '</strong>'; }
+        if ( $search_q )      { $bits[] = 'matching &ldquo;' . esc_html( $search_q ) . '&rdquo;'; }
+        $grand = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $t_regs" );
+        echo '<p style="margin:-4px 0 12px;color:#4b5563;">Showing ' . implode( ' ', $bits )
+            . ' &mdash; <strong>' . intval( $total ) . '</strong> of ' . $grand . ' registrations. '
+            . '<a href="' . esc_url( $base_url ) . '">Show all</a></p>';
+    }
+
     echo '<table class="widefat striped slb-reg-table"><thead><tr><th>ID</th><th>Serial</th><th>Model</th><th>Distributor</th><th>Name</th><th>Phone</th><th>Invoice</th><th>Purchase</th><th>File</th><th>Status</th><th style="min-width:210px">Actions</th></tr></thead><tbody>';
     foreach($rows as $r){
-        $approve = wp_nonce_url(add_query_arg(['page'=>'slb-warranty-registrations','action'=>'approve','id'=>$r->id], admin_url('admin.php')), 'slb_reg_action','slb_reg_nonce');
-        $reject  = wp_nonce_url(add_query_arg(['page'=>'slb-warranty-registrations','action'=>'reject','id'=>$r->id],  admin_url('admin.php')), 'slb_reg_action','slb_reg_nonce');
-        $dup     = wp_nonce_url(add_query_arg(['page'=>'slb-warranty-registrations','action'=>'duplicate','id'=>$r->id], admin_url('admin.php')), 'slb_reg_action','slb_reg_nonce');
-        $del     = wp_nonce_url(add_query_arg(['page'=>'slb-warranty-registrations','action'=>'delete','id'=>$r->id],  admin_url('admin.php')), 'slb_reg_action','slb_reg_nonce');
+        // Keep the search and the status filter on every action link. Without this a
+        // decision taken from the toolbar's filtered view dumped the admin back on the
+        // unfiltered list -- which reads as a different table that disagrees with the
+        // one they were just looking at.
+        $act = function ( $what ) use ( $r ) {
+            return wp_nonce_url(
+                slb_registrations_url( array( 'action' => $what, 'id' => $r->id ) ),
+                'slb_reg_action', 'slb_reg_nonce'
+            );
+        };
+        $approve = $act('approve'); $reject = $act('reject');
+        $dup     = $act('duplicate'); $del   = $act('delete');
 
         $file_html = '';
         if(!empty($r->invoice_file)){
@@ -1354,14 +1504,32 @@ function slb_admin_registrations(){
             // for released rows anyway — these buttons only invited the error.)
             echo '<span style="font-size:12px;color:#5b21b6">Waiting for the next owner</span>';
         } else {
-            echo '<a class="button button-small button-primary" href="'.esc_url($approve).'">Approve</a>';
-            echo '<a class="button button-small slb-btn-reject" href="'.esc_url($reject).'">Reject</a>';
-            echo '<a class="button button-small" href="'.esc_url($dup).'">Duplicate</a>';
+            // Only the decisions that would CHANGE something. Offering "Approve" on an
+            // approved row invited a second approval SMS to a customer who had already
+            // had one -- the button did not refuse, it just did it again.
             if ( $r->status !== 'approved' ) {
-                echo '<a class="button button-small slb-btn-delete" href="'.esc_url($del).'" onclick="return confirm(\'Delete this registration?\')">Delete</a>';
+                echo '<a class="button button-small button-primary" href="'.esc_url($approve).'">Approve</a>';
+            }
+            if ( $r->status !== 'rejected' ) {
+                echo '<a class="button button-small slb-btn-reject" href="'.esc_url($reject).'" onclick="return confirm(\'Reject this registration? The customer will be told.\')">Reject</a>';
+            }
+            if ( $r->status !== 'duplicate' ) {
+                echo '<a class="button button-small" href="'.esc_url($dup).'">Duplicate</a>';
+            }
+            if ( $r->status !== 'approved' ) {
+                echo '<a class="button button-small slb-btn-delete" href="'.esc_url($del).'" onclick="return confirm(\'Delete this registration? This cannot be undone.\')">Delete</a>';
             }
         }
         echo '</div></td></tr>';
+    }
+    if ( empty( $rows ) ) {
+        // An empty result used to render as bare column headings and nothing else,
+        // which reads as a broken table rather than an answered question.
+        echo '<tr><td colspan="11" style="padding:22px;text-align:center;color:#6b7280;">'
+            . ( ( $search_q || $status_filter )
+                ? 'Nothing matches this filter. <a href="' . esc_url( $base_url ) . '">Show all registrations</a>'
+                : 'No registrations yet.' )
+            . '</td></tr>';
     }
     echo '</tbody></table>';
 
@@ -1539,6 +1707,7 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
         if ( $existing && 'rejected' === $existing->status && ! slb_same_phone( $phone, $existing->phone ) ) {
             $replaced_rejected = 'Replaces a registration by ' . $existing->phone . ' that staff had rejected.';
             $wpdb->delete( $t_regs, ['id' => $existing->id] );
+            slb_flush_manual_counts();
             $existing      = null;
             $force_pending = true;
         }
@@ -1701,6 +1870,7 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
             if ( $invoice_file === '' ) unset( $update_data['invoice_file'] ); // keep previously uploaded file
             unset( $update_data['product_photo'] );                            // not managed by this handler
             $ok = $wpdb->update( $t_regs, $update_data, ['id' => $existing->id] );
+            slb_flush_manual_counts();
             if ( $ok === false ) {
                 error_log("SLB ERROR: DB update failed for serial={$serial}. SQL error: " . $wpdb->last_error);
                 return;
@@ -1708,6 +1878,7 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
             $reg_id = $existing->id;
         } else {
             $ok = $wpdb->insert( $t_regs, $data_insert, $formats );
+            slb_flush_manual_counts();
             if ( $ok === false ) {
                 error_log("SLB ERROR: DB insert failed for serial={$serial}. SQL error: " . $wpdb->last_error);
                 return;
@@ -1835,6 +2006,7 @@ function slb_reconcile_pending_registrations( $serial = null, $limit = 100 ) {
             if ( $reg->status !== 'mismatch' ) {
                 $note = ! empty( $reg->notes ) ? $match['note'] . ' | ' . $reg->notes : $match['note'];
                 $wpdb->update( $t_regs, ['status'=>'mismatch', 'notes'=>$note], ['id'=>$reg->id] );
+                slb_flush_manual_counts();
 
                 // Tell the customer which detail to correct (same reason-specific template).
                 $mk  = ( $match['reason'] !== '' ) ? $match['reason'] . '_mismatch' : 'mismatch';
@@ -1858,12 +2030,14 @@ function slb_reconcile_pending_registrations( $serial = null, $limit = 100 ) {
             if ( $gap < 0 || $gap > 180 ) {
                 $held = ' | [HELD FOR REVIEW] Purchase date ' . $reg->purchase_date . ' is ' . ( $gap < 0 ? 'BEFORE' : $gap . ' days after' ) . ' the dealer received this unit (' . $srow->shipped_date . ') — check the invoice date.';
                 $wpdb->update( $t_regs, ['status'=>'pending', 'notes'=>(string) $reg->notes . $held], ['id'=>$reg->id] );
+                slb_flush_manual_counts();
                 continue;
             }
         }
 
         // -- Qualifies -> auto-approve, link the serial, notify the customer --
         $wpdb->update( $t_regs,    ['status'=>'approved', 'distributor_id'=>$srow->distributor_id], ['id'=>$reg->id] );
+        slb_flush_manual_counts();
         $wpdb->update( $t_serials, ['registered'=>1, 'registration_id'=>$reg->id], ['id'=>$srow->id] );
 
         $start = $reg->purchase_date ?: date('Y-m-d');

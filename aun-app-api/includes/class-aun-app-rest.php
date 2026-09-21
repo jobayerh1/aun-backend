@@ -320,6 +320,16 @@ class AUN_App_REST {
 			'permission_callback' => $auth,
 		) );
 
+		// The new photo, when we have sent one back. Without this the app could
+		// show the customer what was wrong and then offer them nowhere to fix it
+		// — the SMS says "re-upload" and the only place that word leads to is
+		// the website.
+		register_rest_route( $ns, '/parts/photo', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'parts_photo' ),
+			'permission_callback' => $auth,
+		) );
+
 		register_rest_route( $ns, '/repairs/tracking', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'repair_tracking' ),
@@ -920,6 +930,43 @@ class AUN_App_REST {
 			// success, rather than discovered at checkout when it fails.
 			'phone'   => (string) ( $result['phone'] ?? '' ),
 		) );
+	}
+
+	/**
+	 * Re-send a photo we asked for. Multipart: `ref` + `photo`.
+	 *
+	 * The rules all live in AUN_App_Services::resend_parts_photo(), which
+	 * mirrors the website tracker's handler — including the atomic claim that
+	 * caps this at one photo per ask.
+	 */
+	public function parts_photo( $request ) {
+		$me    = $this->identity();
+
+		// The atomic claim already caps SUCCESSFUL uploads at one per ask, but a
+		// failing client could retry for ever — each attempt a file write and a
+		// row lookup. Generous enough that nobody fixing a bad photo ever meets
+		// it; the same shape as the other per-user day caps here.
+		$key   = 'aun_app_spphoto_' . $me['user_id'];
+		$count = (int) get_transient( $key );
+		if ( $count >= 20 ) {
+			return $this->err( 'rate_limited', 'Too many photo uploads today. Please try again tomorrow.', 429 );
+		}
+		set_transient( $key, $count + 1, DAY_IN_SECONDS );
+
+		$files = (array) $request->get_file_params();
+		$res   = AUN_App_Services::resend_parts_photo(
+			$me['phone'],
+			$me['user_id'],
+			(string) $request->get_param( 'ref' ),
+			$files['photo'] ?? array()
+		);
+		if ( empty( $res['ok'] ) ) {
+			// 409 for "already answered": it is not a failure the customer can do
+			// anything about, and the app says thank-you rather than sorry.
+			$code = ( 'not_waiting' === $res['code'] ) ? 409 : 400;
+			return $this->err( $res['code'], $res['message'], $code );
+		}
+		return $this->ok( array( 'sent' => true, 'message' => $res['message'] ) );
 	}
 
 	public function parts_catalog() {
@@ -2405,11 +2452,27 @@ class AUN_App_REST {
 			status_header( 404 );
 			exit;
 		}
-		if ( isset( $row->app_downloadable ) && 1 !== (int) $row->app_downloadable ) {
-			status_header( 403 );
-			exit;
+		// ?alt=1 = the offline installer attached to this firmware release (the
+		// "install it from a USB drive instead" file), not the main file.
+		$alt = ! empty( $request->get_param( 'alt' ) );
+		if ( $alt ) {
+			// Deliberately NOT gated on app_downloadable: that switch is the
+			// admin saying "the app can't fetch the main file". The offline
+			// installer is offered by its own presence - a blank URL is how it
+			// is withdrawn - so one cannot silently turn off the other.
+			$src = trim( (string) ( $row->alt_url ?? '' ) );
+			if ( '' === $src ) {
+				status_header( 404 );
+				exit;
+			}
+		} else {
+			if ( isset( $row->app_downloadable ) && 1 !== (int) $row->app_downloadable ) {
+				status_header( 403 );
+				exit;
+			}
+			$src = (string) $row->url;
 		}
-		$dl = AUN_App_Content::resolve_download_url( (string) $row->url );
+		$dl = AUN_App_Content::resolve_download_url( $src );
 		if ( '' === $dl ) {
 			status_header( 404 );
 			exit;
@@ -2618,6 +2681,8 @@ class AUN_App_REST {
 			'purchase_date'  => (string) $request->get_param( 'purchase_date' ),
 			'invoice_no'     => (string) $request->get_param( 'invoice_no' ),
 			'invoice_file'   => $invoice_url,
+			// The customer has no box: the serial is the projector's own number.
+			'no_box'         => ! empty( $request->get_param( 'no_box' ) ),
 		) );
 
 		if ( ! $result['ok'] ) {

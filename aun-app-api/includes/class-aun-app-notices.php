@@ -360,11 +360,23 @@ class AUN_App_Notices {
 	 * @param string $round       Distinguishes one quote round from the next — see
 	 *                            the dedup note below. Pass the row's `quoted_at`.
 	 */
-	public static function parts_status_changed( $user_id, $ref, $status_key, $label, $quote_total = 0, $round = '' ) {
+	public static function parts_status_changed( $user_id, $ref, $status_key, $label, $quote_total = 0, $round = '', $photo_reason = '' ) {
 		$user_id = (int) $user_id;
 		$ref     = (string) $ref;
 		if ( $user_id < 1 || '' === $ref || '' === $status_key ) {
 			return;
+		}
+
+		// Why the photo came back, in both languages (spare parts 0.45.0).
+		// "Please send a clearer photo" is exactly the message the reason codes
+		// exist to replace: it fixes a blurry photo and does nothing whatever
+		// when the customer photographed the wrong part — they send the same
+		// part again, sharper. If we know, we say.
+		$why_en = '';
+		$why_bn = '';
+		if ( '' !== (string) $photo_reason && method_exists( 'AUN_SP_Requests', 'photo_reason_text' ) ) {
+			$why_en = (string) AUN_SP_Requests::photo_reason_text( (string) $photo_reason, 'en' )['what'];
+			$why_bn = (string) AUN_SP_Requests::photo_reason_text( (string) $photo_reason, 'bn' )['what'];
 		}
 
 		// Statuses worth interrupting someone for. Internal churn (submitted,
@@ -387,8 +399,8 @@ class AUN_App_Notices {
 			'waiting_customer' => array(
 				"We need one more photo for $ref",
 				"$ref-এর জন্য আরেকটি ছবি প্রয়োজন",
-				'Open the request to upload a clearer photo.',
-				'পরিষ্কার ছবি আপলোড করতে অনুরোধটি খুলুন।',
+				'' !== $why_en ? $why_en . ' Tap to send a new one.' : 'Open the request to send a new photo.',
+				'' !== $why_bn ? $why_bn . ' নতুন ছবি পাঠাতে ট্যাপ করুন।' : 'নতুন ছবি পাঠাতে অনুরোধটি খুলুন।',
 			),
 			'ready'            => array(
 				"Your parts for $ref are ready",
@@ -454,8 +466,14 @@ class AUN_App_Notices {
 			// the customer taps "I still want this part" → a fresh quote), and
 			// without the round in this key the new quote would collide with the
 			// old notice and be dropped in silence — the one status the customer
-			// has to answer, arriving as nothing at all. Only the quote round
-			// carries it; every other status happens once per request.
+			// has to answer, arriving as nothing at all.
+			//
+			// ⚠️ ASKING FOR A PHOTO REPEATS THE SAME WAY, and used to hit the same
+			// wall: ask → they send another wrong photo → ask again → the SMS
+			// went out and the app said NOTHING, because (ref, waiting_customer)
+			// had already been used. The caller passes the ask's own event id, so
+			// every ask is its own notice. Statuses that genuinely happen once
+			// per request still pass ''.
 			'dedup_key' => 'parts_status:' . $ref . ':' . $status_key
 				. ( '' !== (string) $round ? ':' . md5( (string) $round ) : '' ),
 		) );

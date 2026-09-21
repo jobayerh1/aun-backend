@@ -257,6 +257,51 @@ class AUN_SP_I18N {
 				),
 			),
 
+			// Why a photo was sent back. 'pr_*' says what is wrong, 'prh_*' says what to
+			// do about it. The customer sees the pair together on the tracking page, and
+			// 'pr_*' alone goes into the SMS, where every character costs money.
+			'photo_reasons' => array(
+				'label' => 'Photo sent back — reasons the customer sees',
+				'type'  => 'php',
+				'strings' => array(
+					'pr_wrong_part'   => array( 'en' => 'The photo shows a different part from the one you asked for.', 'bn' => 'আপনি যে পার্টসটি চেয়েছেন, ছবিতে তার বদলে অন্য একটি পার্টস দেখা যাচ্ছে।' ),
+					'prh_wrong_part'  => array( 'en' => 'Please send a photo of the part named on your request.', 'bn' => 'অনুগ্রহ করে আপনার অনুরোধে লেখা পার্টসটির ছবি পাঠান।' ),
+					'prs_wrong_part'  => array( 'en' => 'It shows the wrong part.', 'bn' => 'It shows the wrong part.' ),
+
+					// Right KIND of part, wrong model — a remote that is a remote but not his
+					// remote. 'wrong_part' reads as "a different part", so he looks at his photo,
+					// sees a remote, and sends the same one again. The fix asks for the PART:
+					// the projector's own serial label cannot identify a spare part.
+					'pr_model_mismatch'  => array( 'en' => "This doesn't match the part on your request, so we can't be sure which one to send.", 'bn' => 'এটি আপনার অনুরোধের পার্টসের সাথে মিলছে না, তাই কোনটি পাঠাতে হবে আমরা নিশ্চিত হতে পারছি না।' ),
+					'prh_model_mismatch' => array( 'en' => 'Please send a photo of the actual part from your projector.', 'bn' => 'অনুগ্রহ করে আপনার প্রজেক্টরের আসল পার্টসটির ছবি পাঠান।' ),
+					'prs_model_mismatch' => array( 'en' => 'It does not match your model.', 'bn' => 'It does not match your model.' ),
+
+					'pr_blurry'       => array( 'en' => 'The photo is too blurry for us to read.', 'bn' => 'ছবিটি এত ঝাপসা যে আমরা কিছু পড়তে পারছি না।' ),
+					'prh_blurry'      => array( 'en' => 'Hold the phone steady, tap the screen on the part to focus, then take it again.', 'bn' => 'ফোনটি স্থির রেখে স্ক্রিনে পার্টসটির উপর টাচ করে ফোকাস করুন, তারপর আবার ছবি তুলুন।' ),
+					'prs_blurry'      => array( 'en' => 'It is too blurry to read.', 'bn' => 'It is too blurry to read.' ),
+
+					'pr_dark'         => array( 'en' => 'The photo is too dark, or the flash has washed out the detail.', 'bn' => 'ছবিটি খুব অন্ধকার, অথবা ফ্ল্যাশের আলোয় সব মুছে গেছে।' ),
+					'prh_dark'        => array( 'en' => 'Try it in daylight, or turn a light on beside it instead of using the flash.', 'bn' => 'দিনের আলোয় তুলুন, অথবা ফ্ল্যাশ ব্যবহার না করে পাশে একটি বাতি জ্বালিয়ে নিন।' ),
+					'prs_dark'        => array( 'en' => 'It is too dark to read.', 'bn' => 'It is too dark to read.' ),
+
+					'pr_serial'       => array( 'en' => 'We can\'t read the serial or model number in the photo.', 'bn' => 'ছবিতে সিরিয়াল বা মডেল নম্বরটি পড়া যাচ্ছে না।' ),
+					'prh_serial'      => array( 'en' => 'Move the phone closer — about a hand\'s width from the label — and take it again.', 'bn' => 'ফোনটি আরও কাছে নিন — লেখাটি থেকে প্রায় এক হাত দূরে — তারপর আবার তুলুন।' ),
+					'prs_serial'      => array( 'en' => 'The serial is not readable.', 'bn' => 'The serial is not readable.' ),
+
+					'pr_cropped'      => array( 'en' => 'Part of the item is cut off at the edge of the photo.', 'bn' => 'ছবির কিনারায় পার্টসটির একটি অংশ কেটে গেছে।' ),
+					'prh_cropped'     => array( 'en' => 'Step back a little so the whole part fits inside the frame.', 'bn' => 'একটু পিছিয়ে দাঁড়ান যাতে পুরো পার্টসটি ছবির ভেতরে আসে।' ),
+					'prs_cropped'     => array( 'en' => 'The part is cut off in it.', 'bn' => 'The part is cut off in it.' ),
+
+					'pr_unclear'      => array( 'en' => 'We can\'t tell what this photo shows.', 'bn' => 'এই ছবিতে কী আছে আমরা বুঝতে পারছি না।' ),
+					'prh_unclear'     => array( 'en' => 'Please take it in good light with the whole part inside the frame.', 'bn' => 'ভালো আলোয়, পুরো পার্টসটি ছবির ভেতরে রেখে ছবি তুলুন।' ),
+					'prs_unclear'     => array( 'en' => 'We cannot tell what it shows.', 'bn' => 'We cannot tell what it shows.' ),
+
+					'pr_other'        => array( 'en' => 'We need a different photo before we can continue.', 'bn' => 'এগিয়ে যেতে আমাদের অন্য একটি ছবি প্রয়োজন।' ),
+					'prh_other'       => array( 'en' => 'Please read our note below and send a new photo.', 'bn' => 'নিচের মন্তব্যটি পড়ে নতুন একটি ছবি পাঠান।' ),
+					'prs_other'       => array( 'en' => 'We need a different photo.', 'bn' => 'We need a different photo.' ),
+				),
+			),
+
 			'js_track' => array(
 				'label' => 'Tracking page — messages & prompts',
 				'type'  => 'jst',
@@ -268,6 +313,10 @@ class AUN_SP_I18N {
 					'jst_reupload_h'   => array( 'k' => 'reupload_h',   'en' => 'We need a clear, correct photo to continue:', 'bn' => 'এগিয়ে যেতে আমাদের একটি স্পষ্ট ও সঠিক ছবি দরকার:' ),
 					'jst_match_example'=> array( 'k' => 'match_example','en' => 'Please take the photo just like this example:', 'bn' => 'অনুগ্রহ করে এই উদাহরণ ছবির মতো করে তুলুন:' ),
 					'jst_track_parcel' => array( 'k' => 'track_parcel', 'en' => 'Track your parcel on Pathao', 'bn' => 'পাঠাও-এ আপনার পার্সেল ট্র্যাক করুন' ),
+					'jst_ask_part'     => array( 'k' => 'ask_part',     'en' => 'This is about:', 'bn' => 'এটি যে পার্টস সম্পর্কে:' ),
+					'jst_ask_note'     => array( 'k' => 'ask_note',     'en' => 'Note from our team:', 'bn' => 'আমাদের টিমের মন্তব্য:' ),
+					'jst_sent_photo'   => array( 'k' => 'sent_photo',   'en' => 'The photo you sent', 'bn' => 'আপনি যে ছবিটি পাঠিয়েছেন' ),
+					'jst_should_be'    => array( 'k' => 'should_be',    'en' => 'What we need instead', 'bn' => 'আমাদের যেমনটি দরকার' ),
 					'jst_send_photo'   => array( 'k' => 'send_photo',   'en' => 'Send photo', 'bn' => 'ছবি পাঠান' ),
 					'jst_choose_first' => array( 'k' => 'choose_first', 'en' => 'Choose a photo first.', 'bn' => 'প্রথমে একটি ছবি নির্বাচন করুন।' ),
 					'jst_uploading'    => array( 'k' => 'uploading',    'en' => 'Uploading…', 'bn' => 'আপলোড হচ্ছে…' ),
@@ -355,6 +404,10 @@ class AUN_SP_I18N {
 					// Better a sentence with no number than "৳." with nothing after it.
 					'tl_payment_plain'   => array( 'en' => 'Payment received. Thank you.', 'bn' => 'পেমেন্ট পাওয়া গেছে। ধন্যবাদ।' ),
 					'tl_refund_plain'    => array( 'en' => 'A refund has been issued to you.', 'bn' => 'আপনাকে টাকা ফেরত দেওয়া হয়েছে।' ),
+					// The stored photo_request message is internal English (it names the part and quotes the admin's note); these are what the CUSTOMER sees instead.
+					'tl_photo_ask'       => array( 'en' => 'We asked you for a new photo: {reason}', 'bn' => 'আমরা আপনার কাছে নতুন ছবি চেয়েছি: {reason}' ),
+					'tl_photo_ask_plain' => array( 'en' => 'We asked you for a new photo.', 'bn' => 'আমরা আপনার কাছে নতুন ছবি চেয়েছি।' ),
+					'tl_photo_sent'      => array( 'en' => 'You sent us a new photo.', 'bn' => 'আপনি আমাদের একটি নতুন ছবি পাঠিয়েছেন।' ),
 					'srv_revive_ok'      => array( 'en' => 'Thank you — we will check the price again and send you a new quote shortly.', 'bn' => 'ধন্যবাদ — আমরা আবার দাম যাচাই করে শীঘ্রই নতুন কোটেশন পাঠাব।' ),
 					'srv_revive_no'      => array( 'en' => 'This request is already active — no need to ask again.', 'bn' => 'এই অনুরোধটি ইতিমধ্যেই সক্রিয় — আবার অনুরোধ করার দরকার নেই।' ),
 				),

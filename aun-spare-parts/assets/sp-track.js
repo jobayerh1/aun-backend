@@ -8,6 +8,8 @@
 			enter: 'Please enter your reference or phone.',
 			net_err: 'Network error — please try again.',
 			reupload_h: 'We need a clear, correct photo to continue:', match_example: 'Please take the photo just like this example:', track_parcel: 'Track your parcel on Pathao',
+			ask_part: 'This is about:', ask_note: 'Note from our team:',
+			sent_photo: 'The photo you sent', should_be: 'What we need instead',
 			send_photo: 'Send photo', choose_first: 'Choose a photo first.',
 			uploading: 'Uploading…', upload_done: 'Thanks — we received your new photo.',
 			eta: 'ETA ',
@@ -42,6 +44,8 @@
 			enter: 'আপনার রেফারেন্স বা ফোন নম্বর লিখুন।',
 			net_err: 'নেটওয়ার্ক সমস্যা — আবার চেষ্টা করুন।',
 			reupload_h: 'এগিয়ে যেতে আমাদের একটি স্পষ্ট ও সঠিক ছবি দরকার:', match_example: 'অনুগ্রহ করে এই উদাহরণ ছবির মতো করে তুলুন:', track_parcel: 'পাঠাও-এ আপনার পার্সেল ট্র্যাক করুন',
+			ask_part: 'এটি যে পার্টস সম্পর্কে:', ask_note: 'আমাদের টিমের মন্তব্য:',
+			sent_photo: 'আপনি যে ছবিটি পাঠিয়েছেন', should_be: 'আমাদের যেমনটি দরকার',
 			send_photo: 'ছবি পাঠান', choose_first: 'প্রথমে একটি ছবি নির্বাচন করুন।',
 			uploading: 'আপলোড হচ্ছে…', upload_done: 'ধন্যবাদ — আমরা আপনার নতুন ছবি পেয়েছি।',
 			eta: 'আনুমানিক ',
@@ -278,7 +282,7 @@
 
 				// Any priced request shows its cost; only a pending one shows the buttons.
 				if ( r.quote ) { body.appendChild( quoteBlock( r, chip ) ); }
-				if ( r.waiting ) { body.appendChild( reupload( r.ref, r.parts ) ); }
+				if ( r.waiting ) { body.appendChild( reupload( r.ref, r.parts, r.photo_ask ) ); }
 				if ( r.timeline && r.timeline.length ) { body.appendChild( timeline( r.timeline ) ); }
 
 				card.appendChild( body );
@@ -307,20 +311,69 @@
 			return a;
 		}
 
-		function reupload( ref, parts ) {
+		function partName( p ) {
+			return ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
+		}
+
+		/**
+		 * `ask` is why we sent the photo back. Telling them only "send a clearer photo"
+		 * fixes a blurry one and achieves nothing when they photographed the wrong part
+		 * — they just send a sharper photo of the same wrong part. So the specific
+		 * reason leads, and where we know WHICH part it concerns we show their photo
+		 * beside the example, which is the comparison that actually lands.
+		 */
+		function reupload( ref, parts, ask ) {
 			var box = el( 'div', 'aun-sp-reupload' );
-			box.appendChild( el( 'div', 'aun-sp-reupload-h', t( 'reupload_h' ) ) );
-			// Show the example/tutorial photo(s) for the requested part(s) so the customer
-			// can copy the exact style (e.g. where the LCD serial is) and re-upload it right.
-			var examples = ( parts || [] ).filter( function ( p ) { return p.ref_image; } );
-			if ( examples.length ) {
-				box.appendChild( el( 'div', 'aun-sp-reupload-exh', t( 'match_example' ) ) );
-				var exWrap = el( 'div', 'aun-sp-reupload-examples' );
-				examples.forEach( function ( p ) {
-					var pname = ( lang === 'bn' && p.label_bn ) ? p.label_bn : p.label;
-					exWrap.appendChild( photoThumb( p.ref_image, pname, pname ) );
-				} );
-				box.appendChild( exWrap );
+			var all = parts || [];
+
+			if ( ask && ask.what ) {
+				box.appendChild( el( 'div', 'aun-sp-reupload-h', ask.what ) );
+				if ( ask.how ) { box.appendChild( el( 'div', 'aun-sp-reupload-how', ask.how ) ); }
+			} else {
+				// No reason recorded (an older request, or one set by hand).
+				box.appendChild( el( 'div', 'aun-sp-reupload-h', t( 'reupload_h' ) ) );
+			}
+
+			if ( ask && ask.note ) {
+				var nb = el( 'div', 'aun-sp-reupload-note' );
+				nb.appendChild( el( 'span', 'aun-sp-reupload-notel', t( 'ask_note' ) ) );
+				nb.appendChild( el( 'span', null, ask.note ) );
+				box.appendChild( nb );
+			}
+
+			// Targeted at one part: name it, then put "what you sent" next to "what we
+			// need" so the difference is visible rather than described.
+			var target = null;
+			if ( ask && ask.item_id ) {
+				all.forEach( function ( p ) { if ( p.needs_photo ) { target = p; } } );
+			}
+
+			if ( target ) {
+				var tn = el( 'div', 'aun-sp-reupload-part' );
+				tn.appendChild( el( 'span', 'aun-sp-reupload-notel', t( 'ask_part' ) ) );
+				tn.appendChild( el( 'strong', null, partName( target ) ) );
+				box.appendChild( tn );
+
+				var cmp = el( 'div', 'aun-sp-reupload-compare' );
+				if ( target.photo ) {
+					cmp.appendChild( photoThumb( target.photo, t( 'sent_photo' ), t( 'sent_photo' ) ) );
+				}
+				if ( target.ref_image ) {
+					cmp.appendChild( photoThumb( target.ref_image, t( 'should_be' ), t( 'should_be' ) ) );
+				}
+				if ( cmp.childNodes.length ) { box.appendChild( cmp ); }
+			} else {
+				// Show the example/tutorial photo(s) for the requested part(s) so the customer
+				// can copy the exact style (e.g. where the LCD serial is) and re-upload it right.
+				var examples = all.filter( function ( p ) { return p.ref_image; } );
+				if ( examples.length ) {
+					box.appendChild( el( 'div', 'aun-sp-reupload-exh', t( 'match_example' ) ) );
+					var exWrap = el( 'div', 'aun-sp-reupload-examples' );
+					examples.forEach( function ( p ) {
+						exWrap.appendChild( photoThumb( p.ref_image, partName( p ), partName( p ) ) );
+					} );
+					box.appendChild( exWrap );
+				}
 			}
 			var file = el( 'input' );
 			file.type = 'file';

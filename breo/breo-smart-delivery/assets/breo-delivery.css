@@ -1,0 +1,52 @@
+/* Breo Smart Delivery: product card, checkout line and order summary. */
+.breo-dlv, .breo-dlv-order {
+	--dlv-ink: #1c1c1c; --dlv-muted: #6f6a63; --dlv-line: #e8e2da; --dlv-cream: #f7f2eb; --dlv-accent: #e8692c; --dlv-warm: #b4531a;
+}
+.breo-dlv *, .breo-dlv-order * { box-sizing: border-box; }
+
+/* Product page card */
+.breo-dlv { margin: 0 0 1.2rem; padding: 14px 16px; border: 1px solid var(--dlv-line); border-radius: 16px; background: #fff; font-size: .93rem; color: var(--dlv-ink); }
+.breo-dlv__main { display: flex; gap: 12px; align-items: flex-start; }
+.breo-dlv__ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--dlv-cream); color: var(--dlv-accent); }
+.breo-dlv__body { flex: 1; min-width: 0; }
+.breo-dlv__k { margin: 1px 0 2px; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dlv-muted); }
+.breo-dlv__v { line-height: 1.5; }
+.breo-dlv__v p { margin: 0; }
+.breo-dlv__wait { color: var(--dlv-muted); }
+.breo-dlv__list { list-style: none; margin: 2px 0 0; padding: 0; }
+.breo-dlv__list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 14px; margin: 0; padding: 7px 0; border-top: 1px dashed var(--dlv-line); }
+.breo-dlv__list li:first-child { border-top: 0; padding-top: 0; }
+.breo-dlv__m { font-weight: 600; }
+.breo-dlv__m em { font-style: normal; font-weight: 500; color: var(--dlv-muted); margin-left: 4px; }
+.breo-dlv__d { color: var(--dlv-muted); }
+.breo-dlv__d strong { color: var(--dlv-ink); font-weight: 600; }
+.breo-dlv__area { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--dlv-line); }
+.breo-dlv__area label { flex: none; font-size: .85rem; color: var(--dlv-muted); }
+.breo-dlv__select { position: relative; flex: 1; min-width: 0; }
+.breo-dlv__select::after { content: ""; position: absolute; right: 16px; top: 50%; width: 7px; height: 7px; border-right: 1.6px solid var(--dlv-ink); border-bottom: 1.6px solid var(--dlv-ink); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.breo-dlv__select select {
+	width: 100%; height: 40px; margin: 0; padding: 0 38px 0 14px; border: 1.5px solid var(--dlv-line); border-radius: 999px;
+	background: var(--dlv-cream); font: inherit; font-size: .9rem; color: var(--dlv-ink); -webkit-appearance: none; appearance: none; cursor: pointer;
+}
+.breo-dlv__select select:focus { outline: none; border-color: var(--dlv-ink); background: #fff; }
+.breo-dlv__select select:focus-visible { box-shadow: 0 0 0 3px rgba(28, 28, 28, .1); }
+.breo-dlv.is-backorder { background: #fdf6ee; border-color: #f1dcc4; }
+.breo-dlv.is-backorder .breo-dlv__ico { background: #fff; color: var(--dlv-warm); }
+.breo-dlv.is-backorder .breo-dlv__k { color: var(--dlv-warm); }
+
+/* Classic cart / checkout: text under each shipping option */
+.breo-dlv-rate { display: block; margin-top: 3px; font-size: .85em; color: #6f6a63; }
+
+/* Order received / view order */
+.breo-dlv-order { margin: 2rem 0; }
+.breo-dlv-order__h { margin: 0 0 .8rem; font-size: 1.25rem; }
+.breo-dlv-order__pkg { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; padding: 14px 16px; border-radius: 16px; background: var(--dlv-cream); }
+.breo-dlv-order__pkg .breo-dlv__ico { background: #fff; }
+.breo-dlv-order__pkg.is-backorder .breo-dlv__ico { color: var(--dlv-warm); }
+.breo-dlv-order__t { margin: 0 0 2px; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dlv-muted); }
+.breo-dlv-order__eta { margin: 0; font-weight: 600; color: var(--dlv-ink); }
+.breo-dlv-order__m { margin: 2px 0 0; font-size: .9rem; color: var(--dlv-muted); }
+
+@media (max-width: 480px) {
+	.breo-dlv__area { flex-direction: column; align-items: stretch; gap: 6px; }
+}

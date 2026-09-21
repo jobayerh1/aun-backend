@@ -83,7 +83,8 @@ class AUN_App_Content {
 	 * @return array[] {youtube_id, title, published_at}
 	 */
 	private static function note_videos( $r ) {
-		$html = (string) $r->description . ' ' . (string) ( $r->changelog ?? '' );
+		$html = (string) $r->description . ' ' . (string) ( $r->changelog ?? '' )
+			. ' ' . (string) ( $r->alt_note ?? '' );
 		$ids  = self::youtube_ids_in_html( $html );
 		if ( empty( $ids ) ) {
 			return array();
@@ -112,6 +113,10 @@ class AUN_App_Content {
 	 */
 	private static function payload( $r, $model_name = '' ) {
 		$is_video = 'video' === $r->type;
+		// The offline installer, when one is attached to this firmware release.
+		// Firmware only: an "install it from a USB drive instead" file means
+		// nothing for a manual or a video.
+		$alt_url  = 'firmware' === (string) $r->type ? trim( (string) ( $r->alt_url ?? '' ) ) : '';
 		$yt_id    = $is_video ? self::youtube_id( $r->url ) : '';
 		$yt_meta  = ( $is_video && '' !== $yt_id ) ? self::youtube_meta( $yt_id ) : array( 'title' => '', 'published_at' => '' );
 		return array(
@@ -161,6 +166,23 @@ class AUN_App_Content {
 			'note_videos' => $is_video ? array() : self::note_videos( $r ),
 			'version'     => (string) $r->version,
 			'file_size'   => (string) $r->file_size,
+			// The SAME release, installed the other way. Present only when the
+			// admin has attached a file, so the app shows the fallback exactly
+			// when there is one to offer - and never as a rival to the OTA:
+			// same version, same "what's new", one notification.
+			//
+			// Its own steps travel with it: installing from a USB drive is
+			// nothing like starting an update from the projector's menu, and
+			// showing the Wi-Fi steps next to a zip is how people brick things.
+			'offline'     => '' === $alt_url ? null : array(
+				// Downloaded through the same redirect endpoint as any other
+				// file (so OneDrive links keep working), with ?alt=1 telling
+				// the server which of the row's two files is wanted.
+				'url'  => add_query_arg( 'alt', 1, rest_url( 'aun-app/v1/content/' . (int) $r->id . '/file' ) ),
+				'note' => (string) ( $r->alt_note ?? '' ),
+				'size' => (string) ( $r->alt_size ?? '' ),
+				'ext'  => self::file_extension( $alt_url ),
+			),
 			'youtube_id'  => $yt_id,
 			// Real YouTube title + upload date when a Data API key is set (the app
 			// falls back to the admin-entered title / added date when empty).
@@ -210,7 +232,7 @@ class AUN_App_Content {
 		global $wpdb;
 		$t = aun_app_api_content_table();
 		return $wpdb->get_row(
-			$wpdb->prepare( "SELECT type, url, active, app_downloadable FROM $t WHERE id = %d", (int) $id )
+			$wpdb->prepare( "SELECT type, url, alt_url, active, app_downloadable FROM $t WHERE id = %d", (int) $id )
 		);
 	}
 
@@ -767,6 +789,11 @@ class AUN_App_Content {
 			'url'         => esc_url_raw( $data['url'] ),
 			'version'     => substr( sanitize_text_field( $data['version'] ), 0, 50 ),
 			'file_size'   => substr( sanitize_text_field( $data['file_size'] ), 0, 30 ),
+			// Offline installer: file, its own steps, its own size. Empty URL =
+			// no fallback offered (the normal case for a model whose OTA works).
+			'alt_url'     => esc_url_raw( $data['alt_url'] ?? '' ),
+			'alt_note'    => wp_kses_post( $data['alt_note'] ?? '' ),
+			'alt_size'    => substr( sanitize_text_field( $data['alt_size'] ?? '' ), 0, 30 ),
 			'sort'        => (int) $data['sort'],
 			'active'      => ! empty( $data['active'] ) ? 1 : 0,
 			// Absent key (e.g. video) defaults to downloadable; the firmware/manual

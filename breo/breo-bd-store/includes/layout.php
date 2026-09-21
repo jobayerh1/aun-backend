@@ -27,6 +27,21 @@ add_action( 'wp_head', function () {
 	echo '<script data-no-optimize="1" data-no-minify="1" data-cfasync="false" data-no-defer="1">document.documentElement.classList.add("js-breo");</script>' . "\n";
 }, 1 );
 
+// Breo favicon (self-hosted) unless a Site Icon has been set in WordPress.
+function breo_bd_favicon_tags() {
+	if ( has_site_icon() ) {
+		return;
+	}
+	$u = BREO_BD_URL . 'assets/icons/';
+	echo '<link rel="icon" href="' . esc_url( $u . 'favicon.svg' ) . '" type="image/svg+xml">' . "\n";
+	echo '<link rel="icon" href="' . esc_url( $u . 'favicon-32.png' ) . '" sizes="32x32" type="image/png">' . "\n";
+	echo '<link rel="icon" href="' . esc_url( $u . 'icon-192.png' ) . '" sizes="192x192" type="image/png">' . "\n";
+	echo '<link rel="apple-touch-icon" href="' . esc_url( $u . 'apple-touch-icon.png' ) . '">' . "\n";
+}
+add_action( 'wp_head', 'breo_bd_favicon_tags', 2 );
+add_action( 'login_head', 'breo_bd_favicon_tags' );
+add_action( 'admin_head', 'breo_bd_favicon_tags' );
+
 /* ------------------------------------------------------------------------
  * Which Breo view (if any) renders this request.
  * --------------------------------------------------------------------- */
@@ -45,10 +60,12 @@ function breo_bd_view() {
 		$view = 'home';
 	} elseif ( function_exists( 'is_product' ) && is_product() && breo_bd_product_data( wc_get_product( $id ) ) ) {
 		$view = 'product';
-	} elseif ( is_page() && get_post_meta( $id, '_breo_page', true ) ) {
+	} elseif ( is_page() && ( get_post_meta( $id, '_breo_page', true ) || breo_bd_plugin_page_slug( $id ) ) ) {
 		$view = 'page';
 	} elseif ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() ) && ! is_search() ) {
 		$view = 'shop';
+	} elseif ( is_404() ) {
+		$view = '404';
 	}
 	return $view;
 }
@@ -81,14 +98,57 @@ add_filter( 'render_block', function ( $html, $block ) {
  * --------------------------------------------------------------------- */
 
 function breo_bd_nav_support() {
-	return array(
-		'warranty-policy'   => 'Warranty',
-		'shipping-delivery' => 'Shipping & Delivery',
-		'returns-refunds'   => 'Returns & Refunds',
-		'faq'               => 'FAQ',
-		'contact'           => 'Contact Us',
-	);
+	static $nav = null;
+	if ( null !== $nav ) {
+		return $nav;
+	}
+	// Track Order / EMI Plans appear once their plugin has created the page.
+	$has = function ( $slug ) {
+		$p = get_page_by_path( $slug );
+		return $p && 'publish' === $p->post_status;
+	};
+	$nav = array();
+	if ( $has( 'track-order' ) ) {
+		$nav['track-order'] = 'Track Your Order';
+	}
+	if ( $has( 'manuals' ) ) {
+		$nav['manuals'] = 'Manuals & Downloads';
+	}
+	$nav['warranty-policy']   = 'Warranty';
+	$nav['shipping-delivery'] = 'Shipping & Delivery';
+	$nav['returns-refunds']   = 'Returns & Refunds';
+	if ( $has( 'emi-plans' ) ) {
+		$nav['emi-plans'] = 'EMI Plans';
+	}
+	$nav['faq']     = 'FAQ';
+	$nav['contact'] = 'Contact Us';
+	return $nav;
 }
+
+/* My Account menu: nothing downloadable is sold here; link the tracking page instead. */
+add_filter( 'woocommerce_account_menu_items', function ( $items ) {
+	unset( $items['downloads'] );
+	$p = get_page_by_path( 'track-order' );
+	if ( $p && 'publish' === $p->post_status ) {
+		$logout = isset( $items['customer-logout'] ) ? array( 'customer-logout' => $items['customer-logout'] ) : array();
+		unset( $items['customer-logout'] );
+		$items['breo-track-order'] = 'Track an order';
+		$items                    += $logout;
+	}
+	return $items;
+} );
+add_filter( 'woocommerce_get_endpoint_url', function ( $url, $endpoint ) {
+	return 'breo-track-order' === $endpoint ? breo_bd_page_url( 'track-order' ) : $url;
+}, 10, 2 );
+
+/*
+ * My Account sign-in: one Breo card ("Sign in or create your account") instead of
+ * WooCommerce's Login / Register columns. 'wc_get_template' runs on every call,
+ * unlike 'woocommerce_locate_template', whose result WooCommerce caches.
+ */
+add_filter( 'wc_get_template', function ( $template, $name ) {
+	return 'myaccount/form-login.php' === $name ? BREO_BD_DIR . 'templates/form-login.php' : $template;
+}, 20, 2 );
 
 function breo_bd_cart_count() {
 	return ( function_exists( 'WC' ) && WC()->cart ) ? (int) WC()->cart->get_cart_contents_count() : 0;
@@ -105,6 +165,7 @@ function breo_bd_header_html() {
 	$cart_url = function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/cart/' );
 	$acct_url = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'myaccount' ) : wp_login_url();
 	$wa       = breo_bd_whatsapp_url( 'Hi Breo Bangladesh' );
+	$wa_hdr   = $wa && 'no' !== breo_bd_opt( 'wa_header' );
 
 	ob_start();
 	?>
@@ -157,7 +218,7 @@ function breo_bd_header_html() {
 				</ul>
 			</nav>
 			<div class="breo-hdr__icons">
-				<?php if ( $wa ) : ?>
+				<?php if ( $wa_hdr ) : ?>
 					<a class="breo-hdr__icon breo-hdr__wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><?php echo breo_bd_social_icon( 'whatsapp' ); // phpcs:ignore ?></a>
 				<?php endif; ?>
 				<a class="breo-hdr__icon" href="<?php echo esc_url( $acct_url ); ?>" aria-label="My account"><?php echo breo_bd_icon( 'user', 20 ); // phpcs:ignore ?></a>
@@ -191,7 +252,7 @@ function breo_bd_header_html() {
 					<a class="breo-mnav__link" href="<?php echo esc_url( breo_bd_page_url( $slug ) ); ?>"><?php echo esc_html( $label ); ?></a>
 				<?php endforeach; ?>
 				<a class="breo-mnav__link" href="<?php echo esc_url( $acct_url ); ?>">My account</a>
-				<?php if ( $wa ) : ?>
+				<?php if ( $wa_hdr ) : ?>
 					<a class="breo-btn breo-btn--light breo-mnav__wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"><?php echo breo_bd_social_icon( 'whatsapp' ); // phpcs:ignore ?> Chat on WhatsApp</a>
 				<?php endif; ?>
 			</div>
@@ -269,8 +330,16 @@ function breo_bd_footer_html() {
 				<?php if ( $email ) : ?>
 					<a href="mailto:<?php echo esc_attr( $email ); ?>"><?php echo breo_bd_icon( 'mail', 18 ); // phpcs:ignore ?> <?php echo esc_html( antispambot( $email ) ); ?></a>
 				<?php endif; ?>
-				<?php if ( breo_bd_opt( 'address' ) ) : ?>
-					<span><?php echo breo_bd_icon( 'pin', 18 ); // phpcs:ignore ?> <?php echo esc_html( breo_bd_opt( 'address' ) ); ?></span>
+				<?php
+				$breo_map = function_exists( 'breo_bd_maps_link' ) ? breo_bd_maps_link() : '';
+				if ( breo_bd_opt( 'address' ) || $breo_map ) :
+					$breo_where = breo_bd_opt( 'address' ) ? breo_bd_opt( 'address' ) : 'Find us on Google Maps';
+					?>
+					<?php if ( $breo_map ) : ?>
+						<a href="<?php echo esc_url( $breo_map ); ?>" target="_blank" rel="noopener"><?php echo breo_bd_icon( 'pin', 18 ); // phpcs:ignore ?> <?php echo esc_html( $breo_where ); ?></a>
+					<?php else : ?>
+						<span><?php echo breo_bd_icon( 'pin', 18 ); // phpcs:ignore ?> <?php echo esc_html( $breo_where ); ?></span>
+					<?php endif; ?>
 				<?php endif; ?>
 				<?php if ( breo_bd_opt( 'hours' ) ) : ?>
 					<span><?php echo breo_bd_icon( 'clock', 18 ); // phpcs:ignore ?> <?php echo esc_html( breo_bd_opt( 'hours' ) ); ?></span>
@@ -284,7 +353,7 @@ function breo_bd_footer_html() {
 	</footer>
 	<?php
 	$wa_float = breo_bd_whatsapp_url( 'Hi Breo Bangladesh' . ( is_singular( 'product' ) ? ', I am interested in the ' . get_the_title() : '' ) );
-	if ( $wa_float ) {
+	if ( $wa_float && 'no' !== breo_bd_opt( 'wa_float' ) ) {
 		echo '<a class="breo-wa" href="' . esc_url( $wa_float ) . '" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">' . breo_bd_social_icon( 'whatsapp' ) . '</a>'; // phpcs:ignore
 	}
 	return ob_get_clean();
@@ -338,6 +407,44 @@ add_action( 'wp_head', function () {
  * Cart: live header count + "Buy now" straight to checkout + no double
  * submits (redirect back to the product after Add to cart).
  * --------------------------------------------------------------------- */
+
+// ?breo-buy=ID → put the product in the cart once and go straight to checkout.
+add_action( 'wp_loaded', function () {
+	if ( empty( $_GET['breo-buy'] ) || is_admin() || ! function_exists( 'WC' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		return;
+	}
+	$p = wc_get_product( absint( $_GET['breo-buy'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+	if ( ! $p || ! $p->is_purchasable() || ! $p->is_in_stock() ) {
+		wp_safe_redirect( $p ? $p->get_permalink() : home_url( '/' ) );
+		exit;
+	}
+	if ( null === WC()->cart && function_exists( 'wc_load_cart' ) ) {
+		wc_load_cart();
+	}
+	$in_cart = false;
+	foreach ( WC()->cart->get_cart() as $item ) {
+		if ( (int) $item['product_id'] === $p->get_id() ) {
+			$in_cart = true;
+			break;
+		}
+	}
+	if ( ! $in_cart ) {
+		WC()->cart->add_to_cart( $p->get_id(), 1 );
+	}
+	wp_safe_redirect( wc_get_checkout_url() );
+	exit;
+}, 25 );
+
+// No emoji script: it pulls images from s.w.org (a third-party server).
+add_action( 'init', function () {
+	if ( is_admin() ) {
+		return;
+	}
+	remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+	remove_action( 'wp_print_styles', 'print_emoji_styles' );
+	remove_action( 'wp_enqueue_scripts', 'wp_enqueue_emoji_styles' );
+	add_filter( 'emoji_svg_url', '__return_false' );
+} );
 
 add_filter( 'woocommerce_add_to_cart_fragments', function ( $f ) {
 	$c = breo_bd_cart_count();

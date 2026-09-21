@@ -290,6 +290,49 @@ class AUN_SP_Requests {
 		);
 	}
 
+	/**
+	 * Why a photo is being sent back, admin-side.
+	 *
+	 * A generic "please send a clearer photo" only ever fixes ONE of the two things
+	 * that go wrong. If the photo is blurry, asking for a clearer one works. If the
+	 * customer photographed the WRONG part, asking for a clearer one gets you a
+	 * beautifully sharp photo of the same wrong part — so the reason has to travel
+	 * with the request, all the way to the customer's screen and their SMS.
+	 *
+	 * The keys are stored in requests.photo_reason; the customer-facing wording lives
+	 * in the translations catalogue (pr_* = what is wrong, prh_* = what to do about
+	 * it) so both languages are editable without touching code.
+	 *
+	 * @return array key => short admin label for the dropdown
+	 */
+	public static function photo_reasons() {
+		return array(
+			'wrong_part' => 'Wrong part photographed',
+			'model_mismatch' => "Right part, but doesn't match this model",
+			'blurry'     => 'Too blurry to read',
+			'dark'       => 'Too dark / glare on the label',
+			'serial'     => 'Serial or model number not readable',
+			'cropped'    => 'Part is cut off at the edge',
+			'unclear'    => 'Cannot tell what the photo shows',
+			'other'      => 'Something else (write it below)',
+		);
+	}
+
+	/** The customer-facing pair for a reason key: what is wrong + what to do. */
+	public static function photo_reason_text( $key, $lang = null ) {
+		$key = (string) $key;
+		if ( '' === $key || ! isset( self::photo_reasons()[ $key ] ) ) {
+			return array( 'what' => '', 'how' => '', 'sms' => '' );
+		}
+		return array(
+			'what' => AUN_SP_I18N::msg( 'pr_' . $key, array(), $lang ),
+			'how'  => AUN_SP_I18N::msg( 'prh_' . $key, array(), $lang ),
+			// The SMS form. The tracking page can afford a full sentence; an SMS
+			// cannot — one character past 160 splits it in two and doubles the cost.
+			'sms'  => AUN_SP_I18N::msg( 'prs_' . $key, array(), $lang ),
+		);
+	}
+
 	/** How long a quote stays valid, in days. 0 = never expires (reminders only). */
 	public static function quote_valid_days() {
 		return max( 0, (int) get_option( 'aun_sp_quote_valid_days', 7 ) );
@@ -865,12 +908,57 @@ class AUN_SP_Requests {
 		}
 
 		// Ask for a better photo — re-opens the customer's re-upload box on tracking.
+		//
+		// The REASON is the whole point of this panel. "Please send a clearer photo"
+		// only fixes a blurry photo; if they photographed the wrong part it just buys
+		// you a sharper photo of the wrong part. So the reason (and optionally WHICH
+		// part it concerns) travels to their screen and into the SMS.
 		echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:16px;">';
 		wp_nonce_field( 'aun_sp_photo', 'aun_sp_photo_nonce' );
-		echo '<h2>Need a clearer photo?</h2>';
+		echo '<h2>Send the photo back</h2>';
 		echo '<p style="color:#646970;">Sets this request to <strong>Waiting on customer</strong> and texts them a link to re-upload. It flips back to <em>In progress</em> automatically once they send a new photo.</p>';
-		echo '<p><button class="button">Ask customer for a better photo</button></p>';
-		echo '</form>';
+
+		// NO reason is pre-selected. The first entry used to be "Wrong part
+		// photographed", so one absent-minded click accused the customer of sending
+		// the wrong part — the most annoying of the seven to receive wrongly.
+		$cur_reason = (string) ( $r->photo_reason ?? '' );
+		echo '<p><label><strong>What is wrong with it?</strong><br><select name="photo_reason" style="min-width:340px;" required>';
+		echo '<option value="">&mdash; choose a reason &mdash;</option>';
+		foreach ( self::photo_reasons() as $rk => $rlabel ) {
+			echo '<option value="' . esc_attr( $rk ) . '"' . selected( $cur_reason, $rk, false ) . '>' . esc_html( $rlabel ) . '</option>';
+		}
+		echo '</select></label></p>';
+
+		// Which part's photo. With a single part there is nothing to choose — say which
+		// one it is and let the handler target it, so a one-part request still gets the
+		// "your photo vs the example" comparison instead of the generic gallery.
+		$item_list = array_values( (array) $items );
+		if ( count( $item_list ) > 1 ) {
+			echo '<p><label><strong>Which part\'s photo?</strong><br><select name="photo_item_id" style="min-width:340px;">';
+			echo '<option value="0">All of them / not sure</option>';
+			foreach ( $item_list as $it ) {
+				echo '<option value="' . (int) $it->id . '"' . selected( (int) ( $r->photo_item_id ?? 0 ), (int) $it->id, false ) . '>'
+					. esc_html( $it->part_label ) . '</option>';
+			}
+			echo '</select></label></p>';
+		} elseif ( 1 === count( $item_list ) ) {
+			echo '<p style="color:#646970;">This is about <strong>' . esc_html( $item_list[0]->part_label )
+				. '</strong> — they will see their photo next to the example.</p>';
+		}
+
+		echo '<p><label><strong>Anything to add?</strong> <span style="color:#646970;font-weight:400;">optional — the customer reads this word for word, in whichever language they are browsing in</span><br>';
+		echo '<textarea name="photo_note" rows="2" class="large-text" maxlength="300" placeholder="e.g. The photo shows the power board, but we need the LCD panel behind it.">'
+			. esc_textarea( (string) ( $r->photo_note ?? '' ) ) . '</textarea></label></p>';
+		echo '<p><button class="button button-primary" name="photo_ask" value="1">Ask customer for a new photo</button>';
+
+		// Waiting on the customer is a STICKY status (compute_overall never moves it),
+		// so without this an ask sent by mistake — or one answered on WhatsApp instead
+		// — left the request frozen on "Waiting on you" with no way back.
+		if ( 'waiting_customer' === $r->overall_status ) {
+			echo ' <button class="button" name="photo_cancel" value="1">Cancel this request</button>'
+				. ' <span style="color:#646970;">stop waiting and put it back to In progress (no SMS)</span>';
+		}
+		echo '</p></form>';
 
 		// Reject panel.
 		$tpls = $this->reject_templates( $r->model, $r->purchase_date, $items, $age_yrs );
@@ -1331,14 +1419,96 @@ class AUN_SP_Requests {
 		// Ask the customer for a better photo — sets "Waiting on customer" so the
 		// tracking page shows the re-upload box, and texts them the link.
 		if ( isset( $_POST['aun_sp_photo_nonce'] ) && wp_verify_nonce( $_POST['aun_sp_photo_nonce'], 'aun_sp_photo' ) ) {
+
+			// Stop waiting, without telling the customer anything: usually the photo
+			// arrived on WhatsApp, or the ask was a slip.
+			if ( ! empty( $_POST['photo_cancel'] ) ) {
+				$wpdb->update(
+					$t_req,
+					array(
+						'overall_status' => 'in_progress',
+						'photo_reason'   => '',
+						'photo_note'     => '',
+						'photo_item_id'  => 0,
+						'updated_at'     => current_time( 'mysql' ),
+					),
+					array( 'id' => $id, 'overall_status' => 'waiting_customer' )
+				);
+				// 'photo_cancel' is deliberately NOT in PUBLIC_EVENTS: the customer has
+				// no use for "we changed our mind about the photo".
+				$this->log( $id, 0, 'photo_cancel', 'Cancelled the photo request' );
+				return '<div class="notice notice-success is-dismissible"><p>No longer waiting on the customer. No SMS was sent.</p></div>';
+			}
+
+			$reasons = self::photo_reasons();
+			$reason  = sanitize_key( wp_unslash( $_POST['photo_reason'] ?? '' ) );
+			if ( ! isset( $reasons[ $reason ] ) ) {
+				// Refuse rather than guess. Guessing here sends a real SMS to a real
+				// customer telling them something we were never told.
+				return '<div class="notice notice-error is-dismissible"><p>Choose what is wrong with the photo first — nothing was sent.</p></div>';
+			}
+			$note = sanitize_textarea_field( wp_unslash( $_POST['photo_note'] ?? '' ) );
+			if ( function_exists( 'mb_substr' ) ) {
+				$note = mb_substr( $note, 0, 300 );
+			}
+			// "Something else" is the one reason that carries no explanation of its own —
+			// its instruction to the customer is literally "read our note below". Sent
+			// without a note it says nothing at all, and costs an SMS to say it.
+			if ( 'other' === $reason && '' === trim( $note ) ) {
+				return '<div class="notice notice-error is-dismissible"><p>&ldquo;Something else&rdquo; needs a note &mdash; that note is the only thing the customer will be told. Nothing was sent.</p></div>';
+			}
+			// Only accept an item that really belongs to THIS request — a posted id from
+			// somewhere else would name another customer's part on the tracking page.
+			$item_id = (int) ( $_POST['photo_item_id'] ?? 0 );
+			if ( $item_id > 0 ) {
+				$owns = (int) $wpdb->get_var( $wpdb->prepare(
+					'SELECT COUNT(*) FROM ' . AUN_SP_Install::table( 'request_items' ) . ' WHERE id = %d AND request_id = %d',
+					$item_id, $id
+				) );
+				if ( ! $owns ) {
+					$item_id = 0;
+				}
+			}
+			if ( 0 === $item_id ) {
+				// One part means there is nothing to disambiguate — target it anyway, so
+				// a single-part request (most of them) still gets the side-by-side
+				// comparison rather than the generic "here are the examples" gallery.
+				$only = $wpdb->get_col( $wpdb->prepare(
+					'SELECT id FROM ' . AUN_SP_Install::table( 'request_items' ) . ' WHERE request_id = %d', $id
+				) );
+				if ( 1 === count( (array) $only ) ) {
+					$item_id = (int) $only[0];
+				}
+			}
+
 			$wpdb->update(
 				$t_req,
-				array( 'overall_status' => 'waiting_customer', 'updated_at' => current_time( 'mysql' ) ),
+				array(
+					'overall_status' => 'waiting_customer',
+					'photo_reason'   => $reason,
+					'photo_note'     => $note,
+					'photo_item_id'  => $item_id,
+					'updated_at'     => current_time( 'mysql' ),
+				),
 				array( 'id' => $id )
 			);
-			$this->log( $id, 0, 'photo_request', 'Asked the customer for a better photo' );
+
+			// The audit line records WHY, so a request that bounced twice reads as a
+			// story rather than two identical "asked for a better photo" entries.
+			$part_label = '';
+			if ( $item_id > 0 ) {
+				$part_label = (string) $wpdb->get_var( $wpdb->prepare(
+					'SELECT part_label FROM ' . AUN_SP_Install::table( 'request_items' ) . ' WHERE id = %d', $item_id
+				) );
+			}
+			$logged = 'Asked for a new photo — ' . $reasons[ $reason ]
+				. ( '' !== $part_label ? ' (' . $part_label . ')' : '' )
+				. ( '' !== $note ? ': ' . $note : '' );
+			$this->log( $id, $item_id, 'photo_request', $logged, $reason );
+
 			$extra = $this->sms_customer( $id, 'photo', 'waiting_customer', '' );
-			return '<div class="notice notice-success is-dismissible"><p>Set to &ldquo;Waiting on customer&rdquo;.' . $extra . '</p></div>';
+			return '<div class="notice notice-success is-dismissible"><p>Set to &ldquo;Waiting on customer&rdquo;. They have been told: <em>'
+				. esc_html( $reasons[ $reason ] ) . '</em>' . $extra . '</p></div>';
 		}
 
 		return '';
@@ -1794,7 +1964,7 @@ class AUN_SP_Requests {
 	private function sms_customer( $id, $type, $status_key, $reason, $detail = array() ) {
 		global $wpdb;
 		$t_req = AUN_SP_Install::table( 'requests' );
-		$r     = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current, model, quote_total, quote_expires_at FROM $t_req WHERE id = %d", $id ) );
+		$r     = $wpdb->get_row( $wpdb->prepare( "SELECT ref, phone_current, model, quote_total, quote_expires_at, photo_reason, photo_note FROM $t_req WHERE id = %d", $id ) );
 
 		if ( ! $r || $r->phone_current === '' ) {
 			return ' (no phone on file — SMS skipped)';
@@ -1820,7 +1990,16 @@ class AUN_SP_Requests {
 				: '';
 			$msg            = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_REJECT ), $vars );
 		} elseif ( 'photo' === $type ) {
-			$msg = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO ), $vars );
+			// {reason} is deliberately resolved in ENGLISH, not the customer's language.
+			// One Bangla character flips the whole message from GSM-7 to UCS-2, which
+			// cuts a single SMS from 160 characters to 70 — so a translated reason would
+			// silently double or triple the cost of every one of these. The full reason,
+			// in their own language, is waiting on the tracking page the link points at.
+			$pr             = self::photo_reason_text( (string) $r->photo_reason, 'en' );
+			$vars['reason'] = $pr['sms'];
+			$vars['note']   = (string) $r->photo_note;
+			$body           = AUN_SP_Messages::drop_empty_brackets( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO ), $vars );
+			$msg            = AUN_SP_Messages::fill( $body, $vars );
 		} elseif ( 'done' === $type ) {
 			// Completion. {track} is available if the admin wants it, but the default
 			// deliberately omits it; {phone} is the shop's contact number so the
@@ -2236,7 +2415,14 @@ class AUN_SP_Requests {
 		return $ts ? floor( ( time() - $ts ) / ( 365.25 * DAY_IN_SECONDS ) ) : null;
 	}
 
-	private function log( $request_id, $item_id, $type, $message ) {
+	/**
+	 * @param string $new_value optional machine-readable value for the event, kept
+	 *                          alongside the human message. The customer-facing
+	 *                          timeline re-words some events in their own language,
+	 *                          and it can only do that from a KEY — the message is
+	 *                          internal English and may name a part or quote a note.
+	 */
+	private function log( $request_id, $item_id, $type, $message, $new_value = '' ) {
 		global $wpdb;
 		$user = wp_get_current_user();
 		$wpdb->insert( AUN_SP_Install::table( 'events' ), array(
@@ -2244,6 +2430,7 @@ class AUN_SP_Requests {
 			'item_id'    => $item_id,
 			'type'       => $type,
 			'message'    => $message,
+			'new_value'  => (string) $new_value,
 			'by_user'    => $user && $user->display_name ? $user->display_name : 'admin',
 			'created_at' => current_time( 'mysql' ),
 		) );

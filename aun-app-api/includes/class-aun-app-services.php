@@ -1398,7 +1398,7 @@ class AUN_App_Services {
 		global $wpdb;
 		$t_req = AUN_SP_Install::table( 'requests' );
 		$r     = $wpdb->get_row( $wpdb->prepare(
-			"SELECT ref, phone_current, quote_total, quoted_at FROM $t_req WHERE id = %d",
+			"SELECT ref, phone_current, quote_total, quoted_at, photo_reason FROM $t_req WHERE id = %d",
 			(int) $request_id
 		) );
 		if ( ! $r || '' === (string) $r->phone_current ) {
@@ -1413,14 +1413,41 @@ class AUN_App_Services {
 		}
 
 		$labels = class_exists( 'AUN_SP_Requests' ) ? AUN_SP_Requests::overall_statuses() : array();
+		$reason = 'waiting_customer' === (string) $status ? (string) ( $r->photo_reason ?? '' ) : '';
 		AUN_App_Notices::parts_status_changed(
 			(int) $users[0]->ID,
 			(string) $r->ref,
 			(string) $status,
 			(string) ( $labels[ $status ] ?? $status ),
 			(float) $r->quote_total,
-			(string) ( $r->quoted_at ?? '' )
+			// The quote round for a quote; the ASK for a photo — see the dedup
+			// note in parts_status_changed().
+			'waiting_customer' === (string) $status
+				? self::photo_ask_round( (int) $request_id )
+				: (string) ( $r->quoted_at ?? '' ),
+			$reason
 		);
+	}
+
+	/**
+	 * A key that changes once per "send the photo back", and only then.
+	 *
+	 * The ask's own event id. `updated_at` would have been the easy answer and
+	 * the wrong one: an admin editing a price while waiting bumps it, and the
+	 * customer would be pushed a second time about a photo they already know
+	 * about. '' when there is no ask on record (nothing to distinguish).
+	 *
+	 * @param int $request_id Spare-parts request id.
+	 * @return string
+	 */
+	public static function photo_ask_round( $request_id ) {
+		global $wpdb;
+		$id = (int) $wpdb->get_var( $wpdb->prepare(
+			'SELECT MAX(id) FROM ' . AUN_SP_Install::table( 'events' ) . ' WHERE request_id = %d AND type = %s',
+			(int) $request_id,
+			'photo_request'
+		) );
+		return $id > 0 ? 'ask:' . $id : '';
 	}
 
 	/**
@@ -1555,12 +1582,20 @@ class AUN_App_Services {
 						(string) $r->overall_status,
 						(string) ( $ov[ $r->overall_status ] ?? $r->overall_status ),
 						(float) $r->quote_total,
-						(string) ( $r->quoted_at ?? '' )
+						// Must match the hook's key exactly, or this safety net
+						// would re-notify what the hook already sent (or, worse,
+						// swallow a second ask the hook meant to send).
+						'waiting_customer' === (string) $r->overall_status
+							? self::photo_ask_round( (int) $r->id )
+							: (string) ( $r->quoted_at ?? '' ),
+						'waiting_customer' === (string) $r->overall_status
+							? (string) ( $r->photo_reason ?? '' )
+							: ''
 					);
 				}
 
 				$items = $wpdb->get_results(
-					$wpdb->prepare( "SELECT id, part_label, qty, line_status, eta, unit_price, tracking_no FROM $t_item WHERE request_id = %d", $r->id )
+					$wpdb->prepare( "SELECT id, part_type, part_label, qty, line_status, eta, unit_price, tracking_no FROM $t_item WHERE request_id = %d", $r->id )
 				);
 				$req_photos = $photos[ (int) $r->id ] ?? array();
 
@@ -1599,7 +1634,11 @@ class AUN_App_Services {
 						'reupload', 'payment', 'refund' );
 				$ph_ev    = implode( ',', array_fill( 0, count( $allowed ), '%s' ) );
 				$events   = $wpdb->get_results( $wpdb->prepare(
-					"SELECT type, message, created_at FROM $t_event
+					// `new_value` carries the photo reason KEY (spare parts 0.46.0).
+					// The stored message cannot be shown to a customer — see the
+					// re-wording below — and a key is the only thing that can be
+					// translated after the fact.
+					"SELECT type, message, new_value, created_at FROM $t_event
 					 WHERE request_id = %d AND type IN ($ph_ev)
 					 ORDER BY id ASC LIMIT 40",
 					array_merge( array( $r->id ), $allowed )
@@ -1611,7 +1650,35 @@ class AUN_App_Services {
 					// WooCommerce order ("Online payment received for order #9275"),
 					// which exposes shop order numbers and reads like our plumbing.
 					$text = (string) $e->message;
-					if ( 'payment' === $e->type || 'refund' === $e->type ) {
+					// ⚠️ A photo sent back is stored as INTERNAL English: the admin's own
+					// dropdown label, the part name, and their private note quoted back
+					// ("Asked for a new photo — Wrong part photographed (Remote control):
+					// the photo shows the power board"). Printing it put all of that in
+					// front of the customer, untranslated, and called them wrong in words
+					// written for us. The reason KEY is on the event, so it can be said
+					// properly instead — the same re-wording the website tracker does.
+					if ( 'photo_request' === $e->type ) {
+						$pr   = method_exists( 'AUN_SP_Requests', 'photo_reason_text' )
+							? AUN_SP_Requests::photo_reason_text( (string) ( $e->new_value ?? '' ), $lang )
+							: array( 'what' => '' );
+						$text = ( '' !== trim( (string) $pr['what'] ) && class_exists( 'AUN_SP_I18N' ) )
+							? AUN_SP_I18N::msg( 'tl_photo_ask', array( 'reason' => $pr['what'] ), $lang )
+							: ( class_exists( 'AUN_SP_I18N' ) ? AUN_SP_I18N::msg( 'tl_photo_ask_plain', array(), $lang ) : '' );
+						// An older plugin has neither string, and msg() answers '' for a
+						// slug it does not know. Say the plain fact rather than nothing —
+						// and never fall back to the internal message.
+						if ( '' === trim( $text ) ) {
+							$text = 'We asked you for a new photo.';
+						}
+					} elseif ( 'reupload' === $e->type ) {
+						// Stored as "Customer re-uploaded a photo" — written for the admin
+						// list, so the customer was reading about themselves in the third
+						// person, in English.
+						$text = class_exists( 'AUN_SP_I18N' ) ? AUN_SP_I18N::msg( 'tl_photo_sent', array(), $lang ) : '';
+						if ( '' === trim( $text ) ) {
+							$text = 'You sent us a new photo.';
+						}
+					} elseif ( 'payment' === $e->type || 'refund' === $e->type ) {
 						$is_pay = ( 'payment' === $e->type );
 						$amount = 0.0;
 						if ( $is_pay ) {
@@ -1662,9 +1729,19 @@ class AUN_App_Services {
 
 				$spare[] = array(
 					'ref'          => (string) $r->ref,
-					// Latest photo re-sent after we asked for a clearer one. Re-uploads
-					// are not tied to one part (item_id 0), so it belongs to the request.
-					'resent_photo' => (string) ( $req_photos[0] ?? '' ),
+					// Why we sent their photo back, in their own language (spare parts
+					// 0.45.0). null unless we are actually waiting on a photo.
+					//
+					// Without this the app could only show "Waiting on you", which fixes
+					// a blurry photo and does nothing whatever when the customer
+					// photographed the wrong part — they send the same part again,
+					// sharper, and the request bounces twice.
+					'photo_ask'    => self::photo_ask( $r, $req_photos, $lang ),
+					// The photo they re-sent after we asked. A TARGETED re-upload is
+					// filed against its part, so it is already on screen as that part's
+					// thumbnail — sending it again here drew the same image twice and
+					// downloaded it twice on a phone.
+					'resent_photo' => self::resent_photo( $req_photos, (array) $items ),
 					'model'        => (string) $r->model,
 					// The projector this was raised against. The app needs it to
 					// tell the customer "you already have a request for THIS
@@ -1767,7 +1844,7 @@ class AUN_App_Services {
 						)
 					),
 					'timeline'     => $timeline,
-					'items'        => array_map( function ( $i ) use ( $ist, $req_photos ) {
+					'items'        => array_map( function ( $i ) use ( $ist, $req_photos, $r ) {
 						// `price` is PER PIECE (the website quotes it that way),
 						// so the app is also given the line total — otherwise a
 						// customer ordering 3 sees one piece's price next to a
@@ -1797,6 +1874,14 @@ class AUN_App_Services {
 							'tracking_url' => self::courier_tracking_url( (string) $i->tracking_no ),
 							// The photo the customer sent for this part ('' if none).
 							'photo'        => (string) ( $req_photos[ (int) $i->id ] ?? '' ),
+							// The one part whose photo we sent back, so the app can mark
+							// the row the request is about instead of leaving the customer
+							// to guess which of three photos was wrong.
+							'needs_photo'  => ( 'waiting_customer' === (string) $r->overall_status
+								&& (int) ( $r->photo_item_id ?? 0 ) === (int) $i->id ),
+							// The catalogue's example photo for this part — "what we need
+							// instead", shown beside what they actually sent.
+							'ref_image'    => self::part_ref_image( (string) ( $i->part_type ?? '' ) ),
 						);
 					}, (array) $items ),
 				);
@@ -1895,6 +1980,246 @@ class AUN_App_Services {
 	}
 
 	/**
+	 * The catalogue's example photo for a part key ('' when there is none).
+	 *
+	 * @param string $key Part key (request_items.part_type).
+	 * @return string
+	 */
+	private static function part_ref_image( $key ) {
+		$key = trim( (string) $key );
+		if ( '' === $key || ! class_exists( 'AUN_SP_Parts' ) ) {
+			return '';
+		}
+		$cat = AUN_SP_Parts::get( $key );
+		return ( is_array( $cat ) && ! empty( $cat['ref_image'] ) ) ? (string) $cat['ref_image'] : '';
+	}
+
+	/**
+	 * What we told the customer was wrong with their photo — reason, fix, our
+	 * note, and the part it concerns, all ready to show.
+	 *
+	 * ⚠️ The wording comes from the PLUGIN's translations catalogue
+	 * (AUN_SP_Requests::photo_reason_text), never from strings kept here: the
+	 * shop edits those sentences in Translations, and the app must say exactly
+	 * what the website says. `$lang` is the app's own language.
+	 *
+	 * null when we are not waiting, when no reason was recorded (an older
+	 * plugin, or a status set by hand), or when the plugin is too old to know
+	 * the reason codes — the app then falls back to the plain status label
+	 * instead of showing an empty box.
+	 *
+	 * @param object $r          Request row.
+	 * @param array  $req_photos item_id => url for this request.
+	 * @param string $lang       App language.
+	 * @return array|null
+	 */
+	private static function photo_ask( $r, $req_photos, $lang = null ) {
+		if ( 'waiting_customer' !== (string) $r->overall_status
+			|| ! method_exists( 'AUN_SP_Requests', 'photo_reason_text' ) ) {
+			return null;
+		}
+		$key = (string) ( $r->photo_reason ?? '' );
+		if ( '' === $key ) {
+			return null;
+		}
+		$text = AUN_SP_Requests::photo_reason_text( $key, $lang );
+		if ( '' === trim( (string) $text['what'] ) ) {
+			return null;
+		}
+
+		global $wpdb;
+		$item_id = (int) ( $r->photo_item_id ?? 0 );
+		$part    = '';
+		$ref_img = '';
+		if ( $item_id > 0 ) {
+			$row = $wpdb->get_row( $wpdb->prepare(
+				'SELECT part_label, part_type FROM ' . AUN_SP_Install::table( 'request_items' ) . ' WHERE id = %d AND request_id = %d',
+				$item_id,
+				(int) $r->id
+			) );
+			if ( $row ) {
+				$part    = (string) $row->part_label;
+				$ref_img = self::part_ref_image( (string) $row->part_type );
+			} else {
+				// The line was deleted after the ask. Keep the reason (it is still
+				// true) and drop the part, rather than naming a part that is gone.
+				$item_id = 0;
+			}
+		}
+
+		return array(
+			'reason'    => $key,
+			'what'      => (string) $text['what'],
+			'how'       => (string) $text['how'],
+			// The admin's own words, shown verbatim — they are written TO the
+			// customer, unlike the log line they sit in.
+			'note'      => (string) ( $r->photo_note ?? '' ),
+			'item_id'   => $item_id,
+			'part'      => $part,
+			// Their photo and ours, side by side: the comparison is what stops a
+			// second photo coming back with the same fault as the first.
+			'photo'     => (string) ( $item_id > 0 ? ( $req_photos[ $item_id ] ?? '' ) : '' ),
+			'ref_image' => $ref_img,
+		);
+	}
+
+	/**
+	 * The re-sent photo, but only when it is not already on screen as a part's
+	 * thumbnail. Mirrors AUN_SP_Tracking::resent_photo().
+	 *
+	 * @param array $req_photos item_id => url (plus 'resent').
+	 * @param array $items      Request items.
+	 * @return string
+	 */
+	private static function resent_photo( $req_photos, $items ) {
+		$url = (string) ( $req_photos['resent'] ?? ( $req_photos[0] ?? '' ) );
+		if ( '' === $url ) {
+			return '';
+		}
+		foreach ( (array) $items as $i ) {
+			if ( isset( $req_photos[ (int) $i->id ] ) && $req_photos[ (int) $i->id ] === $url ) {
+				return '';
+			}
+		}
+		return $url;
+	}
+
+	/**
+	 * The customer sends the new photo from the APP.
+	 *
+	 * ⚠️ Mirrors AUN_SP_Tracking::ajax_reupload() (spare parts 0.47.1) rule for
+	 * rule — it is an AJAX handler tied to $_POST/$_FILES and a page nonce, so
+	 * it cannot be called, only matched. The rules that matter:
+	 *  • the file is validated BEFORE the claim, so a rejected file never flips
+	 *    the request out of "waiting" and back;
+	 *  • the claim is one conditional UPDATE, which caps the customer to ONE
+	 *    upload per ask and makes a closed request unuploadable-to;
+	 *  • a failed move restores the reason as well as the status, so they still
+	 *    see what was wrong;
+	 *  • the photo is filed against the part it was asked for, replacing the one
+	 *    it corrects.
+	 *
+	 * @param string $canonical Caller's phone.
+	 * @param int    $user_id   Caller's account.
+	 * @param string $ref       Request reference.
+	 * @param array  $file      $_FILES-shaped entry.
+	 * @return array {ok, code, message}
+	 */
+	public static function resend_parts_photo( $canonical, $user_id, $ref, $file ) {
+		global $wpdb;
+
+		if ( ! self::parts_available() ) {
+			return array( 'ok' => false, 'code' => 'unavailable', 'message' => 'Spare parts are not available right now.' );
+		}
+		$ref = strtoupper( trim( (string) $ref ) );
+		if ( '' === $ref || empty( $file ) || empty( $file['name'] ) ) {
+			return array( 'ok' => false, 'code' => 'no_photo', 'message' => 'Please choose a photo first.' );
+		}
+
+		// Theirs, or nobody's. The website finds a request by reference alone
+		// (the link itself is the secret); the app has an account, so the phone
+		// must match — a reference typed or guessed by someone else gets nothing.
+		$t_req    = AUN_SP_Install::table( 'requests' );
+		$variants = AUN_App_Phone::variants( (string) $canonical );
+		$ph       = implode( ',', array_fill( 0, count( $variants ), '%s' ) );
+		$req      = $wpdb->get_row( $wpdb->prepare(
+			"SELECT * FROM $t_req WHERE ref = %s AND ( phone_current IN ($ph) OR phone_onfile IN ($ph) ) LIMIT 1",
+			array_merge( array( $ref ), $variants, $variants )
+		) );
+		if ( ! $req ) {
+			return array( 'ok' => false, 'code' => 'not_found', 'message' => 'We could not find that request.' );
+		}
+
+		// Validate BEFORE claiming — see the note above.
+		$err = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+		if ( UPLOAD_ERR_INI_SIZE === $err || UPLOAD_ERR_FORM_SIZE === $err || (int) ( $file['size'] ?? 0 ) > 8 * 1024 * 1024 ) {
+			return array( 'ok' => false, 'code' => 'too_large', 'message' => 'That photo is too large. Please send a smaller one.' );
+		}
+		if ( UPLOAD_ERR_OK !== $err || empty( $file['tmp_name'] ) ) {
+			return array( 'ok' => false, 'code' => 'bad_file', 'message' => 'That file is not a photo we can read.' );
+		}
+		$type = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], array(
+			'jpg|jpeg' => 'image/jpeg',
+			'png'      => 'image/png',
+			'webp'     => 'image/webp',
+		) );
+		if ( empty( $type['ext'] ) || empty( $type['type'] ) ) {
+			return array( 'ok' => false, 'code' => 'bad_file', 'message' => 'That file is not a photo we can read.' );
+		}
+
+		// The part this photo was asked for, captured BEFORE the claim clears it.
+		$target  = (int) ( $req->photo_item_id ?? 0 );
+		$claimed = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $t_req SET overall_status = 'in_progress', photo_reason = '', photo_note = '', photo_item_id = 0, updated_at = %s
+			 WHERE id = %d AND overall_status = 'waiting_customer'",
+			current_time( 'mysql' ),
+			(int) $req->id
+		) );
+		if ( ! $claimed ) {
+			return array( 'ok' => false, 'code' => 'not_waiting', 'message' => 'Thanks — we already have your photo.' );
+		}
+
+		$url = self::store_upload( $file, 'aun-spare-parts' );
+		if ( '' === $url ) {
+			// Put the ask back, reason and all, so they can try again and still
+			// see what was wrong with the first one.
+			$wpdb->update( $t_req, array(
+				'overall_status' => 'waiting_customer',
+				'photo_reason'   => (string) ( $req->photo_reason ?? '' ),
+				'photo_note'     => (string) ( $req->photo_note ?? '' ),
+				'photo_item_id'  => $target,
+				'updated_at'     => current_time( 'mysql' ),
+			), array( 'id' => (int) $req->id ) );
+			return array( 'ok' => false, 'code' => 'upload_failed', 'message' => 'That photo could not be saved. Please try again.' );
+		}
+
+		// The size BEFORE compression, like the website's handler stores — the
+		// admin's compression report subtracts the two, and a missing original
+		// reads as "saved 0%" for every photo the app ever sent.
+		$path  = method_exists( 'AUN_SP_Image', 'url_to_path' ) ? AUN_SP_Image::url_to_path( $url ) : '';
+		$bytes = ( '' !== $path && is_file( $path ) ) ? (int) filesize( $path ) : 0;
+		$wpdb->insert( AUN_SP_Install::table( 'attachments' ), array(
+			'request_id'   => (int) $req->id,
+			// Filed against the part it corrects, so it replaces that part's
+			// thumbnail instead of appearing as a loose extra photo.
+			'item_id'      => $target,
+			'kind'         => 'reupload',
+			'file_url'     => esc_url_raw( $url ),
+			'bytes_before' => $bytes,
+			'created_at'   => current_time( 'mysql' ),
+		) );
+		$wpdb->insert( AUN_SP_Install::table( 'events' ), array(
+			'request_id' => (int) $req->id,
+			'item_id'    => $target,
+			'type'       => 'reupload',
+			// Internal wording, like the website's. The customer's timeline
+			// re-words it — see the photo events above.
+			'message'    => 'Customer re-uploaded a photo (app)',
+			'by_user'    => 'customer',
+			'created_at' => current_time( 'mysql' ),
+		) );
+
+		// Same compression queue the website and the request form use, so an app
+		// photo is not the one 9 MB file in the folder.
+		if ( method_exists( 'AUN_SP_Image', 'queue' ) ) {
+			AUN_SP_Image::queue( (int) $req->id );
+		}
+
+		// The shop is watching for this — it is the thing blocking the quote.
+		$to = get_option( 'aun_sp_alert_email', get_option( 'admin_email' ) );
+		if ( is_email( $to ) ) {
+			wp_mail(
+				$to,
+				'New photo on ' . $ref,
+				(string) $req->customer_name . " re-uploaded a photo for {$ref} (from the app).\n\n"
+					. admin_url( 'admin.php?page=aun-sp&request=' . (int) $req->id )
+			);
+		}
+
+		return array( 'ok' => true, 'code' => '', 'message' => 'Thank you — we have your new photo.' );
+	}
+
+	/**
 	 * The customer's own photos: request_id => [ item_id => url ].
 	 * Key 0 holds the latest re-sent photo (re-uploads are not tied to one part).
 	 *
@@ -1917,7 +2242,7 @@ class AUN_App_Services {
 		}
 		$t    = AUN_SP_Install::table( 'attachments' );
 		// Integers only (intval above), so they are safe to inline.
-		$rows = $wpdb->get_results( "SELECT request_id, item_id, file_url FROM $t WHERE request_id IN (" . implode( ',', $ids ) . ') ORDER BY id ASC' );
+		$rows = $wpdb->get_results( "SELECT request_id, item_id, kind, file_url FROM $t WHERE request_id IN (" . implode( ',', $ids ) . ') ORDER BY id ASC' );
 		$dir  = DIRECTORY_SEPARATOR . 'aun-spare-parts' . DIRECTORY_SEPARATOR;
 		$out  = array();
 		foreach ( (array) $rows as $row ) {
@@ -1925,8 +2250,17 @@ class AUN_App_Services {
 			if ( '' === $path || false === strpos( $path, $dir ) ) {
 				continue;
 			}
+			$url = esc_url_raw( $row->file_url );
+			$rid = (int) $row->request_id;
 			// Oldest first, so a later photo for the same slot wins.
-			$out[ (int) $row->request_id ][ (int) $row->item_id ] = esc_url_raw( $row->file_url );
+			$out[ $rid ][ (int) $row->item_id ] = $url;
+			// A re-upload aimed at a specific part now carries that part's item_id
+			// (spare parts 0.46.0), so it lands in the slot above and replaces the
+			// photo it was sent to correct. Track it here too, or "the new photo you
+			// sent" would only ever appear for the untargeted case.
+			if ( 'reupload' === (string) ( $row->kind ?? '' ) ) {
+				$out[ $rid ]['resent'] = $url;
+			}
 		}
 		return $out;
 	}

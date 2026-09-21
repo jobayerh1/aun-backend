@@ -24,8 +24,14 @@ function breo_bd_settings_fields() {
 		'Business details' => array(
 			'company'  => array( 'Company / legal name', 'text', 'Used in the footer, Terms and Privacy Policy. Empty = "Breo Bangladesh".' ),
 			'address'  => array( 'Office / service address', 'text', 'Shown on Contact, Warranty and policy pages. Empty = hidden.' ),
+			'maps'     => array( 'Google Maps link', 'url', 'Your Google Business Profile link (Share → Copy link), e.g. https://maps.app.goo.gl/xxxx . Used on the Contact page, in the footer and in the store search-engine data.' ),
 			'phone'    => array( 'Phone (display)', 'text', 'e.g. +880 1X XXXX XXXX' ),
 			'whatsapp' => array( 'WhatsApp number', 'text', 'With country code, digits only, e.g. 8801XXXXXXXXX. Empty = no WhatsApp buttons.' ),
+			'email_design' => array( 'Breo email design', 'check', 'Send WooCommerce emails (order confirmations, updates, invoices) in the Breo design. Untick to go back to the plain WooCommerce emails.' ),
+			'wa_float' => array( 'Floating WhatsApp button', 'check', 'Show the round WhatsApp button in the bottom-right corner of every page. The WhatsApp buttons on product pages and in the footer stay either way.' ),
+			'media_webp' => array( 'Import images as WebP', 'check', 'Convert every photo to WebP as it is imported. WebP files are around 70% smaller than JPEG or PNG at the same quality, so pages load faster on mobile data.' ),
+			'wa_header' => array( 'WhatsApp icon in the header', 'check', 'Show the WhatsApp icon in the top menu bar, and the Chat on WhatsApp button inside the phone menu.' ),
+			'messenger' => array( 'Facebook Messenger', 'text', 'Your Facebook Page username (the part after facebook.com/), or paste the Page link. Adds a Messenger button next to WhatsApp on product pages. Empty = hidden.' ),
 			'email'    => array( 'Email', 'text', '' ),
 			'hours'    => array( 'Support hours', 'text', '' ),
 		),
@@ -66,34 +72,81 @@ function breo_bd_find_attachment( $sig ) {
 	return $q ? (int) $q[0] : 0;
 }
 
+/** WebP is on unless switched off, and only if this server's image library can write it. */
+function breo_bd_webp_on() {
+	static $ok = null;
+	if ( null === $ok ) {
+		$ok = function_exists( 'imagewebp' )
+			|| ( class_exists( 'Imagick' ) && in_array( 'WEBP', array_map( 'strtoupper', Imagick::queryFormats() ), true ) );
+	}
+	return $ok && 'no' !== breo_bd_opt( 'media_webp' );
+}
+
+/** Rewrites a downloaded JPEG/PNG as WebP. Returns the new path, or '' if it couldn't. */
+function breo_bd_to_webp( $path ) {
+	$ed = wp_get_image_editor( $path );
+	if ( is_wp_error( $ed ) || ! $ed->supports_mime_type( 'image/webp' ) ) {
+		return '';
+	}
+	$ed->set_quality( 82 );
+	$saved = $ed->save( $path . '.webp', 'image/webp' );
+	if ( is_wp_error( $saved ) || empty( $saved['path'] ) || ! file_exists( $saved['path'] ) ) {
+		return '';
+	}
+	@unlink( $path ); // phpcs:ignore
+	return $saved['path'];
+}
+
+/** True when an already-imported file should be fetched again because it isn't WebP yet. */
+function breo_bd_webp_replace( $id ) {
+	if ( empty( $GLOBALS['breo_bd_webp_force'] ) || ! breo_bd_webp_on() ) {
+		return false;
+	}
+	$file = get_attached_file( $id );
+	return $file && 'webp' !== strtolower( pathinfo( $file, PATHINFO_EXTENSION ) );
+}
+
 /** Download one media item into the Media Library (cropping it first if asked). */
-function breo_bd_import_media_item( $pid, $sku, $key, $spec ) {
-	$sig   = $spec['src'] . ( empty( $spec['crop'] ) ? '' : '#' . implode( ',', $spec['crop'] ) );
+function breo_bd_import_media_item( $pid, $sku, $key, $spec, $tries = 3 ) {
+	$sig   = ( ! empty( $spec['local'] ) ? 'local:' . $spec['local'] : $spec['src'] ) . ( empty( $spec['crop'] ) ? '' : '#' . implode( ',', $spec['crop'] ) );
 	$found = breo_bd_find_attachment( $sig );
-	if ( $found ) {
+	if ( $found && ! breo_bd_webp_replace( $found ) ) {
 		return $found;
 	}
+	$replacing = $found; // deleted once its WebP replacement is safely in place
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	require_once ABSPATH . 'wp-admin/includes/media.php';
 	require_once ABSPATH . 'wp-admin/includes/image.php';
 
-	$ext = strtolower( pathinfo( (string) wp_parse_url( $spec['src'], PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+	$ext = strtolower( pathinfo( ! empty( $spec['local'] ) ? $spec['local'] : (string) wp_parse_url( $spec['src'], PHP_URL_PATH ), PATHINFO_EXTENSION ) );
 	$ext = 'jpeg' === $ext ? 'jpg' : $ext;
 
-	// Breo's CDN is sometimes slow to answer from Bangladesh: allow 30 s to
-	// connect (WordPress default is 10 s) and retry twice before giving up.
-	$slow = function ( $handle ) {
-		curl_setopt( $handle, CURLOPT_CONNECTTIMEOUT, 30 ); // phpcs:ignore
-	};
-	add_action( 'http_api_curl', $slow );
-	for ( $try = 1; $try <= 3; $try++ ) {
-		$tmp = download_url( $spec['src'], 300 );
-		if ( ! is_wp_error( $tmp ) ) {
-			break;
+	// Breo's CDN (Alibaba edges) sometimes refuses the first connection: allow
+	// 20 s to connect (WordPress default is 10 s). The admin importer calls this
+	// with $tries = 1 and re-runs failed files in later passes, so no single
+	// request runs long enough to hit the host's time limit.
+	if ( ! empty( $spec['local'] ) ) {
+		// A file shipped inside the plugin (e.g. the manual illustration).
+		$tmp = wp_tempnam( basename( $spec['local'] ) );
+		if ( ! $tmp || ! @copy( BREO_BD_DIR . $spec['local'], $tmp ) ) { // phpcs:ignore
+			return new WP_Error( 'breo_local', 'Could not read ' . $spec['local'] );
 		}
-		sleep( 2 );
+	} else {
+		$slow = function ( $handle ) {
+			curl_setopt( $handle, CURLOPT_CONNECTTIMEOUT, 20 ); // phpcs:ignore
+		};
+		add_action( 'http_api_curl', $slow );
+		for ( $try = 1; $try <= $tries; $try++ ) {
+			$tmp = download_url( $spec['src'], 300 );
+			if ( ! is_wp_error( $tmp ) ) {
+				break;
+			}
+			if ( $try < $tries ) {
+				sleep( 3 * $try );
+			}
+		}
+		remove_action( 'http_api_curl', $slow );
 	}
-	remove_action( 'http_api_curl', $slow );
 	if ( is_wp_error( $tmp ) ) {
 		return $tmp;
 	}
@@ -111,6 +164,13 @@ function breo_bd_import_media_item( $pid, $sku, $key, $spec ) {
 			}
 		}
 	}
+	if ( breo_bd_webp_on() && in_array( $ext, array( 'jpg', 'png' ), true ) ) {
+		$webp = breo_bd_to_webp( $tmp );
+		if ( $webp ) {
+			$tmp = $webp;
+			$ext = 'webp';
+		}
+	}
 	$file = array(
 		'name'     => sanitize_file_name( 'breo-' . strtolower( $sku ) . '-' . str_replace( '_', '-', $key ) . '.' . $ext ),
 		'tmp_name' => $tmp,
@@ -123,6 +183,14 @@ function breo_bd_import_media_item( $pid, $sku, $key, $spec ) {
 	update_post_meta( $id, '_breo_src', $sig );
 	if ( ! empty( $spec['alt'] ) ) {
 		update_post_meta( $id, '_wp_attachment_image_alt', $spec['alt'] );
+	}
+	if ( $replacing ) {
+		// carry over anything the owner edited, then drop the old JPEG/PNG and its sizes
+		$old_alt = get_post_meta( $replacing, '_wp_attachment_image_alt', true );
+		if ( $old_alt && empty( $spec['alt'] ) ) {
+			update_post_meta( $id, '_wp_attachment_image_alt', $old_alt );
+		}
+		wp_delete_attachment( $replacing, true );
 	}
 	return (int) $id;
 }
@@ -160,6 +228,11 @@ function breo_bd_long_description( $d ) {
 		if ( ! empty( $s['items'] ) && 'cards' === $s['type'] ) {
 			foreach ( $s['items'] as $it ) {
 				$h .= '<h3>' . esc_html( $it[0] ) . '</h3><p>' . esc_html( $it[1] ) . '</p>';
+			}
+		}
+		if ( ! empty( $s['items'] ) && 'tiles' === $s['type'] ) {
+			foreach ( $s['items'] as $it ) {
+				$h .= '<h3>' . esc_html( $it[1] ) . '</h3><p>' . esc_html( $it[2] ) . '</p>';
 			}
 		}
 	}
@@ -230,8 +303,35 @@ add_action( 'wp_ajax_breo_bd_import_step', function () {
 		wp_send_json_error( 'Not allowed.' );
 	}
 	@set_time_limit( 300 ); // phpcs:ignore
-	$data = breo_bd_data();
+	$GLOBALS['breo_bd_webp_force'] = ! empty( $_POST['webp_force'] );
+	$data                          = breo_bd_data();
 	$sku  = isset( $_POST['sku'] ) ? sanitize_text_field( wp_unslash( $_POST['sku'] ) ) : '';
+
+	// Site graphics for the About / policy pages.
+	if ( 'site' === $sku ) {
+		$specs  = breo_bd_site_media();
+		$keys   = array_keys( $specs );
+		$offset = isset( $_POST['offset'] ) ? max( 0, (int) $_POST['offset'] ) : 0;
+		$map    = get_option( 'breo_bd_site_media', array() );
+		$map    = is_array( $map ) ? $map : array();
+		$errors = array();
+		$start  = microtime( true );
+		while ( $offset < count( $keys ) && ( microtime( true ) - $start ) < 20 ) {
+			$k = $keys[ $offset ];
+			if ( empty( $map[ $k ] ) || ! get_post( $map[ $k ] ) || breo_bd_webp_replace( $map[ $k ] ) ) {
+				$r = breo_bd_import_media_item( 0, 'site', $k, $specs[ $k ], 1 );
+				if ( is_wp_error( $r ) ) {
+					$errors[] = $k . ': ' . $r->get_error_message();
+				} else {
+					$map[ $k ] = $r;
+				}
+			}
+			$offset++;
+		}
+		update_option( 'breo_bd_site_media', $map, false );
+		$done = $offset >= count( $keys );
+		wp_send_json_success( array( 'phase' => $done ? 'done' : 'media', 'offset' => $offset, 'total' => count( $keys ), 'errors' => $errors, 'view' => breo_bd_page_url( 'about-breo' ) ) );
+	}
 	if ( ! isset( $data[ $sku ] ) ) {
 		wp_send_json_error( 'Unknown SKU.' );
 	}
@@ -266,7 +366,7 @@ add_action( 'wp_ajax_breo_bd_import_step', function () {
 	$start  = microtime( true );
 	while ( $offset < count( $keys ) && ( microtime( true ) - $start ) < 20 ) {
 		$k = $keys[ $offset ];
-		$r = breo_bd_import_media_item( $pid, $sku, $k, $d['media'][ $k ] );
+		$r = breo_bd_import_media_item( $pid, $sku, $k, $d['media'][ $k ], 1 );
 		if ( is_wp_error( $r ) ) {
 			$errors[] = $k . ': ' . $r->get_error_message();
 		} else {
@@ -381,6 +481,8 @@ function breo_bd_handle_post() {
 				$v = isset( $_POST['breo'][ $k ] ) ? wp_unslash( $_POST['breo'][ $k ] ) : ''; // phpcs:ignore
 				if ( 'url' === $f[1] ) {
 					$v = esc_url_raw( trim( $v ) );
+				} elseif ( 'check' === $f[1] ) {
+					$v = $v ? 'yes' : 'no';
 				} elseif ( 'num' === $f[1] ) {
 					$v = preg_replace( '/[^\d.\-–]/u', '', $v );
 				} else {
@@ -390,6 +492,14 @@ function breo_bd_handle_post() {
 			}
 		}
 		$s['whatsapp'] = preg_replace( '/\D+/', '', $s['whatsapp'] );
+		$s['maps']     = breo_bd_clean_maps_url( $s['maps'] );
+		// Accept a pasted Page link (facebook.com/breobd, m.me/breobd, profile.php?id=…) and keep just the Page name/ID.
+		$ms = trim( $s['messenger'] );
+		if ( preg_match( '/[?&]id=(\d+)/', $ms, $m ) ) {
+			$ms = $m[1];
+		}
+		$ms             = preg_replace( '~^(?:https?://)?(?:www\.|m\.|web\.)?(?:facebook\.com|fb\.com|m\.me)/~i', '', $ms );
+		$s['messenger'] = preg_replace( '/[^A-Za-z0-9.\-_]/', '', (string) strtok( $ms, '/?#' ) );
 		update_option( 'breo_bd_settings', $s );
 		$out[] = array( 'success', 'Settings saved. Every page and policy now uses them.' );
 	}
@@ -414,6 +524,20 @@ function breo_bd_handle_post() {
 			update_option( 'woocommerce_currency', 'BDT' );
 			update_option( 'woocommerce_price_num_decimals', '0' );
 			$out[] = array( 'success', 'Store currency set to Bangladeshi Taka (৳), no decimals.' );
+		}
+		if ( ! empty( $_POST['checkout_fields'] ) ) {
+			update_option( 'woocommerce_checkout_phone_field', 'required' );
+			update_option( 'woocommerce_checkout_company_field', 'hidden' );
+			$out[] = array( 'success', 'Checkout now requires a phone number (couriers need it) and hides the Company name field.' );
+		}
+		if ( ! empty( $_POST['site_icon'] ) ) {
+			$icon = breo_bd_import_media_item( 0, 'site', 'site-icon', array( 'local' => 'assets/icons/icon-512.png', 'alt' => 'Breo' ), 1 );
+			if ( is_wp_error( $icon ) ) {
+				$out[] = array( 'error', 'Favicon: ' . esc_html( $icon->get_error_message() ) );
+			} else {
+				update_option( 'site_icon', (int) $icon );
+				$out[] = array( 'success', 'Breo favicon set as the site icon (browser tab, bookmarks, phone home screen).' );
+			}
 		}
 		if ( ! empty( $_POST['samples'] ) ) {
 			foreach ( array( array( 'sample-page', 'page' ), array( 'hello-world', 'post' ) ) as $x ) {
@@ -456,7 +580,11 @@ function breo_bd_admin_page() {
 						<tr>
 							<th scope="row"><label for="breo-<?php echo esc_attr( $k ); ?>"><?php echo esc_html( $f[0] ); ?></label></th>
 							<td>
-								<input id="breo-<?php echo esc_attr( $k ); ?>" class="<?php echo 'num' === $f[1] ? 'small-text' : 'regular-text'; ?>" type="<?php echo 'url' === $f[1] ? 'url' : 'text'; ?>" name="breo[<?php echo esc_attr( $k ); ?>]" value="<?php echo esc_attr( $s[ $k ] ); ?>">
+								<?php if ( 'check' === $f[1] ) : ?>
+									<label><input id="breo-<?php echo esc_attr( $k ); ?>" type="checkbox" name="breo[<?php echo esc_attr( $k ); ?>]" value="yes" <?php checked( 'no' !== $s[ $k ] ); ?>> Show</label>
+								<?php else : ?>
+									<input id="breo-<?php echo esc_attr( $k ); ?>" class="<?php echo 'num' === $f[1] ? 'small-text' : 'regular-text'; ?>" type="<?php echo 'url' === $f[1] ? 'url' : 'text'; ?>" name="breo[<?php echo esc_attr( $k ); ?>]" value="<?php echo esc_attr( $s[ $k ] ); ?>">
+								<?php endif; ?>
 								<?php if ( $f[2] ) : ?><p class="description"><?php echo esc_html( $f[2] ); ?></p><?php endif; ?>
 							</td>
 						</tr>
@@ -488,9 +616,16 @@ function breo_bd_admin_page() {
 						<td class="breo-status"><?php echo $exp ? esc_html( sprintf( 'Imported · %d/%d media', $med, count( $d['media'] ) ) ) : 'Not imported'; ?></td>
 					</tr>
 				<?php endforeach; ?>
+					<?php $site_n = count( array_filter( (array) get_option( 'breo_bd_site_media', array() ) ) ); ?>
+					<tr data-sku="site">
+						<td><strong>Site graphics</strong> <span class="description">(About &amp; policy page photos)</span></td>
+						<td>—</td><td>—</td><td>—</td>
+						<td class="breo-status"><?php echo esc_html( sprintf( '%d/%d images', $site_n, count( breo_bd_site_media() ) ) ); ?></td>
+					</tr>
 				</tbody>
 			</table>
 			<p><label><input type="checkbox" id="breo-with-media" checked> Download photos &amp; videos (untick to only update prices and text)</label></p>
+			<p><label><input type="checkbox" id="breo-webp-force"> Re-download photos already imported as JPEG/PNG and replace them with WebP<?php echo breo_bd_webp_on() ? '' : ' <strong>(this server cannot write WebP)</strong>'; ?></label></p>
 			<p><button type="submit" class="button button-primary button-large" id="breo-import-btn">Import / update products</button></p>
 		</form>
 
@@ -502,7 +637,9 @@ function breo_bd_admin_page() {
 			<p><label><input type="checkbox" name="pages" value="1" checked> Create the pages: About Breo, Contact, FAQ, Warranty Policy, Shipping &amp; Delivery, Returns &amp; Refunds, Privacy Policy, Terms &amp; Conditions</label></p>
 			<p><label><input type="checkbox" name="make_home" value="1" <?php checked( ! $is_home ); ?>> Use the Breo homepage as the site's front page</label></p>
 			<p><label><input type="checkbox" name="terms" value="1" checked> Ask customers to accept the Terms &amp; Conditions at checkout</label></p>
-			<p><label><input type="checkbox" name="set_currency" value="1" <?php checked( 'BDT' !== get_option( 'woocommerce_currency' ) ); ?>> Set store currency to Taka (৳)</label></p>
+			<p><label><input type="checkbox" name="set_currency" value="1" <?php checked( 'BDT' !== get_option( 'woocommerce_currency' ) || '0' !== (string) get_option( 'woocommerce_price_num_decimals' ) ); ?>> Set store currency to Taka (৳) and show prices without decimals (৳10,000 instead of ৳10,000.00)</label></p>
+			<p><label><input type="checkbox" name="checkout_fields" value="1" <?php checked( 'required' !== get_option( 'woocommerce_checkout_phone_field' ) ); ?>> Checkout: make the phone number required (couriers need it) and hide the "Company name" field</label></p>
+			<p><label><input type="checkbox" name="site_icon" value="1" <?php checked( ! has_site_icon() ); ?>> Use the Breo logo as the site icon (favicon)</label></p>
 			<p><label><input type="checkbox" name="samples" value="1" checked> Move WordPress's "Sample Page" and "Hello world!" post to drafts</label></p>
 			<?php submit_button( 'Build site pages', 'primary large' ); ?>
 		</form>
@@ -526,11 +663,19 @@ function breo_bd_admin_page() {
 			e.preventDefault();
 			var btn = document.getElementById('breo-import-btn');
 			var media = document.getElementById('breo-with-media').checked ? '1' : '';
+			var force = document.getElementById('breo-webp-force').checked ? '1' : '';
 			var rows = Array.prototype.slice.call(form.querySelectorAll('tr[data-sku]'));
 			btn.disabled = true;
-			var failed = 0;
+			var failed = 0, pass = 1, errRows = [];
 			(function nextRow(i) {
 				if (i >= rows.length) {
+					// Re-run products whose files timed out (finished files are skipped).
+					if (errRows.length && pass < 3) {
+						rows = errRows; errRows = []; pass++; failed = 0;
+						rows.forEach(function (r) { r.querySelector('.breo-status').textContent = 'Some files timed out, retrying in a moment…'; });
+						setTimeout(function () { nextRow(0); }, 8000);
+						return;
+					}
 					btn.disabled = false;
 					btn.textContent = failed ? 'Retry import' : 'Import / update products';
 					return;
@@ -543,19 +688,20 @@ function breo_bd_admin_page() {
 						if (r.errors && r.errors.length) errs = errs.concat(r.errors);
 						if (r.phase === 'media') {
 							st.textContent = 'Downloading media ' + r.offset + ' / ' + r.total + '…';
-							return step({ sku: sku, phase: 'media', offset: r.offset });
+							return step({ sku: sku, phase: 'media', offset: r.offset, webp_force: force });
 						}
 						st.innerHTML = (errs.length ? '⚠ Done with ' + errs.length + ' media error(s)' : '✓ Done') + ' · <a target="_blank" href="' + r.view + '">view</a>';
 						st.style.color = errs.length ? '#b26200' : '#008a20';
-						if (errs.length) st.title = errs.join('\n');
+						if (errs.length) { st.title = errs.join('\n'); errRows.push(row); }
 					});
 				}
 				step({
-					sku: sku, phase: 'product', with_media: media,
-					regular: row.querySelector('[name=regular]').value,
-					sale: row.querySelector('[name=sale]').value
+					sku: sku, phase: 'product', with_media: media, webp_force: force,
+					regular: (row.querySelector('[name=regular]') || {}).value || '',
+					sale: (row.querySelector('[name=sale]') || {}).value || ''
 				}).catch(function (err) {
 					failed++;
+					errRows.push(row);
 					st.textContent = '✗ ' + err.message + ' (click Retry; finished files are kept)';
 					st.style.color = '#d63638';
 				}).then(function () { nextRow(i + 1); });

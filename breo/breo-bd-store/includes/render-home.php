@@ -40,15 +40,13 @@ function breo_bd_render_home() {
 						<div class="breo-wrap breo-slide__content">
 							<div class="breo-slide__in">
 								<p class="breo-hero__model"><?php echo breo_bd_logo( 'breo-logo--inline' ); // phpcs:ignore ?><span><?php echo esc_html( $d['short_name'] ); ?></span></p>
-								<?php if ( 0 === $n ) : ?>
-									<h1 class="breo-slide__title"><?php echo esc_html( $s['title'] ); ?></h1>
-								<?php else : ?>
-									<h2 class="breo-slide__title"><?php echo esc_html( $s['title'] ); ?></h2>
-								<?php endif; ?>
+								<h2 class="breo-slide__title"><?php echo esc_html( $s['title'] ); ?></h2>
 								<p class="breo-slide__text"><?php echo esc_html( $s['text'] ); ?></p>
 								<div class="breo-slide__btns">
 									<a class="breo-btn" href="<?php echo esc_url( $p->get_permalink() ); ?>">Learn more</a>
-									<a class="breo-btn breo-btn--ghost" href="<?php echo esc_url( $p->get_permalink() . '#buy' ); ?>"><?php echo esc_html( breo_bd_plain_price( $p ) ? 'Buy · ' . breo_bd_plain_price( $p ) : 'Buy now' ); ?></a>
+									<?php $buy = breo_bd_buy_url( $p ); if ( $buy ) : ?>
+										<a class="breo-btn breo-btn--ghost" href="<?php echo esc_url( $buy ); ?>" rel="nofollow"><?php echo esc_html( 'Buy now · ' . breo_bd_plain_price( $p ) ); ?></a>
+									<?php endif; ?>
 								</div>
 							</div>
 						</div>
@@ -73,7 +71,7 @@ function breo_bd_render_home() {
 		<section class="breo-s breo-popular">
 			<div class="breo-wrap">
 				<header class="breo-sec-head" data-reveal>
-					<p class="breo-eyebrow">Personalised relief</p>
+					<h1 class="breo-eyebrow breo-h1">Official Breo massagers in Bangladesh</h1>
 					<h2 class="breo-title">Where do you feel it?</h2>
 				</header>
 				<div class="breo-popular__grid">
