@@ -1,0 +1,78 @@
+/* Breo Social Login: sign-in buttons in the Breo look (warm neutrals, pill
+   buttons, charcoal focus). Sizing/shape come from CSS variables set by the
+   plugin (see class-breo-sl-ui.php). */
+
+.breo-sl{margin:22px 0 6px;clear:both;font-family:inherit;}
+.breo-sl-align-center{text-align:center;}
+.breo-sl-align-left{text-align:left;}
+.breo-sl-align-right{text-align:right;}
+
+/* "Or continue with" — a quiet caption between two hairlines */
+.breo-sl-title{display:flex;align-items:center;gap:14px;margin:0 0 16px;color:#8a857d;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;line-height:1;}
+.breo-sl-title:before,.breo-sl-title:after{content:"";flex:1;height:1px;background:#e8e2da;}
+.breo-sl-align-left .breo-sl-title:before,.breo-sl-align-right .breo-sl-title:after{display:none;}
+
+.breo-sl-buttons{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+
+/* Host for Google's OWN rendered button (FedCM needs it). Give it no size of its
+   own and let Google's button decide, or the icon gets clipped. */
+.breo-sl-gbtn{
+    display:inline-flex;align-items:center;justify-content:center;
+    flex:0 0 auto;line-height:0;overflow:visible;
+    width:auto;height:auto;max-width:none;max-height:none;
+}
+.breo-sl-gbtn iframe,.breo-sl-gbtn > div{max-width:none !important;}
+.breo-sl-align-center .breo-sl-buttons{justify-content:center;}
+.breo-sl-align-right .breo-sl-buttons{justify-content:flex-end;}
+
+.breo-sl-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:var(--breo-sl-size,46px);height:var(--breo-sl-size,46px);
+    border-radius:var(--breo-sl-radius,50%);
+    box-sizing:border-box;padding:0;border:1px solid transparent;
+    text-decoration:none !important;line-height:1;cursor:pointer;
+    box-shadow:0 1px 3px rgba(28,28,28,.08);
+    transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease;
+}
+.breo-sl-btn:hover,.breo-sl-btn:focus{transform:translateY(-1px);box-shadow:0 8px 18px rgba(28,28,28,.12);text-decoration:none !important;}
+
+/* When Google draws its own button beside ours the hovers must agree, and
+   Google's only shifts its background — so ours drops the lift then. */
+.breo-sl-native .breo-sl-btn:hover,.breo-sl-native .breo-sl-btn:focus{
+    transform:none;box-shadow:0 1px 3px rgba(28,28,28,.08);
+}
+.breo-sl-native .breo-sl-facebook:hover{background:#166FE5;}
+.breo-sl-native .breo-sl-btn:active{transform:none;}
+.breo-sl-btn:focus-visible{outline:2px solid #1c1c1c;outline-offset:3px;}
+.breo-sl-btn:active{transform:translateY(0);}
+
+/* Google keeps its white plate (brand rules); Facebook keeps its blue. */
+.breo-sl-google{background:#fff;border-color:#dadce0;}
+.breo-sl-google:hover{background:#f8f9fa;}
+.breo-sl-facebook{background:#1877F2;}
+.breo-sl-facebook:hover{background:#166FE5;}
+
+.breo-sl-ico{width:52%;height:52%;display:block;}
+
+/* Wide "Continue with …" buttons (Breo default) */
+.breo-sl-labelled .breo-sl-buttons{flex-direction:column;gap:10px;}
+.breo-sl-labelled .breo-sl-btn{
+    /* --breo-sl-gw is measured from Google's rendered button so ours matches it. */
+    width:var(--breo-sl-gw,100%);max-width:400px;
+    height:var(--breo-sl-size,46px);min-height:var(--breo-sl-size,46px);
+    padding:0 18px;gap:10px;border-radius:var(--breo-sl-radius-w,999px);
+    font-size:15px;font-weight:600;letter-spacing:.01em;
+}
+.breo-sl-align-center.breo-sl-labelled .breo-sl-buttons{align-items:center;}
+.breo-sl-labelled .breo-sl-ico{width:20px;height:20px;flex:none;}
+.breo-sl-labelled .breo-sl-gbtn{width:auto;align-self:center;}
+.breo-sl-labelled .breo-sl-google .breo-sl-btn-text{color:#1f1f1f;}
+.breo-sl-labelled .breo-sl-facebook .breo-sl-btn-text{color:#fff;}
+
+.breo-sl-error{margin-bottom:16px;}
+
+@media (max-width:480px){
+    .breo-sl-title{font-size:11px;gap:10px;}
+    .breo-sl-buttons{gap:10px;}
+    .breo-sl-labelled .breo-sl-btn{max-width:none;}
+}

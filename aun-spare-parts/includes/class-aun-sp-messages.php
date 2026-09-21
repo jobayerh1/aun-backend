@@ -47,7 +47,7 @@ class AUN_SP_Messages {
 			self::OPT_SMS_STATUS   => 'AUN: your spare-parts request {ref} is now "{status}". Track it: {track}',
 			self::OPT_SMS_PARTS    => 'AUN: update on your spare-parts request {ref} — {changes}. Track it: {track}',
 			self::OPT_SMS_REJECT   => 'AUN: update on your spare-parts request {ref}. {reason} {coupon}',
-			self::OPT_SMS_PHOTO    => 'AUN: the photo for request {ref} needs to be clearer. Please open the link, take it just like the example shown, and re-upload: {track}',
+			self::OPT_SMS_PHOTO    => 'AUN: {ref} needs a new photo. {reason} Re-upload: {track}',
 			// "Nothing is ordered until you approve" is the sentence that stops a quote
 			// going quiet — customers assume asking for the part was the whole job.
 			self::OPT_SMS_QUOTE    => 'AUN: your spare-parts quote for {ref} is ready - total Tk {total}. Nothing is ordered until you approve it here: {track} (valid until {expires})',

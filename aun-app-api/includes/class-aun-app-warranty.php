@@ -839,7 +839,26 @@ class AUN_App_Warranty {
 			$wpdb->delete( $t_regs, array( 'id' => $id ), array( '%d' ) );
 		}
 		$wpdb->update( self::t_serials(), array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
+		// A removed registration that was still being checked leaves the
+		// admin's queue — the badge has to know.
+		self::flush_admin_badge();
 		return true;
+	}
+
+	/**
+	 * Clear the admin toolbar's "needs a human" badge.
+	 *
+	 * ⚠️ The warranty plugin calls slb_flush_manual_counts() at every one of its
+	 * own write sites (2.9.0). The app writes the SAME rows — a registration
+	 * awaiting review, or one removed by its owner — so without this the badge
+	 * kept a count up to a minute old whenever the customer, rather than the
+	 * admin, was the one who changed something. Guarded: the app-api is usable
+	 * on a site whose warranty plugin is older than 2.9.0.
+	 */
+	private static function flush_admin_badge() {
+		if ( function_exists( 'slb_flush_manual_counts' ) ) {
+			slb_flush_manual_counts();
+		}
 	}
 
 	/**
@@ -1275,6 +1294,11 @@ class AUN_App_Warranty {
 				'code'         => 'already_registered',
 				'message'      => 'This serial number is already registered.',
 				'owned_by_you' => in_array( (string) $existing->phone, $variants, true ),
+				// ⚠️ WHICH state, because "already registered" is wrong for a
+				// registration staff REJECTED: the customer's own device list
+				// shows it as Rejected, and the scan and type paths already say
+				// so. Only the manual form still called it registered.
+				'status'       => (string) $existing->status,
 			);
 		}
 
@@ -1426,6 +1450,14 @@ class AUN_App_Warranty {
 			&& ! in_array( (string) $args['phone'], AUN_App_Phone::variants( $args['account_phone'] ), true ) ) {
 			$note .= ' — registered to ' . $args['phone'] . ' by the app account ' . $args['account_phone'];
 		}
+		// No box: this is the (shorter) number from the projector itself, which
+		// the sales records never hold — so staff match it against the invoice
+		// instead of hunting for a typo.
+		// Only while it IS a short number: a no-box customer who then found the
+		// full 12-digit serial must not leave staff a misleading note.
+		if ( ! empty( $args['no_box'] ) && strlen( $serial ) < 10 ) {
+			$note .= ' | Customer has no box — this serial is the number from the projector itself.';
+		}
 		$note .= $hold_note . $replaced_rejected . $corrected_note;
 		// $invoice_no and $invoice_file were validated + sanitised above.
 
@@ -1458,6 +1490,12 @@ class AUN_App_Warranty {
 		}
 
 		$reg_id = (int) $wpdb->insert_id;
+
+		// A registration the app just filed for review is one more row in the
+		// admin's queue; the badge caches its count for a minute.
+		if ( in_array( $status, array( 'pending', 'not_found', 'mismatch' ), true ) ) {
+			self::flush_admin_badge();
+		}
 
 		if ( 'approved' === $status && $serial_row ) {
 			$wpdb->update(

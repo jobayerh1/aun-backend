@@ -236,6 +236,21 @@
 .aun-sp-reupload-msg{display:block;margin-top:8px;font-size:13px;color:var(--aun-muted);}
 .aun-sp-reupload-exh{display:block;font-size:13px;font-weight:600;color:var(--aun-ink);margin:2px 0 8px;}
 .aun-sp-reupload-examples{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+/* Why the photo came back. The reason leads and is the largest thing in the box —
+   the upload button is useless to someone who doesn't know what to shoot. */
+.aun-sp-reupload-h{font-size:14px;line-height:1.45;}
+.aun-sp-reupload-how{font-size:13px;line-height:1.5;color:var(--aun-ink);margin:-2px 0 10px;}
+.aun-sp-reupload-note{font-size:13px;line-height:1.5;margin:0 0 10px;padding:8px 10px;border-left:3px solid var(--aun-blue);background:rgba(1,136,254,0.06);border-radius:0 6px 6px 0;}
+.aun-sp-reupload-part{font-size:13px;margin:0 0 8px;}
+.aun-sp-reupload-notel{display:block;font-weight:600;color:var(--aun-muted);font-size:12px;text-transform:uppercase;letter-spacing:.02em;margin-bottom:2px;}
+.aun-sp-reupload-part .aun-sp-reupload-notel{display:inline;margin-right:6px;text-transform:none;letter-spacing:0;font-size:13px;}
+/* Their photo beside the example: the comparison is the message, so the two sit
+   side by side at equal size and wrap to a column only when there is no room. */
+.aun-sp-reupload-compare{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.aun-sp-reupload-compare .aun-sp-refimg{flex:1 1 calc(50% - 6px);min-width:0;max-width:190px;}
+/* Two per row at EVERY width. A 130px basis wrapped them into a column on a
+   375px phone, which is where almost all of these are read - and a comparison
+   stacked vertically is no longer a comparison. */
 
 .aun-sp-quote{margin-top:12px;padding:14px 16px;border:1px solid var(--aun-blue);border-radius:12px;background:rgba(1,136,254,0.03);}
 .aun-sp-quote-h{font-size:14px;font-weight:700;color:var(--aun-ink);margin-bottom:10px;}

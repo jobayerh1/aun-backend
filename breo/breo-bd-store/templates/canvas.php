@@ -35,6 +35,9 @@ switch ( $breo_view ) {
 	case 'shop':
 		echo breo_bd_render_shop(); // phpcs:ignore WordPress.Security.EscapeOutput
 		break;
+	case '404':
+		echo breo_bd_render_404(); // phpcs:ignore WordPress.Security.EscapeOutput
+		break;
 }
 ?>
 </main>

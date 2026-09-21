@@ -13,8 +13,14 @@ function breo_bd_defaults() {
 	return array(
 		'company'               => '',
 		'address'               => '',
+		'maps'                  => '', // Google Business Profile / Maps link
 		'phone'                 => '',
 		'whatsapp'              => '',
+		'messenger'             => '',
+		'wa_float'              => 'yes', // floating WhatsApp button, bottom-right
+		'wa_header'             => 'yes', // WhatsApp icon in the header / mobile menu
+		'email_design'          => 'yes', // Breo design for WooCommerce emails
+		'media_webp'            => 'yes', // convert imported photos to WebP
 		'email'                 => '',
 		'hours'                 => 'Saturday to Thursday, except public holidays',
 		'facebook'              => '',
@@ -150,8 +156,14 @@ function breo_bd_media( $product, $key, $args = array() ) {
 		'decoding' => 'async',
 		'alt'      => isset( $spec['alt'] ) ? $spec['alt'] : ( $d ? $d['name'] : '' ),
 	);
-	if ( $focus ) {
-		$attr['style'] = 'object-position:' . $focus;
+	// Focal point as CSS variables: --fx (desktop) and --fxm (phones), so a wide
+	// photo can crop to the face on a tall phone screen.
+	$style = $focus ? '--fx:' . $focus . ';' : '';
+	if ( ! empty( $spec['focus_m'] ) ) {
+		$style .= '--fxm:' . $spec['focus_m'] . ';';
+	}
+	if ( $style ) {
+		$attr['style'] = $style;
 	}
 	if ( $args['sizes'] ) {
 		$attr['sizes'] = $args['sizes'];
@@ -165,6 +177,93 @@ function breo_bd_media( $product, $key, $args = array() ) {
 /* ------------------------------------------------------------------------
  * URLs
  * --------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------
+ * Site graphics (About / policy pages), imported like product media and
+ * stored in the option breo_bd_site_media: key => attachment id.
+ * --------------------------------------------------------------------- */
+
+function breo_bd_site_media() {
+	$u = 'https://us.breo.com/cdn/shop/files/';
+	return array(
+		'about_hero' => array( 'src' => $u . 'image_14_055d5204-6a87-42a9-b0f7-58c281361b22.jpg', 'alt' => 'Relaxing with a Breo neck massager', 'focus' => '50% 35%' ),
+		'tradition'  => array( 'src' => $u . 'image_13_a29d4a14-17af-44c9-bed8-9e13f91e0de7.jpg', 'alt' => 'Hands resting in calm meditation' ),
+		'ocean'      => array( 'src' => $u . 'Group_1775.jpg', 'alt' => 'A calm sea seen from above' ),
+		'fam_feet'   => array( 'src' => $u . '20250718-164224-min.jpg', 'alt' => 'Breo foot massager', 'focus' => '40% 70%' ),
+		'fam_head'   => array( 'src' => $u . '20250718-164227-min.jpg', 'alt' => 'Breo head massagers' ),
+		'fam_scalp'  => array( 'src' => $u . '20250718-164229-min.jpg', 'alt' => 'Breo scalp massager' ),
+		'fam_eyes'   => array( 'src' => $u . '20250718-164231-min.jpg', 'alt' => 'Breo eye massager' ),
+		'fam_neck'   => array( 'src' => $u . '1015.jpg', 'alt' => 'Breo neck massager' ),
+	);
+}
+
+function breo_bd_site_media_id( $key ) {
+	$m = get_option( 'breo_bd_site_media', array() );
+	return ( is_array( $m ) && ! empty( $m[ $key ] ) ) ? (int) $m[ $key ] : 0;
+}
+
+/** Image by reference: "site:key" or "SKU:key". */
+function breo_bd_img_ref( $ref, $args = array() ) {
+	$args = wp_parse_args( $args, array( 'size' => 'large', 'class' => '', 'loading' => 'lazy', 'sizes' => '' ) );
+	list( $scope, $key ) = array_pad( explode( ':', $ref, 2 ), 2, '' );
+	if ( 'site' !== $scope ) {
+		$ps = breo_bd_products();
+		return isset( $ps[ $scope ] ) ? breo_bd_media( $ps[ $scope ], $key, $args ) : '';
+	}
+	$id = breo_bd_site_media_id( $key );
+	if ( ! $id ) {
+		return '';
+	}
+	$spec = breo_bd_site_media();
+	$spec = isset( $spec[ $key ] ) ? $spec[ $key ] : array();
+	$attr = array( 'class' => trim( 'breo-img ' . $args['class'] ), 'loading' => $args['loading'], 'decoding' => 'async', 'alt' => isset( $spec['alt'] ) ? $spec['alt'] : '' );
+	if ( ! empty( $spec['focus'] ) ) {
+		$attr['style'] = '--fx:' . $spec['focus'];
+	}
+	if ( $args['sizes'] ) {
+		$attr['sizes'] = $args['sizes'];
+	}
+	return wp_get_attachment_image( $id, $args['size'], false, $attr );
+}
+
+/**
+ * The Google Maps link from the settings, expanded when possible.
+ *
+ * A "maps.app.goo.gl" short link carries no coordinates, so the setting screen
+ * resolves it once and keeps the long URL in breo_bd_maps_full.
+ */
+function breo_bd_maps_url( $long_first = false ) {
+	$set = breo_bd_opt( 'maps' );
+	if ( ! $set ) {
+		return '';
+	}
+	$full = (string) get_option( 'breo_bd_maps_full', '' );
+	return ( $long_first && $full ) ? $full : $set;
+}
+
+/** Latitude/longitude from a full Maps URL, or null. */
+function breo_bd_maps_geo() {
+	$url = (string) get_option( 'breo_bd_maps_full', '' );
+	$url = $url ? $url : breo_bd_opt( 'maps' );
+	if ( ! $url ) {
+		return null;
+	}
+	// "!3d23.7914212!4d90.3428254" is the place itself; "@lat,lng" is only the map centre.
+	if ( preg_match( '/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/', $url, $m ) || preg_match( '/@(-?\d+\.\d+),(-?\d+\.\d+)/', $url, $m ) ) {
+		return array( 'lat' => $m[1], 'lng' => $m[2] );
+	}
+	return null;
+}
+
+/** "Open in Maps" target: the saved profile when there is one, else a search for the address. */
+function breo_bd_maps_link() {
+	$url = breo_bd_maps_url();
+	if ( $url ) {
+		return $url;
+	}
+	$addr = breo_bd_opt( 'address' );
+	return $addr ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( $addr ) : '';
+}
 
 function breo_bd_page_url( $slug ) {
 	$p = get_page_by_path( $slug );
@@ -183,6 +282,32 @@ function breo_bd_whatsapp_url( $text = '' ) {
 	return 'https://wa.me/' . $num . ( $text ? '?text=' . rawurlencode( $text ) : '' );
 }
 
+/** m.me link to the Facebook Page inbox; $ref shows in the inbox which page the chat came from. */
+function breo_bd_messenger_url( $ref = '' ) {
+	$page = breo_bd_opt( 'messenger' );
+	if ( '' === $page ) {
+		return '';
+	}
+	return 'https://m.me/' . rawurlencode( $page ) . ( $ref ? '?ref=' . rawurlencode( $ref ) : '' );
+}
+
+/**
+ * Pages created by the companion plugins (Breo Live Tracking, Breo EMI Plans)
+ * render in the Breo page layout too; this maps such a page to its decor slug.
+ */
+function breo_bd_plugin_page_slug( $post ) {
+	$post = get_post( $post );
+	if ( ! $post || 'page' !== $post->post_type ) {
+		return '';
+	}
+	foreach ( array( 'breo_live_tracking' => 'track-order', 'breo_emi_calculator' => 'emi-plans' ) as $tag => $slug ) {
+		if ( has_shortcode( $post->post_content, $tag ) ) {
+			return $slug;
+		}
+	}
+	return '';
+}
+
 function breo_bd_tel( $phone ) {
 	return 'tel:' . preg_replace( '/[^\d+]/', '', $phone );
 }
@@ -190,6 +315,17 @@ function breo_bd_tel( $phone ) {
 function breo_bd_price_html( $p ) {
 	$h = $p ? $p->get_price_html() : '';
 	return $h ? $h : '<span class="breo-price-na">Price coming soon</span>';
+}
+
+/**
+ * "Buy now" link: adds one unit to the cart (unless it is already there) and
+ * opens checkout. Empty when the product can't be bought right now.
+ */
+function breo_bd_buy_url( $p ) {
+	if ( ! $p instanceof WC_Product || ! $p->is_purchasable() || ! $p->is_in_stock() ) {
+		return '';
+	}
+	return add_query_arg( 'breo-buy', $p->get_id(), home_url( '/' ) );
 }
 
 /** Current price as plain text ("৳11,990"), for buttons and labels. */
@@ -212,6 +348,8 @@ function breo_bd_icon( $name, $size = 22 ) {
 		'cash'    => '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/>',
 		'chat'    => '<path d="M4 5h16v11H9l-5 4z"/>',
 		'check'   => '<path d="M5 12l5 5L19 7"/>',
+		'expand'  => '<path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/>',
+		'doc'     => '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
 		'spark'   => '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',
 		'arrow'   => '<path d="M5 12h14M13 6l6 6-6 6"/>',
 		'chev'    => '<path d="M6 9l6 6 6-6"/>',
@@ -230,6 +368,8 @@ function breo_bd_icon( $name, $size = 22 ) {
 		'play'    => '<path d="M8 5v14l11-7z"/>',
 		'pause'   => '<path d="M8 5v14M16 5v14"/>',
 		'search'  => '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+		'lock'    => '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/>',
+		'tools'   => '<path d="M14.5 6.5a4 4 0 00-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 005.3-5.3l-2.4 2.4-2.6-.6-.6-2.6z"/>',
 	);
 	return '<svg class="breo-ico" viewBox="0 0 24 24" width="' . (int) $size . '" height="' . (int) $size . '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . ( isset( $p[ $name ] ) ? $p[ $name ] : '' ) . '</svg>';
 }
@@ -242,6 +382,7 @@ function breo_bd_social_icon( $name ) {
 		'instagram' => '<path d="M16 5.9c3.3 0 3.7 0 5 .1 3.3.1 4.9 1.7 5 5 .1 1.3.1 1.7.1 5s0 3.7-.1 5c-.1 3.3-1.7 4.9-5 5-1.3.1-1.7.1-5 .1s-3.7 0-5-.1c-3.3-.1-4.9-1.7-5-5-.1-1.3-.1-1.7-.1-5s0-3.7.1-5c.1-3.3 1.7-4.9 5-5 1.3-.1 1.7-.1 5-.1zM16 3.6c-3.4 0-3.8 0-5.1.1-4.5.2-7 2.7-7.2 7.2-.1 1.3-.1 1.7-.1 5.1s0 3.8.1 5.1c.2 4.5 2.7 7 7.2 7.2 1.3.1 1.7.1 5.1.1s3.8 0 5.1-.1c4.5-.2 7-2.7 7.2-7.2.1-1.3.1-1.7.1-5.1s0-3.8-.1-5.1c-.2-4.5-2.7-7-7.2-7.2-1.3-.1-1.7-.1-5.1-.1zm0 6a6.4 6.4 0 100 12.8 6.4 6.4 0 000-12.8zm0 10.5a4.1 4.1 0 110-8.2 4.1 4.1 0 010 8.2zm6.6-12.2a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>',
 		'youtube'   => '<path d="M29.4 9.5a3.5 3.5 0 00-2.5-2.5C24.7 6.4 16 6.4 16 6.4s-8.7 0-10.9.6a3.5 3.5 0 00-2.5 2.5A36 36 0 002 16a36 36 0 00.6 6.5 3.5 3.5 0 002.5 2.4c2.2.6 10.9.6 10.9.6s8.7 0 10.9-.6a3.5 3.5 0 002.5-2.4A36 36 0 0030 16a36 36 0 00-.6-6.5zM13.2 20V12l7.3 4z"/>',
 		'tiktok'    => '<path d="M22.5 4h-4.3v16.3a3.6 3.6 0 11-3.6-3.6c.4 0 .7 0 1 .1v-4.4a8 8 0 108 7.9v-8a10 10 0 005.7 1.8V9.8A5.8 5.8 0 0122.5 4z"/>',
+		'messenger' => '<path fill-rule="evenodd" d="M16 3C8.8 3 3 8.4 3 15.1c0 3.8 1.9 7.2 4.9 9.4V29l4.5-2.5c1.2.3 2.4.5 3.6.5 7.2 0 13-5.4 13-12S23.2 3 16 3zm1.3 16.2l-3.3-3.5-6.5 3.5 7.1-7.6 3.4 3.5 6.4-3.5z"/>',
 	);
 	return '<svg class="breo-ico breo-ico--fill" viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">' . ( isset( $p[ $name ] ) ? $p[ $name ] : '' ) . '</svg>';
 }

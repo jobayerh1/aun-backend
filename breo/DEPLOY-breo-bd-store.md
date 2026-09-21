@@ -1,4 +1,21 @@
-# Breo BD Store 2.0: install on breo.bd
+# Breo BD Store 2.2: install on breo.bd
+
+## Updating from 2.1 to 2.2
+1. Plugins → Add New → Upload → `breo-bd-store.zip` → **Replace current with uploaded**.
+2. Tools → Breo BD Setup → Step 1 → **Facebook Messenger**: your Facebook Page username → **Save settings**.
+
+What 2.2 adds: WhatsApp and Messenger buttons side by side on product pages; a Breo-styled My Account (login and dashboard, no Downloads tab); "Track Your Order" in the Support menu, footer and My Account once Breo Live Tracking is active; and the hook points the new Breo plugins use. Installing those plugins is covered in `DEPLOY-breo-plugins.md`.
+
+## Updating from 2.0 to 2.1
+1. Plugins → Add New → Upload → `breo-bd-store.zip` → **Replace current with uploaded**.
+2. Tools → Breo BD Setup → **Step 2: Import / update products** again. It only downloads the new files: box-content photos, About and policy page photos, and the manual image.
+3. **Step 3: Build site pages** again, with "Use the Breo logo as the site icon" ticked. Pages you edited yourself are left alone.
+4. Tick "show prices without decimals" in Step 3 if prices still show ".00".
+
+What 2.1 fixes: mobile cut-off on product pages; Buy now buttons (sticky bar, product hero, homepage) now go straight to checkout; image heroes and "at a glance" cards on every page; a richer About page; the favicon; real photos for box contents; no third-party emoji script; better text contrast.
+
+---
+
 
 Everything is in one plugin: `breo-bd-store.zip`. There's no HTML to paste. Every page is created for you.
 

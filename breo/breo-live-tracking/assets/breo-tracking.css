@@ -1,0 +1,106 @@
+/* Breo Live Tracking: Breo look (warm neutrals, charcoal pill button, orange progress).
+ * Everything is scoped under .breo-trk so page text styles (e.g. breo-bd-store's
+ * .breo-prose ol/li/h3/p) can't reshape the timeline or the cards. */
+.breo-trk, .breo-trk * { box-sizing: border-box; }
+.breo-trk {
+	--trk-ink: #1c1c1c; --trk-text: #262626; --trk-muted: #6f6a63; --trk-line: #e8e2da;
+	--trk-cream: #f7f2eb; --trk-accent: #e8692c; --trk-good: #1f8a4c; --trk-bad: #c2352f;
+	max-width: 720px; margin: 0 auto; font-family: inherit; line-height: 1.5; color: var(--trk-text);
+}
+.breo-trk p, .breo-trk h3, .breo-trk h4, .breo-trk ol, .breo-trk ul, .breo-trk li { margin: 0; padding: 0; }
+
+/* Search */
+.breo-trk .breo-trk__form { background: #fff; border: 1px solid var(--trk-line); border-radius: 22px; padding: clamp(18px, 3vw, 28px); box-shadow: 0 14px 40px rgba(28, 28, 28, .06); }
+.breo-trk .breo-trk__label { display: block; margin: 0 0 10px; font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--trk-muted); }
+.breo-trk .breo-trk__row { display: flex; gap: 10px; }
+.breo-trk .breo-trk__field { position: relative; flex: 1; display: flex; align-items: center; }
+.breo-trk .breo-trk__field .breo-trk-ico { position: absolute; left: 16px; color: var(--trk-muted); pointer-events: none; }
+.breo-trk .breo-trk__field input {
+	width: 100%; height: 52px; margin: 0; padding: 0 16px 0 46px; border: 1.5px solid var(--trk-line); border-radius: 999px;
+	background: var(--trk-cream); font: inherit; font-size: 16px; color: var(--trk-ink); box-shadow: none;
+	transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.breo-trk .breo-trk__field input:focus { outline: none; border-color: var(--trk-ink); background: #fff; box-shadow: 0 0 0 4px rgba(28, 28, 28, .08); }
+.breo-trk .breo-trk__btn {
+	flex: none; height: 52px; padding: 0 26px; border: 0; border-radius: 999px; background: var(--trk-ink); color: #fff;
+	font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .18s, transform .18s;
+}
+.breo-trk .breo-trk__btn:hover { background: #000; transform: translateY(-1px); }
+.breo-trk .breo-trk__btn:disabled { opacity: .6; cursor: wait; transform: none; }
+.breo-trk .breo-trk__btn:focus-visible { outline: 2px solid var(--trk-ink); outline-offset: 3px; }
+.breo-trk .breo-trk__hint { margin: 12px 4px 0; font-size: .86rem; color: var(--trk-muted); }
+
+.breo-trk .breo-trk__result:empty { display: none; }
+.breo-trk .breo-trk__result { margin-top: 18px; }
+
+/* Loading + notices */
+.breo-trk .breo-trk-loading { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-radius: 18px; background: var(--trk-cream); color: var(--trk-muted); }
+.breo-trk .breo-trk-loading span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--trk-line); border-top-color: var(--trk-ink); animation: breo-trk-spin .8s linear infinite; }
+@keyframes breo-trk-spin { to { transform: rotate(360deg); } }
+.breo-trk .breo-trk-note { padding: 14px 18px; border-radius: 16px; font-size: .95rem; }
+.breo-trk .breo-trk-note.is-error { background: #fdecec; color: #8f1d1b; border: 1px solid #f5c9c9; }
+
+/* Result */
+.breo-trk .breo-trk-res { background: #fff; border: 1px solid var(--trk-line); border-radius: 22px; padding: clamp(18px, 3vw, 30px); box-shadow: 0 14px 40px rgba(28, 28, 28, .06); }
+.breo-trk .breo-trk-res__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.breo-trk .breo-trk-res__eyebrow { margin: 0 0 4px; font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--trk-muted); }
+.breo-trk .breo-trk-res__status { margin: 0; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 600; line-height: 1.2; color: var(--trk-ink); }
+.breo-trk .breo-trk-res__id { margin: 10px 0 0; font-size: .92rem; color: var(--trk-muted); }
+.breo-trk .breo-trk-res__id strong { color: var(--trk-ink); font-weight: 600; letter-spacing: .02em; }
+.breo-trk .breo-trk-pill { flex: none; padding: 6px 14px; border-radius: 999px; font-size: .82rem; font-weight: 600; line-height: 1.3; background: #fdeee5; color: #a54616; }
+.breo-trk .breo-trk-pill.is-done { background: #e6f4ea; color: var(--trk-good); }
+.breo-trk .breo-trk-pill.is-bad { background: #fdecec; color: var(--trk-bad); }
+
+/* State card (no courier yet / API unavailable) */
+.breo-trk .breo-trk-state { display: flex; gap: 16px; align-items: flex-start; margin-top: 18px; padding: 18px 20px; border-radius: 18px; background: var(--trk-cream); }
+.breo-trk .breo-trk-state h3 { margin: 0 0 4px; font-size: 1.15rem; font-weight: 600; line-height: 1.3; color: var(--trk-ink); }
+.breo-trk .breo-trk-state p { margin: 0; color: var(--trk-muted); line-height: 1.55; }
+.breo-trk .breo-trk-state__ico { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #fff; color: var(--trk-accent); }
+.breo-trk .breo-trk-state.is-done .breo-trk-state__ico { color: var(--trk-good); }
+.breo-trk .breo-trk-state.is-bad .breo-trk-state__ico { color: var(--trk-bad); }
+
+/* Timeline */
+.breo-trk .breo-trk-steps { list-style: none; margin: 24px 0 0; padding: 0; }
+.breo-trk .breo-trk-steps li { position: relative; display: flex; gap: 16px; margin: 0; padding: 0 0 22px; }
+.breo-trk .breo-trk-steps li:last-child { padding-bottom: 0; }
+.breo-trk .breo-trk-steps li::before { content: ""; position: absolute; left: 19px; top: 42px; bottom: 2px; width: 2px; background: var(--trk-line); }
+.breo-trk .breo-trk-steps li:last-child::before { display: none; }
+.breo-trk .breo-trk-steps li.is-done::before { background: var(--trk-ink); }
+.breo-trk .breo-trk-steps__dot { position: relative; z-index: 1; flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #f1ede7; color: #a8a29a; }
+.breo-trk .breo-trk-steps__dot .breo-trk-ico { width: 18px; height: 18px; }
+.breo-trk .is-done .breo-trk-steps__dot { background: var(--trk-ink); color: #fff; }
+.breo-trk .is-current .breo-trk-steps__dot { background: var(--trk-accent); color: #fff; box-shadow: 0 0 0 6px rgba(232, 105, 44, .16); }
+.breo-trk .is-bad .breo-trk-steps__dot { background: var(--trk-bad); color: #fff; }
+.breo-trk .breo-trk-steps__txt { padding-top: 8px; display: flex; flex-direction: column; gap: 3px; line-height: 1.4; }
+.breo-trk .breo-trk-steps__txt strong { font-size: 1rem; font-weight: 600; color: var(--trk-ink); }
+.breo-trk .is-todo .breo-trk-steps__txt strong { color: #a8a29a; font-weight: 500; }
+.breo-trk .breo-trk-steps__txt span { font-size: .9rem; color: var(--trk-muted); }
+.breo-trk .breo-trk-steps__txt time { display: inline-flex; align-items: center; gap: 5px; width: fit-content; margin-top: 4px; padding: 3px 10px; border-radius: 999px; background: var(--trk-cream); font-size: .78rem; font-weight: 600; color: var(--trk-muted); }
+.breo-trk .breo-trk-steps__txt time .breo-trk-ico { width: 13px; height: 13px; }
+
+/* Detail cards */
+.breo-trk .breo-trk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 26px; }
+.breo-trk .breo-trk-card { padding: 18px 18px 16px; border-radius: 18px; background: var(--trk-cream); }
+.breo-trk .breo-trk-card h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: .95rem; font-weight: 600; color: var(--trk-ink); }
+.breo-trk .breo-trk-card h4 .breo-trk-ico { width: 18px; height: 18px; color: var(--trk-accent); }
+.breo-trk .breo-trk-card p { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0 0; font-size: .92rem; color: var(--trk-ink); }
+.breo-trk .breo-trk-card p span { color: var(--trk-muted); }
+.breo-trk .breo-trk-items { list-style: none; margin: 0 0 10px; padding: 0 0 10px; border-bottom: 1px solid var(--trk-line); }
+.breo-trk .breo-trk-items li { display: flex; gap: 8px; margin: 0 0 6px; padding: 0; font-size: .92rem; }
+.breo-trk .breo-trk-items__q { flex: none; font-weight: 700; color: var(--trk-accent); }
+.breo-trk .breo-trk-items a { color: var(--trk-ink); text-decoration: underline; text-decoration-color: var(--trk-line); text-underline-offset: 3px; }
+.breo-trk .breo-trk-items a:hover { text-decoration-color: currentColor; }
+.breo-trk .breo-trk-ext { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 12px 20px; border-radius: 999px; border: 1.5px solid var(--trk-ink); color: var(--trk-ink); font-weight: 600; text-decoration: none; transition: background .18s, color .18s; }
+.breo-trk .breo-trk-ext:hover { background: var(--trk-ink); color: #fff; }
+.breo-trk .breo-trk-ext .breo-trk-ico { width: 16px; height: 16px; }
+
+@media (max-width: 560px) {
+	.breo-trk .breo-trk__row { flex-direction: column; }
+	.breo-trk .breo-trk__btn { width: 100%; }
+	.breo-trk .breo-trk-grid { grid-template-columns: minmax(0, 1fr); }
+	.breo-trk .breo-trk-ext { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.breo-trk .breo-trk-loading span { animation-duration: 2s; }
+	.breo-trk .breo-trk__btn, .breo-trk .breo-trk-ext { transition: none; }
+}

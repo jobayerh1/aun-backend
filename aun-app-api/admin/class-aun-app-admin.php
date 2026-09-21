@@ -909,6 +909,9 @@ class AUN_App_Admin {
 					'url'         => (string) ( $_POST['url'] ?? '' ),
 					'version'     => (string) ( $_POST['version'] ?? '' ),
 					'file_size'   => (string) ( $_POST['file_size'] ?? '' ),
+					'alt_url'     => (string) ( $_POST['alt_url'] ?? '' ),
+					'alt_note'    => (string) ( $_POST['alt_note'] ?? '' ),
+					'alt_size'    => (string) ( $_POST['alt_size'] ?? '' ),
 					'sort'        => (int) ( $_POST['sort'] ?? 0 ),
 					'active'      => ! empty( $_POST['active'] ),
 					'app_downloadable' => ! empty( $_POST['app_downloadable'] ) ? 1 : 0,
@@ -1159,10 +1162,52 @@ class AUN_App_Admin {
 					</td></tr>
 					<tr class="aun-crow" data-types="firmware"><th>Version</th><td><input name="version" value="<?php echo $v( 'version' ); ?>" placeholder="e.g. 2.1.0" /></td></tr>
 					<tr class="aun-crow" data-types="firmware,manual"><th>File size</th><td><input name="file_size" id="aun-file-size" value="<?php echo $v( 'file_size' ); ?>" placeholder="e.g. 48 MB" /></td></tr>
+					<tr class="aun-crow" data-types="firmware"><th>If the update fails<br /><span style="font-weight:400;color:#646970;font-size:12px">Offline installer (optional)</span></th><td>
+						<p class="description" style="margin-top:0;max-width:780px;background:#fff8e5;border-left:3px solid #dba617;padding:10px 14px;border-radius:6px">
+							<strong>Same version, installed the other way.</strong>
+							An OTA can stall part-way on a slow connection &mdash; the projector starts again from
+							zero each time. Attach the offline file <strong>of this same version</strong> here and the app
+							adds a quiet <em>&ldquo;Update stuck or won&rsquo;t finish?&rdquo;</em> card under the Wi-Fi
+							instructions, with its own steps and a download that <strong>pauses and continues</strong>
+							instead of starting over.
+							<br />
+							Leave it blank and nothing appears. Keep it on <strong>this</strong> entry &mdash; do not publish
+							the offline file as a second firmware item, or the customer gets two notifications and has
+							to guess which one is newer.
+						</p>
+						<input name="alt_url" id="aun-alt-url" style="width:78%" value="<?php echo $v( 'alt_url' ); ?>" placeholder="Offline firmware file URL (.zip)" />
+						<button type="button" class="button" id="aun-alt-media-btn">Choose file</button>
+						<p style="margin:8px 0 0">
+							<label style="font-weight:600">File size
+								<input name="alt_size" id="aun-alt-size" value="<?php echo $v( 'alt_size' ); ?>" placeholder="e.g. 412 MB" style="margin-left:6px" />
+							</label>
+							<button type="button" class="button" id="aun-alt-dltest-btn" style="margin-left:10px"
+								data-id="<?php echo (int) ( $editing ? $editing->id : 0 ); ?>"
+								data-nonce="<?php echo esc_attr( wp_create_nonce( 'aun_app_dltest' ) ); ?>">Test download from server</button>
+						</p>
+						<div id="aun-alt-dltest-out" style="display:none;margin-top:10px;padding:10px 12px;border-radius:6px;border-left:4px solid #ccc;background:#fff"></div>
+						<p class="description" style="margin:14px 0 6px"><strong>Steps for the offline install</strong> &mdash; shown only to
+						customers who open that card. Write the USB/zip procedure here, not the Wi-Fi one: they are different jobs, and
+						the Wi-Fi steps next to a zip file are how a projector gets bricked.</p>
+						<?php
+						wp_editor(
+							$editing->alt_note ?? '',
+							'aun_content_alt_note',
+							array(
+								'textarea_name' => 'alt_note',
+								'textarea_rows' => 7,
+								'media_buttons' => false,
+								'teeny'         => true,
+								'quicktags'     => true,
+							)
+						);
+						?>
+					</td></tr>
 					<tr><th>Sort order</th><td><input name="sort" type="number" value="<?php echo $v( 'sort', '0' ); ?>" style="width:90px" /> <span class="description">Lower shows first within a device.</span></td></tr>
 					<tr class="aun-crow" data-types="firmware,manual"><th>App download</th><td>
 						<label><input type="checkbox" name="app_downloadable" <?php checked( $editing ? (int) ( isset( $editing->app_downloadable ) ? $editing->app_downloadable : 1 ) : 1, 1 ); ?> /> Downloadable in the app</label>
-						<p class="description">Uncheck to hide the download button in the app for this file (e.g. a link the app can't fetch).</p>
+						<p class="description">Uncheck to hide the download button in the app for this file (e.g. a link the app can't fetch).
+						Applies to the <strong>main</strong> file above &mdash; the offline installer is withdrawn by clearing its own URL.</p>
 						<p style="margin:10px 0 0">
 							<button type="button" class="button" id="aun-dltest-btn"
 								data-id="<?php echo (int) ( $editing ? $editing->id : 0 ); ?>"
@@ -1236,18 +1281,24 @@ class AUN_App_Admin {
 
 		<script data-no-optimize="1">
 		jQuery(function($){
-			$('#aun-media-btn').on('click', function(e){
-				e.preventDefault();
-				var frame = wp.media({ title: 'Select file', multiple: false });
-				frame.on('select', function(){
-					var att = frame.state().get('selection').first().toJSON();
-					$('#aun-url').val(att.url);
-					if (att.filesizeHumanReadable && !$('#aun-file-size').val()) {
-						$('#aun-file-size').val(att.filesizeHumanReadable);
-					}
+			// Both file pickers behave identically - the main file and the
+			// offline installer each fill their own URL + size pair.
+			function picker(btn, urlSel, sizeSel){
+				$(btn).on('click', function(e){
+					e.preventDefault();
+					var frame = wp.media({ title: 'Select file', multiple: false });
+					frame.on('select', function(){
+						var att = frame.state().get('selection').first().toJSON();
+						$(urlSel).val(att.url);
+						if (att.filesizeHumanReadable && !$(sizeSel).val()) {
+							$(sizeSel).val(att.filesizeHumanReadable);
+						}
+					});
+					frame.open();
 				});
-				frame.open();
-			});
+			}
+			picker('#aun-media-btn', '#aun-url', '#aun-file-size');
+			picker('#aun-alt-media-btn', '#aun-alt-url', '#aun-alt-size');
 
 			// Dynamic Add-Content form: each content type shows ONLY the fields it
 			// uses, with its own title/URL/description wording. Plain DOM so it always
@@ -1280,12 +1331,24 @@ class AUN_App_Admin {
 
 			// "Test download from server" — inline check, no page reload. Tests the
 			// URL currently in the form, so a link can be verified before saving.
-			var dlBtn = document.getElementById('aun-dltest-btn');
-			var dlOut = document.getElementById('aun-dltest-out');
+			// Wired twice: the main file, and the offline installer (each tests
+			// the URL in ITS OWN box, or the file would be checked twice).
+			function wireTest(btnId, outId, inputId) {
+			var dlBtn = document.getElementById(btnId);
+			var dlOut = document.getElementById(outId);
 			if (dlBtn && dlOut) {
 				dlBtn.addEventListener('click', function () {
-					var urlEl = document.getElementById('aun-url');
+					var urlEl = document.getElementById(inputId);
 					var url = urlEl ? urlEl.value : '';
+					// Nothing in the box → say so. (The server falls back to the
+					// SAVED url when none is posted, which on the offline box
+					// would answer about the main file instead.)
+					if (!url) {
+						dlOut.style.display = 'block';
+						dlOut.style.borderLeftColor = '#dba617';
+						dlOut.textContent = 'Choose a file first — this box is empty.';
+						return;
+					}
 					dlBtn.disabled = true;
 					var label = dlBtn.textContent;
 					dlBtn.textContent = 'Testing…';
@@ -1314,6 +1377,9 @@ class AUN_App_Admin {
 						.then(function () { dlBtn.disabled = false; dlBtn.textContent = label; });
 				});
 			}
+			}
+			wireTest('aun-dltest-btn', 'aun-dltest-out', 'aun-url');
+			wireTest('aun-alt-dltest-btn', 'aun-alt-dltest-out', 'aun-alt-url');
 		});
 		</script>
 		<?php

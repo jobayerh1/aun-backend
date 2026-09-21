@@ -1,0 +1,334 @@
+/**
+ * Breo Alpha SMS OTP Login: front-end styles in the Breo look
+ * (charcoal pill buttons, warm neutrals, soft focus rings).
+ */
+
+.breo-otp-wrap {
+	--breo-otp-ink: #1c1c1c;
+	--breo-otp-muted: #6f6a63;
+	--breo-otp-line: #e8e2da;
+	--breo-otp-cream: #f7f2eb;
+	margin-top: 4px;
+	font-family: inherit;
+}
+
+.breo-otp-phone,
+.breo-otp-profile { text-align: left; }
+.breo-otp-code { text-align: center; }
+
+/* Field labels */
+.breo-otp-wrap .breo-otp-field label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 600;
+	color: var(--breo-otp-ink);
+}
+.breo-otp-opt { font-weight: 400; color: var(--breo-otp-muted); }
+
+/* Mobile number with a fixed +880 prefix */
+.breo-otp-tel {
+	display: flex;
+	align-items: stretch;
+	overflow: hidden;
+	border: 1.5px solid var(--breo-otp-line);
+	border-radius: 14px;
+	background: #fff;
+	transition: border-color .15s ease, box-shadow .15s ease;
+}
+.breo-otp-tel:focus-within {
+	border-color: var(--breo-otp-ink);
+	box-shadow: 0 0 0 4px rgba(28, 28, 28, .08);
+}
+.breo-otp-cc {
+	display: flex;
+	align-items: center;
+	padding: 0 12px 0 16px;
+	border-right: 1px solid var(--breo-otp-line);
+	background: var(--breo-otp-cream);
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--breo-otp-ink);
+}
+/* Beats WooCommerce's ".woocommerce form .form-row .input-text" border. */
+.breo-otp-wrap .breo-otp-field .breo-otp-tel input.breo-otp-phone-input {
+	flex: 1;
+	min-width: 0;
+	width: auto;
+	height: 48px;
+	margin: 0;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	font-size: 16px;
+	letter-spacing: .04em;
+	color: var(--breo-otp-ink);
+}
+.breo-otp-wrap .breo-otp-tel .breo-otp-phone-input:focus { outline: none; box-shadow: none; }
+
+/* Name / email on the sign-up step */
+.breo-otp-wrap .breo-otp-profile .input-text {
+	width: 100%;
+	height: 50px;
+	padding: 0 16px;
+	border: 1.5px solid var(--breo-otp-line);
+	border-radius: 14px;
+	background: #fff;
+	font-size: 16px;
+	box-sizing: border-box;
+}
+.breo-otp-profile .breo-otp-field { margin: 0 0 12px; }
+.breo-otp-profile-h {
+	margin: 0 0 16px;
+	padding: 12px 16px;
+	border-radius: 14px;
+	background: var(--breo-otp-cream);
+	font-size: 15px;
+	line-height: 1.5;
+	color: var(--breo-otp-ink);
+}
+
+/* Buttons — scoped under .breo-otp-wrap so they beat any theme .button rule. */
+.breo-otp-wrap .button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-height: 50px;
+	padding: 0 22px;
+	border-radius: 999px;
+	border: 1.5px solid transparent;
+	font: inherit;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.2;
+	cursor: pointer;
+	box-shadow: none;
+	text-transform: none;
+	letter-spacing: .01em;
+	transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.breo-otp-send,
+.breo-otp-verify { margin-top: 14px; }
+.breo-otp-create { margin-top: 4px; }
+
+/* Primary: charcoal pill */
+.breo-otp-wrap .breo-otp-send,
+.breo-otp-wrap .breo-otp-verify,
+.breo-otp-wrap .breo-otp-create {
+	background: var(--breo-otp-ink);
+	border-color: var(--breo-otp-ink);
+	color: #fff;
+}
+
+.breo-otp-wrap .breo-otp-send:hover,
+.breo-otp-wrap .breo-otp-verify:hover,
+.breo-otp-wrap .breo-otp-create:hover {
+	background: #000;
+	border-color: #000;
+	color: #fff;
+	transform: translateY(-1px);
+}
+
+.breo-otp-wrap .button:disabled,
+.breo-otp-wrap .button[disabled] {
+	opacity: .6;
+	cursor: wait;
+	transform: none;
+}
+
+/* "Use email and password instead" / "Use your mobile number instead": quiet text links */
+.breo-otp-toggle { margin-top: 14px; text-align: center; }
+/* !important: site/theme button rules (e.g. .wp-element-button) would otherwise paint these as pills.
+   Not on display: the script hides the link that doesn't apply with an inline display:none. */
+.breo-otp-wrap .breo-otp-toggle .button {
+	display: inline;
+	width: auto !important;
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 4px 2px !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: none !important;
+	box-shadow: none !important;
+	color: var(--breo-otp-ink) !important;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: underline;
+	text-decoration-color: rgba(28, 28, 28, .35);
+	text-underline-offset: 4px;
+}
+.breo-otp-wrap .breo-otp-toggle .button:hover {
+	background: none !important;
+	color: #000 !important;
+	text-decoration-color: currentColor;
+	transform: none;
+}
+
+.breo-otp-wrap .button:focus-visible,
+.breo-otp-change:focus-visible,
+.breo-otp-resend:focus-visible {
+	outline: 2px solid var(--breo-otp-ink);
+	outline-offset: 3px;
+}
+
+/* "Enter the code we sent to …" + Change */
+.breo-otp-sent {
+	margin-bottom: 14px;
+	padding: 12px 16px;
+	border-radius: 14px;
+	background: var(--breo-otp-cream);
+	font-size: 15px;
+	color: var(--breo-otp-ink);
+}
+
+.breo-otp-change {
+	margin-left: 8px;
+	color: var(--breo-otp-ink);
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+/* Digit boxes */
+.breo-otp-digits {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+	margin: 18px 0;
+	flex-wrap: nowrap;
+}
+
+.breo-otp-digits input.breo-otp-digit {
+	flex: 0 1 48px;
+	width: 48px;
+	height: 58px;
+	min-width: 34px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--breo-otp-ink);
+	background: #fff;
+	border: 1.5px solid var(--breo-otp-line);
+	border-radius: 14px;
+	box-shadow: none;
+	box-sizing: border-box;
+	-moz-appearance: textfield;
+	transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.breo-otp-digits input.breo-otp-digit:focus {
+	border-color: var(--breo-otp-ink);
+	box-shadow: 0 0 0 4px rgba(28, 28, 28, .08);
+	outline: none;
+}
+
+.breo-otp-digits input.breo-otp-digit::-webkit-outer-spin-button,
+.breo-otp-digits input.breo-otp-digit::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+/* Resend */
+.breo-otp-resend-row {
+	margin-top: 14px;
+	font-size: 14px;
+	color: var(--breo-otp-muted);
+}
+
+.breo-otp-resend {
+	color: var(--breo-otp-ink);
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+.breo-otp-resend.breo-otp-disabled {
+	pointer-events: none;
+	opacity: .45;
+}
+
+.breo-otp-timer {
+	margin-left: 4px;
+	color: var(--breo-otp-muted);
+}
+
+/* Notices */
+.breo-otp-notice {
+	margin: 12px 0;
+	padding: 10px 14px;
+	border: 1px solid transparent;
+	border-radius: 12px;
+	font-size: 14px;
+	text-align: left;
+}
+
+.breo-otp-notice-error {
+	color: #9f1d20;
+	background: #fdecec;
+	border-color: #f5c9c9;
+}
+
+.breo-otp-notice-success {
+	color: #1b6b36;
+	background: #e9f5ec;
+	border-color: #c4e3cd;
+}
+
+/* Account picker (several accounts share a phone) */
+.breo-otp-accounts h4 {
+	margin: 0 0 12px;
+	font-size: 16px;
+}
+
+.breo-otp-wrap .breo-otp-account {
+	display: block;
+	width: 100%;
+	height: auto;
+	margin-bottom: 8px;
+	padding: 12px 16px;
+	text-align: left;
+	line-height: 1.3;
+	color: var(--breo-otp-ink);
+	background: #fff;
+	border: 1.5px solid var(--breo-otp-line);
+	border-radius: 14px;
+	cursor: pointer;
+}
+
+.breo-otp-wrap .breo-otp-account:hover {
+	border-color: var(--breo-otp-ink);
+	background: var(--breo-otp-cream);
+}
+
+.breo-otp-account-email {
+	display: block;
+	font-weight: 600;
+	font-size: 14px;
+	word-break: break-all;
+}
+
+.breo-otp-account-meta {
+	display: block;
+	margin-top: 3px;
+	font-size: 12px;
+	color: var(--breo-otp-muted);
+}
+
+@media (max-width: 480px) {
+	.breo-otp-digits { gap: 6px; }
+	.breo-otp-digits input.breo-otp-digit {
+		flex-basis: 42px;
+		width: 42px;
+		height: 52px;
+		min-width: 32px;
+		font-size: 21px;
+	}
+}

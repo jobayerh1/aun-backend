@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AUN_SP_Install {
 
-	const DB_VERSION = '11';
+	const DB_VERSION = '12';
 
 	/** Fully-qualified table name for a given short key. */
 	public static function table( $name ) {
@@ -84,6 +84,9 @@ class AUN_SP_Install {
 			refund_ref VARCHAR(96) NOT NULL DEFAULT '',
 			quote_expires_at DATETIME NULL,
 			quote_reminders TINYINT UNSIGNED NOT NULL DEFAULT 0,
+			photo_reason VARCHAR(32) NOT NULL DEFAULT '',
+			photo_note TEXT NULL,
+			photo_item_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			created_at DATETIME NULL,
 			updated_at DATETIME NULL,
 			PRIMARY KEY  (id),
@@ -161,6 +164,13 @@ class AUN_SP_Install {
 			AUN_SP_Messages::upgrade_default(
 				AUN_SP_Messages::OPT_SMS_QUOTE,
 				'AUN: your spare-parts quote for {ref} is ready - total Tk {total}. Please review and approve it here: {track}'
+			);
+			// The better-photo SMS now carries {reason}, so the customer is told WHAT
+			// was wrong before they open the link — the single biggest reason a second
+			// photo comes back with the same fault as the first.
+			AUN_SP_Messages::upgrade_default(
+				AUN_SP_Messages::OPT_SMS_PHOTO,
+				'AUN: the photo for request {ref} needs to be clearer. Please open the link, take it just like the example shown, and re-upload: {track}'
 			);
 		}
 

@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.113.4
+ * Version:           1.114.1
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.113.4' );
+define( 'AUN_APP_API_VERSION', '1.114.1' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -45,7 +45,12 @@ define( 'AUN_APP_API_VERSION', '1.113.4' );
 // be indistinguishable from an ERP outage (both just skipped the row), so the
 // repair froze on the customer's screen for ever and could never adopt a
 // replacement sheet.
-define( 'AUN_APP_API_DB_VERSION', '22' );
+// v23 = aun_app_content.alt_url/alt_note/alt_size. ONE firmware release, two
+// ways to install it: the OTA over Wi-Fi, and an offline installer file for
+// when the OTA cannot finish (slow line, repeated 50-60% stalls). Attached to
+// the SAME row on purpose - a second firmware entry would mean two version
+// numbers, two notifications and a customer asking which one is newer.
+define( 'AUN_APP_API_DB_VERSION', '23' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -337,6 +342,9 @@ function aun_app_api_activate() {
 		url varchar(500) DEFAULT '',
 		version varchar(50) DEFAULT '',
 		file_size varchar(30) DEFAULT '',
+		alt_url varchar(500) DEFAULT '',
+		alt_note text,
+		alt_size varchar(30) DEFAULT '',
 		sort int DEFAULT 0,
 		active tinyint(1) DEFAULT 1,
 		app_downloadable tinyint(1) NOT NULL DEFAULT 1,
@@ -651,6 +659,22 @@ function aun_app_api_activate() {
 	// burying the reason under the instructions is why nobody reads it.
 	if ( ! in_array( 'changelog', $content_cols, true ) ) {
 		$wpdb->query( "ALTER TABLE $content ADD COLUMN changelog text NULL AFTER description" );
+	}
+
+	// v23: the offline installer attached to a firmware release - its file, its
+	// own installation steps, its own size. Three columns on the EXISTING row
+	// rather than a second content row: the version number, the "what's new"
+	// and the "new firmware" notification must stay single, or the customer has
+	// to work out which of two entries applies to them.
+	//
+	// (Re-read the columns: $content_cols above was taken before the changelog
+	// ALTER, and a site upgrading straight from v12 would otherwise be judged
+	// on a stale list.)
+	$content_cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM $content" );
+	if ( ! in_array( 'alt_url', $content_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $content ADD COLUMN alt_url varchar(500) NOT NULL DEFAULT ''" );
+		$wpdb->query( "ALTER TABLE $content ADD COLUMN alt_note text NULL" );
+		$wpdb->query( "ALTER TABLE $content ADD COLUMN alt_size varchar(30) NOT NULL DEFAULT ''" );
 	}
 
 	if ( false === get_option( AUN_APP_API_OPTION, false ) ) {

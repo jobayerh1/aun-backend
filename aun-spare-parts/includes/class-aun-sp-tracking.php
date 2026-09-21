@@ -154,6 +154,10 @@ class AUN_SP_Tracking {
 				}
 				$parts[] = array(
 					'chargeable' => $chargeable,
+					// True for the one part whose photo we sent back, so the tracking page
+					// can put the request right next to the photo it is about.
+					'needs_photo' => ( 'waiting_customer' === $r->overall_status
+						&& (int) ( $r->photo_item_id ?? 0 ) === (int) $it->id ),
 					// The photo the customer sent for this part ('' if none) — shown as a
 					// thumbnail that opens in the same lightbox as the reference photo.
 					'photo'      => $photos[ (int) $r->id ][ (int) $it->id ] ?? '',
@@ -177,7 +181,7 @@ class AUN_SP_Tracking {
 			// Allow-list, not deny-list — see AUN_SP_Requests::PUBLIC_EVENTS for why.
 			$allowed  = "'" . implode( "','", AUN_SP_Requests::PUBLIC_EVENTS ) . "'";
 			$ev       = $wpdb->get_results( $wpdb->prepare(
-				"SELECT type, message, created_at FROM $t_event
+				"SELECT type, message, new_value, created_at FROM $t_event
 				 WHERE request_id = %d AND type IN ($allowed) ORDER BY id ASC LIMIT 40",
 				$r->id
 			) );
@@ -194,6 +198,21 @@ class AUN_SP_Tracking {
 					$text   = $amount > 0
 						? AUN_SP_I18N::msg( 'tl_payment', array( 'amount' => number_format( $amount, 2 ) ) )
 						: AUN_SP_I18N::msg( 'tl_payment_plain' );
+				} elseif ( 'reupload' === $e->type ) {
+					// Stored as "Customer re-uploaded a photo" — written for the admin
+					// list, so the customer was reading about themselves in the third
+					// person, in English.
+					$text = AUN_SP_I18N::msg( 'tl_photo_sent' );
+				} elseif ( 'photo_request' === $e->type ) {
+					// The stored message is INTERNAL: English, with the admin's own
+					// dropdown label, the part name and the note quoted back. Showing it
+					// raw put all of that in front of the customer, untranslated. The
+					// reason KEY is on the event, so it can be re-worded properly here —
+					// including for an ask that has long since been answered.
+					$pr   = AUN_SP_Requests::photo_reason_text( (string) $e->new_value );
+					$text = ( '' !== $pr['what'] )
+						? AUN_SP_I18N::msg( 'tl_photo_ask', array( 'reason' => $pr['what'] ) )
+						: AUN_SP_I18N::msg( 'tl_photo_ask_plain' );
 				} elseif ( 'refund' === $e->type ) {
 					$amount = (float) $r->refund_amount;
 					$text   = $amount > 0
@@ -261,9 +280,17 @@ class AUN_SP_Tracking {
 				) : null,
 				'timeline'     => $timeline,
 				'parts'        => $parts,
-				// Latest photo re-sent after we asked for a clearer one. Re-uploads aren't
-				// tied to a single part (item_id 0), so it is shown once per request.
-				'resent_photo' => $photos[ (int) $r->id ][0] ?? '',
+				// Why we sent their photo back. Without this the page could only say
+				// "we need a clear, correct photo" — which fixes a blurry photo and does
+				// nothing at all when they photographed the wrong part.
+				'photo_ask'    => ( 'waiting_customer' === $r->overall_status )
+					? self::photo_ask( $r )
+					: null,
+				// Latest photo re-sent after we asked for a clearer one. A TARGETED
+				// re-upload is filed against its part, so it is already on screen as that
+				// part's thumbnail — showing it again here rendered the same image twice
+				// and downloaded it twice on a phone.
+				'resent_photo' => self::resent_photo( $photos[ (int) $r->id ] ?? array(), $parts ),
 			);
 		}
 
@@ -312,8 +339,11 @@ class AUN_SP_Tracking {
 		// a better photo" cycle — they can't keep uploading again and again (or upload to a
 		// closed/rejected request), because this very first upload flips it out of "waiting"
 		// and any further call finds nothing to claim. Race-safe via the conditional UPDATE.
+		// The part this photo was asked for, captured BEFORE the claim clears it.
+		$target = (int) ( $req->photo_item_id ?? 0 );
 		$claimed = (int) $wpdb->query( $wpdb->prepare(
-			"UPDATE $t_req SET overall_status = 'in_progress', updated_at = %s WHERE id = %d AND overall_status = 'waiting_customer'",
+			"UPDATE $t_req SET overall_status = 'in_progress', photo_reason = '', photo_note = '', photo_item_id = 0, updated_at = %s
+			 WHERE id = %d AND overall_status = 'waiting_customer'",
 			current_time( 'mysql' ), (int) $req->id
 		) );
 		if ( ! $claimed ) {
@@ -335,15 +365,22 @@ class AUN_SP_Tracking {
 		remove_filter( 'upload_dir', $dir_filter );
 
 		if ( empty( $moved['url'] ) || ! empty( $moved['error'] ) ) {
-			// Upload failed — release the claim so the customer can try again with a valid file.
-			$wpdb->update( $t_req, array( 'overall_status' => 'waiting_customer', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => (int) $req->id ) );
+			// Upload failed — release the claim so the customer can try again with a valid
+			// file, restoring the reason with it so they still see what was wrong.
+			$wpdb->update( $t_req, array(
+				'overall_status' => 'waiting_customer',
+				'photo_reason'   => (string) ( $req->photo_reason ?? '' ),
+				'photo_note'     => (string) ( $req->photo_note ?? '' ),
+				'photo_item_id'  => $target,
+				'updated_at'     => current_time( 'mysql' ),
+			), array( 'id' => (int) $req->id ) );
 			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_ru_badtype' ) ) );
 		}
 
 		// Status was already moved to "in progress" by the atomic claim above.
 		$wpdb->insert( AUN_SP_Install::table( 'attachments' ), array(
 			'request_id'   => (int) $req->id,
-			'item_id'      => 0,
+			'item_id'      => $target,
 			'kind'         => 'reupload',
 			'file_url'     => esc_url_raw( $moved['url'] ),
 			'bytes_before' => isset( $moved['file'] ) && is_file( $moved['file'] ) ? (int) filesize( $moved['file'] ) : 0,
@@ -469,6 +506,47 @@ class AUN_SP_Tracking {
 	}
 
 	/**
+	 * The re-sent photo, but only when it is not already visible somewhere else on
+	 * the card. Returns '' when the same file is already a part's thumbnail.
+	 */
+	private static function resent_photo( $photos, $parts ) {
+		$url = $photos['resent'] ?? ( $photos[0] ?? '' );
+		if ( '' === $url ) {
+			return '';
+		}
+		foreach ( (array) $parts as $p ) {
+			if ( ! empty( $p['photo'] ) && $p['photo'] === $url ) {
+				return '';
+			}
+		}
+		return $url;
+	}
+
+	/**
+	 * What we told the customer was wrong with their photo, in their own language.
+	 *
+	 * Returns null when no reason was recorded — a request put into "waiting on
+	 * customer" by an older version, or by hand. The page then falls back to its
+	 * original generic wording rather than showing an empty box.
+	 */
+	private static function photo_ask( $r ) {
+		$key = (string) ( $r->photo_reason ?? '' );
+		if ( '' === $key ) {
+			return null;
+		}
+		$text = AUN_SP_Requests::photo_reason_text( $key );
+		if ( '' === $text['what'] ) {
+			return null;
+		}
+		return array(
+			'what'    => $text['what'],
+			'how'     => $text['how'],
+			'note'    => (string) ( $r->photo_note ?? '' ),
+			'item_id' => (int) ( $r->photo_item_id ?? 0 ),
+		);
+	}
+
+	/**
 	 * The customer's own photos, ready for display: request_id => [ item_id => url ].
 	 * Key 0 holds the latest re-sent photo (re-uploads aren't tied to one part).
 	 *
@@ -484,7 +562,7 @@ class AUN_SP_Tracking {
 		}
 		$t    = AUN_SP_Install::table( 'attachments' );
 		// Integers only (intval above), so they are safe to inline.
-		$rows = $wpdb->get_results( "SELECT request_id, item_id, file_url FROM $t WHERE request_id IN (" . implode( ',', $ids ) . ") ORDER BY id ASC" );
+		$rows = $wpdb->get_results( "SELECT request_id, item_id, kind, file_url FROM $t WHERE request_id IN (" . implode( ',', $ids ) . ") ORDER BY id ASC" );
 		$dir  = DIRECTORY_SEPARATOR . 'aun-spare-parts' . DIRECTORY_SEPARATOR;
 		$out  = array();
 		foreach ( (array) $rows as $row ) {
@@ -492,8 +570,17 @@ class AUN_SP_Tracking {
 			if ( '' === $path || false === strpos( $path, $dir ) ) {
 				continue;
 			}
+			$url = esc_url_raw( $row->file_url );
+			$rid = (int) $row->request_id;
 			// Oldest first, so a later photo for the same slot wins.
-			$out[ (int) $row->request_id ][ (int) $row->item_id ] = esc_url_raw( $row->file_url );
+			$out[ $rid ][ (int) $row->item_id ] = $url;
+			// A re-upload aimed at a specific part now carries that part's item_id, so
+			// it lands in the slot above and replaces the photo it was sent to correct.
+			// Track it here as well, or the "new photo you sent us" confirmation would
+			// only ever appear for the untargeted case.
+			if ( 'reupload' === $row->kind ) {
+				$out[ $rid ]['resent'] = $url;
+			}
 		}
 		return $out;
 	}

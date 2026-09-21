@@ -36,6 +36,18 @@ return array(
 ',
 	),
 
+	'manuals' => array(
+		'title'   => 'Manuals & Downloads',
+		'intro'   => 'The official Breo user manual for every device we sell in Bangladesh, straight from the factory.',
+		'content' => '
+<p>Each manual is the original Breo document for that model. Open it on your phone, or download it and keep it with your warranty card.</p>
+[breo_manuals]
+<h2>Need help instead?</h2>
+<p>If something is not working the way the manual describes, don\'t worry: message us on WhatsApp and we will walk you through it. Every device we sell is covered by an official warranty, handled here in Bangladesh.</p>
+[breo_contact]
+',
+	),
+
 	'contact' => array(
 		'title'   => 'Contact Us',
 		'intro'   => 'Questions about a product, an order or your warranty? We\'re a message away.',
@@ -49,24 +61,24 @@ return array(
 		'title'   => 'Frequently Asked Questions',
 		'intro'   => 'Everything about ordering, delivery, our products and warranty in one place.',
 		'content' => '
-<h2>Orders &amp; payment</h2>
+<h2 id="orders">Orders &amp; payment</h2>
 <details><summary>How do I place an order?</summary><p>Add a product to your cart and check out, or message us on WhatsApp and we will place the order for you.</p></details>
 <details><summary>How can I pay?</summary><p>[breo_info key="payments"].</p></details>
 <details><summary>Will you confirm my order?</summary><p>We may call or message you to confirm your order and delivery address before we dispatch it.</p></details>
 <details><summary>Can I cancel an order?</summary><p>Yes. Contact us before the order is dispatched and we will cancel it at no cost.</p></details>
 
-<h2>Delivery</h2>
+<h2 id="delivery">Delivery</h2>
 <details><summary>How long does delivery take?</summary><p>Inside Dhaka within [breo_info key="dhaka_days"] working days, and outside Dhaka within [breo_info key="outside_days"] working days. Orders placed after [breo_info key="cutoff"] are processed on the next working day.</p></details>
 <details><summary>How much does delivery cost?</summary><p>The delivery charge is shown at checkout before you pay.[breo_if key="dhaka_fee"] Inside Dhaka: ৳[breo_info key="dhaka_fee"].[/breo_if][breo_if key="outside_fee"] Outside Dhaka: ৳[breo_info key="outside_fee"].[/breo_if]</p></details>
 <details><summary>Do you deliver everywhere in Bangladesh?</summary><p>Yes, we deliver anywhere in Bangladesh through our courier partners. We don\'t ship outside Bangladesh.</p></details>
 
-<h2>Products &amp; usage</h2>
+<h2 id="products">Products &amp; usage</h2>
 <details><summary>Are your products genuine?</summary><p>Yes. We are the authorized Breo distributor in Bangladesh and every device is officially imported.</p></details>
 <details><summary>Are Breo massagers medical devices?</summary><p>No. They are designed for relaxation and everyday wellness and don\'t diagnose or treat any disease.</p></details>
 <details><summary>Who should not use a massager?</summary><p>Ask your doctor before use if you are pregnant, have a pacemaker or other implant, have had recent surgery or an injury, have a skin condition in the area, or have reduced sensitivity to heat. Never use a massager on broken skin or swelling.</p></details>
 <details><summary>How do I charge my device?</summary><p>All our launch devices are rechargeable by USB. Use the cable in the box with a standard 5V phone charger.</p></details>
 
-<h2>Warranty &amp; returns</h2>
+<h2 id="warranty">Warranty &amp; returns</h2>
 <details><summary>How long is the warranty?</summary><p>[breo_if key="warranty_months"]Every device comes with a [breo_info key="warranty"] official warranty against manufacturing defects, handled by us in Bangladesh.[/breo_if] See our <a href="/warranty-policy/">Warranty Policy</a>.</p></details>
 <details><summary>My device arrived damaged or faulty. What do I do?</summary><p>Contact us within [breo_info key="return_faulty_days"] days of delivery with a photo or short video of the problem, and we will arrange a replacement or refund after inspection.</p></details>
 <details><summary>Can I return a product if I change my mind?</summary><p>Yes, if it is unopened with its seals intact and you contact us within [breo_info key="return_unopened_hours"] hours of delivery. See our <a href="/returns-refunds/">Returns &amp; Refunds</a> policy.</p></details>

@@ -44,6 +44,22 @@ foreach ( breo_bd_data() as $sku => $d ) {
 	printf( "%s #%d media %d/%d img=%d gallery=%d %.0fs %s\n", $sku, $pid, count( $map ), count( $d['media'] ), $p->get_image_id(), count( $p->get_gallery_image_ids() ), microtime( true ) - $t, $err ? 'ERR ' . implode( ' | ', $err ) : '' );
 }
 
+// Site graphics (About / policy pages).
+$smap = (array) get_option( 'breo_bd_site_media', array() );
+foreach ( breo_bd_site_media() as $k => $spec ) {
+	if ( ! empty( $smap[ $k ] ) && get_post( $smap[ $k ] ) ) {
+		continue;
+	}
+	$r = breo_bd_import_media_item( 0, 'site', $k, $spec );
+	echo "site $k: " . ( is_wp_error( $r ) ? 'ERR ' . $r->get_error_message() : "#$r" ) . "\n";
+	if ( ! is_wp_error( $r ) ) {
+		$smap[ $k ] = $r;
+	}
+}
+update_option( 'breo_bd_site_media', $smap, false );
+$icon = breo_bd_import_media_item( 0, 'site', 'site-icon', array( 'local' => 'assets/icons/icon-512.png', 'alt' => 'Breo' ), 1 );
+echo 'site icon: ' . ( is_wp_error( $icon ) ? 'ERR ' . $icon->get_error_message() : "#$icon" ) . "\n";
+
 list( $ids, $msgs ) = breo_bd_build_pages();
 foreach ( $msgs as $m ) {
 	echo 'page: ' . wp_strip_all_tags( $m[1] ) . "\n";

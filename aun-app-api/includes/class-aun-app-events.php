@@ -53,6 +53,9 @@ class AUN_App_Events {
 		'parts_submitted',
 		'quote_answered',
 		'quote_revived',
+		// Whether a photo we sent back is answered IN the app or still through
+		// the SMS link — the whole justification for building this here.
+		'parts_photo_sent',
 		'pay_started',
 		'pay_finished',
 		'content_opened',

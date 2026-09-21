@@ -59,8 +59,9 @@ function breo_bd_sec_text( $s, $tag = 'h2' ) {
 }
 
 function breo_bd_hero_cta( $product ) {
-	$h  = '<div class="breo-hero-cta">';
-	$h .= '<a class="breo-btn" href="#buy">Buy now</a>';
+	$buy = breo_bd_buy_url( $product );
+	$h   = '<div class="breo-hero-cta">';
+	$h  .= $buy ? '<a class="breo-btn" href="' . esc_url( $buy ) . '" rel="nofollow">Buy now</a>' : '<a class="breo-btn" href="#buy">View details</a>';
 	$h .= '<span class="breo-hero-cta__price">' . wp_kses_post( breo_bd_price_html( $product ) ) . '</span>';
 	return $h . '</div>';
 }
@@ -70,8 +71,8 @@ function breo_bd_sec_hero( $product, $d, $s ) {
 	$h  = '<section class="breo-s breo-hero theme-' . esc_attr( $s['theme'] ) . ' align-' . esc_attr( $s['align'] ) . '"' . breo_bd_sec_attrs( $s ) . '>';
 	$h .= '<div class="breo-hero__media">' . breo_bd_media( $product, $s['media'], array( 'size' => 'full', 'loading' => 'eager', 'sizes' => '100vw' ) ) . '</div>';
 	$h .= '<div class="breo-wrap breo-hero__content" data-reveal>';
-	$h .= '<p class="breo-eyebrow">' . esc_html( $d['tagline'] ) . '</p>';
-	$h .= '<h1 class="breo-hero__model"><span class="breo-hero__mark" aria-hidden="true">' . breo_bd_logo( 'breo-logo--inline' ) . '<span>' . esc_html( $d['short_name'] ) . '</span></span><span class="breo-sr">' . esc_html( $d['name'] ) . '</span></h1>';
+	$h .= '<h1 class="breo-eyebrow breo-h1">' . esc_html( $d['name'] ) . '</h1>';
+	$h .= '<p class="breo-hero__model" aria-hidden="true"><span class="breo-hero__mark">' . breo_bd_logo( 'breo-logo--inline' ) . '<span>' . esc_html( $d['short_name'] ) . '</span></span></p>';
 	$h .= '<p class="breo-hero__title">' . esc_html( $s['title'] ) . '</p>';
 	$h .= '<p class="breo-hero__text">' . esc_html( $s['text'] ) . '</p>';
 	$h .= breo_bd_hero_cta( $product );
@@ -82,8 +83,8 @@ function breo_bd_sec_hero( $product, $d, $s ) {
 function breo_bd_sec_hero_split( $product, $d, $s ) {
 	$h  = '<section class="breo-s breo-hsplit theme-' . esc_attr( $s['theme'] ) . ( ! empty( $s['short'] ) ? ' is-short' : '' ) . '"' . breo_bd_sec_attrs( $s ) . '>';
 	$h .= '<div class="breo-hsplit__text" data-reveal><div class="breo-hsplit__in">';
-	$h .= '<p class="breo-eyebrow">' . esc_html( $d['tagline'] ) . '</p>';
-	$h .= '<h1 class="breo-hero__model"><span class="breo-hero__mark" aria-hidden="true">' . breo_bd_logo( 'breo-logo--inline' ) . '<span>' . esc_html( $d['short_name'] ) . '</span></span><span class="breo-sr">' . esc_html( $d['name'] ) . '</span></h1>';
+	$h .= '<h1 class="breo-eyebrow breo-h1">' . esc_html( $d['name'] ) . '</h1>';
+	$h .= '<p class="breo-hero__model" aria-hidden="true"><span class="breo-hero__mark">' . breo_bd_logo( 'breo-logo--inline' ) . '<span>' . esc_html( $d['short_name'] ) . '</span></span></p>';
 	$h .= '<p class="breo-hero__title">' . esc_html( $s['title'] ) . '</p>';
 	$h .= '<p class="breo-hero__text">' . esc_html( $s['text'] ) . '</p>';
 	$h .= breo_bd_hero_cta( $product );
@@ -119,6 +120,20 @@ function breo_bd_sec_banner( $product, $d, $s ) {
 	return $h . '</section>';
 }
 
+/*
+ * ---------- film: edge-to-edge video in its own shape, copy over its empty side ----------
+ * For wide clips composed with the product on one side (breo.com No.7). The frame keeps
+ * the clip's aspect ratio ('ratio', e.g. '1920 / 850'), so nothing is cropped.
+ */
+function breo_bd_sec_film( $product, $d, $s ) {
+	$align = isset( $s['align'] ) ? $s['align'] : 'right';
+	$ratio = isset( $s['ratio'] ) && preg_match( '~^\d+(\.\d+)? / \d+(\.\d+)?$~', $s['ratio'] ) ? $s['ratio'] : '16 / 9';
+	$h     = '<section class="breo-s breo-film theme-' . esc_attr( isset( $s['theme'] ) ? $s['theme'] : 'dark' ) . ' align-' . esc_attr( $align ) . '"' . breo_bd_sec_attrs( $s, ' style="--film-ratio:' . esc_attr( $ratio ) . '"' ) . '>';
+	$h    .= '<div class="breo-film__media">' . breo_bd_media( $product, $s['media'], array( 'size' => 'full', 'sizes' => '100vw' ) ) . '</div>';
+	$h    .= '<div class="breo-wrap breo-film__content" data-reveal><div class="breo-film__in">' . breo_bd_sec_text( $s ) . '</div></div>';
+	return $h . '</section>';
+}
+
 /* ---------- stats: big numbers ---------- */
 function breo_bd_sec_stats( $product, $d, $s ) {
 	$h = '<section class="breo-s breo-stats theme-' . esc_attr( $s['theme'] ) . '"' . breo_bd_sec_attrs( $s ) . '><div class="breo-wrap breo-stats__grid">';
@@ -148,24 +163,44 @@ function breo_bd_sec_duo( $product, $d, $s ) {
 	return $h . '</div></div></section>';
 }
 
+/*
+ * ---------- tiles: photo cards in a grid ----------
+ * For feature photos too small to go full-screen (e.g. the P2's). Items:
+ * array( media key, title, text [, 'wide'] ); a wide tile spans two columns.
+ */
+function breo_bd_sec_tiles( $product, $d, $s ) {
+	$h  = '<section class="breo-s breo-tiles theme-' . esc_attr( isset( $s['theme'] ) ? $s['theme'] : 'white' ) . '"' . breo_bd_sec_attrs( $s ) . '><div class="breo-wrap">';
+	$h .= '<div class="breo-tiles__head" data-reveal>' . breo_bd_sec_text( $s ) . '</div><div class="breo-tiles__grid">';
+	foreach ( $s['items'] as $it ) {
+		$wide = isset( $it[3] ) && 'wide' === $it[3];
+		$img  = breo_bd_media( $product, $it[0], array( 'size' => 'large', 'sizes' => $wide ? '(max-width: 600px) 100vw, 820px' : '(max-width: 600px) 100vw, 420px' ) );
+		$h   .= '<figure class="breo-tile' . ( $wide ? ' is-wide' : '' ) . '" data-reveal>';
+		$h   .= $img ? '<div class="breo-tile__media">' . $img . '</div>' : '';
+		$h   .= '<figcaption><h3>' . esc_html( $it[1] ) . '</h3><p>' . esc_html( $it[2] ) . '</p></figcaption></figure>';
+	}
+	return $h . '</div></div></section>';
+}
+
 /* ---------- buy panel ---------- */
 function breo_bd_sec_buy( $product, $d ) {
 	$main    = $product->get_image_id();
 	$gallery = array_filter( array_merge( array( $main ), $product->get_gallery_image_ids() ) );
 	$cat     = get_term_by( 'slug', $d['category'], 'product_cat' );
 	$wa      = breo_bd_whatsapp_url( 'Hi Breo Bangladesh, I want to order the ' . $product->get_name() );
+	$ms      = breo_bd_messenger_url( 'product-' . $product->get_id() );
 
 	ob_start();
 	?>
 	<section class="breo-s breo-buy" id="buy">
 		<div class="breo-wrap breo-buy__grid">
 			<div class="breo-buy__gallery" data-breo-gallery>
-				<div class="breo-buy__main">
+				<div class="breo-buy__main" data-breo-zoom>
 					<?php foreach ( $gallery as $n => $gid ) : ?>
-						<figure class="breo-buy__slide<?php echo 0 === $n ? ' is-active' : ''; ?>" data-slide="<?php echo (int) $n; ?>">
+						<figure class="breo-buy__slide<?php echo 0 === $n ? ' is-active' : ''; ?>" data-slide="<?php echo (int) $n; ?>" data-full="<?php echo esc_url( (string) wp_get_attachment_image_url( $gid, 'full' ) ); ?>">
 							<?php echo wp_get_attachment_image( $gid, 'large', false, array( 'loading' => 0 === $n ? 'eager' : 'lazy', 'sizes' => '(max-width: 900px) 100vw, 640px' ) ); ?>
 						</figure>
 					<?php endforeach; ?>
+					<button type="button" class="breo-buy__open" data-breo-open aria-label="Open image viewer"><?php echo breo_bd_icon( 'expand', 20 ); // phpcs:ignore ?></button>
 				</div>
 				<?php if ( count( $gallery ) > 1 ) : ?>
 					<div class="breo-buy__thumbs" role="tablist" aria-label="Product images">
@@ -187,6 +222,7 @@ function breo_bd_sec_buy( $product, $d ) {
 				<p class="breo-eyebrow"><?php echo esc_html( 'Breo · ' . ( $cat ? $cat->name : $d['tagline'] ) ); ?></p>
 				<h2 class="breo-buy__name"><?php echo esc_html( $product->get_name() ); ?></h2>
 				<div class="breo-buy__price"><?php echo wp_kses_post( breo_bd_price_html( $product ) ); ?></div>
+				<?php do_action( 'breo_bd_buy_after_price', $product ); // e.g. Breo EMI Plans ?>
 				<p class="breo-buy__short"><?php echo esc_html( wp_strip_all_tags( $product->get_short_description() ) ); ?></p>
 				<ul class="breo-badges">
 					<?php foreach ( $d['badges'] as $b ) : ?>
@@ -216,8 +252,18 @@ function breo_bd_sec_buy( $product, $d ) {
 					<p class="breo-buy__na">Launching soon. Message us to reserve yours.</p>
 				<?php endif; ?>
 
-				<?php if ( $wa ) : ?>
-					<a class="breo-buy__wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"><?php echo breo_bd_social_icon( 'whatsapp' ); // phpcs:ignore ?> Order or ask on WhatsApp</a>
+				<?php do_action( 'breo_bd_buy_after_form', $product ); // e.g. Breo Smart Delivery ?>
+
+				<?php if ( $wa || $ms ) : ?>
+					<div class="breo-buy__chat">
+						<span class="breo-buy__chat-h">Order or ask on</span>
+						<?php if ( $wa ) : ?>
+							<a class="breo-chat breo-chat--wa" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"><?php echo breo_bd_social_icon( 'whatsapp' ); // phpcs:ignore ?> WhatsApp</a>
+						<?php endif; ?>
+						<?php if ( $ms ) : ?>
+							<a class="breo-chat breo-chat--ms" href="<?php echo esc_url( $ms ); ?>" target="_blank" rel="noopener"><?php echo breo_bd_social_icon( 'messenger' ); // phpcs:ignore ?> Messenger</a>
+						<?php endif; ?>
+					</div>
 				<?php endif; ?>
 
 				<ul class="breo-buy__trust">
@@ -270,12 +316,21 @@ function breo_bd_sec_specs( $product, $d, $s ) {
 	foreach ( $d['specs'] as $k => $v ) {
 		$h .= '<tr><th scope="row">' . esc_html( $k ) . '</th><td>' . esc_html( $v ) . '</td></tr>';
 	}
-	return $h . '</tbody></table></div></div></section>';
+	$h  .= '</tbody></table>';
+	$h  .= function_exists( 'breo_bd_support_cards_html' ) ? breo_bd_support_cards_html( $product ) : '';
+	return $h . '</div></div></section>';
 }
 
 /* ---------- how to use + FAQ ---------- */
-function breo_bd_product_faq( $d ) {
-	$faq   = $d['faq'];
+function breo_bd_product_faq( $d, $product = null ) {
+	$faq = $d['faq'];
+	if ( $product && '' !== $product->get_price() ) {
+		$w = breo_bd_warranty_period();
+		array_unshift( $faq, array(
+			'What is the price of the Breo ' . $d['short_name'] . ' in Bangladesh?',
+			breo_bd_plain_price( $product ) . ' at Breo Bangladesh, the authorized Breo distributor. It includes ' . ( $w ? 'a ' . $w : 'the' ) . ' official warranty, and you can pay cash on delivery anywhere in Bangladesh.',
+		) );
+	}
 	$faq[] = array( 'Is this a genuine Breo product?', 'Yes. Breo Bangladesh is an authorized Breo distributor, and every unit is officially imported.' );
 	if ( breo_bd_warranty_period() ) {
 		$faq[] = array( 'What warranty do I get?', 'A ' . breo_bd_warranty_period() . ' official warranty against manufacturing defects, handled by us in Bangladesh. See our Warranty Policy for details.' );
@@ -300,7 +355,7 @@ function breo_bd_sec_usage_faq( $product, $d ) {
 			<div class="breo-uf__faq" data-reveal>
 				<h2 class="breo-title">Questions, answered</h2>
 				<div class="breo-faq">
-					<?php foreach ( breo_bd_product_faq( $d ) as $q ) : ?>
+					<?php foreach ( breo_bd_product_faq( $d, $product ) as $q ) : ?>
 						<details><summary><?php echo esc_html( $q[0] ); ?></summary><p><?php echo esc_html( $q[1] ); ?></p></details>
 					<?php endforeach; ?>
 				</div>
@@ -332,7 +387,10 @@ function breo_bd_sticky_bar( $product, $d ) {
 	$h  = '<div class="breo-sticky" data-breo-sticky aria-hidden="true"><div class="breo-wrap breo-sticky__in">';
 	$h .= '<p class="breo-sticky__name"><strong>' . esc_html( $d['short_name'] ) . '</strong><span>' . esc_html( $d['tagline'] ) . '</span></p>';
 	$h .= '<nav class="breo-sticky__nav" aria-label="On this page"><a href="#overview" tabindex="-1">Overview</a><a href="#specs" tabindex="-1">Specs</a><a href="#faq" tabindex="-1">FAQ</a></nav>';
-	$h .= '<div class="breo-sticky__act"><span class="breo-sticky__price">' . wp_kses_post( breo_bd_price_html( $product ) ) . '</span><a class="breo-btn breo-btn--sm" href="#buy" tabindex="-1">Buy now</a></div>';
+	$buy = breo_bd_buy_url( $product );
+	$h  .= '<div class="breo-sticky__act"><span class="breo-sticky__price">' . wp_kses_post( breo_bd_price_html( $product ) ) . '</span>'
+		. ( $buy ? '<a class="breo-btn breo-btn--sm" href="' . esc_url( $buy ) . '" rel="nofollow" tabindex="-1">Buy now</a>' : '<a class="breo-btn breo-btn--sm" href="#buy" tabindex="-1">Details</a>' )
+		. '</div>';
 	return $h . '</div></div>';
 }
 

@@ -1,0 +1,401 @@
+<?php
+/**
+ * Settings screen: Settings -> Breo Social Login.
+ *
+ * Uses the WordPress Settings API, so the nonce, referer check and capability
+ * check are handled by options.php. sanitize() whitelists every field.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+class BREO_SL_Settings {
+
+	const PAGE  = 'breo-social-login';
+	const GROUP = 'breo_sl_group';
+
+	public static function init() {
+		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
+		add_action( 'admin_init', array( __CLASS__, 'register' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( BREO_SL_FILE ), array( __CLASS__, 'action_link' ) );
+	}
+
+	public static function menu() {
+		add_options_page( 'Breo Social Login', 'Breo Social Login', 'manage_options', self::PAGE, array( __CLASS__, 'page' ) );
+	}
+
+	public static function register() {
+		register_setting( self::GROUP, BREO_SL_Options::OPTION, array(
+			'type'              => 'array',
+			'sanitize_callback' => array( 'BREO_SL_Options', 'sanitize' ),
+			'default'           => BREO_SL_Options::defaults(),
+		) );
+	}
+
+	public static function action_link( $links ) {
+		$url = admin_url( 'options-general.php?page=' . self::PAGE );
+		array_unshift( $links, '<a href="' . esc_url( $url ) . '">Settings</a>' );
+		return $links;
+	}
+
+	private static function name( $key ) {
+		return BREO_SL_Options::OPTION . '[' . $key . ']';
+	}
+
+	private static function checkbox( $key, $label, $o, $desc = '' ) {
+		echo '<label style="display:block;margin:0 0 6px;"><input type="checkbox" name="' . esc_attr( self::name( $key ) ) . '" value="1" ' . checked( ! empty( $o[ $key ] ), true, false ) . '> ' . esc_html( $label ) . '</label>';
+		if ( $desc !== '' ) {
+			echo '<p class="description" style="margin:0 0 10px;">' . wp_kses_post( $desc ) . '</p>';
+		}
+	}
+
+	/**
+	 * A read-only, click-to-select box holding the exact redirect URI for a provider.
+	 * Shown at the top AND inside each provider block so it can never be missed.
+	 */
+	private static function redirect_field( $provider ) {
+		$url = BREO_SL_OAuth::callback_url( $provider );
+		echo '<input type="text" readonly onclick="this.select()" value="' . esc_attr( $url ) . '" '
+			. 'style="width:100%;max-width:640px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;'
+			. 'padding:9px 11px;border:1px solid #8c8f94;border-radius:5px;background:#fff;color:#1d2327;">';
+	}
+
+	private static function text( $key, $o, $placeholder = '', $type = 'text' ) {
+		printf(
+			'<input type="%1$s" name="%2$s" value="%3$s" class="regular-text" placeholder="%4$s" autocomplete="off" spellcheck="false">',
+			esc_attr( $type ),
+			esc_attr( self::name( $key ) ),
+			esc_attr( 'password' === $type ? '' : (string) $o[ $key ] ),
+			esc_attr( $placeholder )
+		);
+	}
+
+	/** Secrets are never echoed back; we only show whether one is stored. */
+	private static function secret_state( $key ) {
+		$stored = (string) BREO_SL_Options::get( $key );
+		$const  = ( 'google_client_secret' === $key ) ? 'BREO_SL_GOOGLE_CLIENT_SECRET' : 'BREO_SL_FACEBOOK_APP_SECRET';
+		if ( defined( $const ) && constant( $const ) !== '' ) {
+			return '<span style="color:#0a6b1f;font-weight:600;">Set in wp-config.php</span> (the field below is ignored)';
+		}
+		if ( $stored !== '' ) {
+			return '<span style="color:#0a6b1f;font-weight:600;">Saved</span> — leave blank to keep it, or type a new one to replace';
+		}
+		return '<span style="color:#8a5300;font-weight:600;">Not set</span>';
+	}
+
+	/** "Test this connection" button for one provider (disabled until configured). */
+	private static function test_button( $provider ) {
+		$label = ( 'google' === $provider ) ? 'Google' : 'Facebook';
+		if ( ! BREO_SL_Options::provider_ready( $provider ) ) {
+			echo '<button type="button" class="button" disabled>Test ' . esc_html( $label ) . ' connection</button>';
+			echo '<p class="description">Enter the ID and secret above and press <strong>Save Changes</strong> first.</p>';
+			return;
+		}
+		echo '<a class="button button-secondary" href="' . esc_url( BREO_SL_OAuth::test_url( $provider ) ) . '">Test ' . esc_html( $label ) . ' connection</a>';
+		echo '<p class="description">Runs the real sign-in against ' . esc_html( $label ) . ' and reports what happened. '
+			. '<strong>Nothing is created, linked or signed in</strong> — it is a dry run.</p>';
+	}
+
+	/** Show the result of the last test, then clear it (one-shot). */
+	private static function test_result() {
+		$key = 'breo_sl_test_' . get_current_user_id();
+		$r   = get_transient( $key );
+		if ( ! is_array( $r ) ) {
+			return;
+		}
+		delete_transient( $key );
+
+		$provider = ( isset( $r['provider'] ) && 'google' === $r['provider'] ) ? 'Google' : 'Facebook';
+
+		if ( empty( $r['ok'] ) ) {
+			echo '<div class="notice notice-error" style="max-width:900px;padding:12px 16px;">';
+			echo '<p style="margin:.2em 0;font-size:14px;"><strong>' . esc_html( $provider ) . ' test failed.</strong></p>';
+			echo '<p style="margin:.4em 0;">' . esc_html( (string) $r['error'] ) . '</p>';
+			echo '<p style="margin:.4em 0;color:#646970;">Double-check the <strong>Redirect URL</strong> box below matches the provider console exactly.</p>';
+			echo '</div>';
+			return;
+		}
+
+		$pf  = isset( $r['profile'] ) ? $r['profile'] : array();
+		$out = isset( $r['outcome'] ) ? $r['outcome'] : array();
+		$refused = ( isset( $out['action'] ) && 'refuse' === $out['action'] );
+
+		echo '<div class="notice notice-success" style="max-width:900px;padding:14px 18px;">';
+		echo '<p style="margin:0 0 10px;font-size:14px;"><strong>' . esc_html( $provider ) . ' is connected and working.</strong> '
+			. 'Credentials, redirect URL and permissions are all correct.</p>';
+
+		echo '<table class="widefat striped" style="max-width:640px;margin:0 0 12px;"><tbody>';
+		printf( '<tr><td style="width:190px;"><strong>Name</strong></td><td>%s</td></tr>', esc_html( $pf['name'] !== '' ? $pf['name'] : '(not shared)' ) );
+		printf( '<tr><td><strong>Email</strong></td><td>%s</td></tr>', esc_html( $pf['email'] !== '' ? $pf['email'] : '(not shared)' ) );
+		printf(
+			'<tr><td><strong>Email verified by %s</strong></td><td>%s</td></tr>',
+			esc_html( $provider ),
+			! empty( $pf['verified'] )
+				? '<span style="color:#0a6b1f;font-weight:600;">Yes</span>'
+				: '<span style="color:#8a5300;font-weight:600;">No</span> &mdash; this profile could not be linked to an existing account'
+		);
+		printf(
+			'<tr><td><strong>Profile picture</strong></td><td>%s</td></tr>',
+			! empty( $pf['avatar'] )
+				? '<img src="' . esc_url( $pf['avatar'] ) . '" alt="" width="32" height="32" style="border-radius:50%;vertical-align:middle;margin-right:8px;">Received'
+				: 'Not shared (the normal Gravatar would be used)'
+		);
+		printf( '<tr><td><strong>Provider account ID</strong></td><td><code>%s</code></td></tr>', esc_html( $pf['id'] ) );
+		echo '</tbody></table>';
+
+		echo '<p style="margin:0 0 4px;font-weight:600;">If a customer signed in with this account right now:</p>';
+		echo '<p style="margin:0;padding:9px 12px;border-radius:6px;background:' . ( $refused ? '#fcf0e4' : '#edfaef' ) . ';border:1px solid ' . ( $refused ? '#e8a33d' : '#b7e3bf' ) . ';">'
+			. esc_html( isset( $out['message'] ) ? $out['message'] : '' ) . '</p>';
+
+		if ( $refused && isset( $out['code'] ) && 'breo_sl_admin' === $out['code'] ) {
+			echo '<p style="margin:10px 0 0;color:#646970;">That is expected — you are testing with a staff account and '
+				. '<em>Block social sign-in for administrators</em> is on. A normal customer would sign in fine.</p>';
+		}
+		echo '</div>';
+	}
+
+	public static function page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$o = BREO_SL_Options::all();
+		?>
+		<div class="wrap">
+			<h1>Breo Social Login</h1>
+			<p>Sign in with Google / Facebook for WooCommerce — social login only, no sharing or comment features.</p>
+
+			<?php self::test_result(); ?>
+
+			<div class="card" style="max-width:900px;padding:18px 22px;margin:16px 0 24px;border-left:4px solid #0188fe;background:#f6fbff;">
+				<h2 style="margin:0 0 6px;">Step 1 &middot; Redirect URLs &mdash; copy these into the provider consoles</h2>
+				<p style="margin:0 0 16px;color:#50575e;">Each provider only accepts sign-ins that come back to a URL you have registered.
+				   Paste the matching box below &mdash; it must match <strong>character for character</strong>.
+				   <em>Click a box to select it, then press Ctrl&nbsp;+&nbsp;C.</em></p>
+
+				<p style="margin:0 0 5px;font-weight:600;">Google
+					<span style="font-weight:400;color:#646970;">&mdash; Google Cloud console &rarr; APIs &amp; Services &rarr; Credentials &rarr; your OAuth client &rarr; <em>Authorised redirect URIs</em></span>
+				</p>
+				<?php self::redirect_field( 'google' ); ?>
+
+				<p style="margin:16px 0 5px;font-weight:600;">Facebook
+					<span style="font-weight:400;color:#646970;">&mdash; Facebook app &rarr; Facebook Login &rarr; Settings &rarr; <em>Valid OAuth Redirect URIs</em></span>
+				</p>
+				<?php self::redirect_field( 'facebook' ); ?>
+
+				<p style="margin:16px 0 0;color:#646970;">Also add your domain under <em>Authorised JavaScript origins</em> (Google) if it asks:
+					<code><?php echo esc_html( untrailingslashit( get_option( 'home' ) ) ); ?></code></p>
+
+				<p style="margin:14px 0 0;padding:10px 13px;background:#f0f6fc;border:1px solid #c5d9ed;border-radius:8px;color:#1f4e79;">
+					<strong>Multilingual sites:</strong> there is <strong>one</strong> Redirect URL for the whole site &mdash;
+					the ones above. Do <em>not</em> add a <code>/bn/</code> version. TranslatePress adds the language
+					prefix to normal links, but these URLs are deliberately built without it, so a visitor reading the
+					site in বাংলা signs in through exactly the same URL as an English visitor.
+				</p>
+			</div>
+
+			<form method="post" action="options.php">
+				<?php settings_fields( self::GROUP ); ?>
+
+				<h2 class="title">Google</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">Enable</th>
+						<td><?php self::checkbox( 'google_enabled', 'Show the Google button', $o ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Client ID</th>
+						<td><?php self::text( 'google_client_id', $o, '1234567890-abc.apps.googleusercontent.com' ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Redirect URL</th>
+						<td>
+							<?php self::redirect_field( 'google' ); ?>
+							<p class="description">Must be listed in your Google OAuth client.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Client secret</th>
+						<td>
+							<?php self::text( 'google_client_secret', $o, 'Enter to change', 'password' ); ?>
+							<p class="description"><?php echo wp_kses_post( self::secret_state( 'google_client_secret' ) ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">One Tap</th>
+						<td>
+							<?php self::checkbox( 'js_flow', 'Sign in without leaving the page', $o,
+								'<strong>Recommended.</strong> Google opens the browser&rsquo;s own account chooser &mdash; a bottom sheet on Android, a small dialog on desktop &mdash; and Facebook opens a compact popup, instead of navigating the whole page away and back. '
+								. 'If anything blocks it (popup blocker, the Facebook in-app browser, Google&rsquo;s cool-off after a visitor dismisses the prompt, or JavaScript switched off) the button quietly falls back to the full-page redirect, which works everywhere. Nothing can leave a customer unable to sign in.' ); ?>
+							<?php self::checkbox( 'onetap_enabled', 'Show the Google One Tap prompt to signed-out visitors', $o, 'The floating &ldquo;Sign in as &hellip;&rdquo; card in the corner. Uses the same Client ID above and the same account rules as the buttons.' ); ?>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Test</th>
+						<td><?php self::test_button( 'google' ); ?></td>
+					</tr>
+				</table>
+
+				<h2 class="title">Facebook</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">Enable</th>
+						<td><?php self::checkbox( 'facebook_enabled', 'Show the Facebook button', $o ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">App ID</th>
+						<td><?php self::text( 'facebook_app_id', $o, '123456789012345' ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Redirect URL</th>
+						<td>
+							<?php self::redirect_field( 'facebook' ); ?>
+							<p class="description">Must be listed under Valid OAuth Redirect URIs in your Facebook app.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">App secret</th>
+						<td>
+							<?php self::text( 'facebook_app_secret', $o, 'Enter to change', 'password' ); ?>
+							<p class="description"><?php echo wp_kses_post( self::secret_state( 'facebook_app_secret' ) ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Test</th>
+						<td><?php self::test_button( 'facebook' ); ?></td>
+					</tr>
+				</table>
+
+				<h2 class="title">Where to show the buttons</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">Placement</th>
+						<td>
+							<?php
+							self::checkbox( 'at_wc_login', 'WooCommerce login form', $o, 'Inside the form, just above the Login button.' );
+							self::checkbox( 'at_wc_login_before', 'Above the WooCommerce login form', $o, 'Use this instead if the phone-OTP plugin hides the email/password form — anything inside that form gets hidden with it.' );
+							self::checkbox( 'at_wc_register', 'WooCommerce register form', $o, 'Inside the form, just above the Register button (same spot as the old plugin).' );
+							self::checkbox( 'at_wc_checkout', 'WooCommerce checkout page', $o );
+							self::checkbox( 'at_wc_cart', 'WooCommerce cart page', $o, 'Above the cart table. A shopper with items in the cart who is not signed in is the best moment to ask — signing in there prefills checkout and attaches the order to an account.' );
+							self::checkbox( 'at_wp_login', 'WordPress wp-login.php screen', $o, 'Leave off if only customers use social login.' );
+							?>
+							<p class="description">You can also place them anywhere with the shortcode <code>[breo_social_login]</code>.</p>
+						</td>
+					</tr>
+				</table>
+
+				<h2 class="title">Appearance</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">Caption</th>
+						<td>
+							<?php self::text( 'title', $o, 'Or login with' ); ?>
+							<p class="description">Shown above the icons. Leave empty to hide.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Icon shape</th>
+						<td>
+							<select name="<?php echo esc_attr( self::name( 'shape' ) ); ?>">
+								<?php foreach ( array( 'round' => 'Round', 'rounded' => 'Rounded square', 'square' => 'Square' ) as $k => $v ) : ?>
+									<option value="<?php echo esc_attr( $k ); ?>" <?php selected( $o['shape'], $k ); ?>><?php echo esc_html( $v ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Icon size</th>
+						<td>
+							<input type="number" min="28" max="72" name="<?php echo esc_attr( self::name( 'size' ) ); ?>" value="<?php echo esc_attr( (int) $o['size'] ); ?>" class="small-text"> px
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Alignment</th>
+						<td>
+							<select name="<?php echo esc_attr( self::name( 'align' ) ); ?>">
+								<?php foreach ( array( 'center' => 'Centre', 'left' => 'Left', 'right' => 'Right' ) as $k => $v ) : ?>
+									<option value="<?php echo esc_attr( $k ); ?>" <?php selected( $o['align'], $k ); ?>><?php echo esc_html( $v ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Button style</th>
+						<td>
+							<?php self::checkbox( 'show_label', 'Wide buttons with text', $o, 'Off = compact brand icons, like the old plugin.' ); ?>
+
+							<?php $gb = $o['google_button']; ?>
+							<p style="margin:14px 0 4px;font-weight:600;">The Google button</p>
+							<select name="<?php echo esc_attr( self::name( 'google_button' ) ); ?>" style="min-width:340px;">
+								<option value="native" <?php selected( $gb, 'native' ); ?>>Google&rsquo;s own button &mdash; gets the in-page sign-in dialog</option>
+								<option value="custom" <?php selected( $gb, 'custom' ); ?>>Our button &mdash; our wording, opens a popup window</option>
+							</select>
+							<p class="description">A real either/or, not a style preference:</p>
+							<ul class="description" style="margin:4px 0 0 18px;list-style:disc;">
+								<li><strong>Google&rsquo;s own button</strong> is the only thing that can raise the browser&rsquo;s account
+									chooser (the dialog with no address bar). In exchange, Google controls its wording and appearance.</li>
+								<li><strong>Our button</strong> can say anything &mdash; including just &ldquo;Google&rdquo; &mdash; and matches
+									the Facebook button exactly, but the sign-in happens in a popup window instead.</li>
+							</ul>
+							<p class="description">Sites that appear to have both are using Google&rsquo;s <em>legacy</em> sign-in library,
+								which Google retired in March 2023 and keeps working only through a temporary migration shim. It can stop
+								at any time, so this plugin does not use it.</p>
+
+							<?php $ls = $o['label_style']; ?>
+							<p style="margin:14px 0 4px;font-weight:600;">Wording</p>
+							<select name="<?php echo esc_attr( self::name( 'label_style' ) ); ?>" style="min-width:280px;">
+								<option value="continue_with" <?php selected( $ls, 'continue_with' ); ?>>Continue with Google / Facebook</option>
+								<option value="signin_with"   <?php selected( $ls, 'signin_with' ); ?>>Sign in with Google / Facebook</option>
+								<option value="signup_with"   <?php selected( $ls, 'signup_with' ); ?>>Sign up with Google / Facebook</option>
+								<option value="signin"        <?php selected( $ls, 'signin' ); ?>>Sign in (shortest)</option>
+								<option value="brand"         <?php selected( $ls, 'brand' ); ?>>Google / Facebook &mdash; brand name only</option>
+							</select>
+							<p class="description">Applies to Facebook always, and to Google only when set to <strong>Google&rsquo;s own
+								button</strong> above &mdash; Google permits <strong>only these four phrasings</strong> and no bare
+								&ldquo;Google&rdquo;. With <strong>our button</strong> selected, Google simply shows
+								&ldquo;Google&rdquo; like Facebook shows &ldquo;Facebook&rdquo;.</p>
+
+							<?php
+							// The heading and the button text can easily say the same thing twice.
+							$title = trim( (string) $o['title'] );
+							if ( ! empty( $o['show_label'] ) && $title !== '' && 'signin' !== $ls ) :
+								?>
+								<p style="margin:10px 0 0;padding:9px 12px;border-radius:6px;background:#fcf0e4;border:1px solid #e8a33d;">
+									Your heading says &ldquo;<strong><?php echo esc_html( $title ); ?></strong>&rdquo; and the buttons will also
+									say &ldquo;<strong>Continue with&hellip;</strong>&rdquo;, so the wording repeats. Either shorten the heading to
+									<strong>Or</strong>, clear it entirely, or switch the buttons back to <strong>compact icons</strong> and let the
+									heading do the work.
+								</p>
+							<?php endif; ?>
+						</td>
+					</tr>
+				</table>
+
+				<h2 class="title">Accounts &amp; security</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">Registration</th>
+						<td><?php self::checkbox( 'allow_register', 'Create an account when a new person signs in socially', $o ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Link by email</th>
+						<td><?php self::checkbox( 'link_by_email', 'Link to an existing account when the email matches', $o, 'Only ever applies to an address the provider has <strong>verified</strong>. With this off, an existing customer must sign in with their password once before the social account can be linked.' ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Staff accounts</th>
+						<td><?php self::checkbox( 'block_admins', 'Block social sign-in for administrators / shop managers (recommended)', $o, 'Staff should sign in with a password so a compromised Google or Facebook account cannot reach the dashboard.' ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Profile pictures</th>
+						<td><?php self::checkbox( 'use_avatar', 'Use the Google / Facebook profile picture as the customer avatar', $o, 'Refreshed at every sign-in. Only images served from the providers own CDNs are accepted; anything else is ignored. Customers with no social picture keep the normal Gravatar.' ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row">Notifications</th>
+						<td><?php self::checkbox( 'notify_admin', 'Email the admin when a new user registers this way', $o ); ?></td>
+					</tr>
+				</table>
+
+				<?php submit_button(); ?>
+			</form>
+		</div>
+		<?php
+	}
+}

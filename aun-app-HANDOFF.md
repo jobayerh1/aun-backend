@@ -23,11 +23,157 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.1.4+112**, **plugin 1.101.0 (DB v21)**, **spare-parts 0.41.0 (DB v10)**,
-**projector wizard 3.5.0**.
+Current versions: **app 2.5.0+141**, **plugin 1.114.1 (DB v23)**, **spare-parts 0.47.1 (DB v12)**,
+**warranty 2.9.0**, **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-09-21 — Warranty 2.9.0 met the app: app-api 1.114.1
+
+The warranty plugin's admin screen was rewritten (2.9.0, its own session): decisions moved to
+`admin_init` with a redirect, a rejection now RELEASES the serial, approve/reject are state-aware,
+and `slb_flush_manual_counts()` is finally called at all nine of its write sites.
+
+**Most of it needed nothing from the app.** The app already understood released serials, claims
+rejected against somebody else, and corrections — that was the ownership work in 1.112. The plugin's
+changes are admin-side. Two seams did need closing, and one thing the audit confirmed rather than
+changed:
+
+| | |
+|---|---|
+| **The badge ignored the app** | The plugin flushes the toolbar's "needs a human" count at every one of ITS write sites. The app is a write site too — it files registrations awaiting review and deletes them when an owner removes the projector — and the count is cached for a minute, so app activity left the badge disagreeing with the list under it. `AUN_App_Warranty::flush_admin_badge()` (guarded by `function_exists`, so an older warranty plugin is fine) now runs at both. |
+| **"Already registered" was wrong for a rejected claim** | The scan and type paths have said *"We couldn't verify this registration"* with a support button since 1.112; the manual form's error still answered *"This device is already registered to your account"*, contradicting the grey **Rejected** chip on the same customer's own device list. `register_device()` now returns `status` alongside `already_registered`, and `errorText()` uses the existing `rejectedNote` wording for it. |
+| ✅ **Taking over a released projector still keeps the original date** | Confirmed, not changed. `register_device` does not refuse a released serial — it CLAIMS it through `AUN_App_Transfers::claim_released()`, so an older app build posting to this endpoint lands where "Add device" would. The bench test now pins the purchase date surviving, which is the thing that must never break. |
+
+Nothing else transfers: the `[DECISION] <status> by <user>` stamp the plugin now writes into `notes`
+is never sent to the app (checked), and the four plugin functions app-api calls — `slb_opts` is our
+own, plus `slb_queue_compression`, `slb_registration_match_status`, `slb_send_templated_sms/email` —
+all still exist.
+
+Tests: bench `wp-local	ests	est-warranty-app-seam.php` (18) — a rejection frees the serial and the
+real owner can register; the app's writes move the badge immediately; a released projector keeps its
+date; a customer's own rejected claim reports `rejected`. Their own `test-warranty-actions.php` (33)
+passes against this build too.
+
+⚠️ **Deploy the warranty plugin as the raw `.php`**, overwriting in place — it is a single-file
+plugin, and zipping it into a folder installs a second copy beside the live one.
+
+## 2026-09-20 (2) — Answering a photo we sent back, in the app: app 2.5.0+141 / app-api 1.114.0
+
+Spare parts **0.47.1** (built the same day, in its own session) can now send a customer's photo
+**back with a reason** — "wrong part", "too blurry", "doesn't match this model" — plus an optional
+note and the part it concerns. The website tracker shows all of it and takes the new photo. The app
+did not, and had three problems, in order of how much they hurt:
+
+1. **No way to answer.** The SMS says "re-upload" and the app's own screen said "Waiting on you"
+   with nothing to tap. The one channel where the customer already is, is the one that could not
+   close the loop.
+2. **⚠️ It printed our internal log line to the customer.** `photo_request` is stored as English
+   written for the admin list — *"Asked for a new photo — Wrong part photographed (Remote control):
+   the photo shows the power board"* — the dropdown label, the part name and the private note. The
+   app showed the stored message verbatim in the customer's own progress history. The website
+   re-words it from the reason KEY; the app now does exactly the same, in their language.
+3. **The reason never arrived at all**, so the app could only say "waiting" — which fixes a blurry
+   photo and does nothing whatever when someone photographed the wrong part.
+
+### What the app shows now
+
+Under the request header, above everything else: *"We need a new photo"* — the reason, the fix hint,
+our note in its own box, the part it is about, **their photo beside the catalogue example**, and a
+full-width **Send a new photo** (camera first, then gallery). The part row is marked, the requests
+list says *"We need a new photo — tap to send it"*, and Home says *"Send a new photo"* instead of
+"Waiting on you" (Home's own rule: say what is needed, not what we call the state).
+
+Every word of the reason comes from the PLUGIN's Translations catalogue, resolved server-side with
+the app's language. Nothing is composed on the phone, so editing the wording on the website changes
+the app too.
+
+### Three things the audit found
+
+| | |
+|---|---|
+| ⚠️ **A second ask was silently deduped** | The notice key was `(ref, status)`, so `waiting_customer` could fire **once per request, ever**. Ask → they send another wrong photo → ask again → the SMS went out and the app said nothing. Each ask now carries its own event id (`AUN_App_Services::photo_ask_round()`), exactly as a second quote round does. |
+| **The push said the wrong thing** | "Open the request to upload a clearer photo" — the very sentence the reason codes exist to replace. It now carries the reason itself, in both languages. |
+| **No cap of its own** | The atomic claim allows one *successful* upload per ask; failures were unlimited. 20/day per account, like the other app-api caps. |
+
+Plus: the attachment now records `bytes_before` (the admin's compression report read "saved 0%" for
+every app photo), and one analytics event — `parts_photo_sent` — answers whether the app actually
+removed the trip to the website.
+
+### Where it lives
+
+| Piece | Detail |
+|---|---|
+| Payload | `photo_ask: {reason, what, how, note, item_id, part, photo, ref_image}` — **null** unless we are waiting AND a reason was recorded |
+| Per item | `needs_photo`, `ref_image` (from `AUN_SP_Parts::get()`, never a copy) |
+| Upload | `POST /aun-app/v1/parts/photo` — multipart `ref` + `photo`; `AUN_App_Services::resend_parts_photo()` mirrors `AUN_SP_Tracking::ajax_reupload()` rule for rule (validate before the claim, one conditional UPDATE, restore the reason on failure, file the photo against the part it corrects) |
+| ⚠️ `not_waiting` | 409, and the app says *"We are no longer waiting for a photo on this request"* — not "thanks, we have it", which would be false for a photo that was dropped |
+| Tests | `test/parts_photo_ask_test.dart` (10) + bench `wp-local\tests\test-sp-photo-app.php` (51) |
+
+No DB change in app-api — the columns belong to the spare-parts plugin (its own DB v12).
+
+### Deploy
+
+1. **Spare parts 0.47.1 first** (it owns `photo_reason`/`photo_note`/`photo_item_id`), then
+   **`aun-app-api.zip` 1.114.0**. Clear WP Rocket cache after both.
+2. Build the app **2.5.0+141**. An older app build simply does not show the card; an older server
+   sends no `photo_ask` and the screen looks exactly as it did before.
+
+## 2026-09-20 — The OTA that never finishes: app 2.4.2+140 / app-api 1.113.7 (DB v23)
+
+### The problem
+
+Some customers cannot complete an over-the-air firmware update: it stalls around 50–60% on a slow
+line. **The projector restarts its own download from zero on every attempt**, so a customer on a weak
+connection can never get past that point, however many times they try. We have the same firmware as
+an offline zip, but it installs a completely different way (USB drive, not the projector's menu).
+
+### What NOT to do: publish the zip as a second firmware entry
+
+Two entries for one release means two version numbers on the screen, **two "new firmware"
+notifications**, and a customer deciding which of them is newer. That is the mistake the whole
+design avoids.
+
+### What top platforms do — and what we now do
+
+Google ships one Pixel release as an OTA **and** a full image: same build, same release notes, one
+announcement. The OTA is the default; the manual install sits *below* it, labelled by the problem it
+solves ("if the update fails"), with its own prerequisites and steps.
+
+So: **one firmware row carries an optional offline installer** — its own file, its own size, its own
+installation steps. The version, the "What's new" and the notification stay single.
+
+- **Admin → AUN App → Content → Firmware** now has an *"If the update fails"* block: file picker,
+  size, its own steps editor, and its own "Test download from server" button. Leave it blank and
+  nothing changes anywhere.
+- **The app** shows a quiet outlined card under the Wi-Fi instructions: *"Update stuck or won't
+  finish?"* → **try again closer to the router first**, then "Offline update · 412 MB". It is on the
+  screen **before** anything goes wrong — someone watching a progress bar stall for the third time
+  needs the way out where they are already looking, not after they write to support.
+- Opening it pushes the same firmware screen pointed at the offline file: *"This is the same update
+  as the Wi-Fi one — nothing is skipped"*, the **offline** steps (never the WLAN ones), and the
+  ordinary download — which is the actual fix: **the phone's download pauses and continues**, so a
+  connection that drops does not start it over.
+
+### Where it lives
+
+| Piece | Detail |
+|---|---|
+| DB v23 | `aun_app_content.alt_url` / `alt_note` / `alt_size` (added by ALTER on upgrade) |
+| Payload | `offline: {url, note, size, ext}` — **null** unless a file is attached; firmware only |
+| Download | same redirect endpoint with **`?alt=1`** → `/aun-app/v1/content/{id}/file?alt=1` |
+| App model | `OfflineInstall`, and `ContentItem.offlineItem` for the fallback screen |
+| ⚠️ id | `offlineItem` **negates** the content id — downloads are tracked by id, so the two files of one release would otherwise overwrite each other's progress and saved path |
+| Not gated by | the "Downloadable in the app" switch (that describes the MAIN file); the offline installer is withdrawn by clearing its own URL |
+| Tests | `test/firmware_offline_test.dart` (8) + bench `wp-local\tests\test-firmware-offline.php` (29) |
+
+### Deploy
+
+1. Upload **`aun-app-api.zip` 1.113.7** (DB v23 migrates on activation) — then clear WP Rocket cache.
+2. Edit the firmware entry: attach the offline zip + write the USB steps.
+3. Build the app **2.4.2+140**. Customers on older app builds simply do not see the card — the
+   server change alone breaks nothing.
 
 ## 2026-09-07 (2) — "Where is the serial number?" now shows the BOX: app 2.2.4+128 / app-api 1.105.0
 
