@@ -55,14 +55,16 @@ with sync_playwright() as p:
         b.close()
         (HERE / "output").mkdir(exist_ok=True)
         out = HERE / "output" / f"aun-5pct-offer-{NAMES[fmt]}.mp4"
-        # silent stereo track: some placements reject video-only uploads
+        # soundtrack.wav (music.py) when present, otherwise a silent track: some placements reject video-only uploads
+        snd = HERE / "soundtrack.wav"
+        audio_in = ["-i", str(snd)] if snd.exists() else ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"]
         r = subprocess.run([FF, "-hide_banner", "-loglevel", "error", "-y", "-framerate", str(FPS), "-i", str(frames / "f_%04d.jpg"),
-                            "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-shortest",
+                            *audio_in, "-t", f"{dur:.3f}",
                             # Chrome's JPEG frames are full-range: convert to standard video range or phones show it washed out
                             "-vf", "scale=in_range=pc:out_range=tv:out_color_matrix=bt709,format=yuv420p",
                             "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
                             "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-r", str(FPS),
-                            "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(out)], capture_output=True, text=True)
+                            "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)], capture_output=True, text=True)
         if r.returncode:
             sys.exit(r.stderr[-3000:])
         shutil.rmtree(frames, ignore_errors=True)
