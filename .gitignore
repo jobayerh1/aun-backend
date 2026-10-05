@@ -59,3 +59,17 @@ Thumbs.db
 *.webm
 *.wav
 *.psd
+*.m4a
+*.mp3
+
+# ── Photo/media libraries and tool caches — not code ──────────────────────
+breo/Product Pic & Video/
+breo/Product Description & Main Images/
+aunstore/projector picture/
+**/chrome-prof/
+**/_shots/
+**/_stills/
+**/output/
+romantic/
+*.tflite
+*.pma

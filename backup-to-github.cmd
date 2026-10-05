@@ -59,6 +59,16 @@ git remote get-url origin >nul 2>&1 || (
 )
 
 git add -A
+
+rem Safety net: un-stage any file over 20 MB (videos, photos, builds).
+rem GitHub rejects files over 100 MB and the backup is for code only.
+for /f "delims=" %%F in ('git diff --cached --name-only --diff-filter=AM') do (
+    for %%S in ("%%F") do if %%~zS GTR 20000000 (
+        echo    Skipping large file: %%F
+        git reset -q -- "%%F"
+    )
+)
+
 git diff --cached --quiet && (
     echo    Nothing changed since the last backup.
 ) || (
