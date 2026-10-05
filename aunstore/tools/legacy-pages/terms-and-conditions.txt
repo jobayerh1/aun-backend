@@ -1,0 +1,123 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Terms Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-file-contract"></i> Terms &amp; Conditions</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">These terms apply when you use aunstore.com and buy from [aunstore_info key="company"]. Please read them before placing your order.</p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Terms Highlights"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-dollar-sign"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Prices in USD</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">All prices are in US dollars. Shipping is added at checkout; local duties may apply.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-lock"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Secure Payments</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Payments are processed by secure payment providers &mdash; we never store your full card number.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-shield-halved"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Warranty &amp; Support</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Every projector has a 1-year warranty with replacement parts shipped to you.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Terms & Conditions"]
+[accordion]
+
+[accordion-item title="1. Overview"]
+
+<p>These terms apply to every order placed on aunstore.com, operated by [aunstore_info key="company"] ("we", "us"). By placing an order you agree to them. Nothing in these terms limits the rights you have under the consumer-protection laws of your country.</p>
+
+[/accordion-item]
+[accordion-item title="2. Products & Specifications"]
+
+<p>We describe our products as accurately as we can. Photos are for illustration, and colors can look slightly different on different screens. Specifications may be updated as models are improved.</p>
+
+[/accordion-item]
+[accordion-item title="3. Pricing & Payments"]
+
+<p>Prices are shown in US dollars (USD). Shipping costs are added at checkout. Import duties and taxes charged by your country are explained in our <a href="/shipping-policy/" style="color:#0188fe; font-weight:bold;">Shipping Policy</a>. Payment is taken when you place your order, through the secure payment methods shown at checkout.</p>
+
+[/accordion-item]
+[accordion-item title="4. Orders"]
+
+<p>You will receive an email when we receive your order. A contract is formed when we confirm and ship it. We may decline or cancel an order &mdash; for example if a product is out of stock, a price was clearly shown in error, or a payment cannot be verified. If we cancel, we refund you in full.</p>
+
+[/accordion-item]
+[accordion-item title="5. Shipping"]
+
+<p>We ship worldwide. Delivery charges, timelines, tracking and customs are explained in our <a href="/shipping-policy/" style="color:#0188fe; font-weight:bold;">Shipping Policy</a>.</p>
+
+[/accordion-item]
+[accordion-item title="6. Warranty"]
+
+<p>AUN projectors come with a 1-year warranty from the date of purchase. How claims work and what is covered is explained on <a href="/warranty/" style="color:#0188fe; font-weight:bold;">Warranty &amp; Support</a>.</p>
+
+[/accordion-item]
+[accordion-item title="7. Damaged, Faulty or Wrong Items"]
+
+<p>If your order arrives damaged, faulty or incorrect, please <a href="/contact-us/" style="color:#0188fe; font-weight:bold;">contact us</a> and we will make it right.</p>
+
+[/accordion-item]
+[accordion-item title="8. Account & Billing Information"]
+
+<p>Please keep your account and billing details accurate and up to date, and keep your password safe. You are responsible for activity under your account.</p>
+
+[/accordion-item]
+[accordion-item title="9. Prohibited Uses"]
+
+<p>Please do not misuse the website, attempt to break its security, or copy its content for commercial use. Text, images and logos on this site belong to [aunstore_info key="company"] or its licensors.</p>
+
+[/accordion-item]
+[accordion-item title="10. Limitation of Liability"]
+
+<p>We are responsible for losses that are a foreseeable result of our breaking these terms. We are not responsible for losses that were not foreseeable, for business losses, or for losses caused by events outside our reasonable control. Nothing here excludes liability that cannot be excluded by law.</p>
+
+[/accordion-item]
+[accordion-item title="11. Changes to Terms"]
+
+<p>We may update these terms from time to time. The version on this page when you place your order is the one that applies to it.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="18px" label="Last Updated"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>30 September, 2026</strong></p>
+[/ux_text]
+
+[/section]

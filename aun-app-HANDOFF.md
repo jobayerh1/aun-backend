@@ -1,6 +1,6 @@
 # AUN Projector Bangladesh — App Development Handoff
 
-_Last updated: 2026-07-23. Read this first when continuing in a new session._
+_Last updated: 2026-09-25. Read this first when continuing in a new session._
 
 A native Android customer app for AUN projector buyers (Bangla-first, English toggle),
 backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a WebView.**
@@ -23,11 +23,148 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.5.0+141**, **plugin 1.114.1 (DB v23)**, **spare-parts 0.47.1 (DB v12)**,
-**warranty 2.9.0**, **projector wizard 3.5.0**.
+Current versions: **app 2.6.0+142**, **plugin 1.116.0 (DB v24)**, **help centre 2.8.0**,
+**spare-parts 0.47.1 (DB v12)**, **warranty 2.9.0**, **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-09-25 — AUN Rewards: invite friends + reward owners who buy again (app 2.6.0+142 · app-api 1.116.0 · help centre 2.8.0)
+
+The plan and every decision: **`AUN-REWARDS-PLAN.md`** (v2, locked). Margin ~20% → the rule behind every
+number: **no sale gives away more than 10%**.
+
+### What customers get
+
+- **Invite (existing, fixed):** friend 5% off their first order, inviter 5% of it once delivered.
+  Now also works at the **showroom** both ways; a past **showroom** buyer is no longer "new" (ERP checked,
+  fails open if the ERP is down); an invite code typed at checkout explains itself instead of
+  "Coupon does not exist"; the share link opens **`/refer/?code=…`** (bilingual landing page + full
+  guide, auto-created, works under /bn/).
+- **Owner Rewards (new):** every projector bought FROM AUN (website order reaching the payout status,
+  or an ERP showroom sale) earns **NEXT-XXXXXX = 5% off one full-price projector, 12 months, one at a
+  time** (buying again extends it). Phone-locked. SMS on issue + one reminder 30 days before the end.
+  Taken back on refund/cancel/ERP return. Dealer-group sales never earn. **No backfill** — only
+  purchases after the launch moment (stamped the first time it is switched on).
+- **Combining:** invite rewards + owner reward combine; nothing else does. **Ceiling 10% of the items.**
+  A reward that does not fit is **not refused**: what fits is used, the rest is split into a NEW
+  THANKS- code (same expiry, same lock) — "use what fits, keep the rest". The owner reward (a %)
+  is only taken off if it cannot fit alone.
+
+### Where it lives
+
+| | |
+|---|---|
+| Owner Rewards engine | `includes/class-aun-app-owner-rewards.php` (ledger table `aun_app_owner_rewards`) |
+| Ceiling + splitting | `includes/class-aun-app-rewards-ceiling.php` — `plan()` is the ONE decision, used by the website cart AND the showroom |
+| Showroom counter | `includes/class-aun-app-rewards-showroom.php` → wp-admin **AUN App → Rewards** (shop managers too); log table `aun_app_reward_redemptions` |
+| Landing page | `includes/class-aun-app-rewards-page.php`, shortcode `[aun_refer]`, page option `aun_app_refer_page_id` |
+| Settings | AUN App → Settings → **Owner Rewards** (switch, %, months, projector categories, sale items, SMS, ceiling, showroom, return window) + a small report |
+| App | `referral_screen.dart` (now "Rewards"), `referral_settings_card.dart`, `home_reward_nudge.dart` (last 30 days only), models `OwnerReward`/`OwnerProgram`, notification types `referral`/`rewards` → Rewards screen |
+| Support | help centre KB-021…024 (category "rewards"); `aun-support-faq-corpus.md` v1.3 |
+
+### Traps found on the way (all fixed, all tested)
+
+1. ⚠️ **The DB upgrade would have taken the live site down.** It created the landing page inside
+   `aun_app_api_activate()`, which also runs on `plugins_loaded` — before `$wp_rewrite` exists — so
+   `wp_insert_post` fatalled BEFORE the new DB version was saved: every request would re-run it and die.
+   Now the upgrade only flags the page; it is made on `init`, wrapped in try/catch.
+2. A column named **`lines`** — a MySQL reserved word (`LINES TERMINATED BY`): the table silently
+   never existed. Renamed `detail`.
+3. A refunded order gave its owner reward back, but WooCommerce's per-customer `_used_by` record
+   stayed, so the same customer was refused it. `decrease_usage_count( $used_by )`.
+4. Spend-then-earn ordering: a new purchase must never EXTEND the reward being spent on it (web: router
+   order; showroom: the invoice is detached from the spent reward and earns its own).
+5. A refund could leave a customer holding TWO rewards → the one coming back folds into the one held.
+6. ERP sales had no "is it a projector?" check — a **projector screen** earned a projector reward.
+   Now: SKU (or `_aun_erp_product_id`) → website product → owner-reward categories. Never by name.
+7. The OTP **per-IP daily cap** would lock the showroom counter out after a few customers — the
+   `showroom` purpose counts per phone only.
+8. The referral phone-lock "block checkout backstop" does NOT run on the block checkout (the hook is
+   classic-only). Live checkout is classic, so latent — spun off as a separate task.
+
+### Tests (bench, `wp-local\tests`)
+
+`test-referral-baseline` 42 (characterisation, unchanged behaviour) · `test-rewards-invite` 19 ·
+`test-owner-rewards` 84 · `test-rewards-ceiling` 64 · `test-rewards-showroom` 71–72 · `test-rewards-settings`
+17 · plus the older suites, all green. App: 584 tests + `rewards_test.dart` 16; renders in
+`build/rewards/` (`rewards_render_test.dart`). Previews of the counter screen: `preview-rewards-showroom.php`.
+
+### Audit (same day) — fixed before release, `test-rewards-audit.php` (29 checks)
+
+1. ⚠️ **Past online buyers passed as "new customers"** (pre-existing): `has_purchase_history()` /
+   `phone_has_other_orders()` counted only processing/completed/on-hold, but this store ends orders at
+   AST **Delivered**. Now `AUN_App_Referrals::purchase_statuses()` (every registered purchase status +
+   the payout statuses).
+2. ⚠️ **One online purchase could earn two owner rewards.** Online sales are ALSO entered in the ERP
+   (it is how the app finds every device), so the delivered website order and its ERP record both
+   earned — and a website refund left the reward propped up by the ERP source. Now
+   `is_web_order_record()`: same phone + same projector (by SKU) + ERP date within [−7, +45] days of the
+   website order → `web_order`, never earns.
+3. **ERP returns never clawed back.** The ERP phone lookup (`AppLookupController::byPhone`) DROPS
+   returned lines entirely — a returned sale just vanishes. ERP sources now keep their serial;
+   `check_erp_returns()` asks the serial lookup (which does report returns) at sign-in / counter and daily.
+4. Codes from the no-look-alike alphabet (`new_code()`); friend no longer shown the inviter's line
+   (app); counter explains missing sales and flags an invoice not yet in the ERP; phone-lock message
+   says "This discount" (it covers owner + balance codes too).
+
+Staff rule the whole showroom side depends on: the ERP sale under the customer's own mobile, with the
+**serial on its own line** in the product note. Walk-through of every screen + the audit table:
+https://claude.ai/artifact/UwfvvpUabwpERhVmjsNWnL
+
+### To launch (in this order)
+
+1. Upload **`aun-app-api.zip`** (1.116.0) and **`aun-help-center.zip`** (2.8.0). The first page load runs
+   the DB v24 upgrade; `/refer/` appears on the next.
+2. **Clear WP Rocket cache.**
+3. Settings → Owner Rewards: tick the **projector categories** (screens/accessories unticked), switch on,
+   Save — that moment is the launch.
+4. Check the website SKUs match the ERP's (`product_sku`) — an unmatched ERP product earns nothing
+   (the counter screen says so).
+5. Build + release the app (2.6.0+142).
+6. ⚠️ The spun-off "block checkout phone lock" task edits `class-aun-app-referrals.php` too — merge it
+   on top of 1.116.0, don't ship it from an older base.
+
+Note: 1.115.1 (header + constant) was bumped by another session on 24 Sep with no handoff entry;
+the 1.116.0 diff was checked against the 1.115.x zip and contains only this work.
+
+## 2026-09-24 — The repair notification nobody noticed: app-api 1.115.0
+
+Reported as "when a customer applies for a repair from the app, the admin is unaware — add a
+notification to the top admin bar". **One already existed** (since 1 August, `aun_app_api_admin_bar_repairs`)
+and it worked: proved on the bench, a new request makes it appear. It was simply too quiet:
+
+1. a **grey hammer and a bare number** — the same weight as every other item, nothing saying what it counted;
+2. **nothing on hover** — no customer, no projector, no "waiting since";
+3. **invisible on a phone** — WordPress core hides every custom top-bar item below 782px, and nothing
+   brought it back. The bug-report and ticket counters had the same problem.
+
+### Now
+
+- **Amber, labelled "2 repair requests"**; turns **red** once the oldest has waited over a day (that
+  customer was told to wait for our answer before sending anything).
+- **Dropdown**: the eight oldest, `RP-… · customer · model · 3 hours ago`, each linking to its own row
+  (`#aun-repair-{id}`), then "+N more" and "Open repair requests".
+- **Phones**: repairs, bug reports and tickets all show, with the count as a badge on the icon.
+  ⚠️ Core turns `.ab-label` into screen-reader-only text there (`clip-path: inset(50%)`) — the badge
+  needs `clip-path:none` or it silently vanishes; caught by looking at it, not by a test.
+- **Repairs screen**: requests waiting for a decision are listed FIRST and highlighted. Newest-first
+  with `LIMIT 100` meant one that had waited a while could fall off the very page the notification opens.
+- **Never stale**: the count is cleared on create, on approve/reject, and now also when an ERP job
+  sheet adopts a waiting request (the projector turned up before anyone approved the pickup) — that
+  path used to leave it showing for another minute.
+
+### Details
+
+| | |
+|---|---|
+| Data | `aun_app_api_pending_repairs()` → `{count, rows}`, cached 60s under the SAME key (`aun_app_pending_repairs_count`) so every existing flush keeps working; an older build's cached integer is treated as a miss |
+| Age | `aun_app_api_repair_age()` — `created_at` is site time; converted via `get_gmt_from_date()` before comparing with `time()`, or every request would read six hours younger |
+| Who sees it | `manage_options` only, as before |
+| Test | bench `wp-local\tests\test-repair-admin-bar.php` (36) — heals a crashed previous run first (restores parked rows BEFORE deleting its own) |
+
+Not built, offered: an **email** to the admin when a request arrives. The bar only helps while someone
+is on the site; the courier-tracking step already emails, the request itself does not.
 
 ## 2026-09-21 — Warranty 2.9.0 met the app: app-api 1.114.1
 

@@ -289,7 +289,7 @@ function breo_bd_footer_html() {
 		<div class="breo-wrap breo-ftr__top">
 			<div class="breo-ftr__brand">
 				<?php echo breo_bd_logo(); // phpcs:ignore ?>
-				<p>The authorized distributor of Breo portable wellness devices in Bangladesh: genuine products, a local warranty and real people to help.</p>
+				<p>The authorized distributor of Breo portable wellness devices in Bangladesh: genuine products, a local replacement warranty and real people to help.</p>
 				<?php if ( $social ) : ?>
 					<div class="breo-ftr__social">
 						<?php foreach ( $social as $s => $url ) : ?>
@@ -379,7 +379,7 @@ add_action( 'wp_head', function () {
 			$type = 'product';
 		}
 	} elseif ( 'home' === breo_bd_view() ) {
-		$desc = 'Authorized Breo distributor in Bangladesh. Portable neck, eye, back and muscle massagers with official warranty and delivery across Bangladesh.';
+		$desc = 'Authorized Breo distributor in Bangladesh. Portable neck, eye, back and muscle massagers with a replacement warranty and delivery across Bangladesh.';
 		$ps   = breo_bd_products();
 		if ( $ps ) {
 			$first = reset( $ps );
@@ -457,7 +457,8 @@ add_filter( 'woocommerce_add_to_cart_redirect', function ( $url, $product = null
 		return wc_get_checkout_url();
 	}
 	if ( ! empty( $_REQUEST['breo_atc'] ) && $product instanceof WC_Product ) { // phpcs:ignore WordPress.Security.NonceVerification
-		return $product->get_permalink() . '#buy';
+		// ?breo-added: page caches skip query strings, so the add's tracking events print on this very page (see tracking.php)
+		return add_query_arg( 'breo-added', '1', $product->get_permalink() ) . '#buy';
 	}
 	return $url;
 }, 20, 2 );

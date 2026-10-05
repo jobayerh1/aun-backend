@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>U002 Pro end card</title>
+<style>
+  :root { --blue: #0188fe; --ink: #ffffff; --muted: #b9cbe0; --bg1: #06101f; --bg2: #0b2240; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: var(--h); overflow: hidden; background: var(--bg1); }
+  body {
+    font-family: 'Nirmala UI', 'Segoe UI', sans-serif; color: var(--ink);
+    background:
+      radial-gradient(60% 38% at 50% var(--glow-y), rgba(1,136,254,.55), rgba(1,136,254,0) 70%),
+      linear-gradient(180deg, var(--bg2), var(--bg1) 70%);
+  }
+  .wrap { position: absolute; left: 0; right: 0; top: var(--top); display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .logo { width: 210px; }
+  .eyebrow { margin-top: 26px; font-size: 34px; color: var(--muted); font-weight: 400; }
+  .eyebrow b { color: var(--ink); font-weight: 700; }
+  .product { width: 820px; margin-top: 18px; filter: drop-shadow(0 40px 50px rgba(0,0,0,.55)); }
+  .name { margin-top: 6px; font-family: 'Segoe UI', sans-serif; font-weight: 800; font-size: 92px; letter-spacing: -1px; line-height: 1; }
+  .name span { color: var(--blue); }
+  .chips { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; max-width: 960px; }
+  .chip { font-size: 31px; font-weight: 700; padding: 12px 24px; border-radius: 999px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.18); }
+  .warranty { margin-top: 26px; font-size: 34px; color: var(--muted); }
+  .warranty b { color: #ffd34d; }
+  .cta { margin-top: 34px; font-size: 46px; font-weight: 700; padding: 20px 64px; border-radius: 999px; background: var(--blue); box-shadow: 0 14px 40px rgba(1,136,254,.5); }
+  .url { margin-top: 20px; font-family: 'Segoe UI', sans-serif; font-size: 34px; font-weight: 600; color: var(--muted); letter-spacing: .5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="assets/aun-logo-white.png" alt="AUN">
+  <div class="eyebrow"><b>Gadget Insider Bangla</b>-র রিভিউতে</div>
+  <img class="product" src="assets/u002-side.png" alt="AUN U002 Pro">
+  <div class="name">AUN U002 <span>Pro</span></div>
+  <div class="chips">
+    <div class="chip">সিলড ডাস্ট-প্রুফ ইঞ্জিন</div>
+    <div class="chip">লেজার অটো ফোকাস</div>
+    <div class="chip">১০৮০p নেটিভ</div>
+  </div>
+  <div class="warranty"><b>১ বছরের</b> অফিসিয়াল ওয়ারেন্টি</div>
+  <div class="cta">এখনই অর্ডার করুন</div>
+  <div class="url">aun-projector.com.bd</div>
+</div>
+<script>
+  // ?fmt=916 → 1080x1920 (Reels/Stories), default → 1080x1350 (Feed 4:5)
+  const tall = new URLSearchParams(location.search).get('fmt') === '916';
+  const r = document.documentElement.style;
+  r.setProperty('--h', tall ? '1920px' : '1350px');
+  r.setProperty('--top', tall ? '250px' : '48px');
+  if (!tall) document.querySelector('.product').style.width = '700px';
+  r.setProperty('--glow-y', tall ? '38%' : '40%');
+</script>
+</body>
+</html>

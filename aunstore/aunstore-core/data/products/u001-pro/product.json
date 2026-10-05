@@ -1,0 +1,36 @@
+{
+  "sku": "APB-U001-PRO-BLK",
+  "name": "AUN U001 Pro Full HD Genuine Android TV Projector, 4K Support",
+  "slug": "aun-u001-pro-projector",
+  "categories": [
+    "Home Theater Projector",
+    "Office Projector"
+  ],
+  "images": [
+    8572,
+    9116,
+    8569,
+    8588,
+    8589
+  ],
+  "short_description": "<p style=\"background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:8px 12px;margin:0 0 10px;font-size:13.5px;font-weight:700;color:#0166c8;line-height:1.5\"><i class=\"fa-solid fa-circle-check\" style=\"margin-right:6px\"></i>Best for: Big screens up to 300″ — our brightest</p>\n<ul>\n<li>Native Resolution: Full HD 1920 x 1080 pixels, 4K Support</li>\n<li>Brightness: 2050 ANSI Lumens</li>\n<li>Operating System: Genuine Android TV 14</li>\n<li>Memory: 2GB RAM / 32GB ROM</li>\n<li>Ports: HDMI x1, USB x2, AV, Audio out 3.5mm</li>\n<li>Power: AC 90 – 260 V (works worldwide)</li>\n</ul>",
+  "menu_order": 1,
+  "meta": {
+    "_aun_throw_ratio": 1.47,
+    "_aun_max_screen_size": 300,
+    "_aun_internal_brightness": 1000,
+    "_aunstore_highlights": {
+      "short": "U001 Pro",
+      "best_for": "Big screens up to 300″ — our brightest",
+      "resolution": "Full HD 1080p",
+      "res_note": "4K support",
+      "lumens": 2050,
+      "os": "Android TV 14",
+      "max_screen": 300,
+      "tags": [
+        "home",
+        "office"
+      ]
+    }
+  }
+}

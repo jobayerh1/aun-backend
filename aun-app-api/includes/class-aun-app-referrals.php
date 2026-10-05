@@ -231,6 +231,33 @@ class AUN_App_Referrals {
 	}
 
 	/**
+	 * Order statuses that mean "this person has bought from us".
+	 *
+	 * ⚠️ Not just processing / completed / on-hold. This store ends orders at
+	 * AST's Delivered (and passes through Shipped), so a list without them
+	 * treated every past online buyer whose order was delivered as a NEW
+	 * customer — free to claim a friend's first-order discount. Only statuses
+	 * registered on this site are returned, so nothing unknown is queried.
+	 *
+	 * @return string[] 'wc-' prefixed.
+	 */
+	public static function purchase_statuses() {
+		$want = array_merge(
+			array( 'processing', 'on-hold', 'completed', 'shipped', 'partial-shipped', 'delivered' ),
+			self::payout_statuses()
+		);
+		$registered = function_exists( 'wc_get_order_statuses' ) ? array_keys( wc_get_order_statuses() ) : array();
+		$out        = array();
+		foreach ( array_unique( $want ) as $s ) {
+			$s = 'wc-' . preg_replace( '/^wc-/', '', (string) $s );
+			if ( in_array( $s, $registered, true ) ) {
+				$out[] = $s;
+			}
+		}
+		return $out ? $out : array( 'wc-processing', 'wc-completed', 'wc-on-hold' );
+	}
+
+	/**
 	 * Has this person really bought from us — money settled, goods received?
 	 *
 	 * Deliberately STRICTER than has_purchase_history(), and the distinction
@@ -592,7 +619,7 @@ class AUN_App_Referrals {
 				'customer_id' => (int) $user_id,
 				'limit'       => 1,
 				'return'      => 'ids',
-				'status'      => array( 'wc-processing', 'wc-completed', 'wc-on-hold' ),
+				'status'      => self::purchase_statuses(),
 			) );
 			if ( ! empty( $by_user ) ) {
 				return true;
@@ -605,7 +632,7 @@ class AUN_App_Referrals {
 						'billing_phone' => $variant,
 						'limit'         => 1,
 						'return'        => 'ids',
-						'status'        => array( 'wc-processing', 'wc-completed', 'wc-on-hold' ),
+						'status'        => self::purchase_statuses(),
 					) );
 					if ( ! empty( $by_phone ) ) {
 						return true;
@@ -621,8 +648,54 @@ class AUN_App_Referrals {
 				return true;
 			}
 		}
-
+		// ⚠️ A SHOWROOM purchase. Walk-in sales are entered straight into the
+		// ERP and never become website orders, so without this a customer who
+		// bought at the counter — and never registered the projector — passed
+		// as "new" and could claim a friend's first-order discount.
+		if ( self::has_erp_purchase( $phone ) ) {
+			return true;
+		}
 		return false;
+	}
+
+	/**
+	 * Has this number bought a projector from us at the showroom?
+	 *
+	 * Answered by the ERP's own phone lookup — the same one "find my purchases"
+	 * uses — so the rule is judged on the sales record itself. A unit that was
+	 * given back (ERP sell return) does not count.
+	 *
+	 * Fails OPEN: if the ERP cannot be reached the answer is "no", because an
+	 * outage must never refuse a genuine new customer, and every other rule in
+	 * claim() still applies. Cached for ten minutes per number, so opening the
+	 * Rewards screen does not ask the ERP every time.
+	 *
+	 * @param string $phone Canonical 8801XXXXXXXXX.
+	 * @return bool
+	 */
+	public static function has_erp_purchase( $phone ) {
+		$phone = (string) $phone;
+		if ( '' === $phone || ! class_exists( 'AUN_App_ERP' ) || ! AUN_App_ERP::configured() ) {
+			return false;
+		}
+		$key    = 'aun_app_rf_erp_' . md5( $phone );
+		$cached = get_transient( $key );
+		if ( false !== $cached ) {
+			return '1' === (string) $cached;
+		}
+		$rows = AUN_App_ERP::lookup_phone( $phone );
+		if ( is_wp_error( $rows ) ) {
+			return false; // not cached: the next look should try the ERP again
+		}
+		$bought = false;
+		foreach ( (array) $rows as $row ) {
+			if ( empty( $row['returned'] ) ) {
+				$bought = true;
+				break;
+			}
+		}
+		set_transient( $key, $bought ? '1' : '0', 10 * MINUTE_IN_SECONDS );
+		return $bought;
 	}
 
 	/**
@@ -831,14 +904,14 @@ class AUN_App_Referrals {
 		if ( $missing ) {
 			return sprintf(
 				/* translators: %s: masked phone number. */
-				__( 'This referral discount belongs to the mobile number it was issued to (%s). Please enter that number in the Phone field to use it.', 'aun-app-api' ),
+				__( 'This discount belongs to the mobile number it was issued to (%s). Please enter that number in the Phone field to use it.', 'aun-app-api' ),
 				$masked
 			);
 		}
 
 		return sprintf(
 			/* translators: %s: masked phone number. */
-			__( 'This referral discount can only be used by the person it was issued to — the mobile number %s, which was verified in the AUN Care app. Please check out with that number, or remove the coupon to continue.', 'aun-app-api' ),
+			__( 'This discount can only be used by the person it was issued to — the mobile number %s, which was verified in the AUN Care app. Please check out with that number, or remove the coupon to continue.', 'aun-app-api' ),
 			$masked
 		);
 	}
@@ -949,6 +1022,10 @@ class AUN_App_Referrals {
 				if ( '' !== (string) $c ) {
 					$coupon_codes[] = (string) $c;
 				}
+			}
+			// Balances split off a reward by the rewards ceiling.
+			foreach ( array_slice( self::reward_pieces( (string) $row->reward_coupon ), 1 ) as $c ) {
+				$coupon_codes[] = $c;
 			}
 		}
 		$coupon_codes    = array_values( array_unique( $coupon_codes ) );
@@ -1155,6 +1232,49 @@ class AUN_App_Referrals {
 		);
 	}
 
+	/**
+	 * An invite reward and every balance split off it: [ original, … ].
+	 *
+	 * The rewards ceiling (AUN_App_Rewards_Ceiling) spends what fits of a
+	 * reward and splits the rest into a new code, marked with the code it came
+	 * from. One reward can therefore be several codes: the wallet lists them
+	 * all, and a clawback takes them all back.
+	 *
+	 * @param string $code The reward code recorded on the claim.
+	 * @return string[] Upper-case codes; the original first (even if deleted).
+	 */
+	public static function reward_pieces( $code ) {
+		global $wpdb;
+		$code = strtoupper( trim( (string) $code ) );
+		if ( '' === $code ) {
+			return array();
+		}
+		$meta  = class_exists( 'AUN_App_Rewards_Ceiling' ) ? AUN_App_Rewards_Ceiling::META_SPLIT_OF : '_aun_referral_split_of';
+		$out   = array( $code );
+		$queue = array( $code );
+		$guard = 0;
+		while ( $queue && $guard++ < 50 ) {
+			$parent = array_shift( $queue );
+			$kids   = (array) $wpdb->get_col( $wpdb->prepare(
+				"SELECT p.post_title FROM {$wpdb->posts} p
+				   JOIN {$wpdb->postmeta} m ON m.post_id = p.ID
+				  WHERE p.post_type = 'shop_coupon' AND p.post_status <> 'trash'
+				    AND m.meta_key = %s AND m.meta_value = %s
+				  ORDER BY p.ID",
+				$meta,
+				$parent
+			) );
+			foreach ( $kids as $k ) {
+				$k = strtoupper( (string) $k );
+				if ( '' !== $k && ! in_array( $k, $out, true ) ) {
+					$out[]   = $k;
+					$queue[] = $k;
+				}
+			}
+		}
+		return $out;
+	}
+
 	/** Is this coupon a referrer's earned reward? */
 	public static function is_reward_coupon( $coupon ) {
 		if ( is_string( $coupon ) ) {
@@ -1179,6 +1299,24 @@ class AUN_App_Referrals {
 	}
 
 	/**
+	 * Is this EARNED credit — a referrer's reward, or an owner reward?
+	 *
+	 * Earned credit combines with other earned credit (within the ceiling —
+	 * AUN_App_Rewards_Ceiling) and with nothing else. A welcome discount is not
+	 * earned credit: it is the friend's first-order offer and stays on its own.
+	 * `is_reward_coupon()` keeps its narrower meaning for everything else.
+	 *
+	 * @param WC_Coupon|string $coupon Coupon or code.
+	 * @return bool
+	 */
+	public static function is_earned_coupon( $coupon ) {
+		if ( self::is_reward_coupon( $coupon ) ) {
+			return true;
+		}
+		return class_exists( 'AUN_App_Owner_Rewards' ) && AUN_App_Owner_Rewards::is_owner_coupon( $coupon );
+	}
+
+	/**
 	 * Let a referrer spend SEVERAL earned rewards on one order — but still
 	 * never alongside a shop coupon.
 	 *
@@ -1197,14 +1335,14 @@ class AUN_App_Referrals {
 	 * @return array
 	 */
 	public static function keep_rewards_together( $keep, $coupon ) {
-		if ( ! self::is_reward_coupon( $coupon ) ) {
+		if ( ! self::is_earned_coupon( $coupon ) ) {
 			return $keep;
 		}
-		// Applying a reward: keep any other rewards already in the cart.
+		// Applying a reward: keep any other earned rewards already in the cart.
 		$keep = (array) $keep;
 		if ( function_exists( 'WC' ) && WC()->cart ) {
 			foreach ( (array) WC()->cart->get_applied_coupons() as $code ) {
-				if ( self::is_reward_coupon( (string) $code ) && ! in_array( $code, $keep, true ) ) {
+				if ( self::is_earned_coupon( (string) $code ) && ! in_array( $code, $keep, true ) ) {
 					$keep[] = $code;
 				}
 			}
@@ -1222,7 +1360,7 @@ class AUN_App_Referrals {
 	 * @return bool
 	 */
 	public static function allow_reward_stacking( $apply, $coupon, $ind_coupon ) {
-		if ( self::is_reward_coupon( $coupon ) && self::is_reward_coupon( $ind_coupon ) ) {
+		if ( self::is_earned_coupon( $coupon ) && self::is_earned_coupon( $ind_coupon ) ) {
 			return true;
 		}
 		return $apply;
@@ -1261,6 +1399,11 @@ class AUN_App_Referrals {
 		if ( $id < 1 ) {
 			return;
 		}
+		// Refused a moment ago (the rewards ceiling runs first)? Then there is
+		// no discount to announce a condition for.
+		if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->has_discount( $code ) ) {
+			return;
+		}
 		$locked = self::coupon_phone( new WC_Coupon( $id ) );
 		if ( '' === $locked ) {
 			return;
@@ -1280,6 +1423,67 @@ class AUN_App_Referrals {
 			),
 			'notice'
 		);
+	}
+
+	/**
+	 * An INVITE code typed into the website's coupon box.
+	 *
+	 * The friend receives an invite code (e.g. K7PQ2M) but checks out with a
+	 * different one — the WELCOME- code the app issues when they claim it. Typing
+	 * the invite code at checkout got WooCommerce's bare "Coupon does not exist",
+	 * which reads as "your friend's code is fake". Now it says what the code is
+	 * and where it goes.
+	 *
+	 * Only rewrites the "does not exist" error, and only for a code that really is
+	 * an invite code — every other coupon message is left exactly as it was.
+	 *
+	 * @param string    $err      WooCommerce's message.
+	 * @param int       $err_code WooCommerce's error code.
+	 * @param WC_Coupon $coupon   The coupon as typed.
+	 * @return string
+	 */
+	public static function explain_invite_code( $err, $err_code, $coupon ) {
+		if ( ! class_exists( 'WC_Coupon' ) || ! is_a( $coupon, 'WC_Coupon' )
+			|| (int) $err_code !== (int) WC_Coupon::E_WC_COUPON_NOT_EXIST ) {
+			return $err;
+		}
+		$typed = strtoupper( trim( (string) $coupon->get_code() ) );
+		if ( '' === $typed || ! self::available() || (int) self::owner_of( $typed ) < 1 ) {
+			return $err;
+		}
+		$guide = self::share_url( $typed );
+		$more  = '' !== $guide
+			? ' <a href="' . esc_url( $guide ) . '">' . esc_html__( 'How it works', 'aun-app-api' ) . '</a>'
+			: '';
+		return sprintf(
+			/* translators: %s: the invite code the customer typed. */
+			esc_html__( '"%s" is an invite code, not a checkout coupon. Enter it in the AUN Care app (Rewards → I have a code) and your discount code will be waiting there.', 'aun-app-api' ),
+			esc_html( $typed )
+		) . $more;
+	}
+
+	/**
+	 * The link a customer shares: the programme's landing page, carrying their
+	 * code, so the friend lands on an explanation instead of the homepage.
+	 *
+	 * '' when the landing page does not exist (or is not published) — the app
+	 * then keeps sharing the website link it always did, so nothing breaks
+	 * before the page is there.
+	 *
+	 * @param string $code Invite code ('' for the page itself).
+	 * @return string
+	 */
+	public static function share_url( $code = '' ) {
+		$page_id = (int) get_option( 'aun_app_refer_page_id', 0 );
+		if ( $page_id < 1 || 'publish' !== get_post_status( $page_id ) ) {
+			return '';
+		}
+		$url = (string) get_permalink( $page_id );
+		if ( '' === $url ) {
+			return '';
+		}
+		$code = strtoupper( trim( (string) $code ) );
+		return '' !== $code ? add_query_arg( 'code', rawurlencode( $code ), $url ) : $url;
 	}
 
 	/**
@@ -1577,6 +1781,210 @@ class AUN_App_Referrals {
 		self::notify_referrer( (int) $claim->referrer_user_id, $reward, $s, (float) $order->get_total() );
 	}
 
+	/* --------------------------------------------------------------------- *
+	 * The showroom (AUN Rewards)
+	 * --------------------------------------------------------------------- */
+
+	/**
+	 * The welcome discount a phone can still spend — for the showroom screen.
+	 *
+	 * @param string $phone Canonical phone.
+	 * @return array{claim_id:int,code:string,type:string,amount:float,expires:int,min:float}|null
+	 */
+	public static function welcome_for_phone( $phone ) {
+		global $wpdb;
+		$claim = $wpdb->get_row( $wpdb->prepare(
+			'SELECT * FROM ' . self::claims_table() . ' WHERE referred_phone = %s AND status = %s LIMIT 1',
+			(string) $phone,
+			self::STATUS_PENDING
+		) );
+		if ( ! $claim || '' === (string) $claim->friend_coupon || '' !== (string) ( $claim->channel ?? '' ) ) {
+			return null;
+		}
+		$cid = function_exists( 'wc_get_coupon_id_by_code' ) ? (int) wc_get_coupon_id_by_code( (string) $claim->friend_coupon ) : 0;
+		if ( $cid < 1 ) {
+			return null;
+		}
+		$c = new WC_Coupon( $cid );
+		if ( (int) $c->get_usage_count() >= max( 1, (int) $c->get_usage_limit() ) ) {
+			return null;
+		}
+		$exp = $c->get_date_expires();
+		if ( $exp && $exp->getTimestamp() < time() ) {
+			return null;
+		}
+		return array(
+			'claim_id' => (int) $claim->id,
+			'code'     => strtoupper( (string) $c->get_code() ),
+			'type'     => 'percent' === $c->get_discount_type() ? 'percent' : 'fixed',
+			'amount'   => (float) $c->get_amount(),
+			'expires'  => $exp ? $exp->getTimestamp() : 0,
+			'min'      => (float) $c->get_minimum_amount(),
+		);
+	}
+
+	/**
+	 * Spend a friend's welcome discount on a SHOWROOM sale.
+	 *
+	 * The ERP sale has no WooCommerce order, so the claim records the counter,
+	 * the invoice, when, and what the friend PAID — the inviter's reward is a
+	 * share of that, paid once the return window has passed
+	 * (pay_showroom_claims). The coupon itself is marked used, so the website
+	 * refuses it afterwards.
+	 *
+	 * @return array{ok:bool,code:string,message:string}
+	 */
+	public static function redeem_welcome_at_showroom( $claim_id, $invoice, $paid ) {
+		global $wpdb;
+		$claims = self::claims_table();
+		$claim  = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $claims WHERE id = %d", (int) $claim_id ) );
+		if ( ! $claim || self::STATUS_PENDING !== $claim->status || '' !== (string) ( $claim->channel ?? '' ) ) {
+			return array( 'ok' => false, 'code' => 'not_available', 'message' => 'This welcome discount is not available any more.' );
+		}
+		$cid = (int) wc_get_coupon_id_by_code( (string) $claim->friend_coupon );
+		$c   = $cid > 0 ? new WC_Coupon( $cid ) : null;
+		if ( ! $c || (int) $c->get_usage_count() >= max( 1, (int) $c->get_usage_limit() ) ) {
+			return array( 'ok' => false, 'code' => 'spent', 'message' => 'This welcome discount has already been used.' );
+		}
+		$exp = $c->get_date_expires();
+		if ( $exp && $exp->getTimestamp() < time() ) {
+			return array( 'ok' => false, 'code' => 'expired', 'message' => 'This welcome discount has expired.' );
+		}
+		$c->increase_usage_count( (int) $claim->referred_user_id > 0 ? (int) $claim->referred_user_id : '' );
+		$c->update_meta_data( '_aun_showroom_invoice', substr( (string) $invoice, 0, 64 ) );
+		$c->save_meta_data();
+		$wpdb->update( $claims, array(
+			'channel'     => 'showroom',
+			'erp_invoice' => substr( (string) $invoice, 0, 64 ),
+			'redeemed_at' => current_time( 'mysql' ),
+			'erp_amount'  => round( max( 0, (float) $paid ), 2 ),
+		), array( 'id' => (int) $claim->id ) );
+		return array( 'ok' => true, 'code' => 'redeemed', 'message' => 'Welcome discount redeemed.' );
+	}
+
+	/**
+	 * Undo a showroom welcome redemption — only while the inviter has not yet
+	 * been rewarded for it.
+	 *
+	 * @return array{ok:bool,code:string,message:string}
+	 */
+	public static function undo_welcome_at_showroom( $claim_id ) {
+		global $wpdb;
+		$claims = self::claims_table();
+		$claim  = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $claims WHERE id = %d", (int) $claim_id ) );
+		if ( ! $claim || 'showroom' !== (string) ( $claim->channel ?? '' ) ) {
+			return array( 'ok' => false, 'code' => 'not_here', 'message' => 'This welcome discount was not used at the showroom.' );
+		}
+		if ( self::STATUS_PENDING !== $claim->status ) {
+			return array( 'ok' => false, 'code' => 'settled', 'message' => 'The inviter has already been rewarded for this sale, so it can no longer be undone here.' );
+		}
+		$cid = (int) wc_get_coupon_id_by_code( (string) $claim->friend_coupon );
+		if ( $cid > 0 ) {
+			$c = new WC_Coupon( $cid );
+			if ( (int) $c->get_usage_count() > 0 ) {
+				$c->decrease_usage_count( (int) $claim->referred_user_id > 0 ? (int) $claim->referred_user_id : '' );
+			}
+			$c->delete_meta_data( '_aun_showroom_invoice' );
+			$c->save_meta_data();
+		}
+		$wpdb->update( $claims, array(
+			'channel'     => '',
+			'erp_invoice' => '',
+			'redeemed_at' => null,
+			'erp_amount'  => 0,
+		), array( 'id' => (int) $claim->id ) );
+		return array( 'ok' => true, 'code' => 'undone', 'message' => 'Welcome discount given back.' );
+	}
+
+	/**
+	 * Daily: pay inviters for friends' SHOWROOM purchases.
+	 *
+	 * Only once the return window (Settings → showroom hold, default 7 days)
+	 * has passed, and only if the ERP still shows the sale and not as returned
+	 * — the showroom's equivalent of paying on Delivered rather than Shipped.
+	 */
+	public static function pay_showroom_claims() {
+		global $wpdb;
+		if ( ! class_exists( 'AUN_App_ERP' ) || ! AUN_App_ERP::configured() ) {
+			return;
+		}
+		$claims = self::claims_table();
+		if ( ! in_array( 'erp_amount', (array) $wpdb->get_col( "SHOW COLUMNS FROM $claims" ), true ) ) {
+			return; // not migrated yet
+		}
+		$hold   = class_exists( 'AUN_App_Owner_Rewards' ) ? (int) AUN_App_Owner_Rewards::settings()['hold_days'] : 7;
+		$before = gmdate( 'Y-m-d H:i:s', strtotime( current_time( 'mysql' ) ) - $hold * DAY_IN_SECONDS );
+		$rows   = (array) $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM $claims WHERE channel = 'showroom' AND status = %s
+			   AND redeemed_at IS NOT NULL AND redeemed_at <= %s ORDER BY redeemed_at LIMIT 50",
+			self::STATUS_PENDING,
+			$before
+		) );
+		$s = self::settings();
+		foreach ( $rows as $claim ) {
+			self::pay_showroom_claim( $claim, $s );
+		}
+	}
+
+	/**
+	 * One showroom claim: pay, take back, or keep waiting.
+	 *
+	 * @return string paid | returned | waiting | not_found | below_min | error
+	 */
+	public static function pay_showroom_claim( $claim, $s = null ) {
+		global $wpdb;
+		$s      = is_array( $s ) ? $s : self::settings();
+		$claims = self::claims_table();
+		$sales  = AUN_App_ERP::lookup_phone( (string) $claim->referred_phone );
+		if ( is_wp_error( $sales ) ) {
+			return 'error'; // ERP unreachable — tomorrow
+		}
+		$inv   = strtoupper( trim( (string) $claim->erp_invoice ) );
+		$found = 0;
+		$kept  = 0;
+		foreach ( (array) $sales as $sale ) {
+			if ( strtoupper( trim( (string) ( $sale['invoice_no'] ?? '' ) ) ) !== $inv ) {
+				continue;
+			}
+			$found++;
+			if ( empty( $sale['returned'] ) ) {
+				$kept++;
+			}
+		}
+		if ( 0 === $found ) {
+			// Mistyped at the counter, or not entered yet. Keep checking for a
+			// month past the hold, then stop and leave it for the report.
+			$age = time() - (int) strtotime( get_gmt_from_date( (string) $claim->redeemed_at ) . ' UTC' );
+			if ( $age > 37 * DAY_IN_SECONDS ) {
+				$wpdb->update( $claims, array( 'status' => self::STATUS_REVOKED, 'revoke_reason' => 'not_found' ), array( 'id' => (int) $claim->id ) );
+				return 'not_found';
+			}
+			return 'waiting';
+		}
+		if ( 0 === $kept ) {
+			$wpdb->update( $claims, array( 'status' => self::STATUS_REVOKED, 'revoke_reason' => 'returned' ), array( 'id' => (int) $claim->id ) );
+			return 'returned';
+		}
+		if ( $s['min_order_total'] > 0 && (float) $claim->erp_amount < $s['min_order_total'] ) {
+			$wpdb->update( $claims, array( 'status' => self::STATUS_REVOKED, 'revoke_reason' => 'ineligible' ), array( 'id' => (int) $claim->id ) );
+			return 'below_min';
+		}
+		$reward = '';
+		if ( $s['referrer_amount'] > 0 ) {
+			$reward = self::create_referrer_reward( (int) $claim->referrer_user_id, $s, (float) $claim->erp_amount );
+			if ( '' === $reward ) {
+				return 'error'; // leave pending and try again rather than silently losing it
+			}
+		}
+		$wpdb->update( $claims, array(
+			'status'        => self::STATUS_REWARDED,
+			'reward_coupon' => $reward,
+			'rewarded_at'   => current_time( 'mysql' ),
+		), array( 'id' => (int) $claim->id ) );
+		self::notify_referrer( (int) $claim->referrer_user_id, $reward, $s, (float) $claim->erp_amount );
+		return 'paid';
+	}
+
 	/**
 	 * Money was refunded WITHOUT the order changing status.
 	 *
@@ -1633,14 +2041,17 @@ class AUN_App_Referrals {
 		}
 
 		if ( ! empty( $claim->reward_coupon ) ) {
-			$code      = (string) $claim->reward_coupon;
-			$coupon_id = wc_get_coupon_id_by_code( $code );
-			if ( $coupon_id ) {
-				wp_delete_post( $coupon_id, true );
-				// WooCommerce caches code -> id lookups, so without this the
-				// destroyed coupon can still resolve and keep working.
-				wp_cache_delete( WC_Cache_Helper::get_cache_prefix( 'coupons' ) . 'coupon_id_from_code_' . $code, 'coupons' );
-				WC_Cache_Helper::get_transient_version( 'coupons', true );
+			// The reward AND any balance split off it (the rewards ceiling) —
+			// clawing back only the original would leave the balance spendable.
+			foreach ( self::reward_pieces( (string) $claim->reward_coupon ) as $code ) {
+				$coupon_id = wc_get_coupon_id_by_code( $code );
+				if ( $coupon_id ) {
+					wp_delete_post( $coupon_id, true );
+					// WooCommerce caches code -> id lookups, so without this the
+					// destroyed coupon can still resolve and keep working.
+					wp_cache_delete( WC_Cache_Helper::get_cache_prefix( 'coupons' ) . 'coupon_id_from_code_' . $code, 'coupons' );
+					WC_Cache_Helper::get_transient_version( 'coupons', true );
+				}
 			}
 		}
 
@@ -2020,7 +2431,7 @@ class AUN_App_Referrals {
 			return false;
 		}
 		$canonical = AUN_App_Phone::normalize( $phone );
-		if ( '' === $canonical ) {
+		if ( ! $canonical ) {
 			return false;
 		}
 		foreach ( AUN_App_Phone::variants( $canonical ) as $variant ) {
@@ -2028,7 +2439,7 @@ class AUN_App_Referrals {
 				'billing_phone' => $variant,
 				'limit'         => 5,
 				'return'        => 'ids',
-				'status'        => array( 'wc-processing', 'wc-completed', 'wc-on-hold' ),
+				'status'        => self::purchase_statuses(),
 			) );
 			foreach ( (array) $ids as $id ) {
 				if ( (int) $id !== (int) $order_id ) {
@@ -2073,13 +2484,16 @@ class AUN_App_Referrals {
 			$invited++;
 			if ( self::STATUS_REWARDED === $r->status ) {
 				$rewarded++;
-				if ( ! empty( $r->reward_coupon ) ) {
+				// One reward can be several codes: the rewards ceiling spends what
+				// fits and keeps the rest as a new code. Each is listed on its own.
+				$pieces = ! empty( $r->reward_coupon ) ? self::reward_pieces( (string) $r->reward_coupon ) : array();
+				foreach ( $pieces as $piece ) {
 					// The coupon's OWN amount, not today's setting — a reward
 					// earned last month is worth what it was worth then.
 					$value = 0.0;
 					$spent = false;
 					if ( function_exists( 'wc_get_coupon_id_by_code' ) ) {
-						$cid = (int) wc_get_coupon_id_by_code( (string) $r->reward_coupon );
+						$cid = (int) wc_get_coupon_id_by_code( (string) $piece );
 						$expires = '';
 						if ( $cid > 0 ) {
 							$rc = new WC_Coupon( $cid );
@@ -2098,7 +2512,7 @@ class AUN_App_Referrals {
 						$available += $value;
 					}
 					$coupons[] = array(
-						'code'    => (string) $r->reward_coupon,
+						'code'    => (string) $piece,
 						'date'    => substr( (string) $r->rewarded_at, 0, 10 ),
 						'value'   => $value,
 						'used'    => $spent,
@@ -2143,9 +2557,22 @@ class AUN_App_Referrals {
 			}
 		}
 
+		$my_code = self::available() ? self::code_for( $user_id ) : '';
 		return array(
 			'enabled'         => self::available(),
-			'code'            => self::available() ? self::code_for( $user_id ) : '',
+			'code'            => $my_code,
+			// What to share: the landing page with the code in it. '' until the
+			// page exists, and an app that does not know this key keeps sharing
+			// the website link — so older builds are unaffected.
+			'share_url'       => '' !== $my_code ? self::share_url( $my_code ) : '',
+			// AUN Rewards: the customer's "next projector" reward (null when they
+			// have none) and the programme's terms. An older app ignores both.
+			// Shown even if the programme is later switched off: a reward already
+			// given keeps working at checkout, so it must stay findable.
+			'owner_reward'    => class_exists( 'AUN_App_Owner_Rewards' )
+				? AUN_App_Owner_Rewards::for_phone( self::phone_of( $user_id ) ) : null,
+			'owner_program'   => class_exists( 'AUN_App_Owner_Rewards' ) ? AUN_App_Owner_Rewards::program() : null,
+			'guide_url'       => self::share_url(),
 			'my_coupon'         => $my_coupon,
 			'my_coupon_phone'   => $my_coupon_phone,
 			'my_coupon_expires' => $my_coupon_expiry,

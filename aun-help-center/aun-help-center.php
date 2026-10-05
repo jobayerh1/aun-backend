@@ -2,10 +2,13 @@
 /**
  * Plugin Name: AUN Help Center
  * Description: Searchable, bilingual (বাংলা/English), MODEL-AWARE self-serve support FAQ. Model list is pulled DYNAMICALLY from your WooCommerce projectors (category "projector-price"), excluding discontinued. Each model's tutorial videos (resolved from its YouTube playlist via aun-tutorials.php) are embedded INSIDE the matching question, playing in an in-page lightbox. Shortcode: [aun_help_center] (preselect: model="product-slug").
- * Version: 2.7.0
+ * Version: 2.8.0
  * Author: AUN Projector Bangladesh
  * Text Domain: aun-help-center
  *
+ * v2.8.0: AUN Rewards — a "Rewards" category with four questions (how it works, using an invite code,
+ *         "my code doesn't work at checkout", a discount on a second projector). Worded without the admin's
+ *         numbers (%, days), which can change; the full guide with live numbers is /refer/.
  * v2.7.0: code-review hardening + per-model USER MANUALS.
  *         • New KB-020 "User Manual" — extracts each product's WP File Download shortcode ([wpfd_category id=N])
  *           from its Download tab and renders THAT model's manual list inside the answer (server-rendered).
@@ -29,7 +32,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'AUN_HC_VER', '2.7.0' ); // single source of truth — bump on every release; drives the cache auto-flush
+define( 'AUN_HC_VER', '2.8.0' ); // single source of truth — bump on every release; drives the cache auto-flush
 
 /* ============================================================
  *  CONFIG
@@ -389,6 +392,32 @@ function aun_hc_data() {
 			'search'=>'manual user manual pdf download guide boi nirdeshika ম্যানুয়াল নির্দেশিকা ডাউনলোড',
 			'a_bn'=>'প্রতিটি মডেলের ইউজার ম্যানুয়াল আলাদা। নিচে আপনার মডেলের ম্যানুয়ালটি ডাউনলোড করুন—',
 			'a_en'=>'Each model has its own user manual — download yours below.' ),
+
+		// ── AUN Rewards (v2.8.0). No percentages or day counts here: those are
+		// admin settings. The live numbers are on the guide page, /refer/. ──
+		array( 'id'=>'KB-021','cat'=>'rewards','applies'=>'all','topic'=>'',
+			'q_bn'=>'AUN রিওয়ার্ড কীভাবে কাজ করে? (বন্ধুকে আমন্ত্রণ ও ওনার রিওয়ার্ড)','q_en'=>'How do AUN Rewards work? (invite friends, owner reward)',
+			'search'=>'reward rewards referral refer invite bondhu amontron discount chhar chad coupon code owner next projector রিওয়ার্ড আমন্ত্রণ ছাড় কুপন',
+			'a_bn'=>'দুইভাবে সাশ্রয় করা যায়। (১) বন্ধুকে আমন্ত্রণ: AUN Care অ্যাপের Rewards থেকে আপনার কোড শেয়ার করুন — বন্ধু প্রথম প্রজেক্টরে ছাড় পাবেন, আর তাঁর প্রজেক্টর ডেলিভারি হলে আপনিও একটি রিওয়ার্ড কোড পাবেন। (২) ওনার রিওয়ার্ড: AUN থেকে (ওয়েবসাইট বা শোরুম) কেনা প্রতিটি প্রজেক্টর আপনাকে পরের প্রজেক্টরে ছাড় দেয়। সব কোড অ্যাপের Rewards-এ থাকে। বিস্তারিত: aun-projector.com.bd/refer',
+			'a_en'=>'There are two ways to save. (1) Invite friends: share your code from Rewards in the AUN Care app — your friend gets a discount on their first projector, and once it is delivered you get a reward code too. (2) Owner reward: every projector you buy from AUN (website or showroom) gives you a discount on your next one. All your codes are in Rewards in the app. Full guide: aun-projector.com.bd/refer' ),
+
+		array( 'id'=>'KB-022','cat'=>'rewards','applies'=>'all','topic'=>'',
+			'q_bn'=>'বন্ধুর দেওয়া কোড কীভাবে ব্যবহার করব?','q_en'=>'I have a friend\'s code — how do I use it?',
+			'search'=>'friend code invite code kivabe use korbo bondhur code welcome discount first projector বন্ধুর কোড',
+			'a_bn'=>'(১) AUN Care অ্যাপ ইনস্টল করে আপনার মোবাইল নম্বর দিয়ে সাইন ইন করুন। (২) Rewards → I have a code-এ কোডটি দিন (পেস্ট বাটনে পুরো মেসেজ পেস্ট করলেও চলবে)। (৩) আপনার ছাড়ের কোড সঙ্গে সঙ্গে দেখাবে — ওয়েবসাইটে চেকআউটে একই মোবাইল নম্বর দিয়ে ব্যবহার করুন, অথবা শোরুমে দেখান। বন্ধুর কোড শুধু প্রথমবার প্রজেক্টর কেনার জন্য, আর অ্যাপে যোগ দেওয়ার কিছুদিনের মধ্যেই দিতে হয়।',
+			'a_en'=>'(1) Install the AUN Care app and sign in with your mobile number. (2) Open Rewards → I have a code and enter it (the Paste button works even if you paste the whole message). (3) Your discount code appears straight away — use it at checkout on our website with the same mobile number, or show it at our showroom. A friend\'s code is for your first projector and must be entered soon after you join the app.' ),
+
+		array( 'id'=>'KB-023','cat'=>'rewards','applies'=>'all','topic'=>'',
+			'q_bn'=>'চেকআউটে আমার ছাড়ের কোড কাজ করছে না','q_en'=>'My discount / reward code doesn\'t work at checkout',
+			'search'=>'coupon not working code kaj korche na discount apply hocche na invalid expired checkout কুপন কাজ করছে না',
+			'a_bn'=>'সাধারণ কারণগুলো: (১) কোডটি যে মোবাইল নম্বরের, চেকআউটে সেই নম্বরটিই দিন। (২) NAME-7QK3 ধরনের কোড হলো আমন্ত্রণ কোড — এটি চেকআউটে নয়, অ্যাপের Rewards → I have a code-এ দিন। (৩) ওনার রিওয়ার্ড একটি পূর্ণ দামের প্রজেক্টরে কাজ করে — অ্যাক্সেসরি বা আগে থেকে ছাড়ে থাকা পণ্যে নয়। (৪) একাধিক রিওয়ার্ড একসাথে এক অর্ডারে একটি সীমা পর্যন্ত কাজে লাগে — যা বাকি থাকে তা নতুন কোড হিসেবে আপনার Rewards-এ থেকে যায়। (৫) কোডের মেয়াদ বা ব্যবহার হয়েছে কিনা অ্যাপের Rewards-এ দেখুন। তবুও সমস্যা হলে WhatsApp-এ আমাদের জানান।',
+			'a_en'=>'The usual reasons: (1) Use the same mobile number at checkout that the code belongs to. (2) A code like NAME-7QK3 is an invite code — enter it in the app under Rewards → I have a code, not at checkout. (3) The owner reward works on one full-price projector — not on accessories or items already on sale. (4) Several rewards can be used together up to a limit per order — anything that does not fit is kept in your Rewards as a new code. (5) Check in Rewards in the app whether the code has expired or been used. Still stuck? Message us on WhatsApp.' ),
+
+		array( 'id'=>'KB-024','cat'=>'rewards','applies'=>'all','topic'=>'',
+			'q_bn'=>'দ্বিতীয় প্রজেক্টর কিনলে কি ছাড় পাব?','q_en'=>'Do I get a discount on my second projector?',
+			'search'=>'second projector abar kinle chhar discount repeat customer owner reward next projector আবার কিনলে দ্বিতীয় প্রজেক্টর',
+			'a_bn'=>'হ্যাঁ। AUN থেকে (ওয়েবসাইট বা শোরুম) কেনা প্রতিটি প্রজেক্টর আপনাকে পরের প্রজেক্টরে একটি ছাড়ের কোড দেয় — SMS-এ এবং অ্যাপের Rewards-এ। ওয়েবসাইটে চেকআউটে দিন, অথবা শোরুমে বলুন — আপনিই কিনা নিশ্চিত করতে কর্মী আপনার ফোনে একটি কোড পাঠাবেন। ব্যবহারের আগে আরেকটি প্রজেক্টর কিনলে এর মেয়াদ বাড়ে। ডিলারের কাছ থেকে কেনা প্রজেক্টরে এটি প্রযোজ্য নয়।',
+			'a_en'=>'Yes. Every projector you buy from AUN (website or showroom) gives you a discount code for your next one — by SMS and in Rewards in the app. Enter it at checkout on our website, or ask at the showroom — staff will send a code to your phone to confirm it is you. Buy another projector before using it and it is extended. Projectors bought from a dealer do not count.' ),
 	);
 }
 
@@ -406,6 +435,7 @@ function aun_hc_render( $atts = array() ) {
 		'apps'     => 'অ্যাপ / Apps',
 		'casting'  => 'কাস্টিং / Casting',
 		'hardware' => 'হার্ডওয়্যার / Hardware',
+		'rewards'  => 'রিওয়ার্ড / Rewards',
 	);
 
 	$models = aun_hc_models();

@@ -1,0 +1,73 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Verify Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-fingerprint"></i> Verify Your AUN Projector</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Every genuine AUN projector carries a unique 12-digit anti-counterfeit code. Check yours in seconds on our official verification site.</p>
+<p style="margin-top:18px;"><a href="https://check.aunstore.com" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; background:#0188fe; color:#fff; padding:11px 20px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;"><i class="fa-solid fa-shield-halved"></i> Verify at check.aunstore.com</a></p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Verify Steps"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-magnifying-glass"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">1. Find the Code</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Turn the projector over &mdash; the 12-digit anti-counterfeit code is on the label on the bottom of the unit.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-keyboard"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">2. Enter It Online</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Open <a href="https://check.aunstore.com" target="_blank" rel="noopener" style="color:#0188fe;font-weight:700;">check.aunstore.com</a>, type the code and the short security number shown on screen, then press Submit.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-circle-check"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">3. Read the Result</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">You'll see straight away whether the code belongs to a genuine AUN product.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="22px" label="Once Only Note"]
+[ux_text text_align="center"]
+<div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #ffbc00;border-radius:10px;padding:16px 20px;text-align:left;">
+<strong style="color:#0f172a;">Each code can be verified only once.</strong> <span style="color:#64748b;">If you're told a brand-new projector's code has already been checked, someone may have used it before you &mdash; please <a href="/contact-us/" style="color:#0188fe;font-weight:600;">contact us</a> with a photo of the label and your order details before using the product.</span>
+</div>
+[/ux_text]
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="FAQ"]
+
+[ux_html label="faq"]
+<h2 style="color:#0f172a; text-align:center; margin-bottom:10px;">Frequently Asked Questions &mdash; Authenticity</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 22px;opacity:.85;"></div>
+<div class="aun-faq">
+<details open><summary><span>Why should I verify my projector?</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Counterfeit projectors often copy the look of a brand but not its optics, safety or software. Verifying confirms you have a genuine AUN unit, built to our specifications and backed by our warranty.</div></details>
+<details><summary><span>I can't find the code.</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">It's on the label on the bottom of the projector. If the label is missing or damaged, <a href="/contact-us/">contact us</a> with your order number.</div></details>
+<details><summary><span>The site says my code is not valid.</span><i class="fa-solid fa-chevron-down aun-chev"></i></summary><div class="aun-faq-a">Check the digits again &mdash; it's easy to mix up similar characters. If it still fails, <a href="/contact-us/">contact us</a> with a clear photo of the label and where you bought the projector.</div></details>
+</div>
+[/ux_html]
+
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]

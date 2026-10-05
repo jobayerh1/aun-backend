@@ -290,7 +290,9 @@ class AUN_SP_Form {
 
 		$r = AUN_SP_Lookup::find_all( $search_by, $query );
 		if ( empty( $r['found'] ) ) {
-			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_not_found' ) ) );
+			// Only say "not found" when the ERP actually said so. If it could not be
+			// reached, the customer's purchase may well exist -- tell them to retry.
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( ! empty( $r['erp_unavailable'] ) ? 'srv_lookup_down' : 'srv_not_found' ) ) );
 		}
 
 		// Privacy: never send the customer's full phone/address to the browser — a
@@ -398,7 +400,7 @@ class AUN_SP_Form {
 
 		$all = AUN_SP_Lookup::find_all( $search_by, $query );
 		if ( empty( $all['found'] ) ) {
-			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_lookup_again' ) ) );
+			wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( ! empty( $all['erp_unavailable'] ) ? 'srv_lookup_down' : 'srv_lookup_again' ) ) );
 		}
 
 		$sale = null;
@@ -409,6 +411,13 @@ class AUN_SP_Form {
 			}
 		}
 		if ( null === $sale ) {
+			// ⚠️ The purchase they picked is not in this answer. If the ERP could not
+			// be reached, that is why -- and "falling back to the most recent" would
+			// file the request against a DIFFERENT (legacy) purchase, with the wrong
+			// model and warranty. Ask them to try again instead.
+			if ( ! empty( $all['erp_unavailable'] ) && 'erp' === $sel_src ) {
+				wp_send_json_error( array( 'message' => AUN_SP_I18N::msg( 'srv_lookup_down' ) ) );
+			}
 			$sale = $all['matches'][0]; // fall back to the most recent purchase
 		}
 		$sale['found'] = true;

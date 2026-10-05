@@ -435,7 +435,19 @@ t( '  ...but gives up eventually', false !== strpos( $popup, 'tries > 40' ), tru
 t( 'the measured width is published too', false !== strpos( $popup, "'--kt-sl-gw'" ), true );
 
 // Only the standard button takes a width; the icon button has no such option.
-t( 'the labelled button is given an explicit width', false !== strpos( $popup, "\$gbtn['width'] = '340';" ), true );
+t( 'the labelled button is given an explicit width (400 = Google max)', false !== strpos( $popup, "\$gbtn['width'] = '400';" ), true );
+// The popup's width and the stylesheet's cap are two halves of one number. 1.10.1 raised the
+// first to 400 and left the second at 340, so Facebook stopped 60px short of Google.
+preg_match( '/\$gbtn\[\'width\'\] = \'(\d+)\'/', $popup, $gw );
+preg_match( '/kt-sl-gw,100%\);max-width:(\d+)px/', $css_all = file_get_contents( WP_PLUGIN_DIR . '/kohthai-social-login/assets/kohthai-social-login.css' ), $cw );
+t( 'Facebook is capped at the same width Google is asked for', isset( $gw[1], $cw[1] ) && $gw[1] === $cw[1], true );
+t( '  ...and uncapped on a phone, like Breo', false !== strpos( $css_all, '.kt-sl-labelled .kt-sl-btn{max-width:none;}' ), true );
+t( '  ...narrowed to the row at render time (200-400px)', false !== strpos( $popup, 'Math.max(200, Math.min(400, avail))' ), true );
+// Google renders its own label; without this it follows the VISITOR's Google language,
+// so a Bengali-locale shopper could see the button in a language the rest of the page is not in.
+t( "Google's label follows the site locale", false !== strpos( $popup, "'locale'         => get_locale()" ), true );
+// The G sits beside the words, as on the Facebook button, rather than pinned to the far edge.
+t( 'the Google logo is centred with its label', false !== strpos( $popup, "'logo_alignment' => 'center'" ), true );
 t( 'our labelled button uses the measured width', false !== strpos( $css, 'width:var(--kt-sl-gw,100%)' ), true );
 
 // Wording. Google permits exactly four phrasings and no bare "Google", so the

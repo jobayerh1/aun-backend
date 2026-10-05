@@ -64,7 +64,8 @@
     /* --kt-sl-gw is measured from Google's rendered button, so ours matches it
        exactly rather than merely being close. Falls back to the old fixed size
        when Google's button is not on the page. */
-    width:var(--kt-sl-gw,100%);max-width:340px;
+    /* Must equal the width the popup asks Google for (400), or Facebook stops short of Google. */
+    width:var(--kt-sl-gw,100%);max-width:400px;
     /* Both height AND min-height come from the measurement. Leaving a fixed
        min-height here meant a 40px Google button could never be matched: the
        min-height simply won and ours stayed taller. */
@@ -84,4 +85,5 @@
 @media (max-width:480px){
     .kt-sl-title{font-size:11.5px;gap:9px;}
     .kt-sl-buttons{gap:10px;}
+    .kt-sl-labelled .kt-sl-btn{max-width:none;}
 }

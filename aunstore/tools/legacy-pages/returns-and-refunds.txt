@@ -1,0 +1,115 @@
+[section bg_color="rgb(255,248,230)" padding="20px" label="DRAFT NOTE - delete before publishing"]
+
+[ux_html label="draft note"]
+<div style="max-width:860px;margin:0 auto;background:#fff;border:2px dashed #f59e0b;border-radius:12px;padding:16px 20px;color:#92400e;font-size:14px;line-height:1.6;">
+<strong>DRAFT &mdash; not visible to customers.</strong> Every value in [square brackets] must be confirmed by the parent company. Replace them, delete this yellow section, then publish. Until it is published, this page is hidden from the menu, the footer and the help panels automatically.
+</div>
+[/ux_html]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Return Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-arrow-right-arrow-left"></i> Returns &amp; Refunds Policy</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">We value your trust. Please read our returns &amp; refunds policy so you know exactly when and how you can return or replace your AUN projector.</p>
+<p style="margin-top:18px;"><a href="/contact-us/" style="display:inline-flex; align-items:center; gap:8px; background:#0188fe; color:#fff; padding:11px 20px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;"><i class="fa-solid fa-headset"></i> Contact Support First</a></p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Return Highlights"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-box-open"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Damaged on Arrival</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Report transit damage within <strong>[NUMBER] days</strong> of delivery with photos of the box and product.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-gears"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Faulty or Wrong Item</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Contact us within <strong>[NUMBER] days</strong> of delivery &mdash; we'll send a part, replace the product or refund you.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-credit-card"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Refund Policy</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Approved refunds are processed within <strong>[NUMBER] business days</strong> to the original payment method.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="22px" label="Repair vs Return Note"]
+[ux_text text_align="center"]
+<div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #ffbc00;border-radius:10px;padding:16px 20px;text-align:left;">
+<strong style="color:#0f172a;">Projector developed a fault after the return window?</strong> <span style="color:#64748b;">That&rsquo;s covered by your 1-year warranty &mdash; it&rsquo;s a repair, not a return. Our factory ships the replacement part to you: see <a href="/warranty/" style="color:#0188fe;font-weight:600;">Warranty &amp; Support</a>.</span>
+</div>
+[/ux_text]
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Returns & Refunds Policy"]
+[accordion]
+
+[accordion-item title="1. Damaged, Faulty or Wrong Item"]
+
+<p>If your projector arrives damaged, does not work, or is not the model you ordered, contact us within <strong>[NUMBER] days of delivery</strong> with your order number and photos or a short video of the issue. Depending on the problem, we will send a replacement part (with a video showing how to fit it), replace the product, or issue a refund.</p>
+
+[/accordion-item]
+[accordion-item title="2. Change of Mind"]
+
+<p>[CONFIRM WITH PARENT COMPANY: whether change-of-mind returns are accepted; the return window; the condition the product must be in (unused, all seals and accessories, original packaging).]</p>
+
+[/accordion-item]
+[accordion-item title="3. Inspection"]
+
+<p>All returned products are inspected on receipt. Items that do not meet the conditions of this policy are not eligible for a refund or replacement.</p>
+
+[/accordion-item]
+[accordion-item title="4. Refunds"]
+
+<p>Approved refunds are issued to your original payment method within <strong>[NUMBER] business days</strong>. Your bank or card provider may take a few extra days to show it. [CONFIRM: whether original shipping charges are refundable.]</p>
+
+[/accordion-item]
+[accordion-item title="5. Order Cancellation"]
+
+<p>[CONFIRM: until when an order can be cancelled &mdash; for example, any time before it ships.] To cancel, <a href="/contact-us/" style="color:#0188fe; font-weight:bold;">contact us</a> with your order number.</p>
+
+[/accordion-item]
+[accordion-item title="6. Return Process"]
+
+<p>Please contact our support team to get approval <strong>before</strong> sending anything back &mdash; we will tell you where and how to send it. [CONFIRM: who pays return shipping for change-of-mind returns and for faulty items.]</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="18px" label="Last Updated"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>[DATE]</strong></p>
+[/ux_text]
+
+[/section]

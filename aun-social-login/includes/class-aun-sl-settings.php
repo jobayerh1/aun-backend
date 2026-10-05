@@ -226,6 +226,13 @@ class AUN_SL_Settings {
 								'<strong>Recommended.</strong> Google opens the browser&rsquo;s own account chooser &mdash; a bottom sheet on Android, a small dialog on desktop &mdash; and Facebook opens a compact popup, instead of navigating the whole page away and back. '
 								. 'If anything blocks it (popup blocker, the Facebook in-app browser, Google&rsquo;s cool-off after a visitor dismisses the prompt, or JavaScript switched off) the button quietly falls back to the full-page redirect, which works everywhere. Nothing can leave a customer unable to sign in.' ); ?>
 							<?php self::checkbox( 'onetap_enabled', 'Show the Google One Tap prompt to signed-out visitors', $o, 'The floating &ldquo;Sign in as &hellip;&rdquo; card in the corner. Uses the same Client ID above and the same account rules as the buttons. Replaces the separate <em>AUN Google One Tap</em> plugin &mdash; <strong>deactivate that one</strong> or the prompt appears twice.' ); ?>
+							<p style="margin:10px 0 4px;"><strong>Show the One Tap card on</strong></p>
+							<div style="padding-left:18px;">
+							<?php self::checkbox( 'onetap_on_checkout', 'Checkout', $o ); ?>
+							<?php self::checkbox( 'onetap_on_account', 'My Account, login and registration', $o ); ?>
+							<?php self::checkbox( 'onetap_on_cart', 'Cart', $o ); ?>
+							<?php self::checkbox( 'onetap_on_other', 'Every other page (home, products, categories, blog)', $o, 'Not recommended: shops offer sign-in when the customer is ready to buy, not while they browse. The Google buttons keep working on every page either way.' ); ?>
+							</div>
 						</td>
 					</tr>
 					<tr>

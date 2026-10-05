@@ -1,0 +1,34 @@
+{
+  "sku": "APB-A004-Pro-WHT",
+  "name": "AUN A004 Pro Full HD Home Cinema Android Projector",
+  "slug": "aun-a004-pro-projector",
+  "categories": [
+    "Home Theater Projector"
+  ],
+  "images": [
+    6581,
+    5250,
+    5251,
+    5253,
+    5252
+  ],
+  "short_description": "<p style=\"background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:8px 12px;margin:0 0 10px;font-size:13.5px;font-weight:700;color:#0166c8;line-height:1.5\"><i class=\"fa-solid fa-circle-check\" style=\"margin-right:6px\"></i>Best for: Simple Full HD on a budget</p>\n<ul>\n<li>Native Resolution: Full HD 1920 x 1080 pixels</li>\n<li>Brightness: 730 ANSI Lumens</li>\n<li>Operating System: Android 9</li>\n<li>Memory: 1GB RAM / 8GB ROM</li>\n<li>Ports: HDMI x1, USB x1, AV, Audio out 3.5mm</li>\n<li>Power: AC 100 – 240 V (works worldwide)</li>\n</ul>",
+  "menu_order": 5,
+  "meta": {
+    "_aun_throw_ratio": 1.33,
+    "_aun_max_screen_size": 150,
+    "_aun_internal_brightness": 350,
+    "_aunstore_highlights": {
+      "short": "A004 Pro",
+      "best_for": "Simple Full HD on a budget",
+      "resolution": "Full HD 1080p",
+      "res_note": "",
+      "lumens": 730,
+      "os": "Android 9",
+      "max_screen": 150,
+      "tags": [
+        "home"
+      ]
+    }
+  }
+}

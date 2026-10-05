@@ -1,0 +1,38 @@
+[aunp_hero eyebrow="Returns &amp; refunds" icon="fa-arrow-right-arrow-left" title="Returns &amp;" accent="refunds" sub="We value your trust. Please read our returns &amp; refunds policy so you know exactly when and how you can return or replace your AUN projector." btn="Contact support first" btn_url="/contact-us/" btn_icon="fa-headset" chips="Damaged on arrival|Faulty or wrong item|Refunds"]
+
+[aunp_section tone="white"]
+[aunp_note tone="draft"]<strong>DRAFT &mdash; not visible to customers.</strong> Every value in [square brackets] must be confirmed by the parent company. Replace them, delete this yellow section, then publish. Until it is published, this page is hidden from the menu, the footer and the help panels automatically.[/aunp_note]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-box-open" title="Damaged on arrival"]Report transit damage within <strong>[NUMBER] days</strong> of delivery with photos of the box and product.[/aunp_card]
+[aunp_card icon="fa-gears" title="Faulty or wrong item"]Contact us within <strong>[NUMBER] days</strong> of delivery &mdash; we'll send a part, replace the product or refund you.[/aunp_card]
+[aunp_card icon="fa-credit-card" title="Refund policy"]Approved refunds are processed within <strong>[NUMBER] business days</strong> to the original payment method.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_section tone="white" id="policy"]
+[aunp_doc title="Returns & refunds policy"]
+[aunp_clause title="1. Damaged, faulty or wrong item"]
+<p>If your projector arrives damaged, does not work, or is not the model you ordered, contact us within <strong>[NUMBER] days of delivery</strong> with your order number and photos or a short video of the issue. Depending on the problem, we will send a replacement part (with a video showing how to fit it), replace the product, or issue a refund.</p>
+[/aunp_clause]
+[aunp_clause title="2. Change of mind"]
+<p>[CONFIRM WITH PARENT COMPANY: whether change-of-mind returns are accepted; the return window; the condition the product must be in (unused, all seals and accessories, original packaging).]</p>
+[/aunp_clause]
+[aunp_clause title="3. Inspection"]
+<p>All returned products are inspected on receipt. Items that do not meet the conditions of this policy are not eligible for a refund or replacement.</p>
+[/aunp_clause]
+[aunp_clause title="4. Refunds"]
+<p>Approved refunds are issued to your original payment method within <strong>[NUMBER] business days</strong>. Your bank or card provider may take a few extra days to show it. [CONFIRM: whether original shipping charges are refundable.]</p>
+[/aunp_clause]
+[aunp_clause title="5. Order cancellation"]
+<p>[CONFIRM: until when an order can be cancelled &mdash; for example, any time before it ships.] To cancel, <a href="/contact-us/">contact us</a> with your order number.</p>
+[/aunp_clause]
+[aunp_clause title="6. Return process"]
+<p>Please contact our support team to get approval <strong>before</strong> sending anything back &mdash; we will tell you where and how to send it. [CONFIRM: who pays return shipping for change-of-mind returns and for faulty items.]</p>
+[/aunp_clause]
+[/aunp_doc]
+[aunp_note tone="info"]<strong>Projector developed a fault after the return window?</strong> That&rsquo;s covered by your 1-year warranty &mdash; it&rsquo;s a repair, not a return. Our factory ships the replacement part to you: see <a href="/warranty/">Warranty &amp; Support</a>.[/aunp_note]
+[/aunp_section]
+
+[aunp_help]
+
+[aunp_updated date="[DATE]"]

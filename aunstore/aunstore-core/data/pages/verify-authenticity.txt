@@ -1,0 +1,22 @@
+[aunp_hero eyebrow="Anti-counterfeit check" icon="fa-fingerprint" title="Verify your" accent="AUN projector" sub="Every genuine AUN projector carries a unique 12-digit anti-counterfeit code. Check yours in seconds on our official verification site." btn="Verify at check.aunstore.com" btn_url="https://check.aunstore.com" btn_icon="fa-shield-halved" btn2="Warranty &amp; support" btn2_url="/warranty/" btn2_icon="fa-screwdriver-wrench" chips="12-digit code|Takes seconds|Official site"]
+
+[aunp_section tone="white"]
+[aunp_head eyebrow="Three steps" icon="fa-route" title="How to check your code"]
+[aunp_steps]
+[aunp_step icon="fa-magnifying-glass" title="Find the code"]Turn the projector over &mdash; the 12-digit anti-counterfeit code is on the label on the bottom of the unit.[/aunp_step]
+[aunp_step icon="fa-keyboard" title="Enter it online"]Open <a href="https://check.aunstore.com" target="_blank" rel="noopener">check.aunstore.com</a>, type the code and the short security number shown on screen, then press Submit.[/aunp_step]
+[aunp_step icon="fa-circle-check" title="Read the result"]You&rsquo;ll see straight away whether the code belongs to a genuine AUN product.[/aunp_step]
+[/aunp_steps]
+[aunp_note tone="warn"]<strong>Each code can be verified only once.</strong> If you&rsquo;re told a brand-new projector&rsquo;s code has already been checked, someone may have used it before you &mdash; please <a href="/contact-us/">contact us</a> with a photo of the label and your order details before using the product.[/aunp_note]
+[/aunp_section]
+
+[aunp_section tone="soft"]
+[aunp_head eyebrow="Good to know" icon="fa-circle-question" title="Authenticity questions"]
+[aunp_faq]
+[aunp_q q="Why should I verify my projector?" open="1"]Counterfeit projectors often copy the look of a brand but not its optics, safety or software. Verifying confirms you have a genuine AUN unit, built to our specifications and backed by our warranty.[/aunp_q]
+[aunp_q q="I can't find the code."]It&rsquo;s on the label on the bottom of the projector. If the label is missing or damaged, <a href="/contact-us/">contact us</a> with your order number.[/aunp_q]
+[aunp_q q="The site says my code is not valid."]Check the digits again &mdash; it&rsquo;s easy to mix up similar characters. If it still fails, <a href="/contact-us/">contact us</a> with a clear photo of the label and where you bought the projector.[/aunp_q]
+[/aunp_faq]
+[/aunp_section]
+
+[aunp_help]

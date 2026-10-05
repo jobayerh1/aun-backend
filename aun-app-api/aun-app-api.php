@@ -3,7 +3,7 @@
  * Plugin Name:       AUN App API
  * Plugin URI:        https://aun-projector.com.bd/
  * Description:       REST API backend for the AUN Care Bangladesh Android customer app: phone+OTP login, device registration & warranty (reads the SLB Warranty plugin tables), firmware/manual/video/tip content per model, and app configuration. Companion to AUN Warranty Registration and AUN Alpha SMS OTP Login.
- * Version:           1.114.1
+ * Version:           1.116.0
  * Author:            AUN / Smart Living Bangladesh
  * Author URI:        https://aun-projector.com.bd/
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'AUN_APP_API_VERSION', '1.114.1' );
+define( 'AUN_APP_API_VERSION', '1.116.0' );
 // v15 = referral programme tables (aun_app_referrals + _referral_claims).
 // v14 = adds aun_app_notice_state.completed_at/snoozed_until (actionable
 // maintenance reminders — mark done / remind me later).
@@ -50,7 +50,10 @@ define( 'AUN_APP_API_VERSION', '1.114.1' );
 // when the OTA cannot finish (slow line, repeated 50-60% stalls). Attached to
 // the SAME row on purpose - a second firmware entry would mean two version
 // numbers, two notifications and a customer asking which one is newer.
-define( 'AUN_APP_API_DB_VERSION', '23' );
+// v24 = AUN Rewards: the Owner Rewards ledger (aun_app_owner_rewards) and
+// three columns on the referral claims for showroom redemption (channel,
+// erp_invoice, redeemed_at). See AUN-REWARDS-PLAN.md.
+define( 'AUN_APP_API_DB_VERSION', '24' );
 define( 'AUN_APP_API_FILE', __FILE__ );
 define( 'AUN_APP_API_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AUN_APP_API_URL', plugin_dir_url( __FILE__ ) );
@@ -99,6 +102,10 @@ require_once AUN_APP_API_PATH . 'includes/class-aun-app-projectors.php';
 // After projectors: AUN_App_Filters reuses its model normaliser.
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-filters.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-referrals.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-owner-rewards.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-rewards-ceiling.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-rewards-showroom.php';
+require_once AUN_APP_API_PATH . 'includes/class-aun-app-rewards-page.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-sslcommerz.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-transfers.php';
 require_once AUN_APP_API_PATH . 'includes/class-aun-app-rest.php';
@@ -219,6 +226,27 @@ function aun_app_api_default_options() {
 		// Pay on Completed AS WELL as the status above. Off: a shipment
 		// plugin that auto-completes at dispatch would otherwise pay early.
 		'referral_reward_also_completed' => 0,
+		// AUN Rewards — Owner Rewards ("5% off your next projector"). Ships OFF:
+		// switching it on in Settings stamps the launch date, and only purchases
+		// from that moment earn (no backfill). Categories say what counts as a
+		// projector; with none chosen nothing earns.
+		'owner_rewards_enabled'      => 0,
+		'owner_reward_percent'       => 5,
+		'owner_reward_months'        => 12,
+		'owner_reward_categories'    => array(),
+		'owner_reward_exclude_sale'  => 1,
+		'owner_reward_sms'           => 1,
+		'owner_reward_sms_text'      => '',
+		'owner_reward_remind_sms'    => 1,
+		'owner_rewards_launch'       => '',
+		// Both programmes: the most rewards may take off one order, in % of the
+		// items (0 = no limit). 10 = half the ~20% margin.
+		'rewards_ceiling'            => 10,
+		// Rewards can be redeemed at the showroom (staff screen, OTP-confirmed),
+		// and an inviter is paid for a friend's showroom purchase after a hold
+		// long enough for a return to show up in the ERP.
+		'rewards_showroom'           => 1,
+		'rewards_showroom_hold_days' => 7,
 		// SSLCommerz, for the app's DIRECT payment session. Normally blank:
 		// the credentials are read from the WooCommerce gateway that is
 		// already configured. Fill these only if that lookup cannot find
@@ -574,6 +602,79 @@ function aun_app_api_activate() {
 		$wpdb->query( "ALTER TABLE $referral_claims ADD COLUMN revoke_reason varchar(20) NOT NULL DEFAULT ''" );
 	}
 
+	// v24: a welcome discount can now be spent at the SHOWROOM. The ERP sale has
+	// no WooCommerce order id, so the claim records which counter it was spent at
+	// and the ERP invoice — and when, so the inviter is paid only after the
+	// return window.
+	$claim_cols = (array) $wpdb->get_col( "SHOW COLUMNS FROM $referral_claims" );
+	if ( ! in_array( 'channel', $claim_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $referral_claims ADD COLUMN channel varchar(12) NOT NULL DEFAULT ''" );
+		$wpdb->query( "ALTER TABLE $referral_claims ADD COLUMN erp_invoice varchar(64) NOT NULL DEFAULT ''" );
+		$wpdb->query( "ALTER TABLE $referral_claims ADD COLUMN redeemed_at datetime NULL" );
+	}
+	// …and what the friend PAID there: the inviter's reward is a share of it.
+	if ( ! in_array( 'erp_amount', $claim_cols, true ) ) {
+		$wpdb->query( "ALTER TABLE $referral_claims ADD COLUMN erp_amount decimal(12,2) NOT NULL DEFAULT 0" );
+	}
+
+	// v24: every showroom redemption, one row per ERP invoice — what was used,
+	// what stayed in the customer's Rewards, and who pressed Redeem. It is what
+	// makes a redemption undoable, and what the Rewards report adds up.
+	$redemptions = $wpdb->prefix . 'aun_app_reward_redemptions';
+	dbDelta( "CREATE TABLE IF NOT EXISTS $redemptions (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		phone varchar(20) NOT NULL,
+		invoice varchar(64) NOT NULL,
+		items_total decimal(12,2) NOT NULL DEFAULT 0,
+		discount decimal(12,2) NOT NULL DEFAULT 0,
+		detail longtext NULL,
+		staff_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		status varchar(12) NOT NULL DEFAULT 'done',
+		created_at datetime NULL,
+		undone_at datetime NULL,
+		undone_by bigint(20) unsigned NOT NULL DEFAULT 0,
+		PRIMARY KEY (id),
+		KEY phone_idx (phone),
+		KEY invoice_idx (invoice)
+	) $charset;" );
+
+	// v24: the Owner Rewards ledger — one row per reward's life. `source_keys`
+	// (",web:123,erp:INV-9,") is what makes crediting a purchase idempotent.
+	$owner_rewards = $wpdb->prefix . 'aun_app_owner_rewards';
+	dbDelta( "CREATE TABLE IF NOT EXISTS $owner_rewards (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		phone varchar(20) NOT NULL,
+		user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		coupon varchar(40) NOT NULL DEFAULT '',
+		status varchar(16) NOT NULL DEFAULT 'active',
+		percent decimal(5,2) NOT NULL DEFAULT 0,
+		sources text NULL,
+		source_keys text NULL,
+		issued_at datetime NULL,
+		expires_at datetime NULL,
+		reminded_at datetime NULL,
+		used_at datetime NULL,
+		used_channel varchar(12) NOT NULL DEFAULT '',
+		used_ref varchar(64) NOT NULL DEFAULT '',
+		used_amount decimal(12,2) NOT NULL DEFAULT 0,
+		revoked_reason varchar(40) NOT NULL DEFAULT '',
+		updated_at datetime NULL,
+		PRIMARY KEY (id),
+		KEY phone_status (phone, status),
+		KEY coupon_idx (coupon)
+	) $charset;" );
+
+	// v24: the programme's landing page (/refer/), created once — but NOT here.
+	//
+	// ⚠️ This routine also runs as the automatic upgrade on `plugins_loaded`,
+	// before WordPress has built $wp_rewrite. Creating a page there asks for its
+	// permalink and dies — and it dies BEFORE the new DB version is recorded
+	// below, so the upgrade would run (and die) again on every request. It is
+	// only flagged here and made on `init`; see aun_app_api_make_refer_page().
+	if ( ! get_option( 'aun_app_refer_page_created' ) ) {
+		update_option( 'aun_app_refer_page_pending', 1, false );
+	}
+
 	// v6: warranty duration exactly as the ERP product defines it (what the
 	// sales invoice prints). NULL duration → legacy 12-month fallback.
 	$device_cols_v6 = (array) $wpdb->get_col( "SHOW COLUMNS FROM $devices" );
@@ -905,13 +1006,27 @@ add_action( 'woocommerce_new_product', array( 'AUN_App_Projectors', 'flush' ) );
 // refusal that stuck through refreshes. Applying now only ANNOUNCES the
 // condition; it is enforced once, at placement, where the number is known.
 add_action( 'woocommerce_applied_coupon', array( 'AUN_App_Referrals', 'on_applied_coupon' ), 10, 1 );
+// An invite code typed at checkout: say what it is instead of "does not exist".
+add_filter( 'woocommerce_coupon_error', array( 'AUN_App_Referrals', 'explain_invite_code' ), 10, 3 );
+// …and an owner reward refused on an accessory or a sale item says what it IS for.
+add_filter( 'woocommerce_coupon_error', array( 'AUN_App_Owner_Rewards', 'explain_refusal' ), 10, 3 );
 
 // Earned rewards stack with EACH OTHER, and with nothing else. Rewards are
 // issued one per friend and are individual-use; without these two filters a
 // referrer who brought five customers would need five separate orders to spend
 // what they earned.
+// AUN Rewards: the owner reward is earned credit too, so it joins them.
 add_filter( 'woocommerce_apply_individual_use_coupon', array( 'AUN_App_Referrals', 'keep_rewards_together' ), 10, 2 );
 add_filter( 'woocommerce_apply_with_individual_use_coupon', array( 'AUN_App_Referrals', 'allow_reward_stacking' ), 10, 3 );
+
+// AUN Rewards: combined, earned rewards never take more than the ceiling
+// (default 10% — half the margin) off one order. Refused unused when applied
+// (priority 5, before the phone-lock notice); checked again at placement,
+// after the phone lock (priority 20), because the cart can shrink; and the
+// block checkout, which never fires the classic hook, gets its own check.
+add_action( 'woocommerce_applied_coupon', array( 'AUN_App_Rewards_Ceiling', 'on_applied_coupon' ), 5, 1 );
+add_action( 'woocommerce_after_checkout_validation', array( 'AUN_App_Rewards_Ceiling', 'on_checkout_validation' ), 20, 2 );
+add_action( 'woocommerce_store_api_cart_errors', array( 'AUN_App_Rewards_Ceiling', 'on_store_api_cart_errors' ), 10, 2 );
 
 // A reward worth more than the cart is accepted and the remainder is destroyed
 // — WooCommerce caps the discount at the subtotal and still marks the coupon
@@ -937,15 +1052,30 @@ add_action( 'woocommerce_order_status_changed', 'aun_app_api_referral_status_cha
  * @param string $to       New status (bare slug).
  */
 function aun_app_api_referral_status_changed( $order_id, $from, $to ) {
-	$to = AUN_App_Referrals::clean_status( $to );
+	$to       = AUN_App_Referrals::clean_status( $to );
+	$reversal = in_array( $to, array( 'refunded', 'cancelled', 'failed' ), true );
+
+	// AUN Rewards: an Owner Reward coupon on this order is spent here — BEFORE
+	// the same order can earn the next one, or the new purchase would extend the
+	// very reward being spent and vanish with it.
+	if ( ! $reversal ) {
+		AUN_App_Owner_Rewards::on_order_status_for_use( $order_id, $to );
+	}
 
 	if ( in_array( $to, AUN_App_Referrals::payout_statuses(), true ) ) {
 		AUN_App_Referrals::on_order_completed( $order_id );
+		// The same paying status earns an Owner Reward: Delivered, not shipped,
+		// so a refused cash-on-delivery parcel earns nothing.
+		AUN_App_Owner_Rewards::on_order_paid_out( $order_id );
 		return;
 	}
 
-	if ( in_array( $to, array( 'refunded', 'cancelled', 'failed' ), true ) ) {
+	if ( $reversal ) {
 		AUN_App_Referrals::on_order_reversed( $order_id );
+		// The mirror image: take back what this order EARNED first, then give
+		// back the reward it SPENT — which folds into any reward still held.
+		AUN_App_Owner_Rewards::on_order_reversed( $order_id );
+		AUN_App_Owner_Rewards::on_order_status_for_use( $order_id, $to );
 	}
 }
 
@@ -954,11 +1084,40 @@ function aun_app_api_referral_status_changed( $order_id, $from, $to ) {
 // refund must not cost the referrer a reward they earned. Only a refund that
 // drags what was actually kept below the qualifying minimum counts.
 add_action( 'woocommerce_order_refunded', array( 'AUN_App_Referrals', 'on_partial_refund' ), 10, 2 );
+// Owner Rewards: a refund that leaves no projector on the order takes back the
+// reward it earned. A goodwill refund on a kept projector does not.
+add_action( 'woocommerce_order_refunded', array( 'AUN_App_Owner_Rewards', 'on_partial_refund' ), 10, 2 );
+// Owner Rewards: expire what has run out, remind 30 days before.
+add_action( 'aun_app_daily_notices', array( 'AUN_App_Owner_Rewards', 'daily' ) );
+// Invite: a friend's SHOWROOM purchase pays the inviter once the return window
+// has passed and the ERP still shows the sale (not returned).
+add_action( 'aun_app_daily_notices', array( 'AUN_App_Referrals', 'pay_showroom_claims' ) );
 
 /**
  * Upgrade path for sites where the plugin was activated before v1.1
  * (activation hooks do not re-run on plugin file updates).
  */
+/**
+ * Make the AUN Rewards landing page the upgrade flagged, once WordPress can.
+ *
+ * On `init`, where permalinks exist. Wrapped so that nothing about creating a
+ * page — a clash, a hook elsewhere, a hosting quirk — can ever take a request
+ * down with it; the worst case is no page, which the app already handles by
+ * sharing the website link.
+ */
+function aun_app_api_make_refer_page() {
+	if ( ! get_option( 'aun_app_refer_page_pending' ) ) {
+		return;
+	}
+	delete_option( 'aun_app_refer_page_pending' );
+	try {
+		AUN_App_Rewards_Page::ensure_page();
+	} catch ( Throwable $e ) {
+		error_log( 'AUN App API: could not create the Rewards page — ' . $e->getMessage() );
+	}
+}
+add_action( 'init', 'aun_app_api_make_refer_page', 99 );
+
 function aun_app_api_maybe_upgrade() {
 	if ( get_option( 'aun_app_api_db', '0' ) !== AUN_APP_API_DB_VERSION ) {
 		aun_app_api_activate();
@@ -970,6 +1129,9 @@ add_action( 'plugins_loaded', 'aun_app_api_maybe_upgrade', 24 );
  * Boot: REST routes always; admin screens in wp-admin.
  */
 function aun_app_api_boot() {
+	// The AUN Rewards landing page and guide: [aun_refer].
+	AUN_App_Rewards_Page::register();
+
 	$rest = new AUN_App_REST();
 	add_action( 'rest_api_init', array( $rest, 'register_routes' ) );
 	// Declare which public routes an edge cache may keep, and for how long.
@@ -980,6 +1142,8 @@ function aun_app_api_boot() {
 	if ( is_admin() ) {
 		$admin = new AUN_App_Admin();
 		$admin->init();
+		// AUN Rewards: the showroom counter screen (AUN App → Rewards).
+		AUN_App_Rewards_Showroom::register();
 	}
 }
 add_action( 'plugins_loaded', 'aun_app_api_boot', 25 );
@@ -1040,31 +1204,132 @@ function aun_app_api_admin_bar_repairs( $bar ) {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$count = get_transient( 'aun_app_pending_repairs_count' );
-	if ( false === $count ) {
-		global $wpdb;
-		$table = $wpdb->prefix . 'aun_app_repairs';
-		$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table WHERE status = %s", 'submitted' ) );
-		set_transient( 'aun_app_pending_repairs_count', $count, MINUTE_IN_SECONDS );
-	}
-	if ( (int) $count < 1 ) {
+	$q     = aun_app_api_pending_repairs();
+	$count = (int) $q['count'];
+	if ( $count < 1 ) {
 		return;
 	}
+
+	// ⚠️ This used to be a grey hammer and a bare number — the same weight as
+	// every other item in the bar, with nothing saying what it counted. It
+	// worked, and it went unnoticed. Now it is coloured, it SAYS "repair
+	// requests", and it turns red once someone has waited over a day: that
+	// customer was told to wait for our answer before sending anything.
+	$oldest  = ! empty( $q['rows'] ) ? aun_app_api_repair_age( $q['rows'][0]['created'] ) : 0;
+	$overdue = $oldest > DAY_IN_SECONDS;
+	$word    = _n( 'repair request', 'repair requests', $count, 'aun-app' );
+
 	$bar->add_node( array(
 		'id'    => 'aun-app-repairs',
-		'title' => '<span class="ab-icon dashicons dashicons-hammer" style="top:2px;"></span>'
-			. '<span class="ab-label">' . (int) $count . '</span>',
+		'title' => '<span class="ab-icon dashicons dashicons-hammer" style="top:2px;" aria-hidden="true"></span>'
+			. '<span class="ab-label">' . $count . '<span class="aun-ab-word"> ' . esc_html( $word ) . '</span></span>',
 		'href'  => admin_url( 'admin.php?page=aun-app-repairs' ),
 		'meta'  => array(
 			'title' => sprintf(
 				/* translators: %d: number of repair requests awaiting approval. */
-				_n( '%d repair request awaiting your approval', '%d repair requests awaiting your approval', (int) $count, 'aun-app' ),
-				(int) $count
-			),
+				_n( '%d repair request waiting for your approval', '%d repair requests waiting for your approval', $count, 'aun-app' ),
+				$count
+			) . ( $overdue ? ' — the oldest for ' . human_time_diff( time() - $oldest ) : '' ),
+			'class' => 'aun-repairs-waiting' . ( $overdue ? ' aun-repairs-overdue' : '' ),
 		),
+	) );
+
+	// Who is waiting, oldest first — the customer who has waited longest is the
+	// one to answer next — each straight to their own row on the Repairs screen.
+	foreach ( $q['rows'] as $r ) {
+		$line = (string) $r['ref'];
+		foreach ( array( $r['customer'], $r['model'] ) as $bit ) {
+			if ( '' !== trim( (string) $bit ) ) {
+				$line .= ' · ' . trim( (string) $bit );
+			}
+		}
+		if ( function_exists( 'mb_strimwidth' ) ) {
+			$line = mb_strimwidth( $line, 0, 54, '…', 'UTF-8' );
+		}
+		$age = aun_app_api_repair_age( $r['created'] );
+		$bar->add_node( array(
+			'id'     => 'aun-app-repair-' . (int) $r['id'],
+			'parent' => 'aun-app-repairs',
+			'title'  => '<span style="color:' . ( $age > DAY_IN_SECONDS ? '#ff8b8b' : '#f0b849' ) . '">●</span> '
+				. esc_html( $line )
+				. '<span style="opacity:.65"> · ' . esc_html( human_time_diff( time() - $age ) ) . ' ago</span>',
+			'href'   => admin_url( 'admin.php?page=aun-app-repairs#aun-repair-' . (int) $r['id'] ),
+		) );
+	}
+	if ( $count > count( $q['rows'] ) ) {
+		$bar->add_node( array(
+			'id'     => 'aun-app-repairs-more',
+			'parent' => 'aun-app-repairs',
+			'title'  => '<span style="opacity:.75">+ ' . ( $count - count( $q['rows'] ) ) . ' more</span>',
+			'href'   => admin_url( 'admin.php?page=aun-app-repairs' ),
+		) );
+	}
+	$bar->add_node( array(
+		'id'     => 'aun-app-repairs-all',
+		'parent' => 'aun-app-repairs',
+		'title'  => '↗ ' . esc_html__( 'Open repair requests', 'aun-app' ),
+		'href'   => admin_url( 'admin.php?page=aun-app-repairs' ),
 	) );
 }
 add_action( 'admin_bar_menu', 'aun_app_api_admin_bar_repairs', 90 );
+
+/**
+ * Repair requests waiting for a decision: how many, and the oldest few.
+ *
+ * Cached for a minute under the SAME key the older build used, so every place
+ * that already clears it keeps working: a request created from the app, one
+ * approved or rejected on the Repairs screen, one adopted by an ERP job sheet.
+ *
+ * @return array{count:int,rows:array}
+ */
+function aun_app_api_pending_repairs() {
+	$cached = get_transient( 'aun_app_pending_repairs_count' );
+	// An older build cached a bare integer here; that is a miss, not a count.
+	if ( is_array( $cached ) && isset( $cached['count'], $cached['rows'] ) ) {
+		return $cached;
+	}
+	global $wpdb;
+	$table = $wpdb->prefix . 'aun_app_repairs';
+	$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table WHERE status = %s", 'submitted' ) );
+	$rows  = array();
+	if ( $count > 0 ) {
+		$found = $wpdb->get_results( $wpdb->prepare(
+			"SELECT id, ref, customer_name, model, created_at FROM $table WHERE status = %s ORDER BY created_at ASC, id ASC LIMIT 8",
+			'submitted'
+		) );
+		foreach ( (array) $found as $r ) {
+			$rows[] = array(
+				'id'       => (int) $r->id,
+				'ref'      => (string) $r->ref,
+				'customer' => (string) $r->customer_name,
+				'model'    => (string) $r->model,
+				'created'  => (string) $r->created_at,
+			);
+		}
+	}
+	$out = array( 'count' => $count, 'rows' => $rows );
+	set_transient( 'aun_app_pending_repairs_count', $out, MINUTE_IN_SECONDS );
+	return $out;
+}
+
+/**
+ * How long a request has been waiting, in seconds.
+ *
+ * `created_at` is stored in the SITE's time (current_time('mysql')), so it is
+ * converted to GMT before comparing with time() — comparing a Dhaka wall-clock
+ * string with a UTC timestamp would make every request six hours younger.
+ *
+ * @param string $created Site-local 'Y-m-d H:i:s'.
+ * @return int
+ */
+function aun_app_api_repair_age( $created ) {
+	$created = (string) $created;
+	if ( '' === $created ) {
+		return 0;
+	}
+	$ts = strtotime( get_gmt_from_date( $created ) . ' UTC' );
+	return $ts ? max( 0, time() - $ts ) : 0;
+}
 
 /**
  * Support-ticket queue in the admin bar.
@@ -1179,6 +1444,50 @@ function aun_app_api_admin_bar_styles() {
 		#wpadminbar .aun-tickets-waiting > .ab-item:before { animation:none; }
 	}
 	#wpadminbar #wp-admin-bar-aun-app-tickets-default { min-width:290px; }
+
+	/* Repair requests waiting for a decision: amber, red after a day. */
+	#wpadminbar .aun-repairs-waiting > .ab-item { background:#b45309 !important; }
+	#wpadminbar .aun-repairs-overdue > .ab-item { background:#8b1b1b !important; }
+	#wpadminbar .aun-repairs-waiting .ab-icon:before,
+	#wpadminbar .aun-repairs-waiting:hover .ab-icon:before { color:#fff !important; }
+	#wpadminbar .aun-repairs-waiting .ab-label { color:#fff !important; font-weight:700; }
+	#wpadminbar .aun-repairs-waiting > .ab-item .ab-icon:before { animation:aunTicketPulse 2s ease-in-out infinite; }
+	@media (prefers-reduced-motion: reduce) {
+		#wpadminbar .aun-repairs-waiting > .ab-item .ab-icon:before { animation:none; }
+	}
+	#wpadminbar #wp-admin-bar-aun-app-repairs-default { min-width:320px; }
+
+	/* Phones. WordPress hides every custom top-bar item below 782px, so on the
+	   device an owner actually carries none of these showed at all. */
+	@media screen and (max-width: 782px) {
+		#wpadminbar li#wp-admin-bar-aun-app-repairs,
+		#wpadminbar li#wp-admin-bar-aun-app-bugs,
+		#wpadminbar li#wp-admin-bar-aun-app-tickets { display:block; }
+		#wpadminbar li#wp-admin-bar-aun-app-repairs > .ab-item,
+		#wpadminbar li#wp-admin-bar-aun-app-bugs > .ab-item,
+		#wpadminbar li#wp-admin-bar-aun-app-tickets > .ab-item { position:relative; width:52px; padding:0; }
+		#wpadminbar li#wp-admin-bar-aun-app-repairs .ab-icon,
+		#wpadminbar li#wp-admin-bar-aun-app-bugs .ab-icon,
+		#wpadminbar li#wp-admin-bar-aun-app-tickets .ab-icon { top:0 !important; }
+		#wpadminbar .aun-ab-word { display:none; }
+		/* The count becomes a badge on the icon — there is no room beside it. */
+		#wpadminbar li#wp-admin-bar-aun-app-repairs .ab-label,
+		#wpadminbar li#wp-admin-bar-aun-app-bugs .ab-label,
+		#wpadminbar li#wp-admin-bar-aun-app-tickets .ab-label {
+			display:block !important; position:absolute; top:5px; right:3px;
+			/* Core turns .ab-label into screen-reader-only text on phones
+			   (clip-path: inset(50%)), which clipped this badge away entirely. */
+			clip:auto !important; clip-path:none !important; overflow:visible !important;
+			width:auto !important; margin:0 !important;
+			min-width:18px; height:18px; padding:0 4px; box-sizing:border-box;
+			border-radius:9px; background:#fff; color:#1d2327 !important;
+			font:700 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+			text-align:center;
+		}
+		/* Same specificity as the rule above, or it silently loses to it. */
+		#wpadminbar li#wp-admin-bar-aun-app-repairs.aun-repairs-waiting .ab-label { color:#b45309 !important; }
+		#wpadminbar li#wp-admin-bar-aun-app-repairs.aun-repairs-overdue .ab-label { color:#8b1b1b !important; }
+	}
 	</style>';
 }
 /**

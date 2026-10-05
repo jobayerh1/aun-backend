@@ -515,9 +515,17 @@ html.breo-nav-open, html.breo-nav-open body { overflow: hidden; }
 .breo-slide.layout-split .breo-slide__media { left: 50%; }
 .breo-slide.layout-split.theme-warm { --slide-bg: var(--b-warm); background: var(--b-warm); }
 .breo-slide.layout-split.theme-sand { --slide-bg: var(--b-sand); background: var(--b-sand); }
+/* matches the warm yellow studio backdrop of the P2 model shot, so photo and panel read as one */
+.breo-slide.layout-split.theme-sun { --slide-bg: #e6cc85; background: linear-gradient(180deg, #f4e6c1 0%, #e6cc85 100%); }
 .breo-slide__content { position: relative; z-index: 2; height: 100%; display: flex; align-items: center; }
 .breo-slide__in { max-width: 32rem; opacity: 0; transform: translateY(24px); transition: opacity .8s .25s, transform .8s .25s; }
 .breo-slide.is-active .breo-slide__in { opacity: 1; transform: none; }
+/* the first slide is already active when the page arrives, so there is no change for a transition
+   to animate: it plays the same entrance once as an animation (the script drops is-intro when it moves on) */
+.breo-slide.is-intro .breo-slide__in { animation: breo-slide-in .8s .25s both; }
+.breo-slide.is-intro .breo-slide__media img { animation: breo-slide-zoom 7s ease both; }
+@keyframes breo-slide-in { from { opacity: 0; transform: translateY(24px); } }
+@keyframes breo-slide-zoom { from { transform: scale(1.04); } }
 .breo-slide.layout-split .breo-slide__in { max-width: min(30rem, 42vw); }
 .breo-slide .breo-hero__model { font-size: clamp(1.4rem, 2.2vw, 1.9rem); }
 .breo-slide__title { margin: 1rem 0 1rem; font-size: clamp(2.3rem, 4.6vw, 4rem); font-weight: 600; line-height: 1.06; letter-spacing: -.025em; color: var(--b-ink); }
@@ -824,3 +832,89 @@ body.breo-bd:not(.breo-canvas) .wp-site-blocks > footer.wp-block-template-part {
 	.breo-canvas *, .breo-canvas *::before, .breo-canvas *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 	.js-breo [data-reveal] { opacity: 1; transform: none; }
 }
+
+
+/* ================= product videos ================= */
+.breo-playdot { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; margin-right: 10px; border-radius: 50%; background: currentColor; transition: transform .2s; }
+.breo-playdot svg { color: var(--b-cream); fill: currentColor; margin-left: 2px; }
+.breo-film-len { margin-left: 10px; font-weight: 400; opacity: .65; font-variant-numeric: tabular-nums; }
+.breo-hero-cta__film { display: inline-flex; align-items: center; padding: 0; border: 0; background: none; color: var(--b-ink); font: inherit; font-weight: 600; cursor: pointer; }
+.breo-hero-cta__film:hover .breo-playdot { transform: scale(1.08); }
+.theme-dark .breo-hero-cta__film { color: #fff; }
+.theme-dark .breo-hero-cta__film .breo-playdot svg { color: var(--b-ink); }
+.breo-vid__play { display: inline-flex; align-items: center; margin-top: 1.4rem; padding: 10px 22px 10px 10px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.breo-vid__play:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(0, 0, 0, .18); }
+
+/* landscape: a framed screen under its title (the films have their own captions) */
+.breo-vid.is-wide { padding: clamp(64px, 8vw, 112px) 0; background: #141210; color: #fff; }
+.breo-vid__head { max-width: 40rem; margin: 0 auto clamp(28px, 4vw, 48px); text-align: center; }
+.breo-vid.is-wide .breo-title { color: #fff; }
+.breo-vid.is-wide .breo-eyebrow { color: rgba(255, 255, 255, .7); }
+.breo-vid.is-wide .breo-vid__play { margin-top: 1.1rem; background: #fff; color: var(--b-ink); }
+.breo-vid.is-wide .breo-vid__play .breo-playdot { color: var(--b-ink); }
+.breo-vid__screen { position: relative; max-width: 1120px; margin: 0 auto; aspect-ratio: var(--vid-ratio, 16 / 9); border-radius: 24px; overflow: hidden; background: #000; box-shadow: 0 40px 90px rgba(0, 0, 0, .5); }
+.breo-vid__clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+
+/* portrait: a phone-shaped frame beside the copy */
+.breo-vid.is-tall { background: var(--b-cream); padding: clamp(64px, 8vw, 112px) 0; }
+.breo-vid__copy .breo-lead { margin-bottom: 0; } /* the button brings its own top margin */
+.breo-vid__split { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: clamp(32px, 6vw, 96px); }
+.breo-vid.is-tall .breo-vid__play { background: var(--b-ink); color: #fff; }
+.breo-vid.is-tall .breo-vid__play .breo-playdot { color: #fff; }
+.breo-vid.is-tall .breo-vid__play .breo-playdot svg { color: var(--b-ink); }
+.breo-vid__frame { position: relative; height: min(78vh, 720px); aspect-ratio: var(--vid-ratio, 9 / 16); max-width: 100%; border-radius: 30px; overflow: hidden; background: #e9e1d6; box-shadow: 0 30px 60px rgba(28, 28, 28, .16); }
+.breo-vid__tap { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; border: 0; background: none; cursor: pointer; }
+/* the play button sits in the middle until the loop runs, then moves out of the picture */
+.breo-vid__tap span { position: absolute; left: 50%; top: 50%; width: 68px; height: 68px; margin: -34px 0 0 -34px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .92); color: var(--b-ink); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); transition: left .45s ease, top .45s ease, width .45s ease, height .45s ease, margin .45s ease, transform .25s; }
+.breo-vid__tap svg { fill: currentColor; margin-left: 4px; transition: width .45s ease, height .45s ease; }
+.breo-vid__tap:hover span, .breo-vid__tap:focus-visible span { transform: scale(1.08); }
+.is-playing > .breo-vid__tap span { left: calc(100% - 58px); top: calc(100% - 58px); width: 42px; height: 42px; margin: 0; background: rgba(255, 255, 255, .85); }
+.is-playing > .breo-vid__tap svg { width: 16px; height: 16px; margin-left: 2px; }
+
+@media (max-width: 800px) {
+	.breo-vid__screen { border-radius: 16px; margin-inline: -4px; }
+	.breo-vid__split { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+	.breo-vid__frame { order: -1; height: auto; width: min(100%, 360px); }
+}
+
+/* homepage reels */
+.breo-reels { background: #fff; padding: 0 0 clamp(72px, 9vw, 120px); } /* the section above already supplies the top space */
+/* centred by its own margins, not justify-content: a centred row that overflows cuts its first card off where it can't be scrolled to */
+.breo-reels__row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 280px); gap: 20px; width: max-content; max-width: 100%; margin-inline: auto; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 10px; scrollbar-width: none; }
+.breo-reels__row::-webkit-scrollbar { display: none; }
+.breo-reel { scroll-snap-align: center; }
+.breo-reel__media { position: relative; aspect-ratio: 9 / 16; border-radius: 24px; overflow: hidden; background: var(--b-cream); box-shadow: 0 16px 34px rgba(28, 28, 28, .1); }
+.breo-reel__clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s ease; }
+.breo-reel:hover .breo-reel__clip { transform: scale(1.03); }
+.breo-reel__play { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; border: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, .35)); cursor: pointer; }
+.breo-reel__play span { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .92); color: var(--b-ink); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); transition: left .45s ease, top .45s ease, width .45s ease, height .45s ease, margin .45s ease, transform .25s; }
+.breo-reel__play svg { fill: currentColor; margin-left: 3px; transition: width .45s ease, height .45s ease; }
+.breo-reel:hover .breo-reel__play span { transform: scale(1.08); }
+.breo-reel.is-playing .breo-reel__play span { left: calc(100% - 50px); top: calc(100% - 50px); width: 36px; height: 36px; margin: 0; background: rgba(255, 255, 255, .85); }
+.breo-reel.is-playing .breo-reel__play svg { width: 14px; height: 14px; margin-left: 2px; }
+/* duration on the same line as the corner button (its centre is 32px from the bottom) */
+.breo-reel__play em { position: absolute; left: 16px; bottom: 23px; font-style: normal; font-size: .8rem; font-weight: 600; line-height: 18px; color: #fff; letter-spacing: .04em; font-variant-numeric: tabular-nums; text-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.breo-reel__name { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; font-weight: 600; font-size: 1.05rem; color: var(--b-ink); text-decoration: none; }
+.breo-reel__name span { font-size: .88rem; font-weight: 400; color: var(--b-muted); }
+.breo-reel__name:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 700px) {
+	.breo-reels__row { grid-auto-columns: 68vw; width: auto; max-width: none; margin-inline: -20px; padding-inline: 20px; scroll-padding-inline: 20px; }
+}
+
+/* the player: an author display beats [hidden], so hide it explicitly */
+.breo-vp { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: max(16px, 3vw); background: rgba(12, 11, 10, .94); opacity: 0; transition: opacity .2s; }
+.breo-vp.is-open { opacity: 1; }
+.breo-vp[hidden] { display: none; }
+.breo-vp:not(.is-open) { pointer-events: none; }
+.breo-vp__stage { display: grid; place-items: center; width: 100%; height: 100%; }
+.breo-vp__stage video { max-width: 100%; max-height: 88vh; border-radius: 12px; background: #000; }
+.breo-vp__x { position: absolute; top: 16px; right: 16px; z-index: 2; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.breo-vp__x:hover { background: rgba(255, 255, 255, .28); }
+
+/* hero copy on a dark section: the base rules set ink colours, which vanished on dark */
+.theme-dark .breo-hero__model, .theme-dark .breo-hero__title, .theme-dark .breo-hero-cta__price { color: #fff; }
+.theme-dark .breo-hero__text { color: #b9b4ad; }
+.theme-dark .breo-hero-cta__price del { color: rgba(255, 255, 255, .5); }
+
+/* split hero with a studio shot: the product sits on the section colour */
+.breo-hsplit.is-contain .breo-hsplit__media img { object-fit: contain; padding: clamp(24px, 5vw, 80px); mix-blend-mode: multiply; }

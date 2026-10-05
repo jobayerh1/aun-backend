@@ -4,8 +4,19 @@
 	'use strict';
 	var d = document, html = d.documentElement;
 	var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	var conn = navigator.connection || {};
+	var slow = !!conn.saveData || /(^|-)2g$|3g/.test(conn.effectiveType || ''); // Data Saver or a slow network
 	var hasIO = 'IntersectionObserver' in window;
 	function each(sel, fn, root) { Array.prototype.forEach.call((root || d).querySelectorAll(sel), fn); }
+
+	/* ---------- after Add to cart we land on ?breo-added=1 (it skips the page cache); tidy the address bar */
+	if (/[?&]breo-added=/.test(location.search) && window.URL && history.replaceState) {
+		try {
+			var u = new URL(location.href);
+			u.searchParams.delete('breo-added');
+			history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+		} catch (e) {}
+	}
 
 	/* ---------- header dropdowns (hover on desktop, click/tap everywhere) */
 	var drops = d.querySelectorAll('[data-breo-drop]');
@@ -44,7 +55,7 @@
 		if (n < 2) return;
 		function go(k) {
 			i = (k + n) % n;
-			Array.prototype.forEach.call(slides, function (s, j) { s.classList.toggle('is-active', j === i); s.setAttribute('aria-hidden', j === i ? 'false' : 'true'); });
+			Array.prototype.forEach.call(slides, function (s, j) { s.classList.toggle('is-active', j === i); if (j !== i) s.classList.remove('is-intro'); s.setAttribute('aria-hidden', j === i ? 'false' : 'true'); });
 			Array.prototype.forEach.call(dots, function (b, j) { b.classList.toggle('is-active', j === i); });
 		}
 		function stop() { clearInterval(timer); }
@@ -86,18 +97,35 @@
 	/* ---------- videos: load and play only while on screen */
 	var vids = d.querySelectorAll('[data-breo-video]');
 	if (vids.length && hasIO) {
+		var onScreen = [];
 		var vio = new IntersectionObserver(function (es) {
 			es.forEach(function (e) {
 				var v = e.target;
+				var at = onScreen.indexOf(v);
+				if (e.isIntersecting && at < 0) onScreen.push(v);
+				if (!e.isIntersecting && at > -1) onScreen.splice(at, 1);
 				if (e.isIntersecting) {
-					if (v.preload !== 'auto') v.preload = reduce ? 'metadata' : 'auto';
-					if (!reduce) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+					if (reduce || slow) return; // the poster stays; the play button still works
+					if (v.preload !== 'auto') v.preload = 'auto';
+					var p = v.play(); if (p && p.catch) p.catch(function () {});
 				} else if (!v.paused) {
 					v.pause();
 				}
 			});
 		}, { threshold: 0.2 });
-		Array.prototype.forEach.call(vids, function (v) { vio.observe(v); });
+		Array.prototype.forEach.call(vids, function (v) {
+			vio.observe(v);
+			// let the card know, so its play button can step out of the picture while the loop runs
+			var host = v.closest('.breo-reel, .breo-vid__frame, .breo-vid__screen');
+			if (!host) return;
+			v.addEventListener('playing', function () { host.classList.add('is-playing'); });
+			v.addEventListener('pause', function () { host.classList.remove('is-playing'); });
+		});
+		// browsers pause silent video in a background tab; pick the visible ones up again on return
+		d.addEventListener('visibilitychange', function () {
+			if (d.visibilityState !== 'visible' || reduce || slow) return;
+			onScreen.forEach(function (v) { if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } });
+		});
 	}
 
 	/* ---------- product gallery: thumbs, hover zoom and a full-screen viewer */
@@ -240,6 +268,67 @@
 			// the expand button already covers the keyboard, so click is enough here
 			main.addEventListener('click', function () { open(at); });
 		}
+	});
+
+	/* ---------- video player: the full film with sound, loaded only on request */
+	var vp, vpVid, vpOpener, vpKeys, vpHide;
+	function vpClose() {
+		if (!vp || !vp.classList.contains('is-open')) return;
+		vp.classList.remove('is-open');
+		vp.style.pointerEvents = 'none';
+		try { vpVid.pause(); } catch (e) {}
+		vpVid.removeAttribute('src'); // stop the download too
+		vpVid.load();
+		d.documentElement.style.overflow = '';
+		d.removeEventListener('keydown', vpKeys);
+		if (vpOpener && d.contains(vpOpener)) vpOpener.focus({ preventScroll: true });
+		vpHide = setTimeout(function () { if (vp && !vp.classList.contains('is-open')) vp.hidden = true; }, 200);
+	}
+	function vpOpen(cfg, opener) {
+		if (!cfg || !cfg.src) return;
+		clearTimeout(vpHide); // reopened straight after closing: don't let the old close hide it
+		vpOpener = opener || null;
+		if (!vp) {
+			vp = d.createElement('div');
+			vp.className = 'breo-vp';
+			vp.hidden = true;
+			vp.setAttribute('role', 'dialog');
+			vp.setAttribute('aria-modal', 'true');
+			vp.innerHTML = '<button type="button" class="breo-vp__x" aria-label="Close video">&times;</button>'
+				+ '<div class="breo-vp__stage"><video controls playsinline preload="auto"></video></div>';
+			d.body.appendChild(vp);
+			vpVid = vp.querySelector('video');
+			vp.querySelector('.breo-vp__x').addEventListener('click', vpClose);
+			vp.addEventListener('click', function (e) {
+				if (e.target === vp || e.target.classList.contains('breo-vp__stage')) vpClose();
+			});
+		}
+		vp.setAttribute('aria-label', cfg.title || 'Video');
+		// phones and slow connections get the lighter file when there is one
+		vpVid.src = ((window.innerWidth < 900 || slow) && cfg.src720) ? cfg.src720 : cfg.src;
+		vpVid.poster = cfg.poster || '';
+		vpVid.muted = false;
+		vpKeys = function (e) {
+			if (e.key === 'Escape') vpClose();
+			else if (e.key === 'Tab') { e.preventDefault(); (d.activeElement === vpVid ? vp.querySelector('.breo-vp__x') : vpVid).focus(); }
+		};
+		d.addEventListener('keydown', vpKeys);
+		vp.hidden = false;
+		vp.style.pointerEvents = '';
+		var reveal = function () { vp.classList.add('is-open'); };
+		requestAnimationFrame(reveal);
+		setTimeout(reveal, 50); // a throttled tab may never run rAF
+		d.documentElement.style.overflow = 'hidden';
+		var p = vpVid.play(); if (p && p.catch) p.catch(function () {});
+		vp.querySelector('.breo-vp__x').focus({ preventScroll: true });
+	}
+	d.addEventListener('click', function (e) {
+		var b = e.target.closest && e.target.closest('[data-breo-play]');
+		if (!b) return;
+		e.preventDefault();
+		var cfg;
+		try { cfg = JSON.parse(b.getAttribute('data-breo-play')); } catch (x) { return; }
+		vpOpen(cfg, b);
 	});
 
 	/* ---------- quantity stepper */

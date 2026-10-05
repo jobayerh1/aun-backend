@@ -62,10 +62,16 @@ function breo_bd_warranty_period() {
 	return $m . '-month';
 }
 
+/** "1-year replacement warranty" (just "replacement warranty" when no period is set). */
+function breo_bd_warranty_label() {
+	$p = breo_bd_warranty_period();
+	return ( $p ? $p . ' ' : '' ) . 'replacement warranty';
+}
+
 function breo_bd_trust_items() {
 	$items = array( array( 'shield', '100% genuine, officially imported' ) );
 	if ( breo_bd_warranty_period() ) {
-		$items[] = array( 'badge', breo_bd_warranty_period() . ' official warranty' );
+		$items[] = array( 'badge', breo_bd_warranty_label() );
 	}
 	$items[] = array( 'truck', 'Delivery across Bangladesh' );
 	if ( false !== stripos( breo_bd_opt( 'payments' ), 'cash' ) ) {

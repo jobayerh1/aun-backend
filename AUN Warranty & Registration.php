@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Warranty Registration
  * Description: Manage distributors, products, and CF7 warranty registrations with auto-approval, SMS and email notifications.
- * Version:     2.9.0
+ * Version:     2.9.2
  * Author:      Smart Living Bangladesh
  * License:     GPLv2 or later
  */
@@ -201,9 +201,28 @@ function slb_admin_css(): string {
     .slb-toolbar input[type=text],.slb-toolbar input[type=search],.slb-toolbar select{height:36px;border-radius:6px}
 
     /* Registration action buttons — compact grid so they sit side by side */
-    .slb-reg-table td{vertical-align:middle}
-    .slb-action-group{display:flex;flex-wrap:wrap;gap:5px}
-    .slb-action-group .button{margin:0}
+    .slb-reg-table td{vertical-align:top;padding-top:12px;padding-bottom:12px;line-height:1.45}
+    .slb-reg-table th{white-space:nowrap}
+    .slb-reg-table .slb-id{color:#646970;font-variant-numeric:tabular-nums}
+    .slb-serial{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;letter-spacing:.02em}
+    .slb-sub{color:#646970;font-size:12px}
+    .slb-k{display:inline-block;min-width:38px;color:#8c8f94;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    .slb-badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:12px;font-weight:700}
+    .slb-status-cell{min-width:230px;max-width:330px}
+    .slb-why{margin:7px 0 0;padding:0;list-style:none;font-size:12px;color:#50575e}
+    .slb-why li{margin:0 0 4px;padding-left:10px;border-left:2px solid #f0b849}
+    .slb-flag{display:inline-block;padding:0 6px;border-radius:9px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b}
+    .slb-flag--warn{background:#fff7ed;color:#9a3412}
+    .slb-hist{margin-top:7px;font-size:12px}
+    .slb-hist summary{cursor:pointer;color:#2271b1;list-style:revert}
+    .slb-hist ol{margin:6px 0 0 18px;padding:0;color:#50575e}
+    .slb-hist li{margin-bottom:3px;overflow-wrap:anywhere}
+    .slb-hist li.is-decision{color:#1d2327;font-weight:600}
+    .slb-thumb img{display:block;max-width:72px;max-height:54px;object-fit:contain;border:1px solid #dcdcde;border-radius:3px;padding:2px;background:#fff}
+    /* Two columns of equal buttons: four actions wrap as a tidy block instead of
+       leaving "Delete" alone on a second line. */
+    .slb-action-group{display:grid;grid-template-columns:repeat(2,max-content);gap:5px}
+    .slb-action-group .button{margin:0;text-align:center}
     .slb-btn-reject{color:#b91c1c!important;border-color:#f3c0c0!important}
     .slb-btn-reject:hover{background:#fef2f2!important;border-color:#dc2626!important}
     .slb-btn-delete{color:#6b7280!important}
@@ -874,14 +893,37 @@ add_filter( 'wpcf7_validate_slb_distributor_select*', 'slb_cf7_validate_distribu
 
 function slb_cf7_validate_distributor_select( $result, $tag ) {
     if ( ! ( $tag instanceof WPCF7_FormTag ) ) $tag = new WPCF7_FormTag( $tag );
-    if ( $tag->is_required() ) {
-        $name = $tag->name;
-        $value = isset( $_POST[$name] ) ? trim( $_POST[$name] ) : '';
-        if ( '' === $value ) {
+    $name  = $tag->name;
+    $value = isset( $_POST[$name] ) ? trim( wp_unslash( $_POST[$name] ) ) : '';
+    if ( '' === $value ) {
+        if ( $tag->is_required() ) {
             $result->invalidate( $tag, 'Please select a distributor.' );
         }
+    } elseif ( ! slb_is_known_distributor( $value ) ) {
+        // This used to check only that SOMETHING was sent. A stale cached copy of
+        // the form, or an edited request, could therefore register against a shop
+        // that is not (or no longer) on the list -- "Star Technology" got in this way.
+        $result->invalidate( $tag, 'Please choose your shop from the list.' );
     }
     return $result;
+}
+
+/** Is this exactly the name of a shop in the distributor list? */
+function slb_is_known_distributor( $name ) {
+    global $wpdb;
+    $name = trim( (string) $name );
+    if ( '' === $name ) return false;
+    return (bool) $wpdb->get_var( $wpdb->prepare(
+        "SELECT 1 FROM {$wpdb->prefix}slb_distributors WHERE name = %s LIMIT 1", $name ) );
+}
+
+/** Is this exactly the name of a product in the product list? */
+function slb_is_known_product( $name ) {
+    global $wpdb;
+    $name = trim( (string) $name );
+    if ( '' === $name ) return false;
+    return (bool) $wpdb->get_var( $wpdb->prepare(
+        "SELECT 1 FROM {$wpdb->prefix}slb_products WHERE name = %s LIMIT 1", $name ) );
 }
 
 /* -----------------------------------------------------------------------
@@ -945,12 +987,14 @@ add_filter( 'wpcf7_validate_slb_product_select*', 'slb_cf7_validate_product_sele
 
 function slb_cf7_validate_product_select( $result, $tag ) {
     if ( ! ( $tag instanceof WPCF7_FormTag ) ) $tag = new WPCF7_FormTag( $tag );
-    if ( $tag->is_required() ) {
-        $name = $tag->name;
-        $value = isset( $_POST[$name] ) ? trim( $_POST[$name] ) : '';
-        if ( '' === $value ) {
+    $name  = $tag->name;
+    $value = isset( $_POST[$name] ) ? trim( wp_unslash( $_POST[$name] ) ) : '';
+    if ( '' === $value ) {
+        if ( $tag->is_required() ) {
             $result->invalidate( $tag, 'Please select a product model.' );
         }
+    } elseif ( ! slb_is_known_product( $value ) ) {
+        $result->invalidate( $tag, 'Please choose your projector model from the list.' );
     }
     return $result;
 }
@@ -1224,32 +1268,55 @@ function slb_handle_registration_action() {
                 if ( $srow && ! empty( $srow->distributor_id ) ) {
                     $data['distributor_id'] = (int) $srow->distributor_id;
                 }
-                $wpdb->update( $t_regs, $data, array( 'id' => $id ) );
-                $wpdb->update( $t_serials, array( 'registered' => 1, 'registration_id' => $id ), array( 'serial' => $row->serial ) );
-            } else {
-                $wpdb->update( $t_regs, $data, array( 'id' => $id ) );
-                // Rejecting or duplicating a row that HAD the serial must release it,
-                // or the serial stays flagged as registered to a dead claim and the
-                // real owner can never register it.
-                $wpdb->update( $t_serials, array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
             }
 
-            slb_notify_decision( $row, $want );
-            slb_flush_manual_counts();
-            $code = $want;
+            // ⚠️ Save FIRST, prove it saved, and only then tell anyone. 2.9.0
+            // ignored this result: a failed write still texted the customer
+            // "rejected" and still showed "Registration #N rejected" -- while the
+            // row stayed exactly as it was. Re-reading the status (rather than
+            // trusting update()'s return) also catches a write that "succeeded"
+            // but did not stick.
+            $wpdb->update( $t_regs, $data, array( 'id' => $id ) );
+            $saved = (string) $wpdb->get_var( $wpdb->prepare( "SELECT status FROM $t_regs WHERE id=%d", $id ) );
+
+            if ( $saved !== $want ) {
+                $code = 'dberror';
+                $arg  = $wpdb->last_error ? substr( $wpdb->last_error, 0, 160 ) : 'status is still ' . $saved;
+            } else {
+                if ( 'approved' === $want ) {
+                    $wpdb->update( $t_serials, array( 'registered' => 1, 'registration_id' => $id ), array( 'serial' => $row->serial ) );
+                } else {
+                    // Rejecting or duplicating a row that HAD the serial must release it,
+                    // or the serial stays flagged as registered to a dead claim and the
+                    // real owner can never register it.
+                    $wpdb->update( $t_serials, array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
+                }
+                slb_notify_decision( $row, $want );
+                slb_flush_manual_counts();
+                $code = $want;
+            }
         }
     } elseif ( 'delete' === $action ) {
         if ( 'approved' === $row->status ) {
             $code = 'nodelete';
         } else {
             $files_removed = 0;
-            if ( ! empty( $row->invoice_file ) )  { $files_removed += slb_delete_uploaded_file( $row->invoice_file )  ? 1 : 0; }
-            if ( ! empty( $row->product_photo ) ) { $files_removed += slb_delete_uploaded_file( $row->product_photo ) ? 1 : 0; }
-            $wpdb->delete( $t_regs, array( 'id' => $id ) );
-            $wpdb->update( $t_serials, array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
-            slb_flush_manual_counts();
-            $code = 'deleted';
-            $arg  = (string) $files_removed;
+            $gone = $wpdb->delete( $t_regs, array( 'id' => $id ) );
+            // Files only once the row is really gone -- removing them first meant a
+            // failed delete left a live registration pointing at a deleted invoice.
+            if ( $gone ) {
+                if ( ! empty( $row->invoice_file ) )  { $files_removed += slb_delete_uploaded_file( $row->invoice_file )  ? 1 : 0; }
+                if ( ! empty( $row->product_photo ) ) { $files_removed += slb_delete_uploaded_file( $row->product_photo ) ? 1 : 0; }
+            }
+            if ( ! $gone ) {
+                $code = 'dberror';
+                $arg  = $wpdb->last_error ? substr( $wpdb->last_error, 0, 160 ) : 'the row was not removed';
+            } else {
+                $wpdb->update( $t_serials, array( 'registered' => 0, 'registration_id' => null ), array( 'registration_id' => $id ) );
+                slb_flush_manual_counts();
+                $code = 'deleted';
+                $arg  = (string) $files_removed;
+            }
         }
     } else {
         return; // not one of ours
@@ -1311,13 +1378,21 @@ function slb_notify_decision( $row, $status ) {
 }
 
 /** The registrations URL, keeping whatever the admin was filtered/searched on. */
+/** The statuses a registration can hold. One list, used by every filter. */
+function slb_reg_statuses() {
+    return array( 'approved', 'pending', 'rejected', 'duplicate', 'not_found', 'mismatch', 'released' );
+}
+
 function slb_registrations_url( $extra = array() ) {
     $keep = array( 'page' => 'slb-warranty-registrations' );
-    foreach ( array( 'search_q', 'status_filter', 'paged' ) as $k ) {
-        if ( ! empty( $_GET[ $k ] ) ) {
-            $keep[ $k ] = sanitize_text_field( wp_unslash( $_GET[ $k ] ) );
-        }
-    }
+    // Carry the view forward -- but only a VALID view. Copying the raw value let a
+    // bogus filter ride along on every action link and survive into the next page.
+    $q = sanitize_text_field( wp_unslash( $_GET['search_q'] ?? '' ) );
+    if ( '' !== $q ) { $keep['search_q'] = $q; }
+    $st = sanitize_key( $_GET['status_filter'] ?? '' );
+    if ( in_array( $st, slb_reg_statuses(), true ) ) { $keep['status_filter'] = $st; }
+    $pg = absint( $_GET['paged'] ?? 0 );
+    if ( $pg > 1 ) { $keep['paged'] = $pg; }
     return add_query_arg( array_filter( array_merge( $keep, $extra ), 'strlen' ), admin_url( 'admin.php' ) );
 }
 
@@ -1338,6 +1413,7 @@ function slb_render_action_notice() {
         'missing'   => array( 'error',   "Registration #$id no longer exists." ),
         'released'  => array( 'warning', "<strong>Registration #$id is released.</strong> Its previous owner let it go; the next owner takes it over (with the remaining warranty) from the app or the registration form. It cannot be approved, rejected or deleted." ),
         'taken'     => array( 'error',   "Serial already approved under registration #" . intval( $arg ) . ". One serial can hold only one live warranty &mdash; mark this one as <em>Duplicate</em>, or reject the other first." ),
+        'dberror'   => array( 'error',   "<strong>Registration #$id was NOT changed.</strong> The database refused the update (" . esc_html( $arg ) . "). The customer has not been messaged. Try again; if it repeats, send this message to support." ),
     );
     if ( ! isset( $map[ $code ] ) ) return;
     list( $kind, $text ) = $map[ $code ];
@@ -1366,14 +1442,21 @@ function slb_admin_registrations(){
     slb_render_action_notice();
 
     // Search / filter
-    $search_q    = sanitize_text_field($_GET['search_q'] ?? '');
-    $status_filter = sanitize_text_field($_GET['status_filter'] ?? '');
+    $search_q    = sanitize_text_field( wp_unslash( $_GET['search_q'] ?? '' ) );
+    $status_filter = sanitize_key( $_GET['status_filter'] ?? '' );
+    // Only real statuses. Anything else used to run as a filter and return an
+    // empty table that looked like "no registrations".
+    if ( ! in_array( $status_filter, slb_reg_statuses(), true ) ) {
+        $status_filter = '';
+    }
     $where_parts = [];
     $where_params = [];
     if ( $search_q ) {
         $like = '%' . $wpdb->esc_like($search_q) . '%';
-        $where_parts[]  = '(r.serial LIKE %s OR r.customer_name LIKE %s OR r.phone LIKE %s OR r.invoice_no LIKE %s)';
-        $where_params[] = $like; $where_params[] = $like; $where_params[] = $like; $where_params[] = $like;
+        // Shop, model and email too: "which ones came from Star Technology?" is a
+        // question staff ask, and the box could not answer it.
+        $where_parts[]  = '(r.serial LIKE %s OR r.customer_name LIKE %s OR r.phone LIKE %s OR r.invoice_no LIKE %s OR r.dealer_name LIKE %s OR r.product_model LIKE %s OR r.email LIKE %s)';
+        for ( $i = 0; $i < 7; $i++ ) { $where_params[] = $like; }
     }
     if ( $status_filter ) {
         $where_parts[]  = 'r.status = %s';
@@ -1412,10 +1495,10 @@ function slb_admin_registrations(){
     // Search bar
     echo '<form method="get" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
     echo '<input type="hidden" name="page" value="slb-warranty-registrations">';
-    echo '<input name="search_q" value="'.esc_attr($search_q).'" placeholder="Search serial, name, phone, invoice…" style="min-width:260px;">';
+    echo '<input name="search_q" value="'.esc_attr($search_q).'" placeholder="Search serial, name, phone, invoice, shop, model…" style="min-width:300px;">';
     echo '<select name="status_filter">';
     echo '<option value="">All statuses</option>';
-    foreach(['approved','pending','rejected','duplicate','not_found','mismatch','released'] as $st){
+    foreach ( slb_reg_statuses() as $st ) {
         echo '<option value="'.esc_attr($st).'"'.selected($status_filter,$st,false).'>'.ucfirst(str_replace('_',' ',$st)).'</option>';
     }
     echo '</select>';
@@ -1436,7 +1519,27 @@ function slb_admin_registrations(){
             . '<a href="' . esc_url( $base_url ) . '">Show all</a></p>';
     }
 
-    echo '<table class="widefat striped slb-reg-table"><thead><tr><th>ID</th><th>Serial</th><th>Model</th><th>Distributor</th><th>Name</th><th>Phone</th><th>Invoice</th><th>Purchase</th><th>File</th><th>Status</th><th style="min-width:210px">Actions</th></tr></thead><tbody>';
+    // What the ERP actually says about each serial on this page -- one query, not
+    // one per row. A mismatch is a disagreement between the customer's claim and
+    // this; showing only the claim asked staff to judge half an argument.
+    $erp = [];
+    $serial_list = array_values( array_unique( array_filter( wp_list_pluck( (array) $rows, 'serial' ) ) ) );
+    if ( $serial_list ) {
+        $t_prods = $wpdb->prefix . 'slb_products';
+        $ph      = implode( ',', array_fill( 0, count( $serial_list ), '%s' ) );
+        $erp_rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT s.serial, s.shipped_date, d.name AS dist_name, p.name AS prod_name
+               FROM $t_serials s
+          LEFT JOIN $t_dist d  ON s.distributor_id = d.id
+          LEFT JOIN $t_prods p ON s.product_id     = p.id
+              WHERE s.serial IN ($ph)", ...$serial_list ) );
+        foreach ( (array) $erp_rows as $e ) { $erp[ (string) $e->serial ] = $e; }
+    }
+
+    echo '<table class="widefat striped slb-reg-table"><thead><tr>'
+        . '<th>ID</th><th>Serial</th><th>Customer</th><th>What they claimed</th><th>Invoice</th><th>Submitted</th><th>Status</th><th>Actions</th>'
+        . '</tr></thead><tbody>';
+
     foreach($rows as $r){
         // Keep the search and the status filter on every action link. Without this a
         // decision taken from the toolbar's filtered view dumped the admin back on the
@@ -1451,73 +1554,140 @@ function slb_admin_registrations(){
         $approve = $act('approve'); $reject = $act('reject');
         $dup     = $act('duplicate'); $del   = $act('delete');
 
-        $file_html = '';
-        if(!empty($r->invoice_file)){
-            $url = esc_url($r->invoice_file);
-            $ext = strtolower(pathinfo($r->invoice_file, PATHINFO_EXTENSION));
-            if(in_array($ext, ['jpg','jpeg','png','gif','webp'])){
-                $file_html = '<a href="'.$url.'" target="_blank" rel="noopener noreferrer" style="display:inline-block;line-height:0;vertical-align:middle"><img src="'.$url.'" style="display:block;max-width:80px;max-height:60px;object-fit:contain;border:1px solid #ddd;padding:2px" /></a>';
-            } else {
-                $file_html = '<a href="'.$url.'" target="_blank" rel="noopener noreferrer">Download</a>';
-            }
-        }
-
-        $d_name = $r->distributor_name ?: $r->dealer_name;
-        $d_html = esc_html($d_name);
-        if(!empty($r->distributor_address)){
-            $d_html .= '<br><small style="color:#666">'.esc_html($r->distributor_address).'</small>';
-        }
-
-        $status_style = $status_styles[$r->status] ?? 'background:#f3f4f6;color:#374151;';
-        $status_badge = '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;'.$status_style.'">'.esc_html(ucfirst(str_replace('_',' ',$r->status))).'</span>';
-        // Why this one waits for a PERSON. The reason lives in the notes, which
-        // this table does not otherwise show — without this, a held registration
-        // looked like any other pending one and staff could approve it blind.
+        $e       = $erp[ (string) $r->serial ] ?? null;
         $r_notes = (string) ( $r->notes ?? '' );
-        if ( in_array( $r->status, ['pending','not_found','mismatch'], true ) ) {
-            $held_at = strrpos( $r_notes, '[HELD FOR REVIEW]' );
-            if ( false !== $held_at ) {
-                $why = trim( explode( ' | ', trim( substr( $r_notes, $held_at + 17 ) ) )[0] );
-                $status_badge .= '<br><span title="'.esc_attr($why).'" style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;cursor:help">Held for review</span>'
-                    . '<br><small style="color:#666">'.esc_html( wp_html_excerpt( $why, 140, '…' ) ).'</small>';
+
+        /* ── customer ── */
+        $cust = '<strong>' . esc_html( $r->customer_name ?: '—' ) . '</strong>'
+              . '<br><span class="slb-sub">' . esc_html( $r->phone ) . '</span>'
+              . ( ! empty( $r->email ) ? '<br><span class="slb-sub">' . esc_html( $r->email ) . '</span>' : '' );
+
+        /* ── claim, with the ERP truth under it where they disagree ── */
+        $d_name   = $r->distributor_name ?: $r->dealer_name;
+        $claim    = '<span class="slb-k">Model</span> ' . esc_html( $r->product_model ?: '—' )
+                  . '<br><span class="slb-k">Shop</span> ' . esc_html( $d_name ?: '—' );
+        if ( ! empty( $r->distributor_address ) ) {
+            $claim .= '<br><span class="slb-sub">' . esc_html( $r->distributor_address ) . '</span>';
+        }
+
+        /* ── invoice ── */
+        $file_html = '';
+        if ( ! empty( $r->invoice_file ) ) {
+            $url = esc_url( $r->invoice_file );
+            $ext = strtolower( pathinfo( (string) wp_parse_url( $r->invoice_file, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+            if ( in_array( $ext, [ 'jpg', 'jpeg', 'png', 'gif', 'webp' ], true ) ) {
+                $file_html = '<a class="slb-thumb" href="' . $url . '" target="_blank" rel="noopener noreferrer" title="Open the invoice"><img src="' . $url . '" alt="Invoice for ' . esc_attr( $r->serial ) . '" loading="lazy"></a>';
+            } else {
+                $file_html = '<a href="' . $url . '" target="_blank" rel="noopener noreferrer">Open ' . esc_html( strtoupper( $ext ?: 'file' ) ) . '</a>';
             }
-            if ( false !== strpos( $r_notes, 'Conflicting submission from' ) ) {
-                $status_badge .= '<br><span style="display:inline-block;margin-top:4px;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;background:#fff7ed;color:#9a3412">Another number also submitted this serial</span>';
+        }
+        $inv = esc_html( $r->invoice_no ?: '—' )
+             . '<br><span class="slb-sub">Bought ' . esc_html( $r->purchase_date ?: '—' ) . '</span>'
+             . ( $file_html ? '<div style="margin-top:5px">' . $file_html . '</div>' : '<br><span class="slb-sub">No file</span>' );
+
+        /* ── submitted ── */
+        $sub_ts = $r->created_at ? strtotime( $r->created_at ) : 0;
+        $when   = $sub_ts
+            ? esc_html( wp_date( 'j M Y', $sub_ts ) ) . '<br><span class="slb-sub">' . esc_html( human_time_diff( $sub_ts, current_time( 'timestamp' ) ) ) . ' ago</span>'
+            : '—';
+
+        /* ── status + WHY ── */
+        $status_style = $status_styles[ $r->status ] ?? 'background:#f3f4f6;color:#374151;';
+        $status_html  = '<span class="slb-badge" style="' . $status_style . '">' . esc_html( ucfirst( str_replace( '_', ' ', $r->status ) ) ) . '</span>';
+
+        $why = [];
+        if ( 'mismatch' === $r->status ) {
+            // Say WHICH field disagrees, both sides, from the live ERP record -- the
+            // stored note is a snapshot from the day they registered.
+            if ( $e ) {
+                if ( ! empty( $e->prod_name ) && '' !== (string) $r->product_model
+                     && slb_norm_match( $r->product_model ) !== slb_norm_match( $e->prod_name ) ) {
+                    $why[] = 'Model: they chose <strong>' . esc_html( $r->product_model ) . '</strong>; ERP sold it as <strong>' . esc_html( $e->prod_name ) . '</strong>';
+                }
+                if ( ! empty( $e->dist_name ) && '' !== (string) $r->dealer_name
+                     && slb_norm_match( $r->dealer_name ) !== slb_norm_match( $e->dist_name ) ) {
+                    $why[] = 'Shop: they chose <strong>' . esc_html( $r->dealer_name ) . '</strong>; ERP sold it via <strong>' . esc_html( $e->dist_name ) . '</strong>';
+                }
             }
+            if ( ! $why ) {
+                // ERP no longer disagrees (or has no product/shop on file): fall back
+                // to the reason recorded at the time, so the row is never unexplained.
+                if ( preg_match( '/(MODEL|SHOP) MISMATCH:[^|]*/', $r_notes, $mm ) ) {
+                    $why[] = esc_html( trim( $mm[0] ) );
+                } else {
+                    $why[] = 'The ERP record now matches what they entered &mdash; this can probably be approved.';
+                }
+            }
+        } elseif ( 'not_found' === $r->status ) {
+            $why[] = 'Serial not in the ERP yet. It is re-checked automatically when the ERP syncs.';
+        }
+        $held_at = strrpos( $r_notes, '[HELD FOR REVIEW]' );
+        if ( in_array( $r->status, [ 'pending', 'not_found', 'mismatch' ], true ) && false !== $held_at ) {
+            $why[] = '<span class="slb-flag">Held for review</span> ' . esc_html( wp_html_excerpt( trim( explode( ' | ', trim( substr( $r_notes, $held_at + 17 ) ) )[0] ), 160, '…' ) );
+        }
+        if ( in_array( $r->status, [ 'pending', 'not_found', 'mismatch' ], true ) && false !== strpos( $r_notes, 'Conflicting submission from' ) ) {
+            $why[] = '<span class="slb-flag slb-flag--warn">Another number also submitted this serial</span>';
+        }
+        if ( $why ) {
+            $status_html .= '<ul class="slb-why"><li>' . implode( '</li><li>', $why ) . '</li></ul>';
+        }
+
+        // The whole record of what happened to this row, newest last. The
+        // [DECISION] stamps were being written since 2.9.0 and shown nowhere, so
+        // "did my Reject actually happen?" had no answer on this screen.
+        $events = array_values( array_filter( array_map( 'trim', explode( ' | ', $r_notes ) ) ) );
+        if ( $events ) {
+            $last_decision = '';
+            foreach ( $events as $ev ) {
+                if ( 0 === strpos( $ev, '[DECISION]' ) ) { $last_decision = $ev; }
+            }
+            $hist = '<details class="slb-hist"><summary>History (' . count( $events ) . ')'
+                  . ( $last_decision ? ' <span class="slb-sub">&middot; ' . esc_html( wp_html_excerpt( substr( $last_decision, 11 ), 60, '…' ) ) . '</span>' : '' )
+                  . '</summary><ol>';
+            foreach ( $events as $ev ) {
+                $is_dec = ( 0 === strpos( $ev, '[DECISION]' ) );
+                $hist  .= '<li' . ( $is_dec ? ' class="is-decision"' : '' ) . ' title="' . esc_attr( $ev ) . '">'
+                        . esc_html( wp_html_excerpt( $is_dec ? substr( $ev, 11 ) : $ev, 220, '…' ) ) . '</li>';
+            }
+            $hist .= '</ol></details>';
+            $status_html .= $hist;
         }
 
         echo '<tr>';
-        echo '<td>'.intval($r->id).'</td>';
-        echo '<td>'.esc_html($r->serial).'</td>';
-        echo '<td>'.esc_html($r->product_model ?? '-').'</td>';
-        echo '<td>'.$d_html.'</td>';
-        echo '<td>'.esc_html($r->customer_name).'</td>';
-        echo '<td>'.esc_html($r->phone).'</td>';
-        echo '<td>'.esc_html($r->invoice_no).'</td>';
-        echo '<td>'.esc_html($r->purchase_date).'</td>';
-        echo '<td>'.$file_html.'</td>';
-        echo '<td>'.$status_badge.'</td>';
+        echo '<td class="slb-id">' . intval( $r->id ) . '</td>';
+        echo '<td><span class="slb-serial">' . esc_html( $r->serial ) . '</span></td>';
+        echo '<td>' . $cust . '</td>';
+        echo '<td>' . $claim . '</td>';
+        echo '<td>' . $inv . '</td>';
+        echo '<td>' . $when . '</td>';
+        echo '<td class="slb-status-cell">' . $status_html . '</td>';
         echo '<td><div class="slb-action-group">';
         if ( $r->status === 'released' ) {
             // Nothing to act on: the next owner takes it over from the app or
             // the form, keeping the original warranty. (The actions are refused
-            // for released rows anyway — these buttons only invited the error.)
+            // for released rows anyway -- these buttons only invited the error.)
             echo '<span style="font-size:12px;color:#5b21b6">Waiting for the next owner</span>';
         } else {
-            // Only the decisions that would CHANGE something. Offering "Approve" on an
-            // approved row invited a second approval SMS to a customer who had already
-            // had one -- the button did not refuse, it just did it again.
+            // Only the decisions that would CHANGE something, and every one that
+            // messages the customer asks first -- "Duplicate" used to text them on a
+            // single stray click. Approving a MISMATCH overrides the ERP check, so
+            // that confirmation names what is being overridden.
+            $needs_care  = in_array( $r->status, [ 'mismatch' ], true ) || false !== $held_at;
+            $approve_msg = $needs_care
+                ? 'Approve despite the ' . ( 'mismatch' === $r->status ? 'mismatch' : 'review hold' ) . '? The customer will be told their warranty is active.'
+                : '';
             if ( $r->status !== 'approved' ) {
-                echo '<a class="button button-small button-primary" href="'.esc_url($approve).'">Approve</a>';
+                echo '<a class="button button-small button-primary" href="' . esc_url( $approve ) . '"'
+                   . ( $approve_msg ? ' onclick="return confirm(' . esc_attr( wp_json_encode( $approve_msg ) ) . ')"' : '' ) . '>Approve</a>';
             }
             if ( $r->status !== 'rejected' ) {
-                echo '<a class="button button-small slb-btn-reject" href="'.esc_url($reject).'" onclick="return confirm(\'Reject this registration? The customer will be told.\')">Reject</a>';
+                echo '<a class="button button-small slb-btn-reject" href="' . esc_url( $reject ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( 'Reject registration #' . $r->id . '? The customer will be told.' ) ) . ')">Reject</a>';
             }
             if ( $r->status !== 'duplicate' ) {
-                echo '<a class="button button-small" href="'.esc_url($dup).'">Duplicate</a>';
+                echo '<a class="button button-small" href="' . esc_url( $dup ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( 'Mark #' . $r->id . ' as a duplicate? The customer will be told.' ) ) . ')">Duplicate</a>';
             }
             if ( $r->status !== 'approved' ) {
-                echo '<a class="button button-small slb-btn-delete" href="'.esc_url($del).'" onclick="return confirm(\'Delete this registration? This cannot be undone.\')">Delete</a>';
+                echo '<a class="button button-small slb-btn-delete" href="' . esc_url( $del ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( 'Delete registration #' . $r->id . ' and its uploaded file? This cannot be undone.' ) ) . ')">Delete</a>';
             }
         }
         echo '</div></td></tr>';
@@ -1525,7 +1695,7 @@ function slb_admin_registrations(){
     if ( empty( $rows ) ) {
         // An empty result used to render as bare column headings and nothing else,
         // which reads as a broken table rather than an answered question.
-        echo '<tr><td colspan="11" style="padding:22px;text-align:center;color:#6b7280;">'
+        echo '<tr><td colspan="8" style="padding:22px;text-align:center;color:#6b7280;">'
             . ( ( $search_q || $status_filter )
                 ? 'Nothing matches this filter. <a href="' . esc_url( $base_url ) . '">Show all registrations</a>'
                 : 'No registrations yet.' )
@@ -1810,6 +1980,45 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
                 $system_note = trim( $system_note . ' [HELD FOR REVIEW] Purchase date ' . $pdate . ' is ' . ( $gap < 0 ? 'BEFORE' : $gap . ' days after' ) . ' the dealer received this unit (' . $row->shipped_date . ') — check the invoice date.' );
             }
         }
+        // ⚠️ Nothing that the checks could not actually VERIFY is auto-approved.
+        // Each branch below parks the registration for a person, and every one
+        // writes the literal [HELD FOR REVIEW] marker -- without it the nightly
+        // reconciler would re-approve a plain 'pending' row on its own.
+        $hold = function ( $why ) use ( &$status, &$system_note ) {
+            // Only an APPROVAL is downgraded; mismatch / not_found keep their meaning
+            // and are protected by the marker alone.
+            if ( 'approved' === $status ) {
+                $status = 'pending';
+            }
+            $system_note = trim( $system_note . ' [HELD FOR REVIEW] ' . $why );
+        };
+
+        // A shop the dropdown cannot send. Stale cached form, or an edited request.
+        if ( '' !== $dealer_name && ! slb_is_known_distributor( $dealer_name ) ) {
+            $hold( 'Shop "' . $dealer_name . '" is not in the shop list, so the form could not have offered it. Check the invoice.' );
+        }
+        // A check skipped because the customer left the field empty is not a pass.
+        if ( 'approved' === $status && $row ) {
+            if ( 'match_serial_and_distributor' === $auto_rule && '' === $dealer_name && ! empty( $row->distributor_id ) ) {
+                $hold( 'No shop was given, so the shop could not be checked against the ERP.' );
+            }
+            if ( '' === $model && ! empty( $row->product_name ) ) {
+                $hold( 'No model was given, so the model could not be checked against the ERP.' );
+            }
+        }
+        // A correction after a FAILED check goes to a person. Otherwise a wrong
+        // serial becomes a warranty by trying shops (or models) until one matches:
+        // the mismatch SMS even invites the retry. Measured on the bench -- third
+        // shop, auto-approved, serial registered to the wrong person.
+        if ( $existing && 'approved' === $status ) {
+            $was_held = false !== strpos( (string) $existing->notes, '[HELD FOR REVIEW]' );
+            if ( 'mismatch' === $existing->status || $was_held ) {
+                $hold( 'Re-submitted after ' . ( 'mismatch' === $existing->status ? 'a mismatch' : 'being held' )
+                    . ' — was shop "' . $existing->dealer_name . '", model "' . $existing->product_model . '"'
+                    . '; now shop "' . $dealer_name . '", model "' . $model . '". Check the invoice before approving.' );
+            }
+        }
+
         if ( $force_pending ) {
             $status      = 'pending';
             $system_note = trim( $system_note . ' [HELD FOR REVIEW] ' . $replaced_rejected );
@@ -1869,6 +2078,13 @@ function slb_cf7_process_warranty_registration_v2($contact_form){
             $update_data = $data_insert;
             if ( $invoice_file === '' ) unset( $update_data['invoice_file'] ); // keep previously uploaded file
             unset( $update_data['product_photo'] );                            // not managed by this handler
+            // Append, never replace. Replacing erased the earlier mismatch, any
+            // staff decision and any conflicting-number warning -- a corrected
+            // registration then looked like a clean first attempt.
+            $update_data['notes'] = trim( (string) $existing->notes
+                . ' | Re-submitted on ' . current_time( 'Y-m-d H:i' )
+                . ' (was ' . $existing->status . ')'
+                . ( '' !== (string) $final_notes ? ': ' . $final_notes : '' ), ' |' );
             $ok = $wpdb->update( $t_regs, $update_data, ['id' => $existing->id] );
             slb_flush_manual_counts();
             if ( $ok === false ) {

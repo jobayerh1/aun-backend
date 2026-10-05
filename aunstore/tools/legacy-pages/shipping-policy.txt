@@ -1,0 +1,152 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Shipping Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-truck-fast"></i> Shipping &amp; Delivery Policy</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">We ship AUN projectors worldwide. Please read our shipping policy for delivery charges, timelines, tracking and customs.</p>
+<p style="margin-top:18px;"><a href="/product-category/projectors/" style="display:inline-flex; align-items:center; gap:8px; background:#0188fe; color:#fff; padding:11px 20px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;"><i class="fa-solid fa-store"></i> Shop AUN Projectors</a></p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Shipping Highlights"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-earth-americas"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Worldwide Delivery</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">We ship to customers around the world through trusted international carriers.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-money-bill-wave"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Charges at Checkout</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Shipping cost for your address is shown at checkout, <strong>before you pay</strong>.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-location-crosshairs"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Tracked Shipping</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Every order ships with a tracking number, emailed to you as soon as it leaves us.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Shipping Policy"]
+[accordion]
+
+[accordion-item title="1. Where We Ship"]
+
+<p>We ship worldwide. If your country cannot be selected at checkout, please <a href="/contact-us/" style="color:#0188fe; font-weight:bold;">contact us</a> and we will check the shipping options for you.</p>
+
+[/accordion-item]
+[accordion-item title="2. Shipping Charges"]
+
+<p>Shipping charges are calculated for your delivery address and the shipping method you choose, and are shown at checkout before you pay. <em>Note: Charges vary depending on destination, product size and weight.</em></p>
+
+[/accordion-item]
+[accordion-item title="3. Processing &amp; Delivery Time"]
+
+<p>Once your order is confirmed, we prepare it for dispatch. The estimated delivery time for your address is shown at checkout.</p>
+<p><em>Note: Customs clearance, public holidays and carrier delays can occasionally add a few days to the delivery time.</em></p>
+
+[/accordion-item]
+[accordion-item title="4. Order Tracking"]
+
+<p>As soon as your order ships, we email you the tracking number and a link to follow your parcel. You can also see your order status under <a href="/my-account/" style="color:#0188fe; font-weight:bold;">My Account</a>.</p>
+
+[/accordion-item]
+[accordion-item title="5. Customs, Import Duties &amp; Taxes"]
+
+<p>International orders may be charged import duties, taxes (such as VAT or GST) and customs fees by the destination country. These charges are set by your country's customs authority and are outside our control.</p>
+<p><strong>Unless checkout states otherwise, these charges are not included in our prices or shipping fees and are payable by the recipient on arrival.</strong></p>
+
+[/accordion-item]
+[accordion-item title="6. Shipping Address"]
+
+<p>Please double-check your shipping address and phone number before placing your order &mdash; carriers may need your phone number to arrange delivery. If you spot a mistake, contact us straight away; we can correct it until the parcel has shipped.</p>
+
+[/accordion-item]
+[accordion-item title="7. Damaged or Missing Parcels"]
+
+<p>Please check your parcel when it arrives. If the box is damaged or something is missing, contact us as soon as possible with photos of the box, the packaging and the product, and we will make it right.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Delivery Process"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Delivery Process</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto;">From placing your order to receiving your projector, here&rsquo;s how delivery works.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-cart-shopping"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 1: Order Placed</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">You place your order and receive a confirmation email.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-circle-check"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 2: Processing</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Your order is confirmed &amp; prepared for dispatch.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 3: Shipped</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Handed to the carrier &mdash; tracking number emailed to you.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-box-open"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 4: Delivered</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Your projector arrives at your door &mdash; enjoy the show.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="18px" label="Last Updated"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>30 September, 2026</strong></p>
+[/ux_text]
+
+[/section]

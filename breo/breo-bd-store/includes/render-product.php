@@ -20,12 +20,18 @@ function breo_bd_render_product() {
 	$first_h1 = true;
 	$out      = '<div class="breo-pdp" style="--accent:' . esc_attr( $d['accent'] ) . '">';
 	$out     .= breo_bd_sticky_bar( $product, $d );
+	$placed = in_array( 'video', wp_list_pluck( $d['sections'], 'type' ), true );
 	foreach ( $d['sections'] as $i => $s ) {
 		$fn = 'breo_bd_sec_' . $s['type'];
 		if ( function_exists( $fn ) ) {
 			$out .= call_user_func( $fn, $product, $d, $s, $i );
 		}
+		if ( 'buy' === $s['type'] && ! $placed && function_exists( 'breo_bd_sec_video' ) ) {
+			$out .= breo_bd_sec_video( $product, $d );
+		}
 	}
+	// the hook tracking plugins use for ViewContent / view_item on a standard product page
+	$out .= function_exists( 'breo_bd_capture_hook' ) ? breo_bd_capture_hook( 'woocommerce_after_single_product' ) : '';
 	return $out . '</div>';
 }
 
@@ -63,6 +69,7 @@ function breo_bd_hero_cta( $product ) {
 	$h   = '<div class="breo-hero-cta">';
 	$h  .= $buy ? '<a class="breo-btn" href="' . esc_url( $buy ) . '" rel="nofollow">Buy now</a>' : '<a class="breo-btn" href="#buy">View details</a>';
 	$h .= '<span class="breo-hero-cta__price">' . wp_kses_post( breo_bd_price_html( $product ) ) . '</span>';
+	$h .= function_exists( 'breo_bd_film_button' ) ? breo_bd_film_button( $product ) : '';
 	return $h . '</div>';
 }
 
@@ -81,7 +88,7 @@ function breo_bd_sec_hero( $product, $d, $s ) {
 
 /* ---------- hero_split: colour panel + portrait photo ---------- */
 function breo_bd_sec_hero_split( $product, $d, $s ) {
-	$h  = '<section class="breo-s breo-hsplit theme-' . esc_attr( $s['theme'] ) . ( ! empty( $s['short'] ) ? ' is-short' : '' ) . '"' . breo_bd_sec_attrs( $s ) . '>';
+	$h  = '<section class="breo-s breo-hsplit theme-' . esc_attr( $s['theme'] ) . ( ! empty( $s['short'] ) ? ' is-short' : '' ) . ( ! empty( $s['fit'] ) && 'contain' === $s['fit'] ? ' is-contain' : '' ) . '"' . breo_bd_sec_attrs( $s ) . '>';
 	$h .= '<div class="breo-hsplit__text" data-reveal><div class="breo-hsplit__in">';
 	$h .= '<h1 class="breo-eyebrow breo-h1">' . esc_html( $d['name'] ) . '</h1>';
 	$h .= '<p class="breo-hero__model" aria-hidden="true"><span class="breo-hero__mark">' . breo_bd_logo( 'breo-logo--inline' ) . '<span>' . esc_html( $d['short_name'] ) . '</span></span></p>';
@@ -328,12 +335,12 @@ function breo_bd_product_faq( $d, $product = null ) {
 		$w = breo_bd_warranty_period();
 		array_unshift( $faq, array(
 			'What is the price of the Breo ' . $d['short_name'] . ' in Bangladesh?',
-			breo_bd_plain_price( $product ) . ' at Breo Bangladesh, the authorized Breo distributor. It includes ' . ( $w ? 'a ' . $w : 'the' ) . ' official warranty, and you can pay cash on delivery anywhere in Bangladesh.',
+			breo_bd_plain_price( $product ) . ' at Breo Bangladesh, the authorized Breo distributor. It includes a ' . breo_bd_warranty_label() . ', and you can pay cash on delivery anywhere in Bangladesh.',
 		) );
 	}
 	$faq[] = array( 'Is this a genuine Breo product?', 'Yes. Breo Bangladesh is an authorized Breo distributor, and every unit is officially imported.' );
 	if ( breo_bd_warranty_period() ) {
-		$faq[] = array( 'What warranty do I get?', 'A ' . breo_bd_warranty_period() . ' official warranty against manufacturing defects, handled by us in Bangladesh. See our Warranty Policy for details.' );
+		$faq[] = array( 'What warranty do I get?', 'A ' . breo_bd_warranty_label() . ' against manufacturing defects: if a covered fault appears, we replace the device with a new one. It is handled by us in Bangladesh. Keep the box: the serial number on it is needed for a claim. See our Warranty Policy for details.' );
 	}
 	$faq[] = array( 'Is it a medical device?', 'No. Breo massagers are for relaxation and everyday wellness. They don\'t diagnose or treat any disease. If you have a medical condition, ask your doctor first.' );
 	return $faq;

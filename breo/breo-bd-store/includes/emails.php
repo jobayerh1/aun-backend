@@ -171,7 +171,7 @@ function breo_bd_email_copy( $email, $order, $partial = false ) {
 			$c = array(
 				'eyebrow' => 'Order complete',
 				'title'   => 'Enjoy your Breo' . ( $first ? ', ' . $first : '' ) . '!',
-				'text'    => 'Your order is complete. ' . ( $w ? 'Your ' . $w . ' warranty has started, so keep this email as your proof of purchase. ' : 'Keep this email as your proof of purchase. ' ) . 'Questions about using your device? Just reply, or message us on WhatsApp.',
+				'text'    => 'Your order is complete. ' . ( $w ? 'Your ' . $w . ' replacement warranty has started. Keep this email and the product box (the serial number is on it): you need both for a warranty claim. ' : 'Keep this email as your proof of purchase. ' ) . 'Questions about using your device? Just reply, or message us on WhatsApp.',
 				'tone'    => 'good',
 				'cta'     => $view,
 			);

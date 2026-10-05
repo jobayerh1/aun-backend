@@ -11,7 +11,7 @@ return array(
 
 	'about-breo' => array(
 		'title'   => 'About Breo',
-		'intro'   => 'Breo has spent more than two decades making relaxation portable. Breo Bangladesh brings it home: genuine devices, a local warranty and real support.',
+		'intro'   => 'Breo has spent more than two decades making relaxation portable. Breo Bangladesh brings it home: genuine devices, a local replacement warranty and real support.',
 		'content' => '
 <h2>Breo, since 2000</h2>
 <p>Breo (Shenzhen Breo Technology Co., Ltd.) was founded in Shenzhen, China, in 2000. It set out to make the relief of a good massage something you could hold in your hand, and became one of the pioneers of portable massagers for the eyes, head, neck and body.</p>
@@ -29,7 +29,7 @@ return array(
 <p>[breo_info key="company"] is the authorized distributor of Breo in Bangladesh. For you, that means:</p>
 <ul>
 <li>Every device is genuine and imported through official Breo channels.</li>
-<li>Your warranty is honoured here, by us, not by a seller overseas.</li>
+<li>Your replacement warranty is honoured here, by us, not by a seller overseas.</li>
 <li>You can ask real people for advice before you buy, in Bangla or English.</li>
 </ul>
 <p>We are starting with four devices chosen for everyday life in Bangladesh: long desk hours, long commutes and long screen time. More are on the way.</p>
@@ -43,7 +43,7 @@ return array(
 <p>Each manual is the original Breo document for that model. Open it on your phone, or download it and keep it with your warranty card.</p>
 [breo_manuals]
 <h2>Need help instead?</h2>
-<p>If something is not working the way the manual describes, don\'t worry: message us on WhatsApp and we will walk you through it. Every device we sell is covered by an official warranty, handled here in Bangladesh.</p>
+<p>If something is not working the way the manual describes, don\'t worry: message us on WhatsApp and we will walk you through it. Every device we sell is covered by a replacement warranty, handled here in Bangladesh.</p>
 [breo_contact]
 ',
 	),
@@ -79,7 +79,9 @@ return array(
 <details><summary>How do I charge my device?</summary><p>All our launch devices are rechargeable by USB. Use the cable in the box with a standard 5V phone charger.</p></details>
 
 <h2 id="warranty">Warranty &amp; returns</h2>
-<details><summary>How long is the warranty?</summary><p>[breo_if key="warranty_months"]Every device comes with a [breo_info key="warranty"] official warranty against manufacturing defects, handled by us in Bangladesh.[/breo_if] See our <a href="/warranty-policy/">Warranty Policy</a>.</p></details>
+<details><summary>How long is the warranty?</summary><p>[breo_if key="warranty_months"]Every device comes with a [breo_info key="warranty"] replacement warranty against manufacturing defects, handled by us in Bangladesh.[/breo_if] See our <a href="/warranty-policy/">Warranty Policy</a>.</p></details>
+<details><summary>Will a faulty device be repaired or replaced?</summary><p>Replaced. If a manufacturing defect is confirmed during the warranty period, you get a new unit of the same model, not a repaired one.</p></details>
+<details><summary>Do I need to keep the box?</summary><p>Yes. The serial number is printed on the box, and we need it for any warranty claim. Please keep the box for the whole warranty period, and send the device back in it with its accessories if you make a claim.</p></details>
 <details><summary>My device arrived damaged or faulty. What do I do?</summary><p>Contact us within [breo_info key="return_faulty_days"] days of delivery with a photo or short video of the problem, and we will arrange a replacement or refund after inspection.</p></details>
 <details><summary>Can I return a product if I change my mind?</summary><p>Yes, if it is unopened with its seals intact and you contact us within [breo_info key="return_unopened_hours"] hours of delivery. See our <a href="/returns-refunds/">Returns &amp; Refunds</a> policy.</p></details>
 ',
@@ -87,12 +89,13 @@ return array(
 
 	'warranty-policy' => array(
 		'title'   => 'Warranty Policy',
-		'intro'   => 'Every Breo device from Breo Bangladesh is covered by an official warranty, handled here in Bangladesh.',
+		'intro'   => 'Every Breo device from Breo Bangladesh comes with a replacement warranty: if a manufacturing defect appears, you get a new unit.',
 		'content' => '
 <p><em>Last updated: [breo_info key="updated"]</em></p>
 
-<h2>Warranty period</h2>
-<p>Breo devices bought from [breo_info key="site"] or an authorized Breo Bangladesh channel are covered by a <strong>[breo_info key="warranty" ] warranty</strong> against manufacturing defects, starting on the date of delivery.</p>
+<h2>Replacement warranty</h2>
+<p>Breo devices bought from [breo_info key="site"] or an authorized Breo Bangladesh channel come with a <strong>[breo_info key="warranty"] replacement warranty</strong> against manufacturing defects, starting on the date of delivery.</p>
+<p>If your device develops a covered fault during the warranty period, we don\'t repair it: we replace it with a <strong>new unit of the same model</strong>. If that model is no longer available, we replace it with an equivalent Breo model.</p>
 
 <h2>What is covered</h2>
 <p>Faults caused by defects in materials or workmanship under normal use, for example:</p>
@@ -101,7 +104,7 @@ return array(
 <li>The massage motor, heating function or controls stop working.</li>
 <li>The battery fails because of a defect.</li>
 </ul>
-<p>We will repair the device or, if a repair is not possible, replace it with the same or an equivalent model. A repair or replacement does not start a new warranty period; the remaining period carries over.</p>
+<p>The replacement unit is covered for the rest of your original warranty period; the warranty does not start again.</p>
 
 <h2>What is not covered</h2>
 <ul>
@@ -112,19 +115,27 @@ return array(
 <li>Damage from non-standard chargers or power sources.</li>
 <li>Normal wear and tear, such as worn fabric or leather, scuffs, and the gradual loss of battery capacity that all rechargeable batteries experience.</li>
 <li>Lost or missing accessories.</li>
+<li>Claims without the original box, or where the serial number is missing, altered or unreadable.</li>
+</ul>
+
+<h2>What you need for a claim</h2>
+<ul>
+<li>Your <strong>order number</strong> or invoice.</li>
+<li>The device in its <strong>original box</strong>. The serial number is printed on the box, and it is how we match the device to your purchase and its warranty date, so please keep the box for the whole warranty period.</li>
+<li>The <strong>accessories</strong> that came in the box, such as the charging cable. We replace what you send back: if an accessory is missing, we still replace the device, but the missing accessory is not included.</li>
 </ul>
 
 <h2>How to make a claim</h2>
 <ol>
 <li>Contact us on WhatsApp or by phone with your <strong>order number</strong> and a short description, photo or video of the problem.</li>
 <li>We will try to solve it with you remotely first. Many issues are settings or charging questions.</li>
-<li>If the device needs inspection, you can drop it off or send it to us by courier. Courier charges for sending the device to us are paid by the customer.</li>
-<li>We will inspect it and tell you whether the fault is covered and how long the repair will take.</li>
+<li>If the device needs inspection, drop it off or send it to us by courier in its original box, with its accessories. Courier charges for sending the device to us are paid by the customer.</li>
+<li>We inspect it to confirm the fault is a manufacturing defect. Once it is confirmed, we send you a new unit.</li>
 </ol>
-<p>If the part needed is in stock, repairs are usually done within a few working days. If a part has to be imported from Breo, it can take longer; we will keep you updated.</p>
+<p>Replacements are usually sent within a few working days of the fault being confirmed. If the model is out of stock, we will tell you how long it will take and keep you updated.</p>
 
 <h2>Proof of purchase</h2>
-<p>Your order number or invoice is your proof of purchase. Please keep it for the whole warranty period.</p>
+<p>Your order number or invoice, together with the serial number on the product box, is your proof of purchase. Please keep both for the whole warranty period.</p>
 
 <h2>Contact</h2>
 <p>[breo_info key="company"][breo_if key="phone"] · Phone: [breo_info key="phone"][/breo_if][breo_if key="whatsapp"] · WhatsApp: +[breo_info key="whatsapp"][/breo_if][breo_if key="address"] · Service point: [breo_info key="address"][/breo_if]</p>
@@ -200,7 +211,7 @@ return array(
 <p>You can cancel an order at no cost before it is dispatched. Just contact us.</p>
 
 <h2>Warranty claims</h2>
-<p>Faults that appear later are handled under our <a href="/warranty-policy/">Warranty Policy</a>.</p>
+<p>Manufacturing faults that appear later, within the warranty period, are covered by our replacement warranty: you get a new unit. See our <a href="/warranty-policy/">Warranty Policy</a>.</p>
 ',
 	),
 

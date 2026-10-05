@@ -1247,7 +1247,7 @@ class AUN_App_Warranty {
 
 		// Duplicate? (serial is UNIQUE in slb_registrations)
 		$existing = $wpdb->get_row(
-			$wpdb->prepare( "SELECT id, phone, status, notes FROM $t_regs WHERE serial = %s", $serial )
+			$wpdb->prepare( "SELECT id, phone, status, notes, dealer_name, product_model FROM $t_regs WHERE serial = %s", $serial )
 		);
 		if ( $existing && 'released' === $existing->status ) {
 			// Its warranty is already running — taking it over keeps the
@@ -1271,6 +1271,7 @@ class AUN_App_Warranty {
 		}
 		$carry_hold     = false;
 		$corrected_note = '';
+		$was_mismatch   = null; // the row being corrected, when it had FAILED the shop/model check
 		if ( $existing && in_array( (string) $existing->status, array( 'pending', 'not_found', 'mismatch' ), true )
 			&& in_array( (string) $existing->phone, AUN_App_Phone::variants( ! empty( $args['account_phone'] ) ? $args['account_phone'] : $args['phone'] ), true ) ) {
 			// ⚠️ Their OWN registration, still being checked: let them correct
@@ -1281,6 +1282,7 @@ class AUN_App_Warranty {
 			// The history is kept, and a registration held for a PERSON stays
 			// held: correcting it must never become a way round the review.
 			$carry_hold     = false !== strpos( (string) $existing->notes, '[HELD FOR REVIEW]' );
+			$was_mismatch   = ( 'mismatch' === (string) $existing->status ) ? $existing : null;
 			$corrected_note = ' | Corrected by the customer on ' . current_time( 'Y-m-d' ) . ' — before: ' . (string) $existing->notes;
 			$wpdb->delete( $t_regs, array( 'id' => (int) $existing->id ), array( '%d' ) );
 			$existing = null;
@@ -1434,6 +1436,19 @@ class AUN_App_Warranty {
 					$shipped
 				);
 			}
+		}
+		// ⚠️ A correction after a FAILED shop/model check goes to a person. Letting
+		// it auto-approve meant a wrong serial could become a warranty by trying
+		// shops until one matched the ERP -- the website had the same hole (warranty
+		// plugin 2.9.2). The marker matters: the nightly reconciler re-approves any
+		// plain 'pending' row that does not carry it.
+		if ( $was_mismatch && 'approved' === $status ) {
+			$status     = 'pending';
+			$hold_note .= sprintf(
+				' | [HELD FOR REVIEW] Corrected after a mismatch — was shop "%s", model "%s". Check the invoice before approving.',
+				(string) $was_mismatch->dealer_name,
+				(string) $was_mismatch->product_model
+			);
 		}
 		if ( '' !== $replaced_rejected || $carry_hold ) {
 			$status = 'pending';
@@ -1822,6 +1837,15 @@ class AUN_App_Warranty {
 		$sales = AUN_App_ERP::lookup_phone( $canonical );
 		if ( is_wp_error( $sales ) ) {
 			return $sales;
+		}
+		// AUN Rewards: a showroom projector sale earns an Owner Reward exactly
+		// as a delivered website order does. Only for the customer's OWN number
+		// — a reward is locked to the phone that bought — and idempotent, so
+		// doing this on every sign-in is harmless. Returns flagged by the ERP
+		// take a reward back the same way.
+		if ( class_exists( 'AUN_App_Owner_Rewards' ) && AUN_App_Owner_Rewards::enabled()
+			&& $canonical === AUN_App_Phone::normalize( (string) ( $user_args['phone'] ?? '' ) ) ) {
+			AUN_App_Owner_Rewards::sync_erp_sales( $canonical, $sales );
 		}
 
 		$out = array();

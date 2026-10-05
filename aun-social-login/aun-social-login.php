@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AUN Social Login
  * Description: Lightweight, security-first "Sign in with Google / Facebook" for WooCommerce, including Google One Tap. Renders brand icon buttons under the WooCommerce login, register and checkout forms. Replaces the abandoned Super Socializer plugin — social login only, no sharing/comments.
- * Version:     1.9.1
+ * Version:     1.10.1
  * Author:      Smart Living Bangladesh
  * Requires PHP: 7.4
  * License:     GPLv2 or later
@@ -30,7 +30,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'AUN_SL_VERSION', '1.9.1' );
+define( 'AUN_SL_VERSION', '1.10.1' );
 define( 'AUN_SL_FILE', __FILE__ );
 define( 'AUN_SL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AUN_SL_URL', plugin_dir_url( __FILE__ ) );

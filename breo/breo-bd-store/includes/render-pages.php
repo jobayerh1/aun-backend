@@ -24,10 +24,10 @@ function breo_bd_page_decor( $slug ) {
 			'warranty' => 'Warranty & returns',
 		) ),
 		'warranty-policy'   => array( 'img' => 'N990000631:core', 'glance' => array(
-			array( 'badge', $w ? ucfirst( $w ) : '', 'official warranty' ),
-			array( 'tools', 'Repair or replace', 'for manufacturing defects' ),
-			array( 'chat', 'Local support', 'claims handled in Bangladesh' ),
-			array( 'check', 'No reset', 'the remaining warranty carries over' ),
+			array( 'badge', $w ? ucfirst( $w ) : '', 'replacement warranty' ),
+			array( 'return', 'A new unit', 'for a manufacturing defect, not a repair' ),
+			array( 'box', 'Keep the box', 'its serial number is needed for a claim' ),
+			array( 'check', 'No reset', 'the replacement keeps the remaining warranty' ),
 		) ),
 		'shipping-delivery' => array( 'img' => 'N910200212:boxed', 'glance' => array(
 			array( 'truck', $days( 'dhaka_days', 'days' ), 'delivery inside Dhaka' ),
@@ -49,7 +49,7 @@ function breo_bd_page_decor( $slug ) {
 		) ),
 		'terms-conditions'  => array( 'img' => 'N910200212:night', 'glance' => array(
 			array( 'shield', 'Genuine', 'officially imported Breo' ),
-			array( 'badge', 'Warranty', 'handled locally' ),
+			array( 'badge', 'Replacement', 'warranty, handled locally' ),
 			array( 'pin', 'Bangladesh', 'governed by local law' ),
 			array( 'chat', 'Talk to us', 'we resolve issues first' ),
 		) ),
@@ -220,7 +220,7 @@ function breo_bd_render_shop() {
 			<div class="breo-wrap">
 				<p class="breo-eyebrow">Breo Bangladesh</p>
 				<h1 class="breo-page__title"><?php echo esc_html( $title ); ?></h1>
-				<p class="breo-lead"><?php echo esc_html( $seo ? $seo['lead'] : ( $term && $term->description ? $term->description : 'Portable wellness for the neck, eyes, back and muscles, with official warranty and delivery across Bangladesh.' ) ); ?></p>
+				<p class="breo-lead"><?php echo esc_html( $seo ? $seo['lead'] : ( $term && $term->description ? $term->description : 'Portable wellness for the neck, eyes, back and muscles, with a replacement warranty and delivery across Bangladesh.' ) ); ?></p>
 				<nav class="breo-chips" aria-label="Categories">
 					<a class="<?php echo $term ? '' : 'is-active'; ?>" href="<?php echo esc_url( breo_bd_shop_url() ); ?>">All</a>
 					<?php foreach ( $cats as $slug => $c ) :
@@ -246,6 +246,11 @@ function breo_bd_render_shop() {
 					endwhile;
 					?>
 				</div>
+				<?php
+				// WooCommerce hangs its own page links on this hook; ours follow below, so drop them.
+				remove_action( 'woocommerce_after_shop_loop', 'woocommerce_pagination', 10 );
+				echo function_exists( 'breo_bd_capture_hook' ) ? breo_bd_capture_hook( 'woocommerce_after_shop_loop' ) : ''; // phpcs:ignore -- ViewCategory / view_item_list
+				?>
 				<?php the_posts_pagination(); ?>
 			<?php else : ?>
 				<p class="breo-lead">No products here yet.</p>

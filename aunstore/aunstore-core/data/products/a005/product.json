@@ -1,0 +1,36 @@
+{
+  "sku": "APB-A005",
+  "name": "AUN A005 Short Throw Full HD Home Cinema Android Projector",
+  "slug": "aun-a005-projector",
+  "categories": [
+    "Home Theater Projector"
+  ],
+  "images": [
+    8202,
+    6732,
+    8566,
+    6730,
+    8567,
+    8568
+  ],
+  "short_description": "<p style=\"background:#f0f9ff;border-left:3px solid #0188fe;border-radius:8px;padding:8px 12px;margin:0 0 10px;font-size:13.5px;font-weight:700;color:#0166c8;line-height:1.5\"><i class=\"fa-solid fa-circle-check\" style=\"margin-right:6px\"></i>Best for: Small rooms — short-throw lens</p>\n<ul>\n<li>Native Resolution: Full HD 1920 x 1080 pixels</li>\n<li>Brightness: 760 ANSI Lumens</li>\n<li>Operating System: Android 12</li>\n<li>Memory: 1GB RAM / 8GB ROM</li>\n<li>Ports: HDMI x1, USB x1, Audio out 3.5mm</li>\n<li>Power: AC 100 – 240 V (works worldwide)</li>\n</ul>",
+  "menu_order": 4,
+  "meta": {
+    "_aun_throw_ratio": 1.1,
+    "_aun_max_screen_size": 150,
+    "_aun_internal_brightness": 350,
+    "_aunstore_highlights": {
+      "short": "A005",
+      "best_for": "Small rooms — short-throw lens",
+      "resolution": "Full HD 1080p",
+      "res_note": "",
+      "lumens": 760,
+      "os": "Android 12",
+      "max_screen": 150,
+      "tags": [
+        "home",
+        "small"
+      ]
+    }
+  }
+}

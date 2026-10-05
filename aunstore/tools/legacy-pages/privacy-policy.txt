@@ -1,0 +1,130 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Privacy Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-user-shield"></i> Privacy Policy</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Your privacy matters to us. This policy explains what we collect when you shop with [aunstore_info key="company"], why we collect it, and the choices you have.</p>
+[/ux_text]
+
+[/section]
+[section bg_color="rgb(255, 255, 255)" padding="40px" label="Privacy Highlights"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-database"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Data We Collect</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Only what we need to deliver your order, support your warranty and keep the store secure.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-cookie-bite"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Cookies</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Cookies keep your cart and login working and help us understand how the site is used.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-scale-balanced"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Your Rights</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Ask to see, correct, export or delete your personal data at any time. We never sell it.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Privacy Policy"]
+[accordion]
+
+[accordion-item title="1. Who We Are"]
+
+<p>This website, aunstore.com, is the official online store of [aunstore_info key="company"]. When this policy says "we" or "us", it means [aunstore_info key="company"]. For any privacy question, <a href="/contact-us/" style="color:#0188fe; font-weight:bold;">contact us</a>.</p>
+
+[/accordion-item]
+[accordion-item title="2. What Personal Data We Collect & Why"]
+
+<ul>
+<li><strong>Order and account details</strong> &mdash; your name, email, phone number, billing and shipping address, and order history &mdash; to process, ship and track your orders.</li>
+<li><strong>Support information</strong> &mdash; messages you send us, and photos or videos you share for a warranty claim &mdash; to diagnose faults and ship replacement parts.</li>
+<li><strong>Payment information</strong> &mdash; card and wallet payments are processed by our payment providers. We do not see or store your full card number.</li>
+<li><strong>Technical data</strong> &mdash; IP address, browser, device and the pages you visit &mdash; to keep the store secure and improve it.</li>
+</ul>
+
+[/accordion-item]
+[accordion-item title="3. Cookies"]
+
+<p>We use cookies the store needs to work (such as your cart and login) and cookies that help us understand how the site is used. You can block or delete cookies in your browser settings; some parts of the store may not work without them.</p>
+
+[/accordion-item]
+[accordion-item title="4. Marketing"]
+
+<p>We send you news and offers only if you have agreed to receive them, and you can unsubscribe at any time using the link in every email.</p>
+
+[/accordion-item]
+[accordion-item title="5. Data Sharing"]
+
+<p>We share only what each party needs to do its job:</p>
+<ul>
+<li>payment providers, to take your payment;</li>
+<li>shipping carriers and customs agents, to deliver your order and replacement parts;</li>
+<li>hosting, email and IT providers that run this website on our behalf;</li>
+<li>authorities, where the law requires it.</li>
+</ul>
+<p><strong>We do not sell your personal data.</strong> Our anti-counterfeit check at check.aunstore.com is operated by a specialist verification provider; it only receives the code you enter.</p>
+
+[/accordion-item]
+[accordion-item title="6. International Transfers"]
+
+<p>Because we sell and ship worldwide, your information may be processed in countries other than your own. We take steps to make sure it stays protected wherever it is processed.</p>
+
+[/accordion-item]
+[accordion-item title="7. Data Retention"]
+
+<p>We keep order records for as long as needed for warranty service and as required by tax and accounting law. Account data is kept until you ask us to delete your account.</p>
+
+[/accordion-item]
+[accordion-item title="8. Your Rights"]
+
+<p>Depending on where you live, you may have the right to access, correct, delete or export your personal data, to object to certain uses, and to withdraw consent. You may also have the right to complain to your local data-protection authority.</p>
+
+[/accordion-item]
+[accordion-item title="9. Children"]
+
+<p>Our store is not intended for children, and we do not knowingly collect personal data from children.</p>
+
+[/accordion-item]
+[accordion-item title="10. Changes & Contact"]
+
+<p>We may update this policy from time to time; the latest version is always on this page. To exercise your rights or ask a question, <a href="/contact-us/" style="color:#0188fe; font-weight:bold;">contact us</a>.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="18px" label="Last Updated"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>30 September, 2026</strong></p>
+[/ux_text]
+
+[/section]

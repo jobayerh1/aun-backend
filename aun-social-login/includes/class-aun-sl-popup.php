@@ -79,7 +79,8 @@ class AUN_SL_Popup {
 			// Google accepts only its own four phrasings; 'brand' is ours alone, so
 			// the nearest legal equivalent is used when Google draws the button.
 			'text'           => ( 'brand' === $o['label_style'] ) ? 'signin_with' : $o['label_style'],
-			'logo_alignment' => 'left',
+			// 'center' keeps the G next to the words, like our Facebook button; 'left' pins it to the far edge.
+			'logo_alignment' => 'center',
 		);
 		/*
 		 * Only the standard (labelled) button accepts a width, and that is the one

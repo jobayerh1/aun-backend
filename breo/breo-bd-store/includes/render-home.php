@@ -13,16 +13,27 @@ function breo_bd_home_slides() {
 			'title' => 'Heat and deep percussion in your palm', 'text' => 'A 405 g massage gun that warms in seconds.' ),
 		array( 'sku' => 'N910200212', 'media' => 'glow', 'layout' => 'split', 'theme' => 'warm',
 			'title' => 'Ten minutes. Eyes closed. Reset.', 'text' => 'Warm compress and airbag massage for screen-tired eyes.' ),
-		array( 'sku' => 'N990000981', 'media' => 'rug', 'layout' => 'split', 'theme' => 'sand',
+		array( 'sku' => 'N990000981', 'media' => 'model', 'layout' => 'split', 'theme' => 'sun', 'fallback' => array( 'media' => 'rug', 'theme' => 'sand' ),
 			'title' => 'Lean back. Let it knead.', 'text' => 'A cordless kneading pillow for your neck and lower back.' ),
 	);
 }
 
 function breo_bd_render_home() {
 	$ps     = breo_bd_products();
-	$slides = array_filter( breo_bd_home_slides(), function ( $s ) use ( $ps ) {
-		return isset( $ps[ $s['sku'] ] ) && breo_bd_media_id( $ps[ $s['sku'] ], $s['media'] );
-	} );
+	// A slide may name fallbacks ('fallback' => array( 'theme' => …, 'media' => … )) so it keeps
+	// showing until a newly added photo has been imported.
+	$slides = array();
+	foreach ( breo_bd_home_slides() as $s ) {
+		if ( ! isset( $ps[ $s['sku'] ] ) ) {
+			continue;
+		}
+		if ( ! breo_bd_media_id( $ps[ $s['sku'] ], $s['media'] ) && ! empty( $s['fallback'] ) ) {
+			$s = array_merge( $s, $s['fallback'] );
+		}
+		if ( breo_bd_media_id( $ps[ $s['sku'] ], $s['media'] ) ) {
+			$slides[] = $s;
+		}
+	}
 	$wa = breo_bd_whatsapp_url( 'Hi Breo Bangladesh, I need help choosing a massager' );
 
 	ob_start();
@@ -35,7 +46,7 @@ function breo_bd_render_home() {
 				<?php $n = 0; foreach ( $slides as $s ) :
 					$p = $ps[ $s['sku'] ];
 					$d = breo_bd_product_data( $p ); ?>
-					<article class="breo-slide layout-<?php echo esc_attr( $s['layout'] ); ?> theme-<?php echo esc_attr( $s['theme'] ); ?><?php echo 0 === $n ? ' is-active' : ''; ?>" style="--accent:<?php echo esc_attr( $d['accent'] ); ?>" aria-roledescription="slide" aria-label="<?php echo esc_attr( ( $n + 1 ) . ' / ' . count( $slides ) ); ?>">
+					<article class="breo-slide layout-<?php echo esc_attr( $s['layout'] ); ?> theme-<?php echo esc_attr( $s['theme'] ); ?><?php echo 0 === $n ? ' is-active is-intro' : ''; ?>" style="--accent:<?php echo esc_attr( $d['accent'] ); ?>" aria-roledescription="slide" aria-label="<?php echo esc_attr( ( $n + 1 ) . ' / ' . count( $slides ) ); ?>">
 						<div class="breo-slide__media"><?php echo breo_bd_media( $p, $s['media'], array( 'size' => 'full', 'loading' => 0 === $n ? 'eager' : 'lazy', 'sizes' => 'split' === $s['layout'] ? '(max-width: 900px) 100vw, 50vw' : '100vw' ) ); // phpcs:ignore ?></div>
 						<div class="breo-wrap breo-slide__content">
 							<div class="breo-slide__in">
@@ -91,6 +102,8 @@ function breo_bd_render_home() {
 		</section>
 		<?php endif; ?>
 
+		<?php echo function_exists( 'breo_bd_reels_html' ) ? breo_bd_reels_html() : ''; // phpcs:ignore ?>
+
 		<?php
 		$scenes = array(
 			array( 'N990000631', 'ondesk', 'split', 'left', 'cream', 'At your desk', 'Relief between meetings', 'Cordless, quiet and hands-free: the N6 mini works on your shoulders while you work on everything else.' ),
@@ -141,7 +154,7 @@ function breo_bd_render_home() {
 				</header>
 				<div class="breo-why__grid">
 					<div data-reveal><?php echo breo_bd_icon( 'shield', 30 ); // phpcs:ignore ?><h3>Genuine and authorized</h3><p>Imported directly through Breo, never grey-market.</p></div>
-					<div data-reveal><?php echo breo_bd_icon( 'badge', 30 ); // phpcs:ignore ?><h3>Local warranty</h3><p><?php echo esc_html( breo_bd_warranty_period() ? 'A ' . breo_bd_warranty_period() . ' official warranty, handled here in Bangladesh.' : 'Official warranty, handled here in Bangladesh.' ); ?></p></div>
+					<div data-reveal><?php echo breo_bd_icon( 'badge', 30 ); // phpcs:ignore ?><h3>Replacement warranty</h3><p><?php echo esc_html( 'A ' . breo_bd_warranty_label() . ': if a manufacturing defect appears, you get a new unit, handled here in Bangladesh.' ); ?></p></div>
 					<div data-reveal><?php echo breo_bd_icon( 'truck', 30 ); // phpcs:ignore ?><h3>Delivered to your door</h3><p><?php echo esc_html( 'Inside Dhaka in ' . breo_bd_opt( 'dhaka_days' ) . ' working days, the rest of the country in ' . breo_bd_opt( 'outside_days' ) . '.' ); ?></p></div>
 					<div data-reveal><?php echo breo_bd_icon( 'chat', 30 ); // phpcs:ignore ?><h3>Real advice</h3><p>Tell us where it hurts and we'll recommend the right device.</p></div>
 				</div>
@@ -152,7 +165,7 @@ function breo_bd_render_home() {
 			<div class="breo-wrap breo-narrow">
 				<h2 class="breo-title" data-reveal>Frequently asked questions</h2>
 				<div class="breo-faq" data-reveal>
-					<details><summary>Are these genuine Breo products?</summary><p>Yes. Breo Bangladesh is an authorized distributor. Every device is officially imported and covered by our local warranty.</p></details>
+					<details><summary>Are these genuine Breo products?</summary><p>Yes. Breo Bangladesh is an authorized distributor. Every device is officially imported and covered by our local replacement warranty.</p></details>
 					<details><summary>Which massager should I choose?</summary><p>Choose by where you feel it: N6 mini for the neck and shoulders, See KE for tired eyes, P2 for the neck and lower back, and No.7 for muscle soreness after exercise. Still unsure? Message us.</p></details>
 					<details><summary>How fast is delivery?</summary><p><?php echo esc_html( 'Inside Dhaka within ' . breo_bd_opt( 'dhaka_days' ) . ' working days and outside Dhaka within ' . breo_bd_opt( 'outside_days' ) . ' working days.' ); ?> <a href="<?php echo esc_url( breo_bd_page_url( 'shipping-delivery' ) ); ?>">Shipping &amp; Delivery</a></p></details>
 					<details><summary>How can I pay?</summary><p><?php echo esc_html( breo_bd_opt( 'payments' ) . '.' ); ?></p></details>

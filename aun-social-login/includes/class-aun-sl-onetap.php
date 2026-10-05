@@ -55,6 +55,23 @@ class AUN_SL_OneTap {
 		wp_send_json_success( array( 'nonce' => wp_create_nonce( 'aun_sl_onetap' ) ) );
 	}
 
+	/** Whether the automatic One Tap card belongs on this page (Settings: "Show the One Tap card on"). */
+	public static function prompt_here() {
+		$wc = function_exists( 'is_checkout' );
+		if ( $wc && is_checkout() ) {
+			// the order-received / pay-for-order screens come after the decision; don't ask there
+			return ! is_wc_endpoint_url( 'order-received' ) && ! is_wc_endpoint_url( 'order-pay' )
+				&& (bool) AUN_SL_Options::get( 'onetap_on_checkout' );
+		}
+		if ( $wc && is_account_page() ) {
+			return (bool) AUN_SL_Options::get( 'onetap_on_account' );
+		}
+		if ( $wc && is_cart() ) {
+			return (bool) AUN_SL_Options::get( 'onetap_on_cart' );
+		}
+		return (bool) AUN_SL_Options::get( 'onetap_on_other' );
+	}
+
 	public static function render() {
 		if ( is_user_logged_in() ) {
 			return;
@@ -64,7 +81,7 @@ class AUN_SL_OneTap {
 			return;
 		}
 
-		$auto = (bool) AUN_SL_Options::get( 'onetap_enabled' );
+		$auto = (bool) AUN_SL_Options::get( 'onetap_enabled' ) && self::prompt_here();
 		$btn  = (bool) AUN_SL_Options::get( 'js_flow' );
 		if ( ! $auto && ! $btn ) {
 			return;   // nothing on this page needs the Google library

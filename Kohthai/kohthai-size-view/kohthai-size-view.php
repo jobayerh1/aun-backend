@@ -3,7 +3,7 @@
  * Plugin Name:       Kohthai Size View
  * Plugin URI:        https://kohthaibd.com/
  * Description:       "See how big it really is" — the bag on a woman of your own height, what actually fits inside it, and its true size on your screen. Built to answer the question that causes returns.
- * Version:           1.17.0
+ * Version:           1.18.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Kohthai
@@ -57,7 +57,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class Kohthai_Size_View {
 
-	const VERSION = '1.17.0';
+	const VERSION = '1.18.0';
 
 	/** Assets print once, in the footer, and only if something rendered. */
 	private static $used = false;
@@ -1352,6 +1352,11 @@ touch-action:none}
 
 /* ---- "Will it fit": a real fitting test ---------------------------------
    The bag at true scale, and something you can pick up, move and turn. */
+/* The rest of the bag behind the measured box: enough to read the shape and see
+   that the strap belongs to it, faint enough that nothing is mistaken for the part
+   the numbers describe, and light enough not to compete with an object dragged
+   over it. */
+.kt-sv__bagghost{opacity:.26}
 .kt-sv__opening{fill:none;stroke:var(--kt-brand);stroke-width:1.3;stroke-dasharray:7 5;opacity:.5}
 /* The bag seen edge on, so thickness stops being an invisible rule. */
 .kt-sv__side{fill:rgba(101,67,33,.07);stroke:var(--kt-brand);stroke-width:1.3;stroke-dasharray:7 5;opacity:.55}
@@ -1729,7 +1734,38 @@ function drawBag(g, bag, x, y, w, h, withStrap, clip){
     // photograph is held to it: the cut then lands exactly on the outline that
     // is drawn anyway, instead of somewhere across the middle of a chain.
     if (clip){
-      var id = "kt-sv-clip-" + (++CLIP_N);
+      // ⭐ The body is what is being measured, so it is the only part drawn at full
+      // strength — but CUTTING the rest away was worse than the problem it solved. A
+      // scarf sliced down the middle by a straight edge reads as a broken image, and
+      // it also contradicts the caption this module prints under every scene:
+      // "Straps and handles are drawn faintly and are not included." The On-you view
+      // already keeps its word. This one now does too: the whole photograph is laid
+      // down faintly, and the body box is redrawn over it at full strength.
+      //
+      // The ghost fades out towards the TOP of its own image rather than ending at a
+      // hard line, because that is where a long handle or chain runs off the scene —
+      // one of these bags carries a chain 191 mm above a 280 mm body. Fading by
+      // construction means no frame has to grow to accommodate it, so the fixed
+      // scale that lets a clutch look small and a tote look big is left alone.
+      var n = ++CLIP_N;
+      var mid = "kt-sv-fade-" + n;
+      var gid = "kt-sv-grad-" + n;
+      var grad = attr(ns("linearGradient"), { id:gid, x1:"0", y1:"0", x2:"0", y2:"1" });
+      grad.appendChild(attr(ns("stop"), { offset:"0",    "stop-color":"#fff", "stop-opacity":"0" }));
+      grad.appendChild(attr(ns("stop"), { offset:"0.30", "stop-color":"#fff", "stop-opacity":"1" }));
+      grad.appendChild(attr(ns("stop"), { offset:"1",    "stop-color":"#fff", "stop-opacity":"1" }));
+      g.appendChild(grad);
+      var mask = attr(ns("mask"), { id:mid, maskUnits:"userSpaceOnUse",
+        x:r.x, y:r.y, width:r.w, height:r.h });
+      mask.appendChild(attr(ns("rect"), { x:r.x, y:r.y, width:r.w, height:r.h,
+        fill:"url(#" + gid + ")" }));
+      g.appendChild(mask);
+      var ghost = attr(ns("image"), { x:r.x, y:r.y, width:r.w, height:r.h,
+        href:bag.cutout, preserveAspectRatio:"none", "class":"kt-sv__bagghost",
+        mask:"url(#" + mid + ")" });
+      g.appendChild(ghost);
+
+      var id = "kt-sv-clip-" + n;
       var cp = attr(ns("clipPath"), { id:id });
       cp.appendChild(attr(ns("rect"), { x:x, y:y, width:w, height:h,
         rx:Math.min(w,h)*0.06, ry:Math.min(w,h)*0.06 }));

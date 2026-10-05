@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>U002 ad layers</title>
+<style>
+  :root { --blue: #0188fe; --blue2: #4fb3ff; --ink: #fff; --muted: #b9cbe0; --bg1: #050d1a; --bg2: #0b2342; --gold: #ffd34d; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: var(--w); height: var(--h); overflow: hidden; background: transparent; }
+  body { font-family: 'Nirmala UI', 'Segoe UI', sans-serif; color: var(--ink); position: relative; }
+  .abs { position: absolute; }
+  .hide { display: none !important; }
+
+  /* backgrounds */
+  .bgfill { inset: 0; background:
+      radial-gradient(70% 45% at 50% 38%, rgba(1,136,254,.28), rgba(1,136,254,0) 70%),
+      radial-gradient(60% 40% at 15% 100%, rgba(79,179,255,.14), rgba(79,179,255,0) 70%),
+      linear-gradient(180deg, var(--bg2), var(--bg1) 75%); }
+  .dots { inset: 0; opacity: .22;
+      background-image: radial-gradient(rgba(255,255,255,.35) 1.2px, transparent 1.4px);
+      background-size: 28px 28px;
+      -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.9), rgba(0,0,0,0) 55%); }
+
+  /* header */
+  .logo { height: 64px; }
+  .pill { display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 700; padding: 10px 22px 10px 14px;
+          border-radius: 999px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.16); }
+  .pill .play { width: 34px; height: 34px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; }
+  .pill .play::after { content: ''; border-left: 12px solid #fff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; margin-left: 4px; }
+  .pill small { font-weight: 400; color: var(--muted); font-size: 24px; }
+
+  /* video window frame (sits behind the video) */
+  .win { border-radius: var(--r); background: #000;
+         box-shadow: 0 0 0 3px rgba(79,179,255,.55), 0 0 60px rgba(1,136,254,.45), 0 30px 60px rgba(0,0,0,.6); }
+
+  /* footer strip */
+  .strip { display: flex; align-items: center; justify-content: center; gap: 26px; font-size: 30px; font-weight: 700;
+           padding: 18px 34px; border-radius: 999px; background: rgba(1,136,254,.16); border: 2px solid rgba(79,179,255,.45); white-space: nowrap; }
+  .strip .sep { width: 2px; height: 34px; background: rgba(255,255,255,.25); }
+  .strip .ok { color: var(--gold); }
+  .strip svg { width: 30px; height: 30px; vertical-align: -6px; margin-right: 8px; }
+
+  /* 16:9 hud: soft scrims so overlay text reads on any footage */
+  .scrimTop { left: 0; right: 0; top: 0; height: 260px; background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0)); }
+  .scrimBot { left: 0; right: 0; bottom: 0; height: 300px; background: linear-gradient(0deg, rgba(0,0,0,.6), rgba(0,0,0,0)); }
+
+  /* outro */
+  .o-eyebrow { font-size: 34px; color: var(--muted); }
+  .o-eyebrow b { color: #fff; }
+  .o-name { font-family: 'Segoe UI', sans-serif; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .o-name span { color: var(--blue); }
+  .chips { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  .chip { font-size: 27px; font-weight: 700; padding: 10px 20px; border-radius: 999px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.2); }
+  .warranty { font-size: 34px; color: var(--muted); }
+  .warranty b { color: var(--gold); }
+  .cta { font-size: 46px; font-weight: 700; padding: 20px 64px; border-radius: 999px; background: var(--blue); box-shadow: 0 14px 40px rgba(1,136,254,.55); }
+  .url { font-family: 'Segoe UI', sans-serif; font-size: 34px; font-weight: 600; color: var(--muted); }
+  .center { left: 0; right: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .product { filter: drop-shadow(0 40px 50px rgba(0,0,0,.6)); }
+</style>
+</head>
+<body>
+<!-- layer: bg (4:5 / 9:16 template) -->
+<div id="bg" class="hide">
+  <div class="abs bgfill"></div><div class="abs dots"></div>
+  <img class="abs logo" id="bgLogo" src="../assets/aun-logo-white.png" alt="AUN">
+  <div class="abs pill" id="bgPill"><span class="play"></span>রিভিউ <small>·</small> Gadget Insider Bangla</div>
+  <div class="abs win" id="bgWin"></div>
+  <div class="abs strip" id="bgStrip">
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="#4fb3ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>aun-projector.com.bd</span>
+    <span class="sep"></span>
+    <span><span class="ok">✓</span> ১ বছরের অফিসিয়াল ওয়ারেন্টি</span>
+  </div>
+  <!-- 9:16 only: fills the tall lower area (mostly under the Reels UI, visible in Stories) -->
+  <div class="abs center hide" id="bgLower" style="top:1410px">
+    <div class="chips"><div class="chip">সিলড ডাস্ট-প্রুফ ইঞ্জিন</div><div class="chip">লেজার অটো ফোকাস</div><div class="chip">নেটিভ ১০৮০p</div></div>
+    <img class="product" src="../assets/u002-side.png" alt="" style="width:600px; margin-top:40px; opacity:.92">
+  </div>
+</div>
+
+<!-- layer: hud (16:9 over full-frame video) -->
+<div id="hud" class="hide">
+  <div class="abs scrimTop"></div><div class="abs scrimBot"></div>
+  <img class="abs logo" style="right:56px; top:46px; height:58px" src="../assets/aun-logo-white.png" alt="AUN">
+  <div class="abs strip" style="right:56px; bottom:44px; font-size:24px; padding:12px 24px">
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="#4fb3ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>aun-projector.com.bd</span>
+  </div>
+</div>
+
+<!-- outro layers -->
+<div id="o_bg" class="hide"><div class="abs bgfill"></div><div class="abs dots"></div></div>
+<div id="o_logo" class="hide"><div class="abs center" id="oLogoBox"><img class="logo" id="oLogo" src="../assets/aun-logo-white.png" alt="AUN"></div></div>
+<div id="o_product" class="hide"><div class="abs center" id="oProdBox"><img class="product" id="oProd" src="../assets/u002-side.png" alt="AUN U002 Pro"></div></div>
+<div id="o_title" class="hide"><div class="abs center" id="oTitleBox">
+  <div class="o-eyebrow"><b>Gadget Insider Bangla</b>-র রিভিউতে</div>
+  <div class="o-name" id="oName">AUN U002 <span>Pro</span></div>
+</div></div>
+<div id="o_chips" class="hide"><div class="abs center" id="oChipsBox">
+  <div class="chips" id="oChips"><div class="chip">সিলড ডাস্ট-প্রুফ ইঞ্জিন</div><div class="chip">লেজার অটো ফোকাস</div><div class="chip">নেটিভ ১০৮০p</div></div>
+  <div class="warranty" style="margin-top:22px"><b>১ বছরের</b> অফিসিয়াল ওয়ারেন্টি</div>
+</div></div>
+<div id="o_cta" class="hide"><div class="abs center" id="oCtaBox">
+  <div class="cta">এখনই অর্ডার করুন</div>
+  <div class="url" style="margin-top:18px">aun-projector.com.bd</div>
+</div></div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  const fmt = q.get('fmt') || '45', layer = q.get('layer') || 'bg';
+  const W = fmt === '169' ? 1920 : 1080, H = fmt === '916' ? 1920 : fmt === '169' ? 1080 : 1350;
+  const R = document.documentElement.style;
+  R.setProperty('--w', W + 'px'); R.setProperty('--h', H + 'px');
+  if (layer === 'bg_opaque') document.body.style.background = '#050d1a';
+  const show = id => document.getElementById(id).classList.remove('hide');
+  const set = (id, css) => Object.assign(document.getElementById(id).style, css);
+  const L = layer.replace('_opaque', '');
+  show(L);
+
+  // window geometry — must match build.py
+  const WIN = { '45': [30, 350, 1020, 574, 28], '916': [30, 470, 1020, 765, 32] };
+  if (L === 'bg') {
+    const [x, y, w, h, r] = WIN[fmt];
+    set('bgWin', { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+    R.setProperty('--r', r + 'px');
+    const headY = fmt === '916' ? 140 : 46;
+    set('bgLogo', { left: '48px', top: headY + 'px' });
+    set('bgPill', { right: '48px', top: (headY + 4) + 'px' });
+    const stripY = fmt === '916' ? 1300 : 1196;
+    set('bgStrip', { left: '50%', top: stripY + 'px', transform: 'translateX(-50%)' });
+    if (fmt === '916') show('bgLower');
+  }
+  // outro positions per format
+  if (L.startsWith('o_')) {
+    if (fmt === '169') {
+      // product left, text right
+      set('oProdBox', { left: '90px', right: 'auto', top: '250px', width: '900px' }); set('oProd', { width: '880px' });
+      const col = { left: '980px', right: '60px', width: 'auto' };
+      set('oLogoBox', { ...col, top: '110px' }); set('oLogo', { height: '96px' });
+      set('oTitleBox', { ...col, top: '250px' }); set('oName', { fontSize: '96px', marginTop: '10px' });
+      set('oChipsBox', { ...col, top: '470px' });
+      set('oCtaBox', { ...col, top: '700px' });
+    } else {
+      const top = fmt === '916' ? 250 : 50;
+      set('oLogoBox', { top: top + 'px' }); set('oLogo', { height: '110px' });
+      set('oProdBox', { top: (top + 150) + 'px' }); set('oProd', { width: fmt === '916' ? '840px' : '720px' });
+      const t2 = top + (fmt === '916' ? 660 : 600);
+      set('oTitleBox', { top: t2 + 'px' }); set('oName', { fontSize: '92px', marginTop: '10px' });
+      set('oChipsBox', { top: (t2 + 170) + 'px' });
+      set('oCtaBox', { top: (t2 + 360) + 'px' });
+    }
+  }
+</script>
+</body>
+</html>

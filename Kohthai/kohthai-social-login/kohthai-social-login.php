@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Kohthai Social Login
  * Description: Lightweight, security-first "Sign in with Google / Facebook" for WooCommerce, including Google One Tap. Renders brand icon buttons under the WooCommerce login, register and checkout forms. Replaces the abandoned Super Socializer plugin — social login only, no sharing/comments.
- * Version:     1.9.1
+ * Version:     1.10.2
  * Author:      Smart Living Bangladesh
  * Requires PHP: 7.4
  * License:     GPLv2 or later
@@ -42,7 +42,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'KT_SL_VERSION', '1.9.1' );
+define( 'KT_SL_VERSION', '1.10.2' );
 define( 'KT_SL_FILE', __FILE__ );
 define( 'KT_SL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KT_SL_URL', plugin_dir_url( __FILE__ ) );

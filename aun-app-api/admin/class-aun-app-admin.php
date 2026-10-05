@@ -495,7 +495,12 @@ class AUN_App_Admin {
 			}
 		}
 
-		$rows = (array) $wpdb->get_results( "SELECT * FROM $table ORDER BY created_at DESC LIMIT 100" );
+		// Requests waiting for a decision FIRST. Newest-first alone meant one that
+		// had waited a while could fall off this page entirely — the very page the
+		// admin-bar notification sends you to.
+		$rows = (array) $wpdb->get_results(
+			"SELECT * FROM $table ORDER BY CASE WHEN status = 'submitted' THEN 0 ELSE 1 END, created_at DESC LIMIT 100"
+		);
 
 		// Auto-link to UltimatePOS job sheets right on this page (the same
 		// 2-min-cached lookup the app uses), so the job sheet number and the
@@ -528,7 +533,16 @@ class AUN_App_Admin {
 				<strong>live ERP repair status</strong> from then on — no need to update the status here anymore.
 			</p>
 		</div>
-		<?php ?>
+		<?php
+		// A request waiting for a decision stands out, and the one the admin bar
+		// linked to is highlighted and scrolled clear of the bar itself.
+		echo '<style data-no-optimize="1" data-no-minify="1">'
+			. '.aun-repair-new > td { background:#fff8e5 !important; }'
+			. '.aun-repair-new > td:first-child { box-shadow: inset 4px 0 0 #b45309; }'
+			. 'tr.aun-repair-row { scroll-margin-top: 90px; }'
+			. 'tr.aun-repair-row:target > td { background:#ffe9b3 !important; transition: background .6s; }'
+			. '</style>';
+		?>
 		<table class="widefat striped">
 			<thead><tr>
 				<th style="width:120px">Ref</th><th>Customer</th><th>Device</th><th>Problem</th>
@@ -540,7 +554,7 @@ class AUN_App_Admin {
 			<?php else : foreach ( $rows as $r ) :
 				$photos = json_decode( (string) $r->photos, true );
 			?>
-				<tr>
+				<tr id="aun-repair-<?php echo (int) $r->id; ?>" class="aun-repair-row<?php echo 'submitted' === (string) $r->status ? ' aun-repair-new' : ''; ?>">
 					<td>
 						<strong><?php echo esc_html( $r->ref ); ?></strong><br>
 						<span style="color:#646970;font-size:12px"><?php echo esc_html( substr( $r->created_at, 0, 10 ) ); ?></span>
@@ -2082,11 +2096,45 @@ class AUN_App_Admin {
 			// 0 is meaningful here: the referrer's earned reward never expires.
 			$opts['referral_reward_expiry_days'] = max( 0, min( 3650, (int) ( $_POST['referral_reward_expiry_days'] ?? 365 ) ) );
 			$opts['referral_reward_also_completed'] = empty( $_POST['referral_reward_also_completed'] ) ? 0 : 1;
+
+			// AUN Rewards — Owner Rewards, the ceiling both programmes share, and
+			// the showroom. Clamped like the referral numbers above.
+			$or_notice = '';
+			$opts['owner_rewards_enabled'] = empty( $_POST['owner_rewards_enabled'] ) ? 0 : 1;
+			// The launch moment is stamped the FIRST time it is switched on and
+			// then left alone: only purchases from that moment earn, so there is
+			// no backfill bill. "Start again from today" moves it on purpose.
+			if ( $opts['owner_rewards_enabled']
+				&& ( '' === (string) ( $opts['owner_rewards_launch'] ?? '' ) || ! empty( $_POST['owner_rewards_relaunch'] ) ) ) {
+				$opts['owner_rewards_launch'] = current_time( 'mysql' );
+			}
+			$opts['owner_reward_percent']       = max( 1, min( 20, round( (float) ( $_POST['owner_reward_percent'] ?? 5 ), 2 ) ) );
+			$opts['owner_reward_months']        = max( 1, min( 36, (int) ( $_POST['owner_reward_months'] ?? 12 ) ) );
+			$opts['owner_reward_categories']    = array_values( array_unique( array_filter( array_map( 'intval', (array) ( $_POST['owner_reward_categories'] ?? array() ) ) ) ) );
+			$opts['owner_reward_exclude_sale']  = empty( $_POST['owner_reward_exclude_sale'] ) ? 0 : 1;
+			$opts['owner_reward_sms']           = empty( $_POST['owner_reward_sms'] ) ? 0 : 1;
+			$opts['owner_reward_remind_sms']    = empty( $_POST['owner_reward_remind_sms'] ) ? 0 : 1;
+			$or_sms = trim( sanitize_text_field( wp_unslash( $_POST['owner_reward_sms_text'] ?? '' ) ) );
+			// ONE plain SMS or nothing: a single Bangla letter switches the whole
+			// message to Unicode and it bills as 2-3 SMS. Checked with the longest
+			// realistic values filled in.
+			$or_sample = strtr( $or_sms, array( '{percent}' => '12.5%', '{code}' => 'NEXT-XXXXXX', '{phone}' => '01XXXXXXXXX', '{date}' => '30 Sep 2027' ) );
+			if ( '' !== $or_sms && ( preg_match( '/[^\x20-\x7E]/', $or_sms ) || strlen( $or_sample ) > 160 || false === strpos( $or_sms, '{code}' ) ) ) {
+				$or_notice = '<div class="notice notice-warning is-dismissible"><p><strong>Owner Rewards SMS wording not saved.</strong> '
+					. 'It must be plain English (no Bangla or special characters), include {code}, and fit one SMS (160 characters with the values filled in) — the previous wording is kept.</p></div>';
+			} else {
+				$opts['owner_reward_sms_text'] = $or_sms;
+			}
+			$opts['rewards_ceiling']            = max( 0, min( 100, (int) ( $_POST['rewards_ceiling'] ?? 10 ) ) );
+			$opts['rewards_showroom']           = empty( $_POST['rewards_showroom'] ) ? 0 : 1;
+			$opts['rewards_showroom_hold_days'] = max( 0, min( 60, (int) ( $_POST['rewards_showroom_hold_days'] ?? 7 ) ) );
+
 			delete_transient( 'aun_app_od_token' ); // re-mint with the new settings
 			update_option( AUN_APP_API_OPTION, $opts );
 			delete_transient( AUN_App_Tickets::TOPICS_CACHE );
 			delete_transient( AUN_App_Watch::CACHE_KEY ); // fresh picks on save
 			echo '<div class="notice notice-success is-dismissible"><p>Settings saved.</p></div>';
+			echo $or_notice; // phpcs:ignore WordPress.Security.EscapeOutput -- fixed markup above.
 		}
 
 		$this->header( 'App Settings', 'Everything the Android app reads from this site — grouped by what it affects.' );
@@ -2101,6 +2149,7 @@ class AUN_App_Admin {
 			'connect'  => array( 'admin-plugins', 'Integrations' ),
 			'watch'    => array( 'video-alt2', 'What to watch' ),
 			'referral' => array( 'groups', 'Referrals' ),
+			'rewards'  => array( 'awards', 'Owner Rewards' ),
 			'release'  => array( 'update', 'App release' ),
 		);
 		?>
@@ -3184,6 +3233,147 @@ class AUN_App_Admin {
 				</p>
 			</div>
 			</div><!-- /panel-referral -->
+
+			<!-- ── Owner Rewards (AUN Rewards) ───────────────────────────── -->
+			<div class="aun-panel" id="panel-rewards">
+			<?php
+			$or_set      = AUN_App_Owner_Rewards::settings();
+			$or_on       = ! empty( $opts['owner_rewards_enabled'] );
+			$or_launch   = (string) ( $opts['owner_rewards_launch'] ?? '' );
+			$or_detected = AUN_App_Owner_Rewards::detect_projector_categories();
+			// Nothing chosen yet: pre-tick the categories that are obviously
+			// projectors, so switching it on is one click — but never silently
+			// save them without the admin seeing the list.
+			$or_ticked   = ! empty( $or_set['categories'] ) ? $or_set['categories'] : $or_detected;
+			$or_terms    = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false, 'orderby' => 'name' ) );
+			$or_report   = AUN_App_Owner_Rewards::report();
+			?>
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-awards"></span> Owner Rewards — "5% off your next projector"</h2>
+				<p class="aun-hint">
+					Every projector a customer buys <strong>from AUN</strong> — delivered from the website, or sold at
+					the showroom and recorded in the ERP — gives them a reward for their <strong>next</strong> projector.
+					One at a time: buying again while it is unused extends it instead of adding a second. Taken back
+					automatically if the purchase is refunded or returned. Sales to the ERP's dealer group never earn.
+				</p>
+				<?php if ( $or_on && empty( $or_set['categories'] ) ) : ?>
+					<div class="notice notice-warning inline"><p><strong>No projector categories are ticked</strong> —
+					nothing earns a reward until at least one is. Tick them below and save.</p></div>
+				<?php endif; ?>
+				<table class="form-table">
+				<tr><th>Enable</th><td>
+					<label><input type="checkbox" name="owner_rewards_enabled" value="1" <?php checked( $or_on ); ?> /> Run Owner Rewards</label>
+					<p class="description" style="max-width:760px">
+						<?php if ( '' !== $or_launch ) : ?>
+							Started <strong><?php echo esc_html( date_i18n( 'j M Y, g:i a', strtotime( $or_launch ) ) ); ?></strong>.
+							Only purchases from that moment earn — there is no backfill.
+							<br><label><input type="checkbox" name="owner_rewards_relaunch" value="1" /> Start again from today
+							(earlier purchases that have not earned yet never will)</label>
+						<?php else : ?>
+							Switching it on starts it <strong>now</strong>: only purchases from that moment earn — there is
+							no backfill, so launching costs nothing up front.
+						<?php endif; ?>
+					</p>
+				</td></tr>
+				<tr><th>Reward</th><td>
+					<input name="owner_reward_percent" type="number" min="1" max="20" step="0.5" style="width:90px"
+						value="<?php echo esc_attr( (string) $or_set['percent'] ); ?>" /> % off <strong>one</strong> projector
+					<p class="description" style="max-width:760px">5% recommended — the same number as an invite reward,
+					so the whole programme is one simple story, and it leaves 15% of a ~20% margin on the repeat sale.</p>
+				</td></tr>
+				<tr><th>Valid for</th><td>
+					<input name="owner_reward_months" type="number" min="1" max="36" style="width:90px"
+						value="<?php echo (int) $or_set['valid_months']; ?>" /> months
+					<p class="description">12 recommended. A reminder goes out 30 days before it ends.</p>
+				</td></tr>
+				<tr><th>What counts as a projector</th><td>
+					<div style="max-height:220px;overflow:auto;border:1px solid #dcdcde;border-radius:4px;padding:8px 12px;max-width:520px;background:#fff">
+						<?php foreach ( is_array( $or_terms ) ? $or_terms : array() as $or_t ) : ?>
+							<label style="display:block;margin:3px 0">
+								<input type="checkbox" name="owner_reward_categories[]" value="<?php echo (int) $or_t->term_id; ?>"
+									<?php checked( in_array( (int) $or_t->term_id, $or_ticked, true ) ); ?> />
+								<?php echo esc_html( $or_t->name ); ?>
+								<span class="description">(<?php echo (int) $or_t->count; ?>)</span>
+								<?php if ( in_array( (int) $or_t->term_id, $or_detected, true ) && empty( $or_set['categories'] ) ) : ?>
+									<em class="description">— suggested</em>
+								<?php endif; ?>
+							</label>
+						<?php endforeach; ?>
+					</div>
+					<p class="description" style="max-width:760px">
+						Buying a product in these categories <strong>earns</strong> a reward, and the reward can only be
+						<strong>spent</strong> on them. Leave screens, mounts and accessories <strong>unticked</strong>.
+						Showroom sales are matched to website products by SKU — an ERP product with no matching
+						website SKU does not earn (the counter screen says so).
+					</p>
+				</td></tr>
+				<tr><th>Sale items</th><td>
+					<label><input type="checkbox" name="owner_reward_exclude_sale" value="1" <?php checked( $or_set['exclude_sale'] ); ?> />
+						Not on products that are already on sale</label>
+					<p class="description">Recommended: otherwise a campaign price and this reward stack past the margin.</p>
+				</td></tr>
+				<tr><th>SMS</th><td>
+					<label><input type="checkbox" name="owner_reward_sms" value="1" <?php checked( $or_set['sms'] ); ?> />
+						SMS the code when a reward is issued</label><br>
+					<label><input type="checkbox" name="owner_reward_remind_sms" value="1" <?php checked( $or_set['remind_sms'] ); ?> />
+						One reminder SMS 30 days before it ends</label>
+					<p style="margin-top:10px"><input type="text" name="owner_reward_sms_text" style="width:100%;max-width:640px"
+						value="<?php echo esc_attr( $or_set['sms_text'] ); ?>"
+						placeholder="AUN: Thank you! Your next AUN projector is {percent} off. Code {code} (for {phone}), valid till {date}." /></p>
+					<p class="description" style="max-width:760px">Optional wording for the first SMS — leave empty for the
+					default shown. Use {percent} {code} {phone} {date}. <strong>English only</strong>: one Bangla letter makes
+					every message bill as 2–3 SMS. App users also get a notification in the app.</p>
+				</td></tr>
+				</table>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-shield"></span> Both programmes</h2>
+				<table class="form-table">
+				<tr><th>Rewards ceiling</th><td>
+					<input name="rewards_ceiling" type="number" min="0" max="100" style="width:90px"
+						value="<?php echo (int) $or_set['ceiling']; ?>" /> % of the order, at most
+					<p class="description" style="max-width:760px">
+						The most that invite rewards and the owner reward <strong>together</strong> may take off one order.
+						<strong>10% recommended</strong> — half the margin, the same as a new customer's first order
+						(5% + 5%). 0 = no limit. A reward bigger than the room is not refused: what fits is used and the
+						rest goes back to the customer's Rewards as a new code with the same expiry, so nothing earned is
+						ever lost. A friend's welcome discount is separate and always used on its own.
+					</p>
+				</td></tr>
+				<tr><th>Showroom</th><td>
+					<label><input type="checkbox" name="rewards_showroom" value="1" <?php checked( $or_set['showroom'] ); ?> />
+						Honour rewards at the showroom counter</label>
+					— <a href="<?php echo esc_url( admin_url( 'admin.php?page=aun-app-rewards' ) ); ?>">open the counter screen</a>
+					<p class="description" style="max-width:760px">Staff look the customer up by phone; the customer confirms
+					with a code sent to their phone; the discount is worked out with exactly the website's rules and
+					entered in the ERP sale. Shop managers can use it as well as administrators.</p>
+				</td></tr>
+				<tr><th>Showroom return window</th><td>
+					<input name="rewards_showroom_hold_days" type="number" min="0" max="60" style="width:90px"
+						value="<?php echo (int) $or_set['hold_days']; ?>" /> days
+					<p class="description" style="max-width:760px">A friend's welcome discount used at the showroom pays
+					their inviter only after this many days, and only if the ERP still shows the sale (not returned).
+					7 recommended.</p>
+				</td></tr>
+				</table>
+			</div>
+
+			<div class="aun-card">
+				<h2><span class="dashicons dashicons-chart-bar"></span> How Owner Rewards is doing</h2>
+				<table class="widefat striped" style="max-width:640px">
+					<tbody>
+					<tr><td>Waiting to be used</td><td><strong><?php echo (int) $or_report['active']; ?></strong></td></tr>
+					<tr><td>Used</td><td><strong><?php echo (int) $or_report['used']; ?></strong>
+						<span class="description">(website <?php echo (int) $or_report['web']; ?> · showroom <?php echo (int) $or_report['showroom']; ?>)</span></td></tr>
+					<tr><td>Discount given with them</td><td><strong><?php echo esc_html( AUN_App_Rewards_Ceiling::money( $or_report['given'] ) ); ?></strong></td></tr>
+					<tr><td>Ended unused</td><td><?php echo (int) $or_report['expired']; ?></td></tr>
+					<tr><td>Taken back (refund / return)</td><td><?php echo (int) $or_report['revoked']; ?></td></tr>
+					</tbody>
+				</table>
+				<p class="description" style="margin-top:8px">Invite rewards have their own figures under <strong>Referrals</strong>.</p>
+			</div>
+			</div><!-- /panel-rewards -->
 
 			<!-- ── App release ───────────────────────────────────────────── -->
 			<div class="aun-panel" id="panel-release">

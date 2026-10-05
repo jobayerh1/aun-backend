@@ -1,0 +1,124 @@
+[section bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px" label="Contact Hero"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-envelope"></i> Contact Us</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Have questions about our projectors, your order or a warranty claim? A real person on our team will get back to you.</p>
+[/ux_text]
+
+[/section]
+[section bg_color="#ffffff" padding="40px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="Before You Write"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">Get an Answer Faster</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto;">Include these in your message and we can usually help in a single reply.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-receipt"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Your Order Number</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">It's in your order confirmation email and under My Account.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-video"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">A Short Video</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">For a fault, a 10&ndash;30 second phone video lets our engineers diagnose it quickly.</p>
+</div>
+[/col]
+
+[col span="4" span__sm="12" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-tag"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Your Model</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">The model name (for example U001 Pro) is on the box and on the label under the projector.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section padding="40px" label="Explore"]
+
+[row][col span="12" align="center"]
+<p>[aun_head eyebrow="More support" icon="fa-compass" title="Find It Yourself" sub="Answers and tools, all in one place."]</p>
+[/col][/row]
+[row]
+
+[col span="4" span__sm="6"]
+<a href="/warranty/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Warranty &amp; Support</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">How claims work &mdash; parts shipped to you</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="/verify-authenticity/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-fingerprint"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Verify Authenticity</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">Check your 12-digit anti-counterfeit code</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="/my-account/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Track Your Order</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">Order status and tracking in My Account</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="/projector-finder/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Smart Finder</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">Find your projector in 60 seconds</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="/projector-compare/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-table-columns"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Compare Projectors</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">Up to 3 models side by side</p>
+</div>
+</a>
+[/col]
+[col span="4" span__sm="6"]
+<a href="/shipping-policy/" style="text-decoration:none;display:block;height:100%;">
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;text-align:center;">
+<div style="width:46px;height:46px;margin:0 auto 10px;border-radius:13px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-earth-americas"></i></div>
+<h3 style="font-size:15px;margin:0 0 4px;color:#0f172a;">Shipping Policy</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.55;">Delivery, tracking and customs</p>
+</div>
+</a>
+[/col]
+
+[/row]
+
+[/section]

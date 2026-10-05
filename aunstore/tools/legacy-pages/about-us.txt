@@ -1,0 +1,206 @@
+[page_header height="300px" type="onpage" align="center" parallax_text="3" title="About AUN" title_size="larger" title_case="uppercase" bg="1850" bg_pos="100% 100%" parallax="5"]
+
+[section label="Hero – Brand" bg_color="rgb(255,255,255)" padding="60px"]
+
+[row v_align="equal" h_align="center"]
+
+[col span__sm="12" span__md="11" align="center"]
+
+[ux_html]
+
+<h2>All You Need for a Cinema at Home</h2>
+
+<div style="margin:12px 0 18px;padding:18px 20px;border:1px solid #e2e8f0;border-left:4px solid #0188fe;border-radius:12px;background:#f8fafc;color:#222;line-height:1.65;text-align:left;">
+
+<p style="margin:0 0 14px;">Established in <strong>2014</strong>, <strong>AUN</strong> makes smart projectors that are sold in <strong>more than 100 countries</strong> across Europe, the Americas and Asia. The name says it all &mdash; <strong>AUN = All You Need</strong>: a private cinema for sharing good times with friends and family, without the premium-brand price tag.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:6px 24px;">
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-store" style="color:#0188fe;width:20px;"></i> <strong>Brand:</strong> AUN &mdash; All You Need</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-calendar" style="color:#0188fe;width:20px;"></i> <strong>Established:</strong> 2014</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-earth-americas" style="color:#0188fe;width:20px;"></i> <strong>Markets:</strong> 100+ countries in Europe, the Americas &amp; Asia</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-film" style="color:#0188fe;width:20px;"></i> <strong>Products:</strong> HD &amp; Full HD smart projectors, Android &amp; Android TV</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-shield-halved" style="color:#0188fe;width:20px;"></i> <strong>Warranty:</strong> 1 year, replacement parts shipped worldwide</p>
+  <p style="flex:0 1 calc(50% - 12px);min-width:260px;margin:4px 0;font-size:14.5px;"><i class="fa-solid fa-fingerprint" style="color:#0188fe;width:20px;"></i> <strong>Authenticity:</strong> 12-digit anti-counterfeit code on every unit</p>
+</div>
+
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:14px;">
+<strong>Quick Links:</strong>
+<a href="/product-category/projectors/">All Projectors</a> · <a href="/product-category/home-theater-projector/">Home Theater</a> · <a href="/product-category/mini-projector/">Portable</a> · <a href="/product-category/office-projector/">Office</a> · <a href="/warranty/">Warranty &amp; Support</a>
+</div>
+
+</div>
+[/ux_html]
+[gap height="10px"]
+
+[row_inner]
+
+[col_inner span="4" span__sm="12" align="center"]
+
+[ux_html]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+<div style="font-size:40px;font-weight:800;color:#0188fe;line-height:1;">2014</div>
+<div style="margin-top:8px;color:#64748b;font-size:14px;font-weight:600;">Year AUN was established</div>
+</div>
+[/ux_html]
+
+[/col_inner]
+[col_inner span="4" span__sm="12" align="center"]
+
+[ux_html]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+<div style="font-size:40px;font-weight:800;color:#0188fe;line-height:1;">100+</div>
+<div style="margin-top:8px;color:#64748b;font-size:14px;font-weight:600;">Countries where AUN is sold</div>
+</div>
+[/ux_html]
+
+[/col_inner]
+[col_inner span="4" span__sm="12" align="center"]
+
+[ux_html]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:26px 18px;box-shadow:0 2px 6px rgba(15,23,42,0.04);text-align:center;">
+<div style="font-size:40px;font-weight:800;color:#0188fe;line-height:1;">1 Year</div>
+<div style="margin-top:8px;color:#64748b;font-size:14px;font-weight:600;">Warranty, wherever you live</div>
+</div>
+[/ux_html]
+
+[/col_inner]
+
+[/row_inner]
+[gap]
+
+[button text="Browse AUN Projectors" style="primary" size="small" icon="icon-angle-right" link="/product-category/projectors/"]
+
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="How We Do Business" bg_color="rgb(9,15,28)" dark="true" padding="60px"]
+
+[row h_align="center"]
+
+[col span="10" span__sm="12" align="center"]
+
+[ux_html label="intro"]
+<h2 style="color:#fff;margin-bottom:8px;text-align:center;">How we do business</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 14px;opacity:.85;"></div>
+<p style="color:#7da2c9;max-width:780px;margin:0 auto 6px;line-height:1.7;text-align:center;">Show you exactly what the projector does, tell you plainly which room it suits &mdash; and stand behind it wherever you live.</p>
+[/ux_html]
+
+[/col]
+
+[/row]
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="card 1"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-image"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Real Projection Photos</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Product pages show photos taken from the actual projector in action, so you know what to expect on your wall.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="card 2"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-house"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Honest Room Guidance</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Every model tells you plainly which rooms it suits &mdash; including when a smaller model is enough, or when you need a brighter one.</p>
+</div>
+[/ux_html]
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+[ux_html label="card 3"]
+<div style="background:rgb(13,22,42);border:1px solid rgba(77,168,255,0.2);border-radius:14px;padding:24px;height:100%;">
+  <div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(77,168,255,0.15);color:#4da8ff;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-fingerprint"></i></div>
+  <h3 style="font-size:16px;margin:0 0 6px;color:#fff;">Verified Genuine</h3>
+  <p style="font-size:14px;color:#7da2c9;margin:0;line-height:1.6;">Every genuine unit carries a 12-digit anti-counterfeit code you can check online in seconds.</p>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Why Buy From AUN" bg_color="rgb(246,248,251)" padding="60px"]
+
+[row h_align="center"]
+
+[col span__sm="12" span__md="11" align="center"]
+
+[ux_html label="why buy"]
+<h2 style="text-align:center;margin-bottom:8px;">Why buy from the official AUN store</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 18px;opacity:.85;"></div>
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;text-align:left;">
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Parts shipped to your door</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">If a part fails under warranty, our factory ships the replacement to you, with a video that shows how to fit it.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Smart buying tools</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Our <a href="/projector-finder/">60-Second Smart Finder</a> picks the right model for your room, and every product page has a Screen Size Calculator and side-by-side Compare.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-truck-fast"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Worldwide shipping</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Tracked delivery to your door, with the shipping cost shown at checkout before you pay.</p>
+  </div>
+  <div style="flex:1;min-width:240px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;box-shadow:0 2px 6px rgba(15,23,42,0.04);">
+    <div style="width:44px;height:44px;margin-bottom:10px;border-radius:12px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid fa-plug"></i></div>
+    <h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Works in every country</h3>
+    <p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Universal mains voltage on every model &mdash; plug in anywhere with at most a simple plug adapter.</p>
+  </div>
+</div>
+[/ux_html]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Brand Story" bg_color="rgb(255,255,255)" padding="60px"]
+
+[row v_align="middle"]
+
+[col span="4" span__sm="12"]
+
+[ux_image id="2576"]
+
+
+[/col]
+[col span="8" span__sm="12" span__md="11"]
+
+<h2>Our Story</h2>
+<p>AUN was established in 2014 with a simple idea: the magic of a cinema-sized picture shouldn't be reserved for people with premium-brand budgets. Today, AUN smart projectors are sold in more than 100 countries across Europe, the Americas and Asia &mdash; in living rooms, bedrooms, classrooms and meeting rooms.</p>
+<p>Our current lineup covers every kind of space: palm-sized portables for travel and bedrooms, short-throw models that fill a wall in a small room, and Full HD home-cinema projectors with Genuine Android TV that project up to 300&Prime;.</p>
+[button text="Find My Projector" style="outline" radius="rounded" icon="icon-angle-right" link="/projector-finder/"]
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]

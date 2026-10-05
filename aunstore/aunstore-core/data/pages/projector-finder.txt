@@ -1,0 +1,32 @@
+[aunp_hero eyebrow="Smart Projector Finder" icon="fa-wand-magic-sparkles" title="Find your projector" accent="in 60 seconds" sub="Answer 5 quick questions &mdash; your use case, room lighting, screen size, projector placement and budget &mdash; and our Smart Engine matches you with the best AUN projector." chips="5 quick questions|Instant match|Explains why"]
+
+[aunp_tool frame="0"][aun_projector_finder][/aunp_tool]
+
+[aunp_section tone="white"]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-atom" title="Physics, not guesswork"]The engine weighs brightness against your room light and throw distance against your space &mdash; the same rules an AV installer uses.[/aunp_card]
+[aunp_card icon="fa-shield-halved" title="1-year warranty"]Whichever model you pick, it&rsquo;s covered for a year &mdash; with replacement parts shipped from our factory to your door.[/aunp_card]
+[aunp_card icon="fa-headset" title="Still unsure? Ask us"]Tell us about your room and we&rsquo;ll recommend a model &mdash; <a href="/contact-us/">contact our team</a>.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_section tone="soft"]
+[aunp_head eyebrow="Buying guide" icon="fa-book-open" title="How to choose the right projector for your space" sub="Brightness, contrast and throw distance can be overwhelming. Whether you&rsquo;re building a home theater, upgrading a meeting room or after a portable mini projector, the Finder takes out the guesswork."]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-film" title="Home cinema &amp; movies"]For movie night you want accurate color and deep contrast. Our Full HD 1080p and 4K-support models give you a giant picture at a fraction of the cost-per-inch of a TV.[/aunp_card]
+[aunp_card icon="fa-briefcase" title="Office &amp; classroom"]Presentations need extra brightness to hold up against room light. The Finder favors models tuned for crisp text and brighter rooms.[/aunp_card]
+[aunp_card icon="fa-suitcase-rolling" title="Portable &amp; outdoor"]Always on the move? A lightweight mini projector is perfect for travel, backyard movie nights or bedroom viewing &mdash; no mounting required.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_section tone="white"]
+[aunp_head eyebrow="Good to know" icon="fa-circle-question" title="Choosing a projector: questions"]
+[aunp_faq]
+[aunp_q q="How do I choose the right projector for my room?" open="1"]Use the Smart Finder above. In 5 quick steps it asks about your <strong>use case, room lighting, screen size, projector placement (throw distance) and budget</strong> &mdash; then recommends the best-matched AUN model and explains exactly why it fits.[/aunp_q]
+[aunp_q q="How much brightness do I need?"]For a dark room, a lower-brightness model is fine; for a room with daylight or office lighting, you&rsquo;ll want a brighter projector. The Finder factors this in automatically based on the lighting you choose.[/aunp_q]
+[aunp_q q="Does projector placement (throw distance) matter?"]Yes. How far the projector sits from the screen decides the picture size and which lens suits you. The Finder asks where it will sit &mdash; very close (under 1.5 m), a normal room (1.5&ndash;4 m) or a large hall (4 m+) &mdash; and recommends a short-throw lens where it&rsquo;s needed. To see the exact picture size, open the <strong>Screen Size Calculator</strong> tab on any product page.[/aunp_q]
+[aunp_q q="Can I compare the models it recommends?"]Yes &mdash; tap <strong>Compare</strong> on any two or three projectors and open <a href="/projector-compare/">Compare Projectors</a> to see them side by side.[/aunp_q]
+[/aunp_faq]
+[/aunp_section]
+
+[aunp_help]

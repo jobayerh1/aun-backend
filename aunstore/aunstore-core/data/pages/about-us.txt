@@ -1,0 +1,36 @@
+[aunp_hero eyebrow="About AUN" icon="fa-film" title="All You Need" accent="for a cinema at home" sub="AUN = All You Need: a private cinema for sharing good times with friends and family, without the premium-brand price tag." btn="Browse AUN projectors" btn_url="/product-category/projectors/" btn2="Find my projector" btn2_url="/projector-finder/" btn2_icon="fa-wand-magic-sparkles" img="1850"]
+
+[aunp_section tone="white"]
+[aunp_stats]
+[aunp_stat value="2014" plain="1" label="Year AUN was established"]
+[aunp_stat value="100" suffix="+" label="Countries where AUN is sold"]
+[aunp_stat value="1" suffix="-year" label="Warranty, wherever you live"]
+[aunp_stat value="12" suffix="-digit" label="Anti-counterfeit code on every unit"]
+[/aunp_stats]
+[aunp_split img="2576" frame="0" eyebrow="Our story" icon="fa-book-open" title="A cinema-sized picture shouldn&rsquo;t need a premium budget"]
+<p>AUN was established in 2014 with a simple idea: the magic of a cinema-sized picture shouldn&rsquo;t be reserved for people with premium-brand budgets. Today, AUN smart projectors are sold in more than 100 countries across Europe, the Americas and Asia &mdash; in living rooms, bedrooms, classrooms and meeting rooms.</p>
+<p>Our current lineup covers every kind of space: palm-sized portables for travel and bedrooms, short-throw models that fill a wall in a small room, and Full HD home-cinema projectors with Genuine Android TV that project up to 300&Prime;.</p>
+<p>[aunp_btn url="/product-category/projectors/" style="line" icon="fa-film"]See the current lineup[/aunp_btn]</p>
+[/aunp_split]
+[/aunp_section]
+
+[aunp_section tone="dark"]
+[aunp_head eyebrow="Our principles" icon="fa-compass" title="How we do business" sub="Show you exactly what the projector does, tell you plainly which room it suits &mdash; and stand behind it wherever you live."]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-image" title="Real projection photos"]Product pages show photos taken from the actual projector in action, so you know what to expect on your wall.[/aunp_card]
+[aunp_card icon="fa-house" title="Honest room guidance"]Every model tells you plainly which rooms it suits &mdash; including when a smaller model is enough, or when you need a brighter one.[/aunp_card]
+[aunp_card icon="fa-fingerprint" title="Verified genuine"]Every genuine unit carries a 12-digit anti-counterfeit code you can check online in seconds.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_section tone="soft"]
+[aunp_head eyebrow="Why buy here" icon="fa-store" title="Why buy from the official AUN store"]
+[aunp_cards cols="4"]
+[aunp_card icon="fa-screwdriver-wrench" title="Parts shipped to your door"]If a part fails under warranty, our factory ships the replacement to you, with a video that shows how to fit it.[/aunp_card]
+[aunp_card icon="fa-wand-magic-sparkles" title="Smart buying tools"]The <a href="/projector-finder/">60-Second Smart Finder</a> picks the right model for your room; every product page has a Screen Size Calculator and side-by-side Compare.[/aunp_card]
+[aunp_card icon="fa-truck-fast" title="Worldwide shipping"]Tracked delivery to your door, with the shipping cost shown at checkout before you pay.[/aunp_card]
+[aunp_card icon="fa-plug" title="Works in every country"]Universal mains voltage on every model &mdash; plug in anywhere with at most a simple plug adapter.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_help]

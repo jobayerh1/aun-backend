@@ -75,11 +75,15 @@ class KT_SL_Popup {
 			'type'           => $labelled ? 'standard' : 'icon',
 			'shape'          => ( 'round' === $o['shape'] ) ? 'circle' : 'square',
 			'theme'          => 'outline',
-			'size'           => ( $size >= 48 ) ? 'large' : ( ( $size >= 36 ) ? 'medium' : 'small' ),
+			// Google's sizes are 40 / 32 / 20px tall; 'large' matches our 44px+ buttons best.
+			'size'           => ( $size >= 44 ) ? 'large' : ( ( $size >= 36 ) ? 'medium' : 'small' ),
 			// Google accepts only its own four phrasings; 'brand' is ours alone, so
 			// the nearest legal equivalent is used when Google draws the button.
 			'text'           => ( 'brand' === $o['label_style'] ) ? 'signin_with' : $o['label_style'],
-			'logo_alignment' => 'left',
+			// 'center' keeps the G next to the words, like our Facebook button; 'left' pins it to the far edge.
+			'logo_alignment' => 'center',
+			// Draw Google's label in the site's language, not the visitor's Google/browser language.
+			'locale'         => get_locale(),
 		);
 		/*
 		 * Only the standard (labelled) button accepts a width, and that is the one
@@ -88,7 +92,7 @@ class KT_SL_Popup {
 		 * Google drew and size ours to it.
 		 */
 		if ( $labelled ) {
-			$gbtn['width'] = '340';
+			$gbtn['width'] = '400'; // Google's maximum; the script narrows it to fit the card.
 			/*
 			 * Follow the admin's Icon shape rather than forcing a pill. Google offers
 			 * only 'pill' and 'rectangular' for a wide button, so 'rounded' and
@@ -159,7 +163,10 @@ class KT_SL_Popup {
       var row = a.closest ? a.closest('.kt-sl') : null;
       try {
         a.parentNode.insertBefore(host, a);
-        google.accounts.id.renderButton(host, GBTN);
+        var cfg = Object.assign({}, GBTN);
+        // Google draws a fixed-width iframe: fit it to the row (200-400px, their limits) so it never overflows a phone.
+        if (cfg.width) { var avail = (host.parentNode && host.parentNode.clientWidth) || 400; cfg.width = String(Math.max(200, Math.min(400, avail))); }
+        google.accounts.id.renderButton(host, cfg);
         /* Only hide ours once Google has actually drawn something, so a silent
            failure cannot leave the visitor with no Google button at all. */
         if (host.firstChild) {

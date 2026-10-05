@@ -1,0 +1,51 @@
+[aunp_hero eyebrow="Worldwide delivery" icon="fa-truck-fast" title="Shipping &amp;" accent="delivery" sub="We ship AUN projectors worldwide. Please read our shipping policy for delivery charges, timelines, tracking and customs." btn="Shop AUN projectors" btn_url="/product-category/projectors/" btn_icon="fa-store" chips="Tracked parcels|Cost shown at checkout|Worldwide"]
+
+[aunp_section tone="white"]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-earth-americas" title="Worldwide delivery"]We ship to customers around the world through trusted international carriers.[/aunp_card]
+[aunp_card icon="fa-money-bill-wave" title="Charges at checkout"]Shipping cost for your address is shown at checkout, <strong>before you pay</strong>.[/aunp_card]
+[aunp_card icon="fa-location-crosshairs" title="Tracked shipping"]Every order ships with a tracking number, emailed to you as soon as it leaves us.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_section tone="soft"]
+[aunp_head eyebrow="Step by step" icon="fa-route" title="Delivery process" sub="From placing your order to receiving your projector, here&rsquo;s how delivery works."]
+[aunp_steps]
+[aunp_step icon="fa-cart-shopping" title="Order placed"]You place your order and receive a confirmation email.[/aunp_step]
+[aunp_step icon="fa-circle-check" title="Processing"]Your order is confirmed &amp; prepared for dispatch.[/aunp_step]
+[aunp_step icon="fa-truck-fast" title="Shipped"]Handed to the carrier &mdash; tracking number emailed to you.[/aunp_step]
+[aunp_step icon="fa-box-open" title="Delivered"]Your projector arrives at your door &mdash; enjoy the show.[/aunp_step]
+[/aunp_steps]
+[/aunp_section]
+
+[aunp_section tone="white" id="policy"]
+[aunp_doc title="Shipping policy"]
+[aunp_clause title="1. Where we ship"]
+<p>We ship worldwide. If your country cannot be selected at checkout, please <a href="/contact-us/">contact us</a> and we will check the shipping options for you.</p>
+[/aunp_clause]
+[aunp_clause title="2. Shipping charges"]
+<p>Shipping charges are calculated for your delivery address and the shipping method you choose, and are shown at checkout before you pay. <em>Note: Charges vary depending on destination, product size and weight.</em></p>
+[/aunp_clause]
+[aunp_clause title="3. Processing &amp; delivery time"]
+<p>Once your order is confirmed, we prepare it for dispatch. The estimated delivery time for your address is shown at checkout.</p>
+<p><em>Note: Customs clearance, public holidays and carrier delays can occasionally add a few days to the delivery time.</em></p>
+[/aunp_clause]
+[aunp_clause title="4. Order tracking"]
+<p>As soon as your order ships, we email you the tracking number and a link to follow your parcel. You can also see your order status under <a href="/my-account/">My Account</a>.</p>
+[/aunp_clause]
+[aunp_clause title="5. Customs, import duties &amp; taxes"]
+<p>International orders may be charged import duties, taxes (such as VAT or GST) and customs fees by the destination country. These charges are set by your country's customs authority and are outside our control.</p>
+<p><strong>Unless checkout states otherwise, these charges are not included in our prices or shipping fees and are payable by the recipient on arrival.</strong></p>
+[/aunp_clause]
+[aunp_clause title="6. Shipping address"]
+<p>Please double-check your shipping address and phone number before placing your order &mdash; carriers may need your phone number to arrange delivery. If you spot a mistake, contact us straight away; we can correct it until the parcel has shipped.</p>
+[/aunp_clause]
+[aunp_clause title="7. Damaged or missing parcels"]
+<p>Please check your parcel when it arrives. If the box is damaged or something is missing, contact us as soon as possible with photos of the box, the packaging and the product, and we will make it right.</p>
+[/aunp_clause]
+[/aunp_doc]
+[/aunp_section]
+
+[aunp_help]
+
+[aunp_updated date="30 September, 2026"]

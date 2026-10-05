@@ -17,6 +17,12 @@ class KT_SL_Options {
 			// Providers
 			'google_enabled'       => 0,
 			'onetap_enabled'       => 0,
+			// Where the automatic One Tap card may appear. Shops ask at the moment of
+			// intent (checkout, account), not while someone is still browsing.
+			'onetap_on_checkout'   => 1,
+			'onetap_on_account'    => 1,
+			'onetap_on_cart'       => 0,
+			'onetap_on_other'      => 0,
 			// In-page sign-in: Google's account chooser + a Facebook popup,
 			// each falling back to the redirect flow if it cannot run.
 			'js_flow'              => 1,
@@ -129,7 +135,7 @@ class KT_SL_Options {
 		$old = self::all();
 		$out = array();
 
-		foreach ( array( 'google_enabled', 'onetap_enabled', 'js_flow', 'facebook_enabled', 'show_label', 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_checkout', 'at_wc_cart', 'at_wp_login', 'allow_register', 'link_by_email', 'block_admins', 'notify_admin', 'use_avatar' ) as $k ) {
+		foreach ( array( 'google_enabled', 'onetap_enabled', 'onetap_on_checkout', 'onetap_on_account', 'onetap_on_cart', 'onetap_on_other', 'js_flow', 'facebook_enabled', 'show_label', 'at_wc_login', 'at_wc_login_before', 'at_wc_register', 'at_wc_checkout', 'at_wc_cart', 'at_wp_login', 'allow_register', 'link_by_email', 'block_admins', 'notify_admin', 'use_avatar' ) as $k ) {
 			$out[ $k ] = ( ! empty( $input[ $k ] ) ) ? 1 : 0;
 		}
 

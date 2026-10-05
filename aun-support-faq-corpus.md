@@ -2,7 +2,7 @@
 
 **Purpose:** Single source of truth for all repetitive customer questions. This one file feeds → (a) the AI WhatsApp bot, (b) an optional public Help/FAQ page, (c) agent quick-replies, (d) post-purchase SMS text. Edit here once; everything downstream updates.
 
-**Status:** v1.2 (2026-06-24). ⚠️ **Canonical live data now lives in `aun-help-center/aun-help-center.php`** (`aun_hc_data()` + per-model `aun_hc_videos()`); this doc is the human-readable reference. v1.2 corrections applied in the plugin: KB-001 keystone/**trapezoid** wording; KB-002 **electronic focus** (remote focus button, no dial on any model); KB-005 **no pre-installed browser** on any model incl. Android TV (install from app store, e.g. TV Bro); KB-006 **sideload differs** — certified = File Manager from Play Store, non-certified = remote Input→USB; KB-009 non-certified **Netflix runs in HD** (not SD). Per-model tutorial videos wired for U002, U001 Pro, A005, A004 Pro, A32 Pro (**A45 Pro page has no tutorials yet**).
+**Status:** v1.3 (2026-09-25) — added KB-021…024, **AUN Rewards** (also live in the help centre v2.8.0). Earlier: v1.2 (2026-06-24). ⚠️ **Canonical live data now lives in `aun-help-center/aun-help-center.php`** (`aun_hc_data()` + per-model `aun_hc_videos()`); this doc is the human-readable reference. v1.2 corrections applied in the plugin: KB-001 keystone/**trapezoid** wording; KB-002 **electronic focus** (remote focus button, no dial on any model); KB-005 **no pre-installed browser** on any model incl. Android TV (install from app store, e.g. TV Bro); KB-006 **sideload differs** — certified = File Manager from Play Store, non-certified = remote Input→USB; KB-009 non-certified **Netflix runs in HD** (not SD). Per-model tutorial videos wired for U002, U001 Pro, A005, A004 Pro, A32 Pro (**A45 Pro page has no tutorials yet**).
 
 ---
 
@@ -239,6 +239,53 @@
 - **Answer (BN):** পেনড্রাইভটি **USB** পোর্টে লাগান, **File Manager / Media Player** খুলে আপনার ভিডিও/মুভি সিলেক্ট করুন। ভিডিও: https://www.youtube.com/watch?v=4rute8VQxvo
 - **Link:** https://www.youtube.com/watch?v=4rute8VQxvo
 - **Escalate?** No
+
+---
+
+### KB-021 · How AUN Rewards work (invite friends · owner reward)
+- **Category:** Buying / Post-sale · **Applies to:** All customers
+- **Customer asks:** "referral ki", "bondhu ke invite korle ki pabo", "reward kivabe pabo", "discount code kothay", "রিওয়ার্ড কী", "আমন্ত্রণ করলে কী পাব"
+- **Root cause:** Two programmes under one name; customers only see the half they are in.
+- **Answer (EN):** There are two ways to save. **Invite friends:** share your code from **Rewards** in the AUN Care app — your friend gets a discount on their first projector, and once it is delivered you get a reward code too. **Owner reward:** every projector you buy from AUN (website or showroom) gives you a discount on your next one. All your codes are in **Rewards** in the app. Full guide: https://aun-projector.com.bd/refer/
+- **Answer (BN):** দুইভাবে সাশ্রয় করা যায়। **বন্ধুকে আমন্ত্রণ:** AUN Care অ্যাপের **Rewards** থেকে আপনার কোড শেয়ার করুন — বন্ধু প্রথম প্রজেক্টরে ছাড় পাবেন, আর তাঁর প্রজেক্টর ডেলিভারি হলে আপনিও একটি রিওয়ার্ড কোড পাবেন। **ওনার রিওয়ার্ড:** AUN থেকে (ওয়েবসাইট বা শোরুম) কেনা প্রতিটি প্রজেক্টর আপনাকে পরের প্রজেক্টরে ছাড় দেয়। সব কোড অ্যাপের **Rewards**-এ থাকে। বিস্তারিত: https://aun-projector.com.bd/refer/
+- **Link:** https://aun-projector.com.bd/refer/ (live numbers — always current)
+- **Escalate?** No
+- **Notes:** Never quote a % or a number of days from memory — the admin can change them. The guide page shows the live numbers.
+
+---
+
+### KB-022 · "I have a friend's code — how do I use it?"
+- **Category:** Buying · **Applies to:** New customers
+- **Customer asks:** "bondhu code diyeche", "code kothay dibo", "invite code use korbo kivabe", "বন্ধুর কোড কোথায় দেব"
+- **Root cause:** The invite code (NAME-7QK3) is entered in the APP, which then gives a separate discount code for checkout.
+- **Answer (EN):** (1) Install the AUN Care app and sign in with your mobile number. (2) Open **Rewards → I have a code** and enter it (the **Paste** button works even with the whole message). (3) Your discount code appears straight away — use it at checkout on our website with the **same mobile number**, or show it at our showroom. A friend's code is for your first projector and must be entered soon after you join the app.
+- **Answer (BN):** (১) AUN Care অ্যাপ ইনস্টল করে আপনার মোবাইল নম্বর দিয়ে সাইন ইন করুন। (২) **Rewards → I have a code**-এ কোডটি দিন (**পেস্ট** বাটনে পুরো মেসেজ পেস্ট করলেও চলবে)। (৩) আপনার ছাড়ের কোড সঙ্গে সঙ্গে দেখাবে — ওয়েবসাইটে চেকআউটে **একই মোবাইল নম্বর** দিয়ে ব্যবহার করুন, অথবা শোরুমে দেখান। বন্ধুর কোড শুধু প্রথমবার প্রজেক্টর কেনার জন্য, আর অ্যাপে যোগ দেওয়ার কিছুদিনের মধ্যেই দিতে হয়।
+- **Link:** https://aun-projector.com.bd/refer/
+- **Escalate?** Conditional — if the app says they are an existing customer but they insist they never bought: a human checks (online orders + ERP showroom sales both count).
+
+---
+
+### KB-023 · "My discount / reward code doesn't work at checkout"
+- **Category:** Buying · **Applies to:** All customers
+- **Customer asks:** "coupon kaj korche na", "code invalid bolche", "discount apply hocche na", "কুপন কাজ করছে না"
+- **Root cause (in order of how often):** wrong phone number at checkout · invite code typed at checkout · owner reward on an accessory / sale item · rewards over the per-order limit · code already used or expired.
+- **Answer (EN):** The usual reasons: (1) Use the **same mobile number** at checkout that the code belongs to. (2) A code like NAME-7QK3 is an **invite code** — enter it in the app under Rewards → I have a code, not at checkout. (3) The owner reward works on **one full-price projector** — not accessories or items already on sale. (4) Several rewards can be used together **up to a limit per order** — anything that does not fit is kept in your Rewards as a new code. (5) Check in **Rewards** in the app whether the code has expired or been used.
+- **Answer (BN):** সাধারণ কারণগুলো: (১) কোডটি যে মোবাইল নম্বরের, চেকআউটে **সেই নম্বরটিই** দিন। (২) NAME-7QK3 ধরনের কোড হলো **আমন্ত্রণ কোড** — এটি চেকআউটে নয়, অ্যাপের Rewards → I have a code-এ দিন। (৩) ওনার রিওয়ার্ড **একটি পূর্ণ দামের প্রজেক্টরে** কাজ করে — অ্যাক্সেসরি বা ছাড়ে থাকা পণ্যে নয়। (৪) একাধিক রিওয়ার্ড **এক অর্ডারে একটি সীমা পর্যন্ত** একসাথে কাজে লাগে — যা বাকি থাকে তা নতুন কোড হিসেবে আপনার Rewards-এ থেকে যায়। (৫) কোডের মেয়াদ বা ব্যবহার হয়েছে কিনা অ্যাপের **Rewards**-এ দেখুন।
+- **Link:** https://aun-projector.com.bd/refer/
+- **Escalate?** Conditional — if none of the five fit. Agent: wp-admin → AUN App → **Settings → Referrals → "Why can't a customer see the referral card?"** explains any number's referral state; **AUN App → Rewards** (the counter screen) shows every reward a number holds.
+- **Notes:** Checkout now says most of these itself (invite code typed at checkout, owner reward on a sale item/accessory, already used, over the limit) — ask the customer to read you the exact message.
+
+---
+
+### KB-024 · "Do I get a discount on my second projector?"
+- **Category:** Buying / Post-sale · **Applies to:** Existing customers
+- **Customer asks:** "abar kinle discount pabo", "second projector e offer ache", "purono customer der jonno chhar", "আবার কিনলে ছাড়"
+- **Root cause:** Owner Rewards — one reward at a time, earned by each projector bought FROM AUN.
+- **Answer (EN):** Yes. Every projector you buy from AUN (website or showroom) gives you a discount code for your next one — by SMS and in **Rewards** in the app. Enter it at checkout on our website, or ask at the showroom — staff will send a code to your phone to confirm it is you. Buy another projector before using it and it is extended. Projectors bought from a dealer do not count.
+- **Answer (BN):** হ্যাঁ। AUN থেকে (ওয়েবসাইট বা শোরুম) কেনা প্রতিটি প্রজেক্টর আপনাকে পরের প্রজেক্টরে একটি ছাড়ের কোড দেয় — SMS-এ এবং অ্যাপের **Rewards**-এ। ওয়েবসাইটে চেকআউটে দিন, অথবা শোরুমে বলুন — আপনিই কিনা নিশ্চিত করতে কর্মী আপনার ফোনে একটি কোড পাঠাবেন। ব্যবহারের আগে আরেকটি প্রজেক্টর কিনলে এর মেয়াদ বাড়ে। ডিলারের কাছ থেকে কেনা প্রজেক্টরে এটি প্রযোজ্য নয়।
+- **Link:** https://aun-projector.com.bd/refer/
+- **Escalate?** Conditional — a showroom buyer with no reward: look them up on **AUN App → Rewards**; the lookup issues it if the sale qualifies, and otherwise shows why (bought before the programme started, not a projector, SKU not matched, dealer sale, returned).
+- **Notes:** Purchases made before the programme's launch date do not earn (no backfill) — say so kindly; the next purchase will.
 
 ---
 

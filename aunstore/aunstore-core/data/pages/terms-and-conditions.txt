@@ -1,0 +1,51 @@
+[aunp_hero eyebrow="The fine print" icon="fa-file-contract" title="Terms &amp;" accent="conditions" sub="These terms apply when you use aunstore.com and buy from &#91;aunstore_info key=&quot;company&quot;&#93;. Please read them before placing your order." chips="Prices in USD|Secure payments|1-year warranty"]
+
+[aunp_section tone="white"]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-dollar-sign" title="Prices in USD"]All prices are in US dollars. Shipping is added at checkout; local duties may apply.[/aunp_card]
+[aunp_card icon="fa-lock" title="Secure payments"]Payments are processed by secure payment providers &mdash; we never store your full card number.[/aunp_card]
+[aunp_card icon="fa-shield-halved" title="Warranty &amp; support"]Every projector has a 1-year warranty with replacement parts shipped to you.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_section tone="white" id="terms"]
+[aunp_doc title="Terms & conditions"]
+[aunp_clause title="1. Overview"]
+<p>These terms apply to every order placed on aunstore.com, operated by [aunstore_info key="company"] ("we", "us"). By placing an order you agree to them. Nothing in these terms limits the rights you have under the consumer-protection laws of your country.</p>
+[/aunp_clause]
+[aunp_clause title="2. Products & specifications"]
+<p>We describe our products as accurately as we can. Photos are for illustration, and colors can look slightly different on different screens. Specifications may be updated as models are improved.</p>
+[/aunp_clause]
+[aunp_clause title="3. Pricing & payments"]
+<p>Prices are shown in US dollars (USD). Shipping costs are added at checkout. Import duties and taxes charged by your country are explained in our <a href="/shipping-policy/">Shipping Policy</a>. Payment is taken when you place your order, through the secure payment methods shown at checkout.</p>
+[/aunp_clause]
+[aunp_clause title="4. Orders"]
+<p>You will receive an email when we receive your order. A contract is formed when we confirm and ship it. We may decline or cancel an order &mdash; for example if a product is out of stock, a price was clearly shown in error, or a payment cannot be verified. If we cancel, we refund you in full.</p>
+[/aunp_clause]
+[aunp_clause title="5. Shipping"]
+<p>We ship worldwide. Delivery charges, timelines, tracking and customs are explained in our <a href="/shipping-policy/">Shipping Policy</a>.</p>
+[/aunp_clause]
+[aunp_clause title="6. Warranty"]
+<p>AUN projectors come with a 1-year warranty from the date of purchase. How claims work and what is covered is explained on <a href="/warranty/">Warranty &amp; Support</a>.</p>
+[/aunp_clause]
+[aunp_clause title="7. Damaged, faulty or wrong items"]
+<p>If your order arrives damaged, faulty or incorrect, please <a href="/contact-us/">contact us</a> and we will make it right.</p>
+[/aunp_clause]
+[aunp_clause title="8. Account & billing information"]
+<p>Please keep your account and billing details accurate and up to date, and keep your password safe. You are responsible for activity under your account.</p>
+[/aunp_clause]
+[aunp_clause title="9. Prohibited uses"]
+<p>Please do not misuse the website, attempt to break its security, or copy its content for commercial use. Text, images and logos on this site belong to [aunstore_info key="company"] or its licensors.</p>
+[/aunp_clause]
+[aunp_clause title="10. Limitation of liability"]
+<p>We are responsible for losses that are a foreseeable result of our breaking these terms. We are not responsible for losses that were not foreseeable, for business losses, or for losses caused by events outside our reasonable control. Nothing here excludes liability that cannot be excluded by law.</p>
+[/aunp_clause]
+[aunp_clause title="11. Changes to terms"]
+<p>We may update these terms from time to time. The version on this page when you place your order is the one that applies to it.</p>
+[/aunp_clause]
+[/aunp_doc]
+[/aunp_section]
+
+[aunp_help]
+
+[aunp_updated date="30 September, 2026"]

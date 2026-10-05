@@ -945,12 +945,19 @@ class AUN_App_Services {
 		);
 		// The projector is physically at the service centre now — or, if the
 		// job sheet is already in a terminal status, the whole cycle is done.
+		$was_waiting = ( 'submitted' === (string) $row->status );
 		if ( in_array( (string) $row->status, array( 'submitted', 'approved' ), true ) ) {
 			$update['status'] = empty( $erp['completed'] ) ? 'received' : 'closed';
 			$row->status      = $update['status'];
 		}
 		$wpdb->update( self::repairs_table(), $update, array( 'id' => (int) $row->id ) );
 		$row->job_sheet_no = $erp['job_sheet_no'];
+		// The projector reached the counter before anyone approved the pickup:
+		// the request has left the admin's queue, so the admin-bar count must not
+		// keep showing it for another minute.
+		if ( $was_waiting ) {
+			delete_transient( 'aun_app_pending_repairs_count' );
+		}
 
 		return $erp;
 	}

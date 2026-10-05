@@ -104,7 +104,7 @@ function breo_bd_support_cards_html( $product ) {
 	$cards[] = array(
 		'icon'  => 'shield',
 		'title' => 'Warranty',
-		'meta'  => ( $w ? ucfirst( $w ) . ' official warranty,' : 'Official warranty,' ) . ' handled in Bangladesh',
+		'meta'  => ucfirst( breo_bd_warranty_label() ) . ', handled in Bangladesh',
 		'cta'   => 'Read the policy',
 		'url'   => breo_bd_page_url( 'warranty-policy' ),
 		'blank' => false,

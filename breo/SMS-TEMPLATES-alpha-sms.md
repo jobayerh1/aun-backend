@@ -11,7 +11,7 @@ Placeholders Alpha SMS fills in: `[billing_first_name]` `[order_id]` `[order_cur
 | **Pending payment** | `Hi [billing_first_name], your Breo order #[order_id] of [order_currency] [order_amount] is waiting for payment. Pay at breo.bd/my-account or call us.` | 120 |
 | **Processing** (order confirmed) | `Hi [billing_first_name], thank you! Your Breo order #[order_id] of [order_currency] [order_amount] is confirmed and being packed. Track: breo.bd/track-order` | 127 |
 | **On hold** | `Hi [billing_first_name], we received your Breo order #[order_id]. It is on hold until your payment is confirmed. We will update you soon.` | 126 |
-| **Completed** | `Hi [billing_first_name], your Breo order #[order_id] is complete. Enjoy! Your warranty starts today. Need help? Visit breo.bd/contact` | 122 |
+| **Completed** | `Hi [billing_first_name], your Breo order #[order_id] is complete. Enjoy! Your replacement warranty starts today. Need help? Visit breo.bd/contact` | 134 |
 | **Cancelled** | `Hi [billing_first_name], your Breo order #[order_id] has been cancelled. If this is a mistake, call or WhatsApp us and we will fix it.` | 123 |
 | **Refunded** | `Hi [billing_first_name], your Breo order #[order_id] has been refunded. It can take a few working days to reach you. Help: breo.bd/contact` | 127 |
 | **Failed** | `Hi [billing_first_name], payment for your Breo order #[order_id] did not go through. Try again at breo.bd/my-account or choose Cash on Delivery.` | 133 |
@@ -29,7 +29,7 @@ Same rules: one SMS each, plain characters only. The longest-possible figure is 
 |---|---|---|
 | **Shipped** (needs a "Shipped" order status) | `Breo: Good news, [billing_first_name]! Order #[order_id] is on its way. Relief is only a few days away. Track it anytime at breo.bd/track-order` | 132 |
 | **Processing** | `Breo: Thank you, [billing_first_name]! Order #[order_id] is confirmed and being packed with care. Your moment of calm is on its way soon.` | 126 |
-| **Completed** | `Breo: Your order #[order_id] has arrived. Take a deep breath and enjoy your first session! Your warranty starts today. Help: breo.bd/contact` | 136 |
+| **Completed** | `Breo: Your order #[order_id] has arrived. Take a deep breath and enjoy your first session! Your replacement warranty starts today. Help: breo.bd/contact` | 148 |
 | **Pending payment** | `Breo: Your order #[order_id] of [order_currency] [order_amount] is waiting for payment. Pay at breo.bd/my-account, then sit back and relax.` | 114 |
 | **On hold** | `Breo: We have your order #[order_id], [billing_first_name]. It is on hold until your payment is confirmed. We will update you soon.` | 120 |
 | **Cancelled** | `Breo: Order #[order_id] has been cancelled. Changed your mind or need help choosing? We are always here for you: breo.bd/contact` | 124 |

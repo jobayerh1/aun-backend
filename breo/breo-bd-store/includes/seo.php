@@ -10,62 +10,62 @@
  */
 defined( 'ABSPATH' ) || exit;
 
-define( 'BREO_BD_SEO_VER', '2' );
+define( 'BREO_BD_SEO_VER', '3' );
 
 /** Keyword map: what each URL should rank for. */
 function breo_bd_seo_map() {
 	return array(
 		'front'    => array(
 			'title' => 'Breo Bangladesh | Official Breo Massager Store in BD',
-			'desc'  => 'Authorized Breo distributor in Bangladesh. Neck, eye and back massagers and massage guns with official warranty, cash on delivery and nationwide delivery.',
+			'desc'  => 'Authorized Breo distributor in Bangladesh. Neck, eye and back massagers and massage guns with replacement warranty and cash on delivery nationwide.',
 			'focus' => 'breo bangladesh, breo massager, massager price in bd',
 		),
 		'shop'     => array(
 			'title' => 'Massager & Massage Machine Price in Bangladesh %currentyear%',
-			'desc'  => 'Genuine Breo massage machines in Bangladesh: neck and shoulder, eye, back massagers and massage guns. Official prices, warranty and cash on delivery.',
+			'desc'  => 'Genuine Breo massage machines in Bangladesh: neck, eye and back massagers and massage guns. Official prices, replacement warranty, cash on delivery.',
 			'focus' => 'massager price in bangladesh, massage machine price in bd, body massage machine price in bangladesh',
 		),
 		'cats'     => array(
 			'neck-shoulder-massagers' => array(
 				'title' => 'Neck Massager Price in Bangladesh %currentyear% | Breo Bangladesh',
-				'desc'  => 'Heated, hands-free neck and shoulder massagers from Breo, officially imported to Bangladesh. Cordless, quiet, with local warranty and cash on delivery.',
+				'desc'  => 'Heated, hands-free neck and shoulder massagers from Breo, officially imported to Bangladesh. Cordless and quiet, with replacement warranty and COD.',
 				'focus' => 'neck massager price in bangladesh, neck massager price in bd, neck and shoulder massager',
 			),
 			'eye-massagers'           => array(
 				'title' => 'Eye Massager Price in Bangladesh %currentyear% | Breo Bangladesh',
-				'desc'  => 'Breo eye massagers with warm compress and airbag massage for tired, screen-strained eyes. Official Breo price in Bangladesh, warranty and cash on delivery.',
+				'desc'  => 'Breo eye massagers with warm compress and airbag massage for tired, screen-strained eyes. Official price in BD, replacement warranty and cash on delivery.',
 				'focus' => 'eye massager price in bangladesh, eye massager price in bd, eye massager with heat',
 			),
 			'back-waist-massagers'    => array(
 				'title' => 'Back Massager Price in Bangladesh %currentyear% | Breo Bangladesh',
-				'desc'  => 'Cordless Breo back and neck massage pillows with infrared heat, for office chairs and sofas. Official price in Bangladesh, warranty and cash on delivery.',
+				'desc'  => 'Cordless Breo back and neck massage pillows with infrared heat, for office chairs and sofas. Official price in BD, replacement warranty and COD.',
 				'focus' => 'back massager price in bangladesh, massage pillow price in bangladesh, neck and back massager',
 			),
 			'massage-guns'            => array(
 				'title' => 'Massage Gun Price in BD %currentyear% | Breo Bangladesh',
-				'desc'  => 'Breo heated massage guns for sore muscles and post-workout recovery. Officially imported, with local warranty and cash on delivery anywhere in Bangladesh.',
+				'desc'  => 'Breo heated massage guns for sore muscles and post-workout recovery. Officially imported, with replacement warranty and cash on delivery in Bangladesh.',
 				'focus' => 'massage gun price in bd, massage gun price in bangladesh, heated massage gun',
 			),
 		),
 		'products' => array(
 			'N990000631' => array(
 				'title' => 'Breo N6 Mini Neck Massager Price in Bangladesh',
-				'desc'  => 'Buy the Breo N6 Mini heated neck and shoulder massager in Bangladesh: hands-free kneading, 40-45°C heat, cordless. Official warranty and cash on delivery.',
+				'desc'  => 'Buy the Breo N6 Mini heated neck and shoulder massager in Bangladesh: hands-free kneading, 40-45°C heat, cordless. Replacement warranty and COD.',
 				'focus' => 'breo n6 mini, neck massager price in bd, heated neck and shoulder massager',
 			),
 			'N910200212' => array(
 				'title' => 'Breo See KE Eye Massager Price in Bangladesh',
-				'desc'  => 'Breo See KE eye massager with 43°C warm compress and airbag massage for tired, screen-strained eyes. Official price in BD, warranty and cash on delivery.',
+				'desc'  => 'Breo See KE eye massager with 43°C warm compress and airbag massage for tired, screen-strained eyes. Official price in BD, replacement warranty, COD.',
 				'focus' => 'breo see ke, eye massager price in bd, eye massager with heat',
 			),
 			'N990000981' => array(
 				'title' => 'Breo P2 Neck & Back Massage Pillow Price in Bangladesh',
-				'desc'  => 'Breo P2 cordless neck and back massage pillow with 5-point heat, 3 modes and a 100-minute battery. Official price in BD, warranty and cash on delivery.',
+				'desc'  => 'Breo P2 cordless neck and back massage pillow with 5-point heat, 3 modes and a 100-minute battery. Official price in BD, replacement warranty, COD.',
 				'focus' => 'breo p2, massage pillow price in bangladesh, neck and back massager',
 			),
 			'N990000360' => array(
 				'title' => 'Breo No.7 Heated Massage Gun Price in Bangladesh',
-				'desc'  => 'Breo No.7 heated massage gun: 2,800 strokes a minute, a 45°C head that warms in seconds, only 405 g. Official price in BD, warranty and cash on delivery.',
+				'desc'  => 'Breo No.7 heated massage gun: 2,800 strokes a minute, a 45°C head that warms in seconds, only 405 g. Official price in BD, replacement warranty, COD.',
 				'focus' => 'breo no.7, massage gun price in bd, heated massage gun',
 			),
 		),
@@ -211,19 +211,19 @@ function breo_bd_category_seo() {
 	return array(
 		''                        => array(
 			'noun'  => 'Breo massager',
-			'lead'  => 'Genuine Breo massagers and massage machines for the neck, eyes, back and muscles, officially imported, with local warranty and cash on delivery anywhere in Bangladesh.',
+			'lead'  => 'Genuine Breo massagers and massage machines for the neck, eyes, back and muscles, officially imported, with a replacement warranty and cash on delivery anywhere in Bangladesh.',
 			'h2'    => 'Which Breo massager is right for you?',
 			'text'  => array(
 				'Start with where you feel it. Stiffness across the neck and shoulders after a long day at a desk is what a [neck massager](neck-shoulder-massagers) is made for. Heavy, tired eyes after hours on a screen call for an [eye massager](eye-massagers) with a warm compress. An aching lower back from office chairs and long commutes is where a [back massage pillow](back-waist-massagers) helps, and tight legs and shoulders after exercise are what a [massage gun](massage-guns) is for.',
 				'Every Breo on this page is sold by Breo Bangladesh, the authorized Breo distributor. That means a genuine device, a %warranty% warranty handled here in Bangladesh, and support in Bangla or English on WhatsApp.',
 			),
 			'faq'   => array(
-				array( 'Are these original Breo products?', 'Yes. Breo Bangladesh is an authorized Breo distributor, and every device is officially imported with a local warranty.' ),
+				array( 'Are these original Breo products?', 'Yes. Breo Bangladesh is an authorized Breo distributor, and every device is officially imported with a local replacement warranty.' ),
 			),
 		),
 		'neck-shoulder-massagers' => array(
 			'noun'  => 'neck massager',
-			'lead'  => 'Heated, hands-free neck and shoulder massagers from Breo, officially imported, with local warranty and cash on delivery anywhere in Bangladesh.',
+			'lead'  => 'Heated, hands-free neck and shoulder massagers from Breo, officially imported, with a replacement warranty and cash on delivery anywhere in Bangladesh.',
 			'h2'    => 'How to choose a neck massager',
 			'text'  => array(
 				'Most neck stiffness comes from the same few habits: long hours at a desk, looking down at a phone and long commutes in traffic. A good neck massager works on the muscles that tighten from that posture, along the back of the neck and across the tops of the shoulders.',
@@ -237,7 +237,7 @@ function breo_bd_category_seo() {
 		),
 		'eye-massagers'           => array(
 			'noun'  => 'eye massager',
-			'lead'  => 'Breo eye massagers with a warm compress and gentle airbag massage for tired, screen-strained eyes. Official warranty and cash on delivery across Bangladesh.',
+			'lead'  => 'Breo eye massagers with a warm compress and gentle airbag massage for tired, screen-strained eyes. Replacement warranty and cash on delivery across Bangladesh.',
 			'h2'    => 'How to choose an eye massager',
 			'text'  => array(
 				'Hours on a laptop and phone leave the eyes and the muscles around them tired and tense. An eye massager combines two things that help you switch off: a warm compress over the eyes, and a soft rhythmic massage around the eyes and temples.',
@@ -251,7 +251,7 @@ function breo_bd_category_seo() {
 		),
 		'back-waist-massagers'    => array(
 			'noun'  => 'back massager',
-			'lead'  => 'Cordless Breo massage pillows for the neck and lower back, with infrared heat. Official warranty and cash on delivery anywhere in Bangladesh.',
+			'lead'  => 'Cordless Breo massage pillows for the neck and lower back, with infrared heat. Replacement warranty and cash on delivery anywhere in Bangladesh.',
 			'h2'    => 'How to choose a back massager',
 			'text'  => array(
 				'Lower back ache is the price of long days in an office chair or a car seat. A massage pillow is the simplest way to deal with it: you place it behind your lower back when you sit, or behind your neck when you lean back on the sofa.',
@@ -265,7 +265,7 @@ function breo_bd_category_seo() {
 		),
 		'massage-guns'            => array(
 			'noun'  => 'massage gun',
-			'lead'  => 'Breo heated massage guns for sore muscles and post-workout recovery. Officially imported, with local warranty and cash on delivery across Bangladesh.',
+			'lead'  => 'Breo heated massage guns for sore muscles and post-workout recovery. Officially imported, with a replacement warranty and cash on delivery across Bangladesh.',
 			'h2'    => 'How to choose a massage gun',
 			'text'  => array(
 				'A massage gun delivers fast, short strokes deep into the muscle. It is the quickest way to loosen tight calves, thighs and shoulders after football, the gym or a long day on your feet.',
@@ -293,7 +293,7 @@ function breo_bd_seo_auto_faq( $noun, $products ) {
 	if ( $priced ) {
 		$faq[] = array(
 			'What is the price of a ' . $noun . ' in Bangladesh?',
-			'At Breo Bangladesh: ' . implode( '; ', $priced ) . '. Every price includes the official warranty, and the delivery charge is shown at checkout.',
+			'At Breo Bangladesh: ' . implode( '; ', $priced ) . '. Every price includes the ' . breo_bd_warranty_label() . ', and the delivery charge is shown at checkout.',
 		);
 	}
 	$dd = breo_bd_opt( 'dhaka_days' );
@@ -315,7 +315,7 @@ function breo_bd_category_guide_html( $term ) {
 		return '';
 	}
 	$c        = $all[ $key ];
-	$warranty = breo_bd_warranty_period() ? breo_bd_warranty_period() : 'an official';
+	$warranty = breo_bd_warranty_period() ? breo_bd_warranty_period() . ' replacement' : 'replacement';
 	$products = wc_get_products( array( 'status' => 'publish', 'limit' => 12, 'category' => $term ? array( $term->slug ) : array() ) );
 	$faq      = array_merge( breo_bd_seo_auto_faq( $c['noun'], $products ), $c['faq'] );
 

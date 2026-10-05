@@ -1,0 +1,384 @@
+[section padding="30px" padding__sm="20px"]
+
+[row style="collapse" v_align="middle"]
+
+[col span__sm="12" align="center"]
+
+[featured_box img="1557" inline_svg="0" img_width="70" pos="center"]
+
+
+[/featured_box]
+
+<p>[aun_head title="See the World Through a Larger Screen" sub="Cinema-grade visuals and effortless smart setup — shipped to your door, worldwide."]</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[ux_banner height="50%" bg="5679" bg_size="original" bg_overlay="rgba(0, 0, 0, 0.2)" bg_pos="0% 35%" hover="zoom"]
+
+[ux_image id="5874" image_size="original" width="10" animate="fadeInLeft" position_x="5" position_y="85"]
+
+[text_box width="70" scale__sm="80" padding="0px 0px 0px 5px" animate="fadeInRight" position_x="15" position_y="85" position_y__sm="90" text_align="left"]
+
+[ux_text text_align="left"]
+
+<h2><b>Access to Smarter</b></h2>
+<h6><b>Powered by AUN</b></h6>
+[/ux_text]
+
+[/text_box]
+
+[/ux_banner]
+[section label="key stats" bg_color="rgb(9,15,28)" dark="true" padding="48px"]
+
+[row v_align="middle" h_align="center"]
+
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">0.58 kg</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Ultra-Portable</p>
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">100&Prime;</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Max Projection</p>
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">13</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Android OS</p>
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+<h2 style="color:#fff;font-size:clamp(30px,4vw,46px);font-weight:800;margin:0;line-height:1;">4-Layer</h2>
+<p style="color:#7da2c9;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 0;">Coated Glass Lens</p>
+
+[/col]
+
+[/row]
+
+[/section]
+[section]
+
+<p>[aun_head eyebrow="Real shots" icon="fa-image" title="Real Projection Photos" sub="Photographed from the actual projector in action — not mockups or renders."]</p>
+[ux_gallery ids="5680,5681,5682,5710" style="normal" lightbox_image_size="original" type="grid" grid="3" col_spacing="small" animate="fadeIn" image_size="thumbnail" image_hover="zoom" text_size="large" text_bg="rgba(255, 255, 255, 0.227)"]
+
+
+[/section]
+[section]
+
+<p>[aun_head eyebrow="Why you'll love it" icon="fa-star" title="Designed to Impress" sub="Every detail engineered for a bigger, sharper, smarter home cinema."]</p>
+
+[/section]
+[section label="cinema core" bg_color="rgb(9,15,28)" dark="true" padding__sm="0px"]
+
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(13,22,42)"]
+
+[text_box width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow" style="color:#4da8ff;">Display</p>
+<h3><strong>HD Resolution</strong></h3>
+<p><span style="font-size: 140%;">The A32 Pro uses a 2.7-inch HD LCD panel with enhanced tone mapping and deep, vivid dark scenes for a lifelike picture.</span></p>
+
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="231px" bg="5540" bg_size="original" bg_pos="0% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12" animate="fadeInLeft"]
+
+[ux_banner height="350px" height__sm="230px" bg="5541" bg_color="rgb(255,255,255)" bg_pos="2% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12"]
+
+[ux_banner height="300px" height__sm="230px" bg_color="rgb(13,22,42)"]
+
+[text_box width="100" animate="fadeInRight" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow" style="color:#4da8ff;">Optics</p>
+<h3><strong>4-Layer Coated Glass Lens</strong></h3>
+<p><span style="font-size: 140%;">A32 Pro features unique lens processing technology that ensures high light transmittance, maintains brightness, and preserves picture integrity without distortion.</span></p>
+
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+
+[/section]
+[section padding__sm="0px"]
+
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Wireless Audio</p>
+<h3><strong>Bluetooth Sound Compatible</strong></h3>
+<p><span style="font-size: 140%;">Connect wirelessly to a speaker or headphones. Enjoy private listening with Bluetooth earphones or share joyful moments with family using a Bluetooth speaker.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="231px" bg="5543" bg_size="original" bg_pos="0% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12" force_first="small" animate="fadeInLeft"]
+
+[ux_banner height="350px" height__sm="231px" bg="5168" bg_size="original" bg_color="rgb(255, 255, 255)" bg_pos="0% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInRight" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Easy Setup</p>
+<h3><strong>Focus in Seconds</strong></h3>
+<p><span style="font-size: 140%;">Get a sharp picture in seconds — just press a button on the remote to focus.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInLeft" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Connectivity</p>
+<h3><strong>Screen Share</strong></h3>
+<p><span style="font-size: 140%;">Built-in dual-band 2.4 GHz / 5 GHz Wi-Fi lets you mirror your phone, tablet or laptop wirelessly.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12" force_first="small" animate="fadeInRight"]
+
+[ux_banner height="350px" height__sm="231px" bg="5542" bg_size="original" bg_pos="0% 0%"]
+
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+[row]
+
+[col span="6" span__sm="12" force_first="small" animate="fadeInLeft"]
+
+[ux_banner height="350px" height__sm="231px" bg="5544" bg_size="original" bg_color="rgb(255, 255, 255)" bg_pos="0% 80%"]
+
+
+[/ux_banner]
+
+[/col]
+[col span="6" span__sm="12"]
+
+[ux_banner height="350px" bg_color="rgb(255,255,255)"]
+
+[text_box text_color="dark" width="100" animate="fadeInRight" position_x="50" position_y="50" text_align="left"]
+
+<p class="aun-feat-eyebrow">Ports &amp; I/O</p>
+<h3><strong>Rich Interface</strong></h3>
+<p><span style="font-size: 140%;">Works with almost any video source — computers, Amazon Fire TV Stick, TV boxes, smartphones, PS4, PS5, Xbox and more.</span></p>
+
+[/text_box]
+
+[/ux_banner]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="whats inside the box" bg_color="rgb(249, 249, 249)"]
+
+<p>[aun_head eyebrow="In the box" icon="fa-box-open" title="What's Inside the Box" sub="Everything you need to get started, right out of the box."]</p>
+[row style="small" col_bg_radius="5" h_align="center"]
+
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8799" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>Remote Control</h4>
+<p style="color:#666; font-size:14px;">Easy navigation included</p>
+
+[/featured_box]
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8800" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>HDMI Cable</h4>
+<p style="color:#666; font-size:14px;">Seamless connectivity</p>
+
+[/featured_box]
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8797" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>User Manual</h4>
+<p style="color:#666; font-size:14px;">Quick start & troubleshooting</p>
+
+[/featured_box]
+
+[/col]
+[col span="3" span__sm="6" align="center" animate="fadeInUp"]
+
+[featured_box img="8798" inline_svg="0" img_width="100" pos="center" font_size="small"]
+
+<h4>Power Cable</h4>
+<p style="color:#666; font-size:14px;">Universal 100 – 240 V power</p>
+
+[/featured_box]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="faq"]
+
+<p>[aun_head eyebrow="Good to know" icon="fa-circle-question" title="Frequently Asked Questions" sub="Quick answers to what buyers ask us most."]</p>
+[row h_align="center"]
+
+[col span="10" span__sm="12"]
+
+[accordion]
+
+[accordion-item title="Is it really portable?"]
+
+<p>Yes — at just 0.58 kg and barely bigger than your palm, the A32 Pro fits in any bag. Take it to a friend's house, on holiday or to the office, plug it into any socket (AC 100 – 240 V), and project a 17&Prime; to 100&Prime; picture from as little as 0.5 m away.</p>
+
+[/accordion-item]
+[accordion-item title="Can I use it in a bright room?"]
+
+<p>The A32 Pro is made for dark rooms — turn the lights off and you get a clear, enjoyable picture. If you need daytime or lights-on viewing, consider a brighter model like the A45 Pro or U002 Pro.</p>
+
+[/accordion-item]
+[accordion-item title="Can I watch YouTube or Netflix directly?"]
+
+<p>Yes — it runs Android 13 with YouTube, Netflix and other apps, plus Wi-Fi screen mirroring (AirPlay &amp; Miracast) from your phone, tablet or laptop. App availability can vary by country.</p>
+
+[/accordion-item]
+[accordion-item title="Will dust affect it?"]
+
+<p>The A32 Pro uses standard ventilation without a dedicated dust filter, so a little care goes a long way: keep it covered when not in use and gently clean the vents now and then. For built-in dust protection, the A45 Pro has a washable dust filter and the U002 Pro has a fully sealed dust-proof engine.</p>
+
+[/accordion-item]
+[accordion-item title="Will it work with the power supply in my country?"]
+
+<p>Yes. The A32 Pro accepts AC 100 – 240 V, so it works on mains power anywhere in the world. If your wall socket is a different shape from the supplied plug, a simple plug adapter is all you need.</p>
+
+[/accordion-item]
+[accordion-item title="How does the warranty work if I live abroad?"]
+
+<p>Every A32 Pro comes with a 1-year AUN warranty, and you never have to ship your projector back. Contact our support team with a short video of the problem. We diagnose it, our factory ships the replacement part straight to your address, and we share a step-by-step video tutorial so you can fit it yourself. See <a href="/warranty/">Warranty &amp; Support</a> for details.</p>
+
+[/accordion-item]
+[accordion-item title="Do you ship to my country?"]
+
+<p>We ship worldwide. Delivery time and shipping cost are shown at checkout once you enter your address. Your country's customs may charge import duties or taxes on arrival — see our <a href="/shipping-policy/">Shipping Policy</a>.</p>
+
+[/accordion-item]
+[accordion-item title="How do I know my projector is genuine?"]
+
+<p>Every genuine AUN projector carries a 12-digit anti-counterfeit code on the bottom of the unit. Enter it at <a href="https://check.aunstore.com" target="_blank" rel="noopener">check.aunstore.com</a> to verify it instantly.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="trust/assurance row" bg="linear-gradient(135deg,#0188fe,#00c6ff)" dark="true" padding="40px"]
+
+[row h_align="center"]
+
+[col span="4" span__sm="12" align="center"]
+
+<p><i class="fa-solid fa-earth-americas" style="font-size:32px; color:#fff;"></i></p>
+<h4 style="color:#fff; margin-bottom:5px;">Worldwide Shipping</h4>
+<p style="color:#e6e6e6; font-size:14px;">Delivered to your door, wherever you are</p>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+<p><i class="fa-solid fa-shield-halved" style="font-size:32px; color:#fff;"></i></p>
+<h4 style="color:#fff; margin-bottom:5px;">1-Year Warranty</h4>
+<p style="color:#e6e6e6; font-size:14px;">Spare parts shipped from our factory to you</p>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+<p><i class="fa-solid fa-screwdriver-wrench" style="font-size:32px; color:#fff;"></i></p>
+<h4 style="color:#fff; margin-bottom:5px;">Video Repair Guides</h4>
+<p style="color:#e6e6e6; font-size:14px;">Step-by-step help from our engineers</p>
+
+[/col]
+
+[/row]
+
+[/section]

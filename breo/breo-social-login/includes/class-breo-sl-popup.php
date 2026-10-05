@@ -80,7 +80,8 @@ class BREO_SL_Popup {
 			// Google accepts only its own four phrasings; 'brand' is ours alone, so
 			// the nearest legal equivalent is used when Google draws the button.
 			'text'           => ( 'brand' === $o['label_style'] ) ? 'signin_with' : $o['label_style'],
-			'logo_alignment' => 'left',
+			// 'center' keeps the G next to the words, like our Facebook button; 'left' pins it to the far edge.
+			'logo_alignment' => 'center',
 			// Draw Google's label in the site's language, not the visitor's Google/browser language.
 			'locale'         => get_locale(),
 		);

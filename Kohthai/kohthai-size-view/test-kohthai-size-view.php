@@ -611,13 +611,56 @@ if ( ! function_exists( 'wc_get_product' ) ) {
 		false !== strpos( $admin, 'data-kt-remeasure' ) );
 
 	// ⚠️ The photograph is scaled so the BODY lands on the measured box, so a
-	// chain reaches far above it — 191 mm above one 280 mm bag. That spilled out
-	// of the drawing and the panel chopped it off, worse on a phone where the
-	// panel is tighter. Held to the body, the cut lands on the outline instead.
+	// chain reaches far above it — 191 mm above one 280 mm bag. Cutting the rest
+	// away kept the drawing inside its panel, but a scarf sliced by a straight
+	// edge reads as a broken image, and it contradicted the caption printed under
+	// every scene: straps are supposed to be drawn FAINTLY, not deleted. So the
+	// whole photograph is laid down faint and the measured body is redrawn over it.
 	ktsv_true( 'the photograph is held to the body in the fitting view',
 		false !== strpos( $out, 'drawBag(g, bag, BX, BY, W, H, false, true);' ) );
-	ktsv_true( 'and the clip is a real clipPath with a unique id',
-		false !== strpos( $out, 'var id = "kt-sv-clip-" + (++CLIP_N);' ) );
+
+	// Intent, not the literal line: the crisp body must still be cut by a REAL
+	// clipPath carrying a unique id, or two bags on one page share a clip and the
+	// second is cropped to the first one's box.
+	ktsv_true( 'the body is still cut by a real clipPath',
+		false !== strpos( $out, 'var cp = attr(ns("clipPath"), { id:id });' ) );
+	ktsv_true( 'and its id is unique per drawing',
+		false !== strpos( $out, 'var n = ++CLIP_N;' )
+		&& false !== strpos( $out, 'var id = "kt-sv-clip-" + n;' ) );
+
+	// The whole bag behind it, faint. Without this the crop is back.
+	ktsv_true( 'the rest of the bag is drawn faintly rather than cut away',
+		false !== strpos( $out, 'kt-sv__bagghost' ) );
+	ktsv_true( 'the faint bag is the WHOLE photograph, not the body box',
+		false !== strpos( $out, 'var ghost = attr(ns("image"), { x:r.x, y:r.y, width:r.w, height:r.h,' ) );
+	ktsv_true( 'the faint layer is under the solid one', (function() use ( $out ) {
+		$ghost = strpos( $out, 'g.appendChild(ghost);' );
+		$solid = strpos( $out, 'g.appendChild(img);' );
+		return false !== $ghost && false !== $solid && $ghost < $solid;
+	})() );
+
+	// ⚠️ The fade is what makes this safe on a bag whose chain runs off the scene:
+	// it ends in a fade instead of a cut, so no frame has to grow and the fixed
+	// scale — the thing that lets a clutch look small and a tote look big — is left
+	// alone. A plain opacity would put the hard edge straight back.
+	ktsv_true( 'the faint bag fades out towards the top of its own image',
+		false !== strpos( $out, 'var mask = attr(ns("mask")' )
+		&& false !== strpos( $out, 'mask:"url(#" + mid + ")"' ) );
+	ktsv_true( 'the fade is a gradient, not a hard stop',
+		false !== strpos( $out, 'ns("linearGradient")' )
+		&& false !== strpos( $out, '"stop-opacity":"0"' ) );
+	ktsv_true( 'the mask is measured in the same units as the image',
+		false !== strpos( $out, 'maskUnits:"userSpaceOnUse"' ) );
+
+	// Faint enough that it is never mistaken for the part the numbers describe,
+	// and never so strong that it competes with an object dragged over it.
+	ktsv_true( 'the faint bag is actually faint',
+		false !== strpos( $out, '.kt-sv__bagghost{opacity:.26}' ) );
+
+	// The On-you view must NOT gain a ghost: there the whole bag is already drawn
+	// solid, and a second faint copy under it would double every edge.
+	ktsv_true( 'the figure view draws no ghost',
+		false === strpos( $out, 'drawBag(grp, bag, bx, by, bw, bh, false, true)' ) );
 	// The figure hangs the bag from her hand, so there the strap is the point.
 	ktsv_true( 'the figure keeps its straps',
 		false !== strpos( $out, 'drawBag(grp, bag, bx, by, bw, bh, false);' ) );

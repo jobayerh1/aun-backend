@@ -14,12 +14,24 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 class AUN_SP_Lookup {
 
 	/**
+	 * True when the last ERP lookup could not get an answer (after its retry).
+	 * Read by callers so "we could not ASK" is never reported to the customer as
+	 * "you bought nothing".
+	 */
+	protected static $erp_unavailable = false;
+
+	public static function erp_unavailable() {
+		return self::$erp_unavailable;
+	}
+
+	/**
 	 * @return array { found:bool, matches:array<int, match> }
 	 *   match = { source, order_number, model, purchase_date, customer_name, phone, address, warranty }
 	 */
 	public static function find_all( $search_by, $query ) {
 		$search_by = in_array( $search_by, array( 'mobile', 'order', 'serial' ), true ) ? $search_by : 'mobile';
 		$query     = trim( (string) $query );
+		self::$erp_unavailable = false;
 		if ( $query === '' ) {
 			return array( 'found' => false, 'matches' => array() );
 		}
@@ -64,7 +76,13 @@ class AUN_SP_Lookup {
 			return strcmp( (string) $b['purchase_date'], (string) $a['purchase_date'] );
 		} );
 
-		return array( 'found' => ! empty( $matches ), 'matches' => $matches );
+		return array(
+			'found'           => ! empty( $matches ),
+			'matches'         => $matches,
+			// The ERP could not be asked. Any matches above came from the legacy
+			// archive only, so the customer's recent purchases may be missing.
+			'erp_unavailable' => self::$erp_unavailable,
+		);
 	}
 
 	/** Convenience: the single best (most recent) match, or { found:false }. */
@@ -116,26 +134,44 @@ class AUN_SP_Lookup {
 			return array();
 		}
 
-		$url  = trailingslashit( AUN_SP_ERP_URL ) . 'sales-lookup';
-		$resp = wp_remote_get(
-			add_query_arg( array( 'search_by' => $search_by, 'query' => $q ), $url ),
-			array(
-				'timeout' => 12,
-				'headers' => array( 'X-API-KEY' => $key ),
-			)
-		);
+		$url  = add_query_arg( array( 'search_by' => $search_by, 'query' => $q ), trailingslashit( AUN_SP_ERP_URL ) . 'sales-lookup' );
 
-		if ( is_wp_error( $resp ) ) {
-			error_log( 'AUN SP: ERP lookup error: ' . $resp->get_error_message() );
+		// ⚠️ The ERP answers a genuine "no purchase" with HTTP 200 and
+		// {"success":true,"data":[]}. ANYTHING else is a failure to ask, not an
+		// answer -- and this used to return array() for both, so a single
+		// transient failure told a real customer they had bought nothing. The
+		// failure is transient (the very next call succeeds), so try once more
+		// before giving up, and record what came back so the cause is visible.
+		$body = null;
+		foreach ( array( 10, 8 ) as $attempt => $timeout ) {
+			$resp = wp_remote_get( $url, array(
+				'timeout' => $timeout,
+				'headers' => array( 'X-API-KEY' => $key, 'Accept' => 'application/json' ),
+			) );
+			$why = self::erp_failure( $resp );
+			if ( '' === $why ) {
+				$body = json_decode( wp_remote_retrieve_body( $resp ), true );
+				break;
+			}
+			// The query is masked: error logs are no place for a customer's phone number.
+			$masked = strlen( $q ) > 5 ? substr( $q, 0, 3 ) . str_repeat( '*', strlen( $q ) - 5 ) . substr( $q, -2 ) : '***';
+			error_log( sprintf( 'AUN SP: ERP lookup attempt %d/2 failed (%s by %s): %s', $attempt + 1, $masked, $search_by, $why ) );
+			// 401 / 422 mean the key or the query is wrong: asking again cannot help.
+			$code = is_wp_error( $resp ) ? 0 : (int) wp_remote_retrieve_response_code( $resp );
+			if ( 401 === $code || 422 === $code ) {
+				break;
+			}
+			if ( 0 === $attempt ) {
+				usleep( 400000 );
+			}
+		}
+
+		if ( null === $body ) {
+			self::$erp_unavailable = true;
 			return array();
 		}
-		if ( 200 !== (int) wp_remote_retrieve_response_code( $resp ) ) {
-			return array();
-		}
-
-		$body = json_decode( wp_remote_retrieve_body( $resp ), true );
-		if ( empty( $body['success'] ) || empty( $body['data'] ) ) {
-			return array();
+		if ( empty( $body['data'] ) ) {
+			return array(); // a real answer: no purchases in the ERP
 		}
 
 		// The endpoint returns a list of sales (a customer may have several).
@@ -157,6 +193,30 @@ class AUN_SP_Lookup {
 			);
 		}
 		return $out;
+	}
+
+	/**
+	 * '' when the response is a real answer from the ERP, otherwise a short,
+	 * log-safe description of what came back instead.
+	 */
+	protected static function erp_failure( $resp ) {
+		if ( is_wp_error( $resp ) ) {
+			return 'transport: ' . $resp->get_error_message();
+		}
+		$code = (int) wp_remote_retrieve_response_code( $resp );
+		$raw  = (string) wp_remote_retrieve_body( $resp );
+		$peek = trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( substr( $raw, 0, 300 ) ) ) );
+		if ( 200 !== $code ) {
+			return 'HTTP ' . $code . ': ' . substr( $peek, 0, 160 );
+		}
+		$body = json_decode( $raw, true );
+		if ( ! is_array( $body ) ) {
+			return 'HTTP 200 but not JSON: ' . substr( $peek, 0, 160 );
+		}
+		if ( empty( $body['success'] ) ) {
+			return 'success=false: ' . substr( (string) ( $body['message'] ?? '' ), 0, 160 );
+		}
+		return '';
 	}
 
 	/** Attach the computed warranty to a raw sale row. */

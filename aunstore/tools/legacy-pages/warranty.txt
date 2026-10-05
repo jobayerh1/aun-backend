@@ -1,0 +1,190 @@
+[section label="Policy Hero" bg_color="rgb(246, 248, 251)" padding="44px" padding__sm="30px"]
+
+[ux_text text_align="center"]
+<h1 style="color:#0188fe; line-height:1.2; margin-bottom:10px;"><i class="fa-solid fa-shield-halved"></i> AUN Warranty &amp; Support</h1>
+<p style="font-size:16px; color:#556777; max-width:760px; margin:0 auto;">Every AUN projector comes with a 12-month warranty &mdash; wherever you live. You never have to ship your projector back: our factory sends the replacement part to your door, and a video shows you how to fit it.</p>
+<p style="margin-top:18px;"><a href="/contact-us/" style="display:inline-flex; align-items:center; gap:8px; background:#0188fe; color:#fff; padding:11px 20px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;"><i class="fa-solid fa-headset"></i> Start a Warranty Claim</a></p>
+[/ux_text]
+
+[/section]
+[section label="Policy Highlights" bg_color="rgb(255, 255, 255)" padding="40px"]
+
+[row]
+
+[col span="4" span__sm="12" align="center"]
+
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-box"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Parts Shipped to You</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Defective parts are replaced &mdash; the new part ships from our factory straight to your address.</p>
+</div>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-circle-play"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Video Repair Guides</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Step-by-step video tutorials show you how to fit the part yourself &mdash; our team is a message away.</p>
+</div>
+
+[/col]
+[col span="4" span__sm="12" align="center"]
+
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:24px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:48px;height:48px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:20px;"><i class="fa-solid fa-ban"></i></div>
+<h3 style="font-size:16px;margin:0 0 6px;color:#0f172a;">Exclusions Apply</h3>
+<p style="font-size:14px;color:#64748b;margin:0;line-height:1.6;">Damage caused by misuse, lack of maintenance, fire, water or unauthorized repairs is not covered.</p>
+</div>
+
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="40px" label="How a Claim Works"]
+
+[ux_text text_align="center"]
+<h2 style="color:#0f172a;margin-bottom:8px;">How a Warranty Claim Works</h2>
+<div style="width:60px;height:3px;background:#0188fe;border-radius:2px;margin:0 auto 10px;opacity:.85;"></div>
+<p style="color:#64748b;max-width:680px;margin:0 auto;">Four simple steps &mdash; most claims are sorted without the projector ever leaving your home.</p>
+[/ux_text]
+[gap height="18px"]
+
+[row]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-video"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 1: Contact Us</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Send your order number and a short video of the problem.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-stethoscope"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 2: Diagnosis</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Our engineers identify the faulty part from your video.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-truck-fast"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 3: Part Shipped</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Our factory ships the replacement part to your address.</p>
+</div>
+[/col]
+
+[col span="3" span__sm="6" align="center"]
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;box-shadow:0 2px 6px rgba(15,23,42,0.04);height:100%;">
+<div style="width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:rgba(1,136,254,0.10);color:#0188fe;display:flex;align-items:center;justify-content:center;font-size:19px;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+<h3 style="font-size:15px;margin:0 0 6px;color:#0f172a;">Step 4: Fit &amp; Enjoy</h3>
+<p style="font-size:13px;color:#64748b;margin:0;line-height:1.6;">Follow our video guide to fit it &mdash; and you're back to the show.</p>
+</div>
+[/col]
+
+[/row]
+
+[/section]
+[section bg_color="#ffffff"]
+
+[title style="bold-left" text="Warranty Regulations"]
+
+[accordion]
+
+[accordion-item title="1. Warranty Coverage"]
+
+<p>Every AUN projector bought from aunstore.com is covered for <strong>12 months from the date of purchase</strong> against defects in materials and workmanship. Your order confirmation is your proof of purchase &mdash; please keep it.</p>
+
+[/accordion-item]
+[accordion-item title="2. Nature of Service"]
+
+<p>Warranty service is provided by replacing the defective part. If a specific part (such as the LCD panel, main board, power board or light source) is confirmed defective, a working replacement part is shipped to you from our factory. In such cases, the warranty applies only to the defective component, not the entire product. Replacement is subject to availability of parts.</p>
+
+[/accordion-item]
+[accordion-item title="3. How to Claim Warranty"]
+
+<p>Contact our support team with your order number and a short phone video (10&ndash;30 seconds) showing the problem. Our engineers diagnose the fault from the video &mdash; many issues are solved with a setting change on the spot. You do <strong>not</strong> need to send the projector back.</p>
+
+[/accordion-item]
+[accordion-item title="4. Parts Delivery Time"]
+
+<p>Delivery time for a replacement part depends on part availability and your location. We will share the tracking details as soon as the part ships.</p>
+
+[/accordion-item]
+[accordion-item title="5. Fitting the Part"]
+
+<p>With the part we share a step-by-step video tutorial for your model and part. If you get stuck, message us and our team will guide you. Please do not open the projector for repairs other than as guided by our support team.</p>
+
+[/accordion-item]
+[accordion-item title="6. Multiple Claims"]
+
+<p>There is no fixed limit on the number of warranty claims during the warranty period. You may claim as long as your warranty is valid.</p>
+
+[/accordion-item]
+[accordion-item title="7. Data & Software Responsibility"]
+
+<p>We are not responsible for the loss of data, apps, accounts or settings during warranty service. Please note your app logins and settings before any repair.</p>
+
+[/accordion-item]
+[accordion-item title="8. User Maintenance"]
+
+<p>Projectors require regular user maintenance to ensure proper airflow and cooling. Clean the dust filter (where fitted) and the ventilation areas periodically as described in the user manual.</p>
+<p>Failure to maintain proper airflow may cause internal overheating and component damage.</p>
+
+[/accordion-item]
+[accordion-item title="9. Exclusions"]
+
+<p>The warranty does not cover:</p>
+<ul>
+<li>Damage caused by water, fire, electric shock, accident or misuse</li>
+<li>Opening, repairing or modifying the product other than as guided by our support team</li>
+<li>Physical damage (scratches, dents, cracks, broken parts)</li>
+<li>Damage caused by non-recommended accessories</li>
+<li>Damage caused by overheating due to blocked ventilation, clogged dust filters or lack of regular maintenance</li>
+</ul>
+
+[/accordion-item]
+[accordion-item title="10. Accessories"]
+
+<p>Accessories such as remote controls, cables and adapters are not covered by the warranty.</p>
+
+[/accordion-item]
+[accordion-item title="11. Out-of-Warranty Service"]
+
+<p>Projector out of warranty? Contact us anyway &mdash; we can still diagnose the fault and supply the replacement part at a quoted cost.</p>
+
+[/accordion-item]
+
+[/accordion]
+
+[/section]
+[section bg_color="rgb(246, 248, 251)" padding="22px" label="Genuine Note"]
+[ux_text text_align="center"]
+<div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #ffbc00;border-radius:10px;padding:16px 20px;text-align:left;">
+<strong style="color:#0f172a;">Warranty applies to genuine AUN projectors.</strong> <span style="color:#64748b;">Not sure yours is genuine? Check the 12-digit code on the bottom of the unit on our <a href="/verify-authenticity/" style="color:#0188fe;font-weight:600;">Verify Authenticity</a> page.</span>
+</div>
+[/ux_text]
+[/section]
+[section bg_color="#ffffff" padding="30px" label="Help Panel"]
+
+[row h_align="center"]
+
+[col span="10" padding="0px" align="center" bg_radius="12" depth="1"]
+
+[aunstore_help_panel]
+
+[/col]
+
+[/row]
+
+[/section]
+[section label="Last Updated" bg_color="rgb(246, 248, 251)" padding="18px"]
+
+[ux_text text_align="center"]
+<p style="font-size:12.5px; color:#94a3b8; margin:0;">Last updated: <strong>30 September, 2026</strong></p>
+[/ux_text]
+
+[/section]

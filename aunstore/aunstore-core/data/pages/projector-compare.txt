@@ -1,0 +1,32 @@
+[aunp_hero eyebrow="Compare tool" icon="fa-table-columns" title="Compare projectors" accent="side by side" sub="Brightness, resolution, throw distance, smart features, ports and price &mdash; pulled straight from each product&rsquo;s specification sheet, up to 3 models at a time." chips="Up to 3 models|Differences only|Share a link"]
+
+[aunp_tool][aun_compare_table][/aunp_tool]
+
+[aunp_section tone="white"]
+[aunp_head eyebrow="Three steps" icon="fa-route" title="How it works"]
+[aunp_steps]
+[aunp_step icon="fa-circle-plus" title="Add up to 3 projectors"]Tap the <strong>Compare</strong> button on any product page or in the shop list. Your picks follow you in the floating dock.[/aunp_step]
+[aunp_step icon="fa-table-list" title="Spot the differences"]Rows that differ are highlighted automatically. Switch on <strong>Differences only</strong> to hide everything the models share.[/aunp_step]
+[aunp_step icon="fa-share-nodes" title="Decide &amp; share"]Hit <strong>Share</strong> to send the exact comparison to family or friends &mdash; the link recreates your table for them.[/aunp_step]
+[/aunp_steps]
+[/aunp_section]
+
+[aunp_section tone="soft"]
+[aunp_head eyebrow="Good to know" icon="fa-circle-question" title="Comparing projectors: questions"]
+[aunp_faq]
+[aunp_q q="How many projectors can I compare at once?" open="1"]Up to three side-by-side. If you add a fourth, the oldest one in your list is replaced automatically.[/aunp_q]
+[aunp_q q="Where do the specifications come from?"]Straight from each product&rsquo;s <strong>Specifications</strong> tab, so the comparison always matches exactly what you see on the product page &mdash; nothing is retyped for this tool.[/aunp_q]
+[aunp_q q="Why does Differences only hide some rows?"]It hides rows where all selected models have identical values, so you can focus on what actually changes between them.[/aunp_q]
+[aunp_q q="Any tips for choosing between two close models?"]Start from your room: its lighting, the screen size you want and how far the projector will sit from the wall. Then weigh native resolution, throw distance, smart OS (Genuine Android TV models have official apps built in) and ports. Still stuck? The <a href="/projector-finder/">60-Second Smart Finder</a> weighs all of this for you.[/aunp_q]
+[/aunp_faq]
+[/aunp_section]
+
+[aunp_section tone="white"]
+[aunp_cards cols="3"]
+[aunp_card icon="fa-wand-magic-sparkles" title="Not sure what to compare?" url="/projector-finder/" link="Find my projector"]Answer 5 quick questions about your room and budget &mdash; the Smart Finder shortlists the right models.[/aunp_card]
+[aunp_card icon="fa-ruler-combined" title="Check the picture size" url="/product-category/projectors/" link="Pick a projector"]Every product page has a Screen Size Calculator tab &mdash; see exactly how big the image gets at your distance.[/aunp_card]
+[aunp_card icon="fa-tags" title="Browse the full lineup" url="/product-category/projectors/" link="All projectors"]Every current AUN model with prices and real projection photos.[/aunp_card]
+[/aunp_cards]
+[/aunp_section]
+
+[aunp_help]

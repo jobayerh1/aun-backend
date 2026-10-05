@@ -466,6 +466,79 @@ function breo_bd_build_pages() {
 	return array( $ids, $msgs );
 }
 
+/* ------------------------------------------------------------------------
+ * Policy text updates: when pages-content.php changes, bump this and the
+ * pages we created refresh themselves the next time an admin opens the
+ * dashboard. A page someone has edited by hand is never overwritten; it is
+ * listed in a notice instead. Missing pages are not recreated (they may have
+ * been deleted on purpose); the Setup screen's "Create the pages" does that.
+ * --------------------------------------------------------------------- */
+
+define( 'BREO_BD_PAGES_VER', '3' ); // 2: replacement warranty · 3: keep the box (serial number)
+
+add_action( 'admin_init', function () {
+	if ( wp_doing_ajax() || ! current_user_can( 'manage_woocommerce' ) || BREO_BD_PAGES_VER === get_option( 'breo_bd_pages_ver' ) ) {
+		return;
+	}
+	update_option( 'breo_bd_pages_ver', BREO_BD_PAGES_VER, false );
+	if ( ! get_option( 'breo_bd_pages_built' ) ) {
+		return; // never built: nothing to refresh
+	}
+	$kept = breo_bd_refresh_pages();
+	if ( $kept ) {
+		set_transient( 'breo_bd_pages_kept', $kept, 30 * DAY_IN_SECONDS );
+	}
+} );
+
+/** Updates our unedited pages to the current text. Returns the titles of edited pages left as they were. */
+function breo_bd_refresh_pages() {
+	$defs    = require BREO_BD_DIR . 'includes/pages-content.php';
+	$kept    = array();
+	$changed = false;
+	foreach ( $defs as $slug => $def ) {
+		$page = get_page_by_path( $slug, OBJECT, 'page' );
+		if ( ! $page || $slug !== get_post_meta( $page->ID, '_breo_page', true ) ) {
+			continue; // not there, or not one of ours
+		}
+		$new = trim( $def['content'] );
+		if ( $page->post_content === $new && $page->post_excerpt === $def['intro'] ) {
+			continue;
+		}
+		if ( get_post_meta( $page->ID, '_breo_hash', true ) !== md5( $page->post_content ) ) {
+			$kept[] = $def['title']; // edited by hand: theirs wins
+			continue;
+		}
+		$pid = wp_update_post( array(
+			'ID'           => $page->ID,
+			'post_title'   => $def['title'],
+			'post_excerpt' => $def['intro'],
+			'post_content' => $new,
+		) );
+		if ( $pid && ! is_wp_error( $pid ) ) {
+			update_post_meta( $pid, '_breo_hash', md5( get_post_field( 'post_content', $pid, 'raw' ) ) );
+			$changed = true;
+		}
+	}
+	if ( $changed ) {
+		update_option( 'breo_bd_pages_built', time() ); // the pages' "Last updated" date
+	}
+	return $kept;
+}
+
+add_action( 'admin_notices', function () {
+	$kept = get_transient( 'breo_bd_pages_kept' );
+	if ( ! $kept || ! current_user_can( 'manage_woocommerce' ) ) {
+		return;
+	}
+	if ( isset( $_GET['breo-pages-seen'] ) && check_admin_referer( 'breo_pages_seen' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		delete_transient( 'breo_bd_pages_kept' );
+		return;
+	}
+	echo '<div class="notice notice-warning"><p><strong>Breo:</strong> new wording for the policy pages arrived with this update, but these pages were edited by hand, so they were left as they are: <strong>'
+		. esc_html( implode( ', ', (array) $kept ) ) . '</strong>. Please compare them with the new text and update them yourself (Pages, then Edit). '
+		. '<a href="' . esc_url( wp_nonce_url( add_query_arg( 'breo-pages-seen', '1' ), 'breo_pages_seen' ) ) . '">Done, hide this</a></p></div>';
+} );
+
 function breo_bd_handle_post() {
 	if ( empty( $_POST['breo_bd_action'] ) || ! current_user_can( 'manage_woocommerce' ) ) {
 		return array();

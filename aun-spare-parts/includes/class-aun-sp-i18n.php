@@ -370,6 +370,7 @@ class AUN_SP_I18N {
 				'type'  => 'srv',
 				'strings' => array(
 					'srv_enter_query'    => array( 'en' => 'Please enter your phone, order or serial number.', 'bn' => 'আপনার ফোন, অর্ডার বা সিরিয়াল নম্বর লিখুন।' ),
+					'srv_lookup_down'    => array( 'en' => "We couldn't reach our sales records just now. Please try again in a moment.", 'bn' => 'এই মুহূর্তে আমাদের বিক্রয়ের রেকর্ড পাওয়া যাচ্ছে না। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।' ),
 					'srv_not_found'      => array( 'en' => "We couldn't find that purchase. Try your order number, or contact us on WhatsApp.", 'bn' => 'সেই ক্রয়টি খুঁজে পাওয়া যায়নি। অর্ডার নম্বর দিয়ে চেষ্টা করুন, বা WhatsApp-এ যোগাযোগ করুন।' ),
 					'srv_lookup_again'   => array( 'en' => 'Please look up your purchase again before submitting.', 'bn' => 'জমা দেওয়ার আগে আপনার ক্রয়টি আবার খুঁজুন।' ),
 					'srv_choose_part'    => array( 'en' => 'Please choose at least one part.', 'bn' => 'অন্তত একটি পার্টস নির্বাচন করুন।' ),

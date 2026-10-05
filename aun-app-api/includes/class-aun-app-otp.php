@@ -192,11 +192,17 @@ class AUN_App_OTP {
 		}
 
 		// Daily caps per phone and per IP.
+		//
+		// NOT per IP for the showroom counter: every customer's code there is
+		// sent from the same staff screen on the same connection, so an IP cap
+		// would lock the showroom out for the day after a handful of customers.
+		// Staff are signed-in admins; the per-phone cap still applies.
+		$count_ip  = 'showroom' !== $purpose;
 		$phone_key = self::RL_PHONE . md5( $canonical );
 		$ip_key    = self::RL_IP . md5( self::client_ip() );
 		$max       = (int) $cfg['max_per_day'];
 		if ( $max > 0 ) {
-			if ( (int) get_transient( $phone_key ) >= $max || (int) get_transient( $ip_key ) >= $max ) {
+			if ( (int) get_transient( $phone_key ) >= $max || ( $count_ip && (int) get_transient( $ip_key ) >= $max ) ) {
 				return array(
 					'ok'      => false,
 					'code'    => 'rate_limited',
@@ -219,7 +225,9 @@ class AUN_App_OTP {
 		);
 
 		set_transient( $phone_key, ( (int) get_transient( $phone_key ) ) + 1, DAY_IN_SECONDS );
-		set_transient( $ip_key, ( (int) get_transient( $ip_key ) ) + 1, DAY_IN_SECONDS );
+		if ( $count_ip ) {
+			set_transient( $ip_key, ( (int) get_transient( $ip_key ) ) + 1, DAY_IN_SECONDS );
+		}
 
 		if ( self::dev_mode() ) {
 			return array(
@@ -235,6 +243,11 @@ class AUN_App_OTP {
 		$template = 'purchase' === $purpose
 			? '[otp] is your AUN Care code to confirm this number and find your purchases. Valid [min] min. Do not share it.'
 			: (string) $cfg['sms_template'];
+		// Read out at the counter, so it says exactly that — a code a customer is
+		// asked for on a PHONE CALL is how scams work, and this makes it plain.
+		if ( 'showroom' === $purpose ) {
+			$template = '[otp] is your code to use your AUN rewards at our showroom. Tell it only to AUN staff at the counter, in person. Valid [min] min.';
+		}
 		$body     = str_replace(
 			array( '[site]', '[otp]', '[min]' ),
 			array( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ), $otp, (string) $minutes ),

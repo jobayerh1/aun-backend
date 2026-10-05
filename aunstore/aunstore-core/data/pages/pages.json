@@ -1,0 +1,95 @@
+{
+ "pages": [
+  {
+   "slug": "home",
+   "title": "Home",
+   "template": "page-transparent-header-light.php",
+   "status": "publish",
+   "role": "front"
+  },
+  {
+   "slug": "projector-finder",
+   "title": "Smart Projector Finder",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "projector-compare",
+   "title": "Compare Projectors",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "warranty",
+   "title": "Warranty & Support",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "verify-authenticity",
+   "title": "Verify Authenticity",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "shipping-policy",
+   "title": "Shipping Policy",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "returns-and-refunds",
+   "title": "Returns & Refunds",
+   "template": "page-transparent-header-light.php",
+   "status": "draft"
+  },
+  {
+   "slug": "contact-us",
+   "title": "Contact Us",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "about-us",
+   "title": "About AUN",
+   "template": "page-transparent-header-light.php",
+   "status": "publish"
+  },
+  {
+   "slug": "privacy-policy",
+   "title": "Privacy Policy",
+   "template": "page-transparent-header-light.php",
+   "status": "publish",
+   "role": "privacy"
+  },
+  {
+   "slug": "terms-and-conditions",
+   "title": "Terms & Conditions",
+   "template": "page-transparent-header-light.php",
+   "status": "publish",
+   "role": "terms"
+  }
+ ],
+ "footer_widgets": [
+  {
+   "title": "About AUN",
+   "content": "<div class=\"aunstore-fw\"><p class=\"aunstore-fbrand\">AUN &mdash; All You Need</p><p>Smart projectors for home cinema, office and travel. Sold in more than 100 countries since 2014.</p>[aunstore_social]</div>"
+  },
+  {
+   "title": "Shop",
+   "content": "<div class=\"aunstore-fw\"><ul><li><a href=\"/product-category/projectors/\">All Projectors</a></li><li><a href=\"/product-category/home-theater-projector/\">Home Theater</a></li><li><a href=\"/product-category/office-projector/\">Office &amp; Classroom</a></li><li><a href=\"/product-category/mini-projector/\">Portable &amp; Mini</a></li>[aunstore_link page=\"projector-finder\" text=\"60-Second Smart Finder\" wrap=\"li\"]</ul></div>"
+  },
+  {
+   "title": "Support",
+   "content": "<div class=\"aunstore-fw\"><ul>[aunstore_link page=\"warranty\" wrap=\"li\"][aunstore_link page=\"verify-authenticity\" wrap=\"li\"][aunstore_link page=\"shipping-policy\" wrap=\"li\"][aunstore_link page=\"returns-and-refunds\" wrap=\"li\"][aunstore_link page=\"contact-us\" wrap=\"li\"][aunstore_link page=\"my-account\" text=\"My Account &amp; Orders\" wrap=\"li\"][aunstore_link page=\"about-us\" wrap=\"li\"]</ul></div>"
+  },
+  {
+   "title": "Get in Touch",
+   "content": "<div class=\"aunstore-fw\">[aunstore_contact_list]</div>"
+  }
+ ],
+ "copyright": "Copyright [ux_current_year] &copy; <strong>[aunstore_info key=\"company\"]</strong>. All rights reserved.",
+ "retired": [
+  "screen-size-calculator"
+ ]
+}

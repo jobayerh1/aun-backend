@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Will It Fit — bag rendering mockup</title>
+<style>
+  :root{
+    --brand:#654321; --tan:#a08565; --cream:#faf7f3; --line:#e8e2d9;
+    --ink:#3a3229; --muted:#6f6459;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 20px 60px;background:#fff;color:var(--ink);
+       font:15px/1.6 -apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font:600 24px/1.3 Georgia,"Times New Roman",serif;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 4px}
+  .meta{color:var(--muted);font-size:13px;margin:0 0 22px}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+            padding:12px 14px;background:var(--cream);border:1px solid var(--line);
+            border-radius:6px;margin-bottom:24px}
+  .controls label{display:inline-flex;gap:7px;align-items:center;font-size:14px;cursor:pointer}
+  .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}
+  .card{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;
+        display:flex;flex-direction:column}
+  .card.is-rec{border-color:var(--brand);box-shadow:0 0 0 2px rgba(101,67,33,.09)}
+  .hd{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;
+      justify-content:space-between;align-items:baseline;gap:10px}
+  .hd b{font-size:15px}
+  .tag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tag.rec{color:var(--brand);font-weight:700}
+  .tag.bad{color:#a8392f;font-weight:700}
+  .stage{background:var(--cream);padding:8px}
+  svg{display:block;width:100%;height:auto}
+  .note{padding:12px 14px;font-size:13.5px;line-height:1.55;color:var(--muted);
+        border-top:1px solid var(--line);flex:1}
+  .note b{color:var(--ink)}
+  /* The object has to stay the most legible thing on the scene — a translucent green
+     rectangle vanishes against a teal bag, which is itself a small argument for keeping
+     the bag quiet underneath it. */
+  .phone rect{fill:rgba(255,255,255,.62);stroke:#1f4f31;stroke-width:2.4}
+  .phone text{fill:#1f4f31;font:600 15px -apple-system,"Segoe UI",sans-serif;
+              text-anchor:middle;dominant-baseline:middle}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+         font-size:13.5px;color:var(--muted)}
+  code{background:var(--cream);padding:1px 5px;border-radius:3px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>&ldquo;Will it fit&rdquo; &mdash; how to draw the bag</h1>
+  <p class="sub">Retro Artistic Style Embroidered Crossbody Bag, at the module&rsquo;s real geometry.</p>
+  <p class="meta">
+    Measured from the live page: body box <b>210 &times; 160&nbsp;mm</b> &middot;
+    photograph drawn <b>260 &times; 275&nbsp;mm</b> &middot;
+    overflow <b>110&nbsp;mm above</b> (handle), <b>46&nbsp;mm right</b> (scarf).
+    Scene, scale and dashed box are identical in all three &mdash; only the photograph is treated differently.
+  </p>
+
+  <div class="controls">
+    <label><input type="checkbox" id="tgPhone" checked> Lay an iPhone on it (163 &times; 78&nbsp;mm, turned sideways)</label>
+    <label><input type="checkbox" id="tgGrid" checked> Show the grid</label>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============ A : current ============ -->
+    <div class="card">
+      <div class="hd"><b>1. Now</b><span class="tag">hard crop</span></div>
+      <div class="stage">
+        <svg viewBox="0 0 474.6 376.65" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="gridA" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M20 0H0v20" fill="none" stroke="#e5ddd0" stroke-width=".7"/>
+            </pattern>
+            <clipPath id="clipA">
+              <rect x="132.3" y="97.3" width="210" height="160" rx="9.6" ry="9.6"/>
+            </clipPath>
+          </defs>
+          <rect class="bg" width="474.6" height="376.65" fill="url(#gridA)"/>
+          <image href="" class="bagimg" x="128.108" y="-12.487" width="260.352" height="275.292"
+                 preserveAspectRatio="none" clip-path="url(#clipA)"/>
+          <rect x="132.3" y="97.3" width="210" height="160" rx="9.6" ry="9.6"
+                fill="none" stroke="#654321" stroke-width="1.3" stroke-dasharray="7 5" opacity=".5"/>
+          <g class="phone">
+            <rect x="155.8" y="138.5" width="163" height="77.6" rx="7" ry="7"/>
+            <text x="237.3" y="177.3">iPhone</text>
+          </g>
+        </svg>
+      </div>
+      <p class="note">The photograph is cut off exactly on the dashed box. The scarf is sliced
+        by a straight edge and the handle is gone. <b>This is what you are seeing now.</b></p>
+    </div>
+
+    <!-- ============ B : recommended ============ -->
+    <div class="card is-rec">
+      <div class="hd"><b>2. Faded straps</b><span class="tag rec">recommended</span></div>
+      <div class="stage">
+        <svg viewBox="0 0 474.6 376.65" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="gridB" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M20 0H0v20" fill="none" stroke="#e5ddd0" stroke-width=".7"/>
+            </pattern>
+            <linearGradient id="fadeB" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0"   stop-color="#fff" stop-opacity="0"/>
+              <stop offset="0.30" stop-color="#fff" stop-opacity="1"/>
+              <stop offset="1"   stop-color="#fff" stop-opacity="1"/>
+            </linearGradient>
+            <mask id="maskB" maskUnits="userSpaceOnUse"
+                  x="128.108" y="-12.487" width="260.352" height="275.292">
+              <rect x="128.108" y="-12.487" width="260.352" height="275.292" fill="url(#fadeB)"/>
+            </mask>
+            <clipPath id="clipB">
+              <rect x="132.3" y="97.3" width="210" height="160" rx="9.6" ry="9.6"/>
+            </clipPath>
+          </defs>
+          <rect class="bg" width="474.6" height="376.65" fill="url(#gridB)"/>
+          <!-- the whole bag, faint, fading out at the top so a long handle never ends in a cut -->
+          <image href="" class="bagimg" x="128.108" y="-12.487" width="260.352" height="275.292"
+                 preserveAspectRatio="none" mask="url(#maskB)" opacity=".26"/>
+          <!-- the measured body, at full strength, over it -->
+          <image href="" class="bagimg" x="128.108" y="-12.487" width="260.352" height="275.292"
+                 preserveAspectRatio="none" clip-path="url(#clipB)"/>
+          <rect x="132.3" y="97.3" width="210" height="160" rx="9.6" ry="9.6"
+                fill="none" stroke="#654321" stroke-width="1.3" stroke-dasharray="7 5" opacity=".5"/>
+          <g class="phone">
+            <rect x="155.8" y="138.5" width="163" height="77.6" rx="7" ry="7"/>
+            <text x="237.3" y="177.3">iPhone</text>
+          </g>
+        </svg>
+      </div>
+      <p class="note">The whole bag is there, so nothing looks broken &mdash; but only the part
+        the numbers describe is solid. <b>No hard cut anywhere</b>, and the handle fades out
+        instead of being chopped, so no product needs a bigger frame.</p>
+    </div>
+
+    <!-- ============ C : full solid ============ -->
+    <div class="card">
+      <div class="hd"><b>3. Full bag, solid</b><span class="tag bad">not advised</span></div>
+      <div class="stage">
+        <svg viewBox="0 0 474.6 376.65" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="gridC" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M20 0H0v20" fill="none" stroke="#e5ddd0" stroke-width=".7"/>
+            </pattern>
+          </defs>
+          <rect class="bg" width="474.6" height="376.65" fill="url(#gridC)"/>
+          <image href="" class="bagimg" x="128.108" y="-12.487" width="260.352" height="275.292"
+                 preserveAspectRatio="none"/>
+          <rect x="132.3" y="97.3" width="210" height="160" rx="9.6" ry="9.6"
+                fill="none" stroke="#654321" stroke-width="1.3" stroke-dasharray="7 5" opacity=".5"/>
+          <g class="phone">
+            <rect x="155.8" y="138.5" width="163" height="77.6" rx="7" ry="7"/>
+            <text x="237.3" y="177.3">iPhone</text>
+          </g>
+        </svg>
+      </div>
+      <p class="note">The silhouette now reads as the product &mdash; and it is
+        <b>1.24&times; wider and 1.72&times; taller</b> than the 21&nbsp;&times;&nbsp;16&nbsp;cm you
+        sell. The bag looks bigger than it is, and the phone against the scarf makes the verdict
+        look arbitrary. Also note the handle is <b>still cut</b>, just by the panel edge instead.</p>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Everything above uses the real photograph, the real body box and the real scene box taken
+      from the live module &mdash; nothing is redrawn by hand, so what you see is what the change
+      would produce.</p>
+    <p>The green rectangle is an iPhone 16 Pro Max at true scale, turned sideways, as the fit test
+      would place it. The <code>from the side</code> depth panel is unchanged by any of this.</p>
+  </footer>
+
+</div>
+
+<script>
+  var SRC = "https://kohthaibd.com/wp-content/uploads/2026/09/Retro-Artistic-Style-Embroidered-Crossbody-Bag-for-Women_profile.png";
+  document.querySelectorAll("image.bagimg").forEach(function(i){
+    i.setAttribute("href", SRC);
+    i.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", SRC);
+  });
+  function sync(){
+    var p = document.getElementById("tgPhone").checked;
+    var g = document.getElementById("tgGrid").checked;
+    document.querySelectorAll("g.phone").forEach(function(e){ e.style.display = p ? "" : "none"; });
+    document.querySelectorAll("rect.bg").forEach(function(e){ e.style.opacity = g ? 1 : 0; });
+  }
+  document.getElementById("tgPhone").addEventListener("change", sync);
+  document.getElementById("tgGrid").addEventListener("change", sync);
+  sync();
+</script>
+</body>
+</html>

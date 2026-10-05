@@ -33,7 +33,7 @@ $breo_w     = function_exists( 'breo_bd_warranty_period' ) ? breo_bd_warranty_pe
 $breo_perks = array(
 	array( 'truck', __( 'Track every order', 'breo-bd' ), __( 'Live delivery updates and your full order history.', 'breo-bd' ) ),
 	/* translators: %s: warranty length, e.g. "1-year". */
-	array( 'badge', $breo_w ? sprintf( __( 'Your %s warranty, on file', 'breo-bd' ), $breo_w ) : __( 'Your warranty, on file', 'breo-bd' ), __( 'Your purchase record is here whenever you need service.', 'breo-bd' ) ),
+	array( 'badge', $breo_w ? sprintf( __( 'Your %s replacement warranty, on file', 'breo-bd' ), $breo_w ) : __( 'Your replacement warranty, on file', 'breo-bd' ), __( 'Your purchase record is here whenever you need service.', 'breo-bd' ) ),
 	array( 'cart', __( 'Faster checkout', 'breo-bd' ), __( 'Your address and phone are saved for next time.', 'breo-bd' ) ),
 	array( 'chat', __( 'Real help, locally', 'breo-bd' ), __( 'Questions about your device, answered by the Breo Bangladesh team.', 'breo-bd' ) ),
 );

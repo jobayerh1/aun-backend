@@ -48,3 +48,14 @@ node_modules/
 Thumbs.db
 *.swp
 ~$*
+
+# ── Video / large media: GitHub rejects files over 100 MB. Keep videos on
+#    the PC (or Drive), never in the code backup. (Blocked pushes Sep–Oct 2026)
+*.mp4
+*.m4v
+*.mov
+*.mkv
+*.avi
+*.webm
+*.wav
+*.psd
