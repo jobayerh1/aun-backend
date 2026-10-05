@@ -1,0 +1,25 @@
+AUN ৫% অফার — Gemini TTS ভয়েস-ওভার
+=====================================
+
+WHERE:  aistudio.google.com  →  Generate speech  (single speaker)
+MODEL:  gemini-2.5-pro-preview-tts   (flash-tts also works; pro sounds more natural)
+VOICE:  Puck   (male, upbeat)        — alternative: Zephyr (female, bright)
+TEMPERATURE: 1.0 (default). If a word comes out wrong, just regenerate.
+
+STYLE INSTRUCTIONS (paste into the style / instructions box):
+Read in Bangladeshi Bengali with standard Dhaka pronunciation, as an energetic, warm and confident TV commercial
+announcer. Upbeat and exciting but very clear, medium-fast pace. Leave a short pause (about half a second) between
+lines. Put extra excitement on "পাঁচ পার্সেন্ট ছাড়" and "আজই অর্ডার করুন".
+
+TEXT (paste exactly, one line per line):
+সব AUN প্রজেক্টরে, এখন পাঁচ পার্সেন্ট ছাড়!
+অফার চলবে তিন থেকে দশ অক্টোবর পর্যন্ত।
+চেকআউটে কুপন কোড দিলেই পাবেন এই ছাড়।
+সব মডেলেই এই অফার প্রযোজ্য।
+সীমিত সময়ের অফার, আজই অর্ডার করুন!
+
+NOTES
+- If "AUN" is not said the way you say the brand, replace it in line 1 with the Bangla spelling of your pronunciation
+  (for example "অন" or "এ ইউ এন") and regenerate.
+- Generate the whole text in ONE take (consistent voice), download the WAV, and save it here as:
+      social/aun-5pct-oct/voice.wav
