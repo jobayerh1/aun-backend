@@ -1,0 +1,23 @@
+/* Palltheme Core — admin UI */
+.pallcore-fields { display: grid; gap: 18px; padding: 6px 0; }
+.pallcore-label { display: block; font-weight: 600; margin-bottom: 6px; }
+.pallcore-field .description { margin-top: 4px; }
+.pallcore-field--icon select { min-width: 240px; vertical-align: middle; }
+.pallcore-icon-preview { display: inline-grid; place-items: center; width: 36px; height: 36px; margin-inline-start: 10px; vertical-align: middle; border-radius: 8px; background: #eef4fb; color: #2567ad; }
+.pallcore-icon-preview svg { width: 22px; height: 22px; }
+.pallcore-media__preview { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.pallcore-media__preview img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid #dcdcde; background: #f6f7f7; }
+.pallcore-pairs__head, .pallcore-pairs__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) 28px; gap: 8px; align-items: start; }
+.pallcore-pairs__head { font-size: 12px; color: #646970; margin-bottom: 4px; }
+.pallcore-pairs__row { margin-bottom: 6px; }
+.pallcore-pairs__row input, .pallcore-pairs__row textarea { width: 100%; }
+.pallcore-pairs__row textarea { min-height: 30px; resize: vertical; }
+.pallcore-pairs__row .button-link-delete { padding: 6px; text-decoration: none; }
+.pallcore-filter { width: 100%; margin-bottom: 6px; }
+.pallcore-settings .form-table th { width: 260px; }
+.pallcore-settings .nav-tab-wrapper { margin-bottom: 18px; }
+.pallcore-settings textarea.large-text { min-height: 110px; font-family: inherit; }
+.pallcore-card { max-width: 820px; padding: 20px 24px; margin: 16px 0; background: #fff; border: 1px solid #dcdcde; border-radius: 8px; }
+.pallcore-card h2 { margin-top: 0; }
+.pallcore-card ul { list-style: disc; padding-inline-start: 20px; }
+.pallcore-log { max-height: 320px; overflow: auto; padding: 12px; background: #f6f7f7; border-radius: 6px; font: 12px/1.6 monospace; }

@@ -143,6 +143,41 @@
 
 		function setMsg( txt, k ) { msg.textContent = txt || ''; msg.classList.remove( 'is-error', 'is-ok' ); if ( k ) { msg.classList.add( k ); } }
 
+		// ── When the customer sees "Network error", record WHY in the server log ──
+		// That message covers anything that is not a JSON answer: a dropped mobile
+		// upload, a timeout, the host's "Checking your browser" page, a server error
+		// page. Those happen before WordPress runs, so the server never logged them.
+		// readJSON keeps what actually came back; reportFailure sends one short line
+		// to the log -- best effort, it never blocks or delays the customer.
+		function readJSON( r ) {
+			return r.text().then( function ( txt ) {
+				try { return JSON.parse( txt ); } catch ( e ) {
+					var err = new Error( 'not json' );
+					err.status  = r.status;
+					err.snippet = String( txt ).slice( 0, 200 );
+					throw err;
+				}
+			} );
+		}
+		function reportFailure( step, err, fd, t0 ) {
+			try {
+				var bytes = 0;
+				if ( fd && fd.forEach ) {
+					fd.forEach( function ( v ) { if ( v && typeof v === 'object' && typeof v.size === 'number' ) { bytes += v.size; } } );
+				}
+				var rf = new FormData();
+				rf.append( 'action', 'aun_sp_client_error' );
+				rf.append( 'step', step );
+				rf.append( 'status', ( err && err.status ) ? err.status : 0 );
+				rf.append( 'detail', ( err && err.snippet ) ? err.snippet : ( ( err && err.message ) ? err.message : String( err ) ) );
+				rf.append( 'bytes', bytes );
+				rf.append( 'ms', t0 ? ( Date.now() - t0 ) : 0 );
+				rf.append( 'online', ( navigator.onLine === false ) ? '0' : '1' );
+				if ( navigator.sendBeacon && navigator.sendBeacon( ajax, rf ) ) { return; }
+				fetch( ajax, { method: 'POST', body: rf, keepalive: true } ).catch( function () {} );
+			} catch ( e ) {}
+		}
+
 		// POST helper with one automatic retry on a stale nonce (the page — and its
 		// embedded nonce — can be served from a long-lived cache).
 		function post( action, fd ) {
@@ -152,18 +187,18 @@
 			// which language to reply in.
 			fd.append( 'lang', lang );
 			return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: fd } )
-				.then( function ( r ) { return r.json(); } )
+				.then( readJSON )
 				.then( function ( res ) {
 					if ( res && ! res.success && res.data && res.data.code === 'bad_nonce' ) {
 						var nf = new FormData();
 						nf.append( 'action', 'aun_sp_nonce' );
 						return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: nf } )
-							.then( function ( r ) { return r.json(); } )
+							.then( readJSON )
 							.then( function ( nr ) {
 								if ( ! nr || ! nr.success || ! nr.data || ! nr.data.nonce ) { return res; }
 								nonce = nr.data.nonce;
 								fd.set( '_nonce', nonce );
-								return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: fd } ).then( function ( r ) { return r.json(); } );
+								return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: fd } ).then( readJSON );
 							} );
 					}
 					return res;
@@ -179,13 +214,14 @@
 			var fd = new FormData();
 			fd.append( 'by', by );
 			fd.append( 'query', q );
+			var trT0 = Date.now();
 			post( 'aun_sp_track', fd ).then( function ( res ) {
 				btn.disabled = false;
 				if ( ! res || ! res.success ) { setMsg( ( res && res.data && res.data.message ) || t( 'not_found' ), 'is-error' ); return; }
 				setMsg( '' );
 				lastReqs = res.data.requests || [];
 				render( lastReqs );
-			} ).catch( function () { btn.disabled = false; setMsg( t( 'net_err' ), 'is-error' ); } );
+			} ).catch( function ( e ) { btn.disabled = false; reportFailure( 'track', e, null, trT0 ); setMsg( t( 'net_err' ), 'is-error' ); } );
 		}
 		btn.addEventListener( 'click', track );
 		input.addEventListener( 'keydown', function ( e ) { if ( e.key === 'Enter' ) { e.preventDefault(); track(); } } );
@@ -410,6 +446,7 @@
 				var fd = new FormData();
 				fd.append( 'ref', ref );
 				fd.append( 'photo', file.files[0] );
+				var upT0 = Date.now();
 				post( 'aun_sp_reupload', fd ).then( function ( res ) {
 					if ( res && res.success ) {
 						// Hide the picker + button and confirm with a tick.
@@ -419,9 +456,12 @@
 						box.appendChild( el( 'span', 'aun-sp-reupload-okmsg', ( res.data && res.data.message ) || t( 'upload_done' ) ) );
 					} else {
 						send.disabled = false;
+						if ( ! ( res && res.data && res.data.message ) ) {
+							reportFailure( 'reupload', { status: 'answer-without-message', snippet: JSON.stringify( res ).slice( 0, 200 ) }, fd, upT0 );
+						}
 						m.textContent = ( res && res.data && res.data.message ) || t( 'net_err' );
 					}
-				} ).catch( function () { send.disabled = false; m.textContent = t( 'net_err' ); } );
+				} ).catch( function ( e ) { send.disabled = false; reportFailure( 'reupload', e, fd, upT0 ); m.textContent = t( 'net_err' ); } );
 			} );
 			box.appendChild( file );
 			box.appendChild( preview );
@@ -607,7 +647,8 @@
 						again.textContent = t( declined ? 'revive_declined' : 'revive' );
 						qm.textContent = ( res && res.data && res.data.message ) ? res.data.message : t( 'net_err' );
 					}
-				} ).catch( function () {
+				} ).catch( function ( e ) {
+					reportFailure( 'revive', e, null, 0 );
 					again.disabled = false;
 					again.textContent = t( declined ? 'revive_declined' : 'revive' );
 					qm.textContent = t( 'net_err' );
@@ -651,7 +692,8 @@
 					btn.textContent = was;
 					msg.textContent = ( res && res.data && res.data.message ) || t( 'net_err' );
 					msg.className = 'aun-sp-quote-payhint is-error';
-				} ).catch( function () {
+				} ).catch( function ( e ) {
+					reportFailure( 'pay', e, null, 0 );
 					btn.disabled = false;
 					btn.textContent = was;
 					msg.textContent = t( 'net_err' );
@@ -699,7 +741,7 @@
 					host.appendChild( payStage( r ) );
 				}
 				host.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
-			} ).catch( function () { qm.textContent = t( 'net_err' ); } );
+			} ).catch( function ( e ) { reportFailure( 'approve', e, null, 0 ); qm.textContent = t( 'net_err' ); } );
 		}
 
 		function timeline( events ) {

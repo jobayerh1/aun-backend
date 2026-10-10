@@ -723,7 +723,7 @@ class AUN_App_Notices {
 			$model_name = (string) ( $device['model'] ?? '' );
 			if ( 'filter' === $programme
 				&& class_exists( 'AUN_App_Filters' )
-				&& ! AUN_App_Filters::reminders_enabled( $model_name ) ) {
+				&& ! AUN_App_Filters::reminders_enabled_for( (array) $device ) ) {
 				continue;
 			}
 
@@ -759,7 +759,7 @@ class AUN_App_Notices {
 						'filter_location' => 'vent' === $programme
 							? 'vents_only'
 							: ( class_exists( 'AUN_App_Filters' )
-								? AUN_App_Filters::location( $model_name )
+								? AUN_App_Filters::location_for( (array) $device )
 								: 'unknown' ),
 						// Which programme raised this, so the app can show the
 						// right guide without re-deriving it from the model.

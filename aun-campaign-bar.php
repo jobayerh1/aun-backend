@@ -2,9 +2,21 @@
 /**
  * Plugin Name: AUN Campaign Notice Bar
  * Description: Scheduled campaign notices via shortcodes. Context-Aware Top Bars, Global Sale Detection, Flatsome badge integration, pre-installed campaign templates, Bangla (/bn/, TranslatePress) auto-switch, and stock/discontinued awareness.
- * Version: 1.9.0
+ * Version: 1.10.0
  * Author: Smart Living Bangladesh
  *
+ * v1.10.0: • CAMPAIGN POPUP BANNER, built in. Replaces the hand-pasted Flatsome [lightbox auto_open] code that had
+ *           to be added and removed by hand for every campaign. It follows the campaign's own switch and start/end
+ *           time, and behaves like the popups on the big shops: opens after N seconds, X% scrolled or on exit intent
+ *           (computers); never while typing, over another open window, in a background tab or before the image has
+ *           loaded; once per visit; N days of quiet after a close; never again for that campaign once tapped, the
+ *           code is copied or an order is placed; never on cart/checkout/account/order pages or the page it links to.
+ *           One-tap coupon copy, live countdown, bottom sheet with swipe-to-close on phones, separate phone and
+ *           বাংলা artwork, admin preview, and shown / tapped / copied / closed counts per campaign.
+ *         • FIX: WP Rocket's "Delay JavaScript execution" was holding back the top bar's timer until the visitor's
+ *           first tap or scroll (live HTML: type="text/rocketlazyloadscript"). The exclusion pattern 'aun-cb-top'
+ *           never appeared inside that script, so it never matched. Until that first interaction the countdown
+ *           stood still, a closed notice came back, and a scheduled one stayed hidden. The marker is now in the script.
  * v1.9.0: • CAMPAIGN NOW OUTRANKS THE SALE MAGNET (behaviour change). Previously, if ANY product had a
  *           scheduled sale with an end date, the automatic "Flash Sale Active!" message replaced a
  *           global campaign on EVERY page except the discounted product's own — one discounted
@@ -295,7 +307,7 @@ class AUN_Campaign_Notice_Bar {
     }
 
     public static function defaults() {
-        return [
+        return array_merge(AUN_CB_Popup::defaults(), [
             'enabled'                       => '1',
             'message'                       => '🎉 Offer — Use code <strong>EIDBIGSCREEN</strong> (Ends 20 Mar)',
             'message_bn'                    => '🎉 অফার — কোড <strong>EIDBIGSCREEN</strong> ব্যবহার করুন (২০ মার্চ পর্যন্ত)',
@@ -317,7 +329,7 @@ class AUN_Campaign_Notice_Bar {
             'smart_sale_top_message_bn'     => '🔥 <strong style="color:#fff;">ফ্ল্যাশ সেল চলছে!</strong> আজই এই মডেলে <strong style="color:#fde047;">{discount_amount}</strong> সাশ্রয় করুন।',
             'smart_sale_global_top_message' => '🔥 <strong style="color:#fff;">Flash Sale Active!</strong> We have special discounts running right now. <a href="/shop/" style="color:#fde047; text-decoration:underline; font-weight:700;">Shop the Sale →</a>',
             'smart_sale_global_top_message_bn' => '🔥 <strong style="color:#fff;">ফ্ল্যাশ সেল চলছে!</strong> এখনই বিশেষ ছাড় চলছে। <a href="/shop/" style="color:#fde047; text-decoration:underline; font-weight:700;">সেল দেখুন →</a>',
-        ];
+        ]);
     }
 
     /* ------------------------------------------------------------- Campaign templates */
@@ -459,7 +471,7 @@ class AUN_Campaign_Notice_Bar {
         $from_form = !empty($input['_form']);
 
         // Checkboxes: absent means off, but only on a real form submission.
-        foreach (['enabled', 'smart_sale_enabled', 'allow_dismiss'] as $key) {
+        foreach (['enabled', 'smart_sale_enabled', 'allow_dismiss', 'popup_enabled', 'popup_countdown', 'popup_exit'] as $key) {
             if (isset($input[$key])) {
                 $out[$key] = ($input[$key] === '1') ? '1' : '0';
             } elseif ($from_form) {
@@ -499,6 +511,9 @@ class AUN_Campaign_Notice_Bar {
                 $out[$key] = wp_kses_post($input[$key]);
             }
         }
+
+        // The popup banner's own fields (same rule: absent means leave alone).
+        $out = AUN_CB_Popup::sanitize($input, $out);
 
         return $out;
     }
@@ -686,6 +701,9 @@ class AUN_Campaign_Notice_Bar {
         }
         if ($override !== '') {
             echo '<p style="margin:10px 0 0;color:#9a6700;">⚠️ ' . wp_kses_post($override) . '</p>';
+        }
+        if (in_array($state['key'], ['live', 'scheduled'], true)) {
+            echo '<p style="margin:10px 0 0;color:#444;">🪧 ' . esc_html(AUN_CB_Popup::status_line($opts)) . '</p>';
         }
 
         echo '</div>';
@@ -928,6 +946,8 @@ class AUN_Campaign_Notice_Bar {
                                (filter <code>aun_cb_topbar_selector</code>).</p>
                         </td>
                     </tr>
+
+                    <?php AUN_CB_Popup::settings_rows($opts); ?>
                 </table>
 
                 <?php submit_button('Save Changes'); ?>
@@ -1413,7 +1433,10 @@ class AUN_Campaign_Notice_Bar {
      content passes through wpautop, which can slip a <p> or <br> in between and
      would silently break a sibling walk. */
   var el = document.getElementById(<?php echo wp_json_encode($id); ?>);
-  if(!el) return;
+  /* The class test is also WP Rocket's marker: 'aun-cb-top' must appear INSIDE this script
+     for rocket_delay_js_exclusions to match it. Without it the script was held back until the
+     visitor's first tap or scroll, so the countdown stood still and a closed notice came back. */
+  if(!el || (' ' + el.className + ' ').indexOf(' aun-cb-top ') < 0) return;
 
   var start = parseInt(el.getAttribute('data-start')||'0',10),
       end   = parseInt(el.getAttribute('data-end')||'0',10),
@@ -1525,12 +1548,15 @@ class AUN_Campaign_Notice_Bar {
 
   var x = el.querySelector('.aun-cb-x');
   if(x){
-    x.addEventListener('click', function(){
+    /* isRocket: see the popup script. Without it WP Rocket parks this listener until
+       its delayed scripts load, so the first tap on the x did nothing. */
+    x.addEventListener('click', function(e){
+      if(e && e.stopPropagation){ e.stopPropagation(); }
       remember();
       el.hidden = true;
       clearTimeout(cdTimer);
       syncBar();
-    });
+    }, { isRocket: true });
   }
 
   tick();
@@ -1806,7 +1832,1115 @@ class AUN_Campaign_Notice_Bar {
     }
 }
 
+/* =====================================================================================
+ * CAMPAIGN POPUP BANNER (1.10.0)
+ *
+ * A banner that opens over the page while the global campaign is live. It shares the
+ * campaign's switch and its start/end time (window_ts()), so there is one schedule to
+ * manage, not two.
+ *
+ * Every "should it show?" decision that depends on the VISITOR is made in the browser,
+ * never on the server: WP Rocket serves one cached copy of each page to everybody, so a
+ * server-side "this person already saw it" would be baked into the cache for the next
+ * visitor. The server only decides things that are the same for everyone on a URL (is
+ * this the checkout, is this the Bangla page, is the popup switched on).
+ *
+ * The browser then behaves like the popups on the big shops:
+ *   - waits: N seconds, or X% scrolled, or the mouse heading for the tabs (computers)
+ *   - never interrupts: not while typing, not over another open window (cart drawer,
+ *     image zoom, language prompt, Google sign-in), not in a background tab, and not
+ *     before the image has fully loaded, so it never appears half-drawn
+ *   - never nags: once per visit; N days of quiet after a close; never again for this
+ *     campaign once they tap it, copy the code or place an order
+ *   - never on cart / checkout / account / order pages, nor on the page it links to
+ * ===================================================================================== */
+class AUN_CB_Popup {
+    const STATS       = 'aun_cb_popup_stats';
+    const PREVIEW_ARG = 'aun_cb_popup_preview';
+    const BP          = 849;   // phones + tablets below this (Flatsome's "medium" breakpoint)
+
+    private static $printed = false;
+
+    public static function init() {
+        add_action('wp_footer', [__CLASS__, 'render'], 50);
+        add_action('wp_ajax_aun_cb_pop_stat', [__CLASS__, 'ajax_stat']);
+        add_action('wp_ajax_nopriv_aun_cb_pop_stat', [__CLASS__, 'ajax_stat']);
+        add_action('admin_enqueue_scripts', [__CLASS__, 'admin_assets']);
+    }
+
+    public static function defaults() {
+        return [
+            'popup_enabled'    => '0',   // off until an image is chosen and it is switched on
+            'popup_image'      => 0,
+            'popup_image_m'    => 0,     // optional taller artwork for phones
+            'popup_image_bn'   => 0,
+            'popup_image_m_bn' => 0,
+            'popup_link'       => '',
+            'popup_code'       => '',
+            'popup_button'     => 'Shop now',
+            'popup_button_bn'  => 'এখনই কিনুন',
+            'popup_countdown'  => '1',
+            'popup_width'      => '560',
+            'popup_delay'      => '8',
+            'popup_scroll'     => '40',
+            'popup_exit'       => '1',
+            'popup_pageview'   => '1',
+            'popup_snooze'     => '3',
+            'popup_devices'    => 'all', // all | desktop | mobile
+            'popup_exclude'    => '',
+        ];
+    }
+
+    /* ------------------------------------------------------------------ settings */
+
+    /** Called from AUN_Campaign_Notice_Bar::sanitize_options(). Absent = leave alone. */
+    public static function sanitize($input, $out) {
+        foreach (['popup_image', 'popup_image_m', 'popup_image_bn', 'popup_image_m_bn'] as $k) {
+            if (isset($input[$k])) {
+                $id = absint($input[$k]);
+                $out[$k] = ($id && wp_attachment_is_image($id)) ? $id : 0;
+            }
+        }
+        if (isset($input['popup_link'])) {
+            $out['popup_link'] = self::clean_link($input['popup_link']);
+        }
+        if (isset($input['popup_code'])) {
+            // Coupon codes have no spaces; a stray one would make the copied code fail.
+            $out['popup_code'] = substr(preg_replace('/\s+/', '', sanitize_text_field($input['popup_code'])), 0, 40);
+        }
+        foreach (['popup_button', 'popup_button_bn'] as $k) {
+            if (isset($input[$k])) {
+                $out[$k] = self::cut(sanitize_text_field($input[$k]), 60);
+            }
+        }
+        $ints = [
+            'popup_width'    => [320, 900],
+            'popup_delay'    => [0, 300],
+            'popup_scroll'   => [0, 100],
+            'popup_pageview' => [1, 5],
+            'popup_snooze'   => [1, 90],
+        ];
+        foreach ($ints as $k => $range) {
+            if (isset($input[$k])) {
+                $out[$k] = (string) max($range[0], min($range[1], intval($input[$k])));
+            }
+        }
+        if (isset($input['popup_devices'])) {
+            $out['popup_devices'] = in_array($input['popup_devices'], ['all', 'desktop', 'mobile'], true) ? $input['popup_devices'] : 'all';
+        }
+        if (isset($input['popup_exclude'])) {
+            $lines = [];
+            foreach (preg_split('/\r\n|\r|\n/', (string) $input['popup_exclude']) as $line) {
+                $line = trim(sanitize_text_field($line));
+                if ($line === '') continue;
+                // A pasted full address becomes its path, which is what gets matched.
+                if (strpos($line, '://') !== false) {
+                    $p = wp_parse_url($line, PHP_URL_PATH);
+                    $line = is_string($p) && $p !== '' ? $p : '';
+                }
+                if ($line !== '') $lines[] = $line;
+            }
+            $out['popup_exclude'] = implode("\n", array_slice(array_unique($lines), 0, 30));
+        }
+        return $out;
+    }
+
+    private static function cut($s, $n) {
+        return function_exists('mb_substr') ? mb_substr($s, 0, $n) : substr($s, 0, $n);
+    }
+
+    /** A path on this site ("/projector-price/") stays relative; anything else must be http(s). */
+    private static function clean_link($v) {
+        $v = trim((string) $v);
+        if ($v === '') return '';
+        if ($v[0] === '/' && (!isset($v[1]) || $v[1] !== '/')) {
+            $clean = esc_url_raw(home_url($v));
+            return $clean !== '' ? wp_make_link_relative($clean) : '';
+        }
+        return esc_url_raw($v, ['http', 'https']);
+    }
+
+    /**
+     * Identity of THIS campaign's popup. Closing or using one campaign must never
+     * silence the next, so any change to the dates, artwork, link or code is a new
+     * signature — and everyone sees the new one.
+     */
+    public static function signature($opts) {
+        $w = AUN_Campaign_Notice_Bar::window_ts();
+        return substr(md5(implode('|', [
+            $w['start'], $w['end'],
+            (int) $opts['popup_image'], (int) $opts['popup_image_m'],
+            (int) $opts['popup_image_bn'], (int) $opts['popup_image_m_bn'],
+            (string) $opts['popup_link'], (string) $opts['popup_code'],
+        ])), 0, 12);
+    }
+
+    /* ------------------------------------------------------------------ server-side gate */
+
+    public static function is_preview() {
+        return isset($_GET[self::PREVIEW_ARG]) && current_user_can('manage_options');
+    }
+
+    /** Pages where a popup would get in the way. Same answer for every visitor on the URL. */
+    public static function excluded_here($opts) {
+        if (function_exists('is_cart') && (is_cart() || is_checkout() || is_account_page())) return true;
+        if (function_exists('is_wc_endpoint_url') && is_wc_endpoint_url()) return true;
+        if (is_feed() || is_embed() || is_customize_preview()) return true;
+        // Page builders' editing canvases.
+        if (isset($_GET['uxb_iframe']) || isset($_GET['elementor-preview'])) return true;
+
+        $path = strtolower((string) wp_parse_url(isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH));
+        foreach (preg_split('/\n/', (string) $opts['popup_exclude']) as $frag) {
+            $frag = strtolower(trim($frag));
+            if ($frag !== '' && strpos($path, $frag) !== false) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The artwork for this visitor's language and screen. Language beats device: on
+     * the Bangla site a Bangla main image is a better phone fallback than an English
+     * phone image.
+     */
+    private static function image_for($opts, $bn, $phone) {
+        if ($phone) {
+            $order = $bn ? ['popup_image_m_bn', 'popup_image_bn', 'popup_image_m', 'popup_image'] : ['popup_image_m', 'popup_image'];
+        } else {
+            $order = $bn ? ['popup_image_bn', 'popup_image'] : ['popup_image'];
+        }
+        foreach ($order as $k) {
+            $id = (int) $opts[$k];
+            if ($id && wp_attachment_is_image($id)) return $id;
+        }
+        return 0;
+    }
+
+    /* ------------------------------------------------------------------ front end */
+
+    public static function render() {
+        if (is_admin() || wp_doing_ajax() || (defined('REST_REQUEST') && REST_REQUEST)) return;
+        if (self::$printed) return;
+        self::$printed = true;
+
+        // An order just went through: never offer this campaign to them again.
+        if (function_exists('is_order_received_page') && is_order_received_page()) {
+            self::mark_converted();
+            return;
+        }
+
+        $preview = self::is_preview();
+        $opts    = AUN_Campaign_Notice_Bar::get_options();
+        $w       = AUN_Campaign_Notice_Bar::window_ts();
+
+        if (!$preview) {
+            if ($opts['popup_enabled'] !== '1' || $opts['enabled'] !== '1') return;
+            // Ended: print nothing. Not yet started: print it, and the browser opens it
+            // only once the start time has passed — the page may sit in WP Rocket's cache
+            // across that moment.
+            if ($w['end'] && time() >= $w['end']) return;
+            if (self::excluded_here($opts)) return;
+        }
+
+        $bn  = AUN_Campaign_Notice_Bar::is_bn();
+        $id  = self::image_for($opts, $bn, false);
+        $idm = self::image_for($opts, $bn, true);
+        if (!$id) return;
+
+        echo self::style();
+        echo self::markup($opts, $w, $bn, $id, $idm, $preview);
+        echo self::script();
+    }
+
+    private static function mark_converted() {
+        $opts = AUN_Campaign_Notice_Bar::get_options();
+        if ($opts['popup_enabled'] !== '1' || $opts['enabled'] !== '1') return;
+        echo '<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">/* aun-cb-pop */'
+           . 'try{localStorage.setItem(' . wp_json_encode('aunCbPopDone:' . self::signature($opts)) . ',"1");}catch(e){}</script>' . "\n";
+    }
+
+    private static function strings($bn) {
+        return $bn ? [
+            'label'    => 'বিশেষ অফার',
+            'close'    => 'বন্ধ করুন',
+            'ends'     => 'অফার শেষ হতে বাকি',
+            'codeL'    => 'আপনার কোড',
+            'copy'     => 'কপি',
+            'copied'   => 'কপি হয়েছে',
+            'hint'     => 'চেকআউটে এই কোডটি ব্যবহার করুন',
+            'hintDone' => 'কপি হয়েছে — চেকআউটে পেস্ট করুন',
+            'copyFail' => 'কোডটি কপি করতে চেপে ধরুন',
+            'preview'  => 'প্রিভিউ — শুধু আপনি দেখছেন',
+        ] : [
+            'label'    => 'Special offer',
+            'close'    => 'Close',
+            'ends'     => 'Offer ends in',
+            'codeL'    => 'Your code',
+            'copy'     => 'Copy',
+            'copied'   => 'Copied',
+            'hint'     => 'Use this code at checkout',
+            'hintDone' => 'Copied — paste it at checkout',
+            'copyFail' => 'Press and hold the code to copy it',
+            'preview'  => 'Preview — only you can see this',
+        ];
+    }
+
+    /** width / height of an attachment, for fitting the card to short screens. */
+    private static function ratio($id) {
+        $src = wp_get_attachment_image_src($id, 'full');
+        return ($src && $src[1] > 0 && $src[2] > 0) ? round($src[1] / $src[2], 4) : 0;
+    }
+
+    private static function markup($opts, $w, $bn, $id, $idm, $preview) {
+        $t      = self::strings($bn);
+        $sig    = self::signature($opts);
+        $width  = (int) $opts['popup_width'];
+        $link   = (string) $opts['popup_link'];
+        $code   = (string) $opts['popup_code'];
+        $button = trim((string) ($bn && trim((string) $opts['popup_button_bn']) !== '' ? $opts['popup_button_bn'] : $opts['popup_button']));
+        $cd     = $opts['popup_countdown'] === '1' && $w['end'] && $w['end'] > time();
+
+        $cfg = [
+            'start'   => (int) $w['start'],
+            'end'     => (int) $w['end'],
+            'sig'     => $sig,
+            'delay'   => (int) $opts['popup_delay'],
+            'scroll'  => (int) $opts['popup_scroll'],
+            'exit'    => $opts['popup_exit'] === '1' ? 1 : 0,
+            'pv'      => (int) $opts['popup_pageview'],
+            'snooze'  => (int) $opts['popup_snooze'],
+            'dev'     => $opts['popup_devices'],
+            'bp'      => self::BP,
+            'w'       => $width,
+            'ar'      => self::ratio($id),
+            'arM'     => self::ratio($idm),
+            'link'    => $link,
+            'bn'      => $bn ? 1 : 0,
+            'preview' => $preview ? 1 : 0,
+            'ajax'    => admin_url('admin-ajax.php'),
+            't'       => ['copy' => $t['copy'], 'copied' => $t['copied'], 'hint' => $t['hint'], 'hintDone' => $t['hintDone'], 'copyFail' => $t['copyFail']],
+        ];
+
+        // ---- the picture: real URLs held back in data-* until the browser decides to load
+        $src    = wp_get_attachment_image_src($id, 'full');
+        $srcset = (string) wp_get_attachment_image_srcset($id, 'full');
+        $alt    = trim((string) get_post_meta($id, '_wp_attachment_image_alt', true));
+        if ($alt === '') { $alt = $t['label']; }
+
+        $pic = '<picture>';
+        if ($idm && $idm !== $id) {
+            $m    = wp_get_attachment_image_src($idm, 'full');
+            $mset = (string) wp_get_attachment_image_srcset($idm, 'full');
+            $pic .= '<source media="(max-width: ' . self::BP . 'px)" data-srcset="' . esc_attr($mset !== '' ? $mset : $m[0]) . '" sizes="100vw"'
+                  . ' width="' . (int) $m[1] . '" height="' . (int) $m[2] . '">';
+        }
+        $pic .= '<img class="aun-pop__img skip-lazy no-lazyload" data-no-lazy="1" decoding="async" alt="' . esc_attr($alt) . '"'
+              . ' width="' . (int) $src[1] . '" height="' . (int) $src[2] . '"'
+              . ' data-src="' . esc_url($src[0]) . '"'
+              . ($srcset !== '' ? ' data-srcset="' . esc_attr($srcset) . '" data-sizes="(max-width: ' . self::BP . 'px) 100vw, ' . $width . 'px"' : '')
+              . '></picture>';
+
+        $media = $link !== ''
+            ? '<a class="aun-pop__media" href="' . esc_url($link) . '" data-aun-pop-go>' . $pic . '</a>'
+            : '<div class="aun-pop__media">' . $pic . '</div>';
+
+        // ---- the strip under the banner
+        $foot = '';
+        if ($cd) {
+            $foot .= '<div class="aun-pop__cd"><span class="aun-pop__dot" aria-hidden="true"></span>'
+                   . esc_html($t['ends']) . ' <b>&nbsp;</b></div>';
+        }
+        if ($code !== '') {
+            $foot .= '<div class="aun-pop__code">'
+                   . '<span class="aun-pop__code-txt"><span class="aun-pop__code-l">' . esc_html($t['codeL']) . '</span>'
+                   . '<span class="aun-pop__code-v">' . esc_html($code) . '</span></span>'
+                   . '<button type="button" class="aun-pop__copy" data-code="' . esc_attr($code) . '">'
+                   . '<svg class="aun-pop__ic-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>'
+                   . '<svg class="aun-pop__ic-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+                   . '<span class="aun-pop__copy-t">' . esc_html($t['copy']) . '</span></button>'
+                   . '</div>'
+                   . '<p class="aun-pop__hint" aria-live="polite">' . esc_html($t['hint']) . '</p>';
+        }
+        if ($link !== '' && $button !== '') {
+            $foot .= '<a class="aun-pop__cta" href="' . esc_url($link) . '" data-aun-pop-go>' . esc_html($button)
+                   . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>';
+        }
+
+        $html  = '<div id="aun-cb-pop" class="aun-pop' . ($foot === '' ? ' aun-pop--bare' : '') . '" hidden'
+               . ' data-cfg="' . esc_attr(wp_json_encode($cfg)) . '" style="--aun-pop-w:' . $width . 'px">';
+        $html .= '<div class="aun-pop__bg" data-aun-pop-close></div>';
+        $html .= '<div class="aun-pop__card" role="dialog" aria-modal="true" aria-label="' . esc_attr($t['label']) . '" tabindex="-1">';
+        $html .= '<span class="aun-pop__grab" aria-hidden="true"></span>';
+        if ($preview) {
+            $html .= '<span class="aun-pop__tag">' . esc_html($t['preview']) . '</span>';
+        }
+        $html .= '<button type="button" class="aun-pop__x" data-aun-pop-close aria-label="' . esc_attr($t['close']) . '">'
+               . '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+        $html .= $media;
+        if ($foot !== '') {
+            $html .= '<div class="aun-pop__foot">' . $foot . '</div>';
+        }
+        $html .= '</div></div>' . "\n";
+        return $html;
+    }
+
+    private static function style() {
+        return <<<'CSS'
+<style id="aun-cb-pop-css" data-no-optimize="1" data-no-minify="1">
+.aun-pop[hidden]{display:none!important}
+.aun-pop{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;-webkit-tap-highlight-color:transparent;font-family:inherit;color:#0f172a}
+.aun-pop *{box-sizing:border-box}
+.aun-pop__bg{position:absolute;inset:0;background:rgba(9,15,28,.62);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease}
+.aun-pop__card{position:relative;width:100%;max-width:var(--aun-pop-w,560px);max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;background:#fff;border-radius:20px;box-shadow:0 32px 80px -24px rgba(2,12,27,.6),0 0 0 1px rgba(15,23,42,.06);opacity:0;transform:translateY(18px) scale(.965);transition:transform .42s cubic-bezier(.2,.9,.3,1.1),opacity .25s ease;outline:none;scrollbar-width:none}
+.aun-pop__card::-webkit-scrollbar{display:none}
+.aun-pop.is-open .aun-pop__bg{opacity:1}
+.aun-pop.is-open .aun-pop__card{opacity:1;transform:none}
+.aun-pop__media{display:block;margin:0 auto;line-height:0;border-radius:20px 20px 0 0;overflow:hidden}
+.aun-pop--bare .aun-pop__media{border-radius:20px}
+.aun-pop__media img{display:block;width:100%;height:auto;max-width:100%;margin:0}
+a.aun-pop__media img{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+a.aun-pop__media:hover img{transform:scale(1.015)}
+.aun-pop .aun-pop__x{position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;min-height:0;margin:0;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#0f172a;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(2,12,27,.28);transition:transform .15s ease,background .15s ease;line-height:1;text-transform:none;letter-spacing:0}
+.aun-pop .aun-pop__x:hover{background:#fff;transform:rotate(90deg)}
+.aun-pop__x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round}
+.aun-pop__foot{display:flex;flex-direction:column;gap:12px;padding:18px 20px 20px;line-height:1.35}
+.aun-pop__cd{align-self:center;display:inline-flex;align-items:center;gap:6px;padding:6px 14px 6px 12px;border-radius:999px;background:#eef6ff;color:#3b5b7a;font-size:13px;font-weight:600}
+.aun-pop__cd b{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";color:#0188fe;font-weight:800;letter-spacing:.02em}
+.aun-pop__dot{width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.55);animation:aunPopPulse 1.8s ease-out infinite;margin-right:2px}
+@keyframes aunPopPulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}100%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
+.aun-pop__code{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border:2px dashed #93c9ff;border-radius:14px;background:#f5faff}
+.aun-pop__code-txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.aun-pop__code-l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;line-height:1.3}
+.aun-pop__code-v{font-size:21px;font-weight:800;letter-spacing:.08em;color:#0f172a;line-height:1.2;overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}
+.aun-pop .aun-pop__copy{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:44px;margin:0;padding:0 18px;border:0;border-radius:11px;background:#0188fe;color:#fff;font-family:inherit;font-size:14px;font-weight:700;line-height:1;letter-spacing:0;text-transform:none;cursor:pointer;box-shadow:0 6px 16px -8px rgba(1,136,254,.8);transition:background .15s ease,transform .1s ease}
+.aun-pop .aun-pop__copy:hover{background:#0074dc}
+.aun-pop .aun-pop__copy:active{transform:scale(.96)}
+.aun-pop__copy svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.aun-pop.is-copied .aun-pop__copy{background:#16a34a;box-shadow:0 6px 16px -8px rgba(22,163,74,.8)}
+.aun-pop__ic-ok,.aun-pop.is-copied .aun-pop__ic-copy{display:none}
+.aun-pop.is-copied .aun-pop__ic-ok{display:block;stroke-width:2.6}
+.aun-pop.is-copied .aun-pop__code{border-color:#86efac;background:#f0fdf4}
+.aun-pop__hint{margin:-4px 0 0;padding:0;text-align:center;font-size:12.5px;color:#64748b}
+.aun-pop.is-copied .aun-pop__hint{color:#15803d;font-weight:600}
+.aun-pop .aun-pop__cta{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;margin:0;padding:0 20px;border-radius:13px;background:linear-gradient(135deg,#0188fe,#00c6ff);color:#fff;font-size:16px;font-weight:800;letter-spacing:.01em;text-decoration:none;box-shadow:0 10px 24px -10px rgba(1,136,254,.75);transition:transform .15s ease,box-shadow .15s ease}
+.aun-pop .aun-pop__cta:hover{color:#fff;transform:translateY(-1px);box-shadow:0 14px 28px -10px rgba(1,136,254,.85)}
+.aun-pop__cta svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s ease}
+.aun-pop__cta:hover svg{transform:translateX(3px)}
+.aun-pop a:focus-visible,.aun-pop button:focus-visible{outline:3px solid #0188fe;outline-offset:3px}
+.aun-pop__tag{position:absolute;top:14px;left:14px;z-index:3;padding:5px 10px;border-radius:999px;background:#0f172a;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.02em;pointer-events:none}
+.aun-pop__grab{display:none}
+html.aun-pop-lock{overflow:hidden!important;scrollbar-gutter:stable;overscroll-behavior:none}
+@media (max-width:849px){
+.aun-pop{align-items:flex-end;padding:0}
+.aun-pop__card{max-width:100%!important;border-radius:22px 22px 0 0;max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px);opacity:1;transform:translateY(105%);transition:transform .45s cubic-bezier(.2,.9,.25,1);padding-bottom:env(safe-area-inset-bottom)}
+.aun-pop__media{border-radius:22px 22px 0 0}
+.aun-pop--bare .aun-pop__media{border-radius:22px 22px 0 0}
+.aun-pop__grab{display:block;position:absolute;top:8px;left:50%;z-index:3;width:42px;height:5px;margin-left:-21px;border-radius:3px;background:rgba(255,255,255,.9);box-shadow:0 1px 5px rgba(0,0,0,.3)}
+.aun-pop .aun-pop__x{top:14px;right:12px}
+.aun-pop__foot{padding:16px 16px 18px}
+}
+@media (prefers-reduced-motion:reduce){.aun-pop__bg,.aun-pop__card,.aun-pop__media img,.aun-pop__x{transition:none!important}.aun-pop__dot{animation:none}}
+</style>
+CSS;
+    }
+
+    private static function script() {
+        return <<<'JS'
+<script data-no-optimize="1" data-no-minify="1" data-cfasync="false">
+(function(){
+  /* aun-cb-pop: everything here decides for THIS visitor, in their browser. The page
+     itself is the same cached copy for everyone. */
+  var root = document.getElementById('aun-cb-pop');
+  if(!root || root.getAttribute('data-ready')) return;
+  root.setAttribute('data-ready', '1');
+  var C;
+  try{ C = JSON.parse(root.getAttribute('data-cfg') || '{}'); }catch(e){ return; }
+  var T = C.t || {};
+  /* fixed positioning must not be trapped inside a transformed theme wrapper */
+  if(root.parentNode !== document.body && document.body){ document.body.appendChild(root); }
+
+  var card  = root.querySelector('.aun-pop__card'),
+      media = root.querySelector('.aun-pop__media'),
+      foot  = root.querySelector('.aun-pop__foot'),
+      img   = root.querySelector('.aun-pop__img');
+  function NOW(){ return Date.now(); }
+  var t0 = NOW();
+
+  /* WP Rocket's "Delay JavaScript execution" REPLACES addEventListener: until its
+     delayed scripts have loaded (which waits for the visitor's first tap or key), any
+     listener for a click, key, touch or mouse event is parked instead of attached.
+     The popup's close button, Esc, Copy, swipe and exit intent then did nothing until
+     a second later — longer on a slow phone. Rocket attaches a listener at once when
+     its options carry isRocket:true; browsers ignore the unknown key, so this is
+     harmless anywhere else. */
+  function on(el, type, fn, opts){ opts = opts || {}; opts.isRocket = true; el.addEventListener(type, fn, opts); }
+  function off(el, type, fn, opts){ opts = opts || {}; opts.isRocket = true; el.removeEventListener(type, fn, opts); }
+  /* Rocket also holds back the page's first click and replays it later. Our own
+     controls keep their clicks to themselves, so a link opens at once and nothing
+     runs twice. */
+  function own(e){ if(e && e.stopPropagation){ e.stopPropagation(); } }
+
+  function get(k){ try{ return window.localStorage.getItem(k); }catch(e){ return null; } }
+  function put(k, v){ try{ window.localStorage.setItem(k, v); }catch(e){} }
+  var K_DONE = 'aunCbPopDone:' + C.sig, K_SNOOZE = 'aunCbPopSnooze:' + C.sig, K_SESS = 'aunCbPopSess';
+
+  function mm(q){ return !!(window.matchMedia && window.matchMedia(q).matches); }
+  function isPhone(){ return mm('(max-width: ' + C.bp + 'px)'); }
+  function reduced(){ return mm('(prefers-reduced-motion: reduce)'); }
+
+  /* A visit = activity with no gap over 30 minutes, shared by all of this visitor's tabs. */
+  function session(){
+    var s = null;
+    try{ s = JSON.parse(get(K_SESS) || 'null'); }catch(e){}
+    if(!s || typeof s !== 'object' || !s.last || NOW() - s.last > 1800000){ s = { pv: 0, seen: {} }; }
+    if(!s.seen || typeof s.seen !== 'object'){ s.seen = {}; }
+    return s;
+  }
+  function saveSession(s){ s.last = NOW(); put(K_SESS, JSON.stringify(s)); }
+
+  var sent = {};
+  function stat(ev){
+    if(C.preview || sent[ev]) return;
+    sent[ev] = 1;
+    try{
+      if(C.ajax && navigator.sendBeacon){
+        var fd = new FormData();
+        fd.append('action', 'aun_cb_pop_stat'); fd.append('ev', ev); fd.append('sig', C.sig);
+        navigator.sendBeacon(C.ajax, fd);
+      }
+    }catch(e){}
+    try{ if(window.dataLayer && window.dataLayer.push){ window.dataLayer.push({ event: 'aun_campaign_popup', popup_action: ev, popup_campaign: C.sig }); } }catch(e){}
+  }
+
+  function inWindow(){ var s = NOW() / 1000; return (!C.start || s >= C.start) && (!C.end || s < C.end); }
+  function norm(p){ p = (p || '/').replace(/^\/bn(?=\/|$)/i, '').replace(/\/+$/, '').toLowerCase(); return p || '/'; }
+  /* Advertising a page to someone who is already on it is noise. */
+  function onLandingPage(){
+    if(!C.link) return false;
+    var a = document.createElement('a'); a.href = C.link;
+    if(a.hostname && a.hostname !== location.hostname) return false;
+    var p = a.pathname.charAt(0) === '/' ? a.pathname : '/' + a.pathname;
+    return norm(p) === norm(location.pathname);
+  }
+
+  function eligible(){
+    if(C.preview) return true;
+    if(!inWindow()) return false;
+    if(C.dev === 'desktop' && isPhone()) return false;
+    if(C.dev === 'mobile' && !isPhone()) return false;
+    if(get(K_DONE)) return false;
+    var until = parseInt(get(K_SNOOZE) || '0', 10);
+    if(until && NOW() < until) return false;
+    if(session().seen[C.sig]) return false;
+    if(onLandingPage()) return false;
+    return true;
+  }
+
+  /* ---- the image: fetched quietly after the page has loaded; the popup only ever
+     opens on a fully loaded banner, never a half-drawn one ---- */
+  var imgState = 0, imgWait = [];          /* 0 idle, 1 loading, 2 ready, 3 failed */
+  function settle(ok){
+    if(imgState > 1) return;
+    imgState = ok ? 2 : 3;
+    var q = imgWait; imgWait = [];
+    for(var i = 0; i < q.length; i++){ q[i](ok); }
+  }
+  function loadImage(){
+    if(imgState) return;
+    if(!img){ imgState = 2; return; }
+    imgState = 1;
+    var pic = img.parentNode;
+    if(pic && pic.tagName === 'PICTURE'){
+      var ss = pic.getElementsByTagName('source');
+      for(var i = 0; i < ss.length; i++){ var v = ss[i].getAttribute('data-srcset'); if(v){ ss[i].setAttribute('srcset', v); } }
+    }
+    var sz = img.getAttribute('data-sizes'), set = img.getAttribute('data-srcset');
+    if(sz){ img.setAttribute('sizes', sz); }
+    if(set){ img.setAttribute('srcset', set); }
+    img.onload  = function(){ settle(true); };
+    img.onerror = function(){ settle(false); };
+    img.setAttribute('src', img.getAttribute('data-src'));
+    if(img.complete && img.naturalWidth){ settle(true); }
+    setTimeout(function(){ settle(!!(img.complete && img.naturalWidth)); }, 20000);
+  }
+  function whenImage(cb){
+    if(imgState > 1){ cb(imgState === 2); return; }
+    imgWait.push(cb);
+    loadImage();
+  }
+
+  /* ---- waiting for the right moment ---- */
+  var fired = false, retries = 0, delayT = 0, opened = false;
+
+  function typing(){
+    var a = document.activeElement;
+    if(!a || a === document.body || root.contains(a)) return false;
+    if(a.isContentEditable) return true;
+    if(a.tagName === 'TEXTAREA' || a.tagName === 'SELECT') return true;
+    if(a.tagName === 'INPUT'){
+      return ['button','submit','reset','checkbox','radio','image','range','color','file','hidden'].indexOf((a.type || 'text').toLowerCase()) < 0;
+    }
+    return false;
+  }
+  /* Cart drawer / menu (Flatsome), image zoom, TranslatePress language prompt,
+     Google sign-in, or any other open dialog. */
+  function otherWindowOpen(){
+    var list = document.querySelectorAll('.mfp-wrap, .pswp--open, #trp_ald_modal_container, #credential_picker_container, #credential_picker_iframe, [aria-modal="true"]');
+    for(var i = 0; i < list.length; i++){
+      var el = list[i];
+      if(el === root || root.contains(el)) continue;
+      if(el.getClientRects().length && window.getComputedStyle(el).visibility !== 'hidden'){ return true; }
+    }
+    return false;
+  }
+  function busy(){ return !C.preview && (typing() || otherWindowOpen()); }
+
+  function trigger(){
+    if(fired) return;
+    fired = true;
+    clearTimeout(delayT);
+    off(window, 'scroll', onScroll, { passive: true });
+    off(document, 'mouseout', onLeave);
+    attempt();
+  }
+  function attempt(){
+    if(opened) return;
+    if(document.visibilityState === 'hidden'){
+      var again = function(){
+        if(document.visibilityState !== 'visible') return;
+        off(document, 'visibilitychange', again);
+        setTimeout(attempt, 1200);   /* let them settle back in first */
+      };
+      on(document, 'visibilitychange', again);
+      return;
+    }
+    if(busy()){
+      if(++retries <= 40){ setTimeout(attempt, 3000); }   /* keep waiting, up to 2 minutes */
+      return;
+    }
+    whenImage(function(ok){
+      if(!ok || !eligible()) return;
+      if(busy()){ if(++retries <= 40){ setTimeout(attempt, 3000); } return; }
+      open();
+    });
+  }
+  function onScroll(){
+    var de = document.documentElement,
+        max = Math.max(de.scrollHeight, document.body ? document.body.scrollHeight : 0) - window.innerHeight;
+    if(max < 200) return;
+    if((window.pageYOffset || de.scrollTop || 0) / max * 100 >= C.scroll && NOW() - t0 >= 2500){ trigger(); }
+  }
+  /* Computers: the pointer leaving through the top of the window, towards the tabs,
+     the address bar or the close button. */
+  function onLeave(e){
+    if(e.relatedTarget || e.toElement) return;
+    if(e.clientY > 10 || NOW() - t0 < 3000) return;
+    trigger();
+  }
+
+  /* ---- open / close ---- */
+  var lastFocus = null, cdT = 0;
+
+  function fit(){
+    var phone = isPhone(), ar = phone ? (C.arM || C.ar) : C.ar;
+    card.style.maxWidth = '';
+    if(media){ media.style.maxWidth = ''; }
+    if(!ar || !media) return;
+    var footH = foot ? foot.offsetHeight : 0,
+        room  = window.innerHeight - (phone ? 16 : 48) - footH,
+        w     = Math.floor(room * ar);
+    /* On a short screen the banner shrinks to fit rather than being cut off. */
+    if(phone){
+      if(w < window.innerWidth){ media.style.maxWidth = Math.max(220, w) + 'px'; }
+    } else {
+      card.style.maxWidth = Math.max(340, Math.min(C.w, window.innerWidth - 48, w)) + 'px';
+    }
+  }
+  function lock(on){
+    var de = document.documentElement;
+    if(on){ de.classList.add('aun-pop-lock'); } else { de.classList.remove('aun-pop-lock'); }
+  }
+  function focusables(){
+    var list = card.querySelectorAll('a[href], button:not([disabled])'), out = [];
+    for(var i = 0; i < list.length; i++){ if(list[i].getClientRects().length){ out.push(list[i]); } }
+    return out;
+  }
+  function onKey(e){
+    if(e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27){ e.preventDefault(); own(e); close('closed'); return; }
+    if(e.key !== 'Tab' && e.keyCode !== 9) return;
+    own(e);
+    var f = focusables();
+    if(!f.length){ e.preventDefault(); card.focus(); return; }
+    var first = f[0], last = f[f.length - 1], a = document.activeElement;
+    if(e.shiftKey && (a === first || a === card || !card.contains(a))){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && (a === last || !card.contains(a))){ e.preventDefault(); first.focus(); }
+  }
+  function open(){
+    if(opened) return;
+    opened = true;
+    if(!C.preview){ var s = session(); s.seen[C.sig] = 1; saveSession(s); }
+    lastFocus = document.activeElement;
+    lock(true);
+    root.hidden = false;
+    fit();
+    root.getBoundingClientRect();          /* commit the closed state, so the entrance animates */
+    root.classList.add('is-open');
+    setTimeout(function(){ try{ card.focus({ preventScroll: true }); }catch(e){ card.focus(); } }, 60);
+    on(document, 'keydown', onKey, { capture: true });
+    on(window, 'resize', fit);
+    tick();
+    stat('view');
+  }
+  function close(why){
+    if(!opened) return;
+    opened = false;
+    if(!C.preview && why === 'closed'){
+      put(K_SNOOZE, String(NOW() + C.snooze * 86400000));
+      stat('close');
+    }
+    root.classList.remove('is-open');
+    off(document, 'keydown', onKey, { capture: true });
+    off(window, 'resize', fit);
+    clearTimeout(cdT);
+    setTimeout(function(){
+      root.hidden = true;
+      lock(false);
+      card.style.transform = '';
+      if(lastFocus && lastFocus.focus && document.documentElement.contains(lastFocus)){
+        try{ lastFocus.focus({ preventScroll: true }); }catch(e){}
+      }
+    }, reduced() ? 0 : 340);
+  }
+
+  /* ---- countdown: from an absolute deadline, so a cached page is still right ---- */
+  var BN = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'], cdEl = root.querySelector('.aun-pop__cd b');
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function clock(left){
+    var d = Math.floor(left / 86400),
+        txt = pad(Math.floor(left % 86400 / 3600)) + ':' + pad(Math.floor(left % 3600 / 60)) + ':' + pad(left % 60);
+    if(d > 0){ txt = d + (C.bn ? ' দিন ' : 'd ') + txt; }
+    return C.bn ? txt.replace(/[0-9]/g, function(x){ return BN[+x]; }) : txt;
+  }
+  function tick(){
+    clearTimeout(cdT);
+    if(!cdEl || !C.end) return;
+    var left = Math.max(0, C.end - Math.floor(NOW() / 1000));
+    cdEl.textContent = clock(left);
+    if(left <= 0 && !C.preview){ close('expired'); return; }
+    if(opened && left > 0){ cdT = setTimeout(tick, 1000); }
+  }
+
+  /* ---- copy the code ---- */
+  var copyBtn = root.querySelector('.aun-pop__copy'),
+      copyTxt = root.querySelector('.aun-pop__copy-t'),
+      hint    = root.querySelector('.aun-pop__hint'), copyT = 0;
+  function legacyCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    card.appendChild(ta); ta.select();
+    var ok = false;
+    try{ ok = document.execCommand('copy'); }catch(e){}
+    card.removeChild(ta);
+    try{ copyBtn.focus({ preventScroll: true }); }catch(e){}
+    return ok;
+  }
+  function copied(ok){
+    clearTimeout(copyT);
+    if(ok){
+      root.classList.add('is-copied');
+      if(copyTxt){ copyTxt.textContent = T.copied; }
+      if(hint){ hint.textContent = T.hintDone; }
+      if(!C.preview){ put(K_DONE, '1'); }   /* they have what they came for */
+      stat('copy');
+      copyT = setTimeout(function(){
+        root.classList.remove('is-copied');
+        if(copyTxt){ copyTxt.textContent = T.copy; }
+      }, 2600);
+    } else {
+      if(hint){ hint.textContent = T.copyFail; }
+      var v = root.querySelector('.aun-pop__code-v');
+      if(v && window.getSelection && document.createRange){
+        var r = document.createRange(); r.selectNodeContents(v);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      }
+    }
+  }
+  if(copyBtn){
+    var copying = false;
+    on(copyBtn, 'click', function(e){
+      own(e);
+      if(copying) return;                  /* one tap, one copy */
+      copying = true;
+      setTimeout(function(){ copying = false; }, 1000);
+      var code = copyBtn.getAttribute('data-code') || '', done = false;
+      function finish(ok){ if(done) return; done = true; copied(ok); }
+      if(navigator.clipboard && window.isSecureContext){
+        /* The clipboard API can sit unanswered (an unfocused document, a permission
+           prompt that never shows). A tap must always visibly do something, so fall
+           back to the old copy route if it has not answered in time. */
+        var guard = setTimeout(function(){ finish(legacyCopy(code)); }, 800);
+        navigator.clipboard.writeText(code).then(
+          function(){ clearTimeout(guard); finish(true); },
+          function(){ clearTimeout(guard); finish(legacyCopy(code)); }
+        );
+      } else {
+        finish(legacyCopy(code));
+      }
+    });
+  }
+
+  /* ---- tapping through counts as "used": never offer this campaign again ---- */
+  var go = root.querySelectorAll('[data-aun-pop-go]');
+  for(var g = 0; g < go.length; g++){
+    on(go[g], 'click', function(e){ own(e); if(!C.preview){ put(K_DONE, '1'); } stat('click'); });
+  }
+  var closers = root.querySelectorAll('[data-aun-pop-close]');
+  for(var c = 0; c < closers.length; c++){
+    on(closers[c], 'click', function(e){ e.preventDefault(); own(e); close('closed'); });
+  }
+
+  /* ---- phones: swipe the sheet down to dismiss ---- */
+  var sy = null, dy = 0;
+  on(card, 'touchstart', function(e){
+    if(!isPhone() || card.scrollTop > 0 || e.touches.length !== 1){ sy = null; return; }
+    sy = e.touches[0].clientY; dy = 0;
+  }, { passive: true });
+  on(card, 'touchmove', function(e){
+    if(sy === null) return;
+    dy = e.touches[0].clientY - sy;
+    if(dy > 0){ card.style.transition = 'none'; card.style.transform = 'translateY(' + dy + 'px)'; }
+  }, { passive: true });
+  on(card, 'touchend', function(){
+    if(sy === null) return;
+    sy = null;
+    card.style.transition = '';
+    card.style.transform = '';
+    if(dy > 90){ close('closed'); }
+    dy = 0;
+  }, { passive: true });
+
+  /* ---- go ---- */
+  if(!C.preview){
+    var s0 = session();
+    s0.pv = (s0.pv || 0) + 1;
+    saveSession(s0);
+    if(s0.pv < C.pv) return;               /* "start from their 2nd page" */
+  }
+  if(!eligible()) return;
+
+  function warm(){
+    if(imgState) return;
+    if(window.requestIdleCallback){ window.requestIdleCallback(loadImage, { timeout: 4000 }); }
+    else { setTimeout(loadImage, 1500); }
+  }
+  /* Rocket also reports document.readyState as "loading" until its own scripts are
+     in, so a fallback timer makes sure the banner is fetched either way. */
+  if(document.readyState === 'complete'){ warm(); } else { on(window, 'load', warm, { once: true }); }
+  setTimeout(warm, 4000);
+
+  if(C.preview){ setTimeout(trigger, 500); return; }
+  delayT = setTimeout(trigger, Math.max(0, C.delay) * 1000);
+  if(C.scroll > 0){ on(window, 'scroll', onScroll, { passive: true }); }
+  if(C.exit && mm('(hover: hover) and (pointer: fine)')){ on(document, 'mouseout', onLeave); }
+})();
+</script>
+JS;
+    }
+
+    /* ------------------------------------------------------------------ stats */
+
+    /** One beacon per event per page view. Counts are approximate by nature. */
+    public static function ajax_stat() {
+        $ev  = isset($_POST['ev']) ? sanitize_key(wp_unslash($_POST['ev'])) : '';
+        $sig = isset($_POST['sig']) ? sanitize_key(wp_unslash($_POST['sig'])) : '';
+        if (!in_array($ev, ['view', 'click', 'copy', 'close'], true) || $sig === '') {
+            wp_send_json_error(null, 400);
+        }
+        $ua = isset($_SERVER['HTTP_USER_AGENT']) ? (string) $_SERVER['HTTP_USER_AGENT'] : '';
+        if ($ua === '' || preg_match('/bot|crawl|spider|slurp|headless|lighthouse/i', $ua)) {
+            wp_send_json_success();
+        }
+        $opts = AUN_Campaign_Notice_Bar::get_options();
+        // Only the campaign that is on screen now: a stale tab or a made-up signature
+        // cannot grow the option.
+        if ($opts['popup_enabled'] !== '1' || !hash_equals(self::signature($opts), $sig)) {
+            wp_send_json_success();
+        }
+        $all = get_option(self::STATS, []);
+        if (!is_array($all)) { $all = []; }
+        if (!isset($all[$sig]) || !is_array($all[$sig])) {
+            $all[$sig] = ['view' => 0, 'click' => 0, 'copy' => 0, 'close' => 0, 'since' => time()];
+        }
+        $all[$sig][$ev] = (int) ($all[$sig][$ev] ?? 0) + 1;
+        if (count($all) > 6) {
+            uasort($all, function ($a, $b) { return (int) ($b['since'] ?? 0) - (int) ($a['since'] ?? 0); });
+            $all = array_slice($all, 0, 6, true);
+        }
+        update_option(self::STATS, $all, false);
+        wp_send_json_success();
+    }
+
+    public static function stats_for($sig) {
+        $all = get_option(self::STATS, []);
+        return (is_array($all) && isset($all[$sig]) && is_array($all[$sig])) ? $all[$sig] : null;
+    }
+
+    /* ------------------------------------------------------------------ admin */
+
+    public static function admin_assets($hook) {
+        if ($hook === 'settings_page_aun-campaign-notice-bar') {
+            wp_enqueue_media();
+        }
+    }
+
+    /** One line for the status card at the top of the settings page. */
+    public static function status_line($opts) {
+        if ($opts['popup_enabled'] !== '1') {
+            return 'Popup banner: off.';
+        }
+        if (!(int) $opts['popup_image']) {
+            return 'Popup banner: switched on, but no banner image is chosen yet, so nothing shows.';
+        }
+        $when = ['after ' . (int) $opts['popup_delay'] . ' seconds'];
+        if ((int) $opts['popup_scroll'] > 0) { $when[] = 'at ' . (int) $opts['popup_scroll'] . '% scrolled'; }
+        if ($opts['popup_exit'] === '1')     { $when[] = 'when leaving (computers)'; }
+        return 'Popup banner: on. Opens ' . implode(', or ', $when) . ', whichever comes first.';
+    }
+
+    /**
+     * The old way of doing this was a Flatsome [lightbox auto_open] in the theme's
+     * footer scripts. Left in place, visitors would get two popups.
+     */
+    private static function lightbox_warning() {
+        $mods = get_theme_mods();
+        if (!is_array($mods)) return;
+        foreach ($mods as $val) {
+            if (is_string($val) && stripos($val, '[lightbox') !== false && stripos($val, 'auto_open') !== false) {
+                echo '<div style="margin:12px 0 0;padding:10px 14px;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:6px;background:#fffbeb;color:#78350f;font-weight:normal;">'
+                   . '⚠️ <strong>The old Flatsome popup is still in place.</strong> Flatsome &rarr; Advanced &rarr; Global Settings &rarr; '
+                   . '<em>Footer Scripts</em> contains a <code>[lightbox auto_open=&hellip;]</code> code. Delete it when you switch this '
+                   . 'popup on, or visitors will get two popups.</div>';
+                return;
+            }
+        }
+    }
+
+    private static function media_field($opts, $key, $label, $desc) {
+        $name = AUN_Campaign_Notice_Bar::OPTION_KEY . '[' . $key . ']';
+        $id   = (int) $opts[$key];
+        $src  = $id ? wp_get_attachment_image_src($id, 'medium') : false;
+        $full = $id ? wp_get_attachment_image_src($id, 'full') : false;
+        echo '<div class="aun-pop-media" style="display:flex;gap:14px;align-items:flex-start;margin:0 0 14px;">';
+        echo '<div style="width:96px;height:96px;flex:0 0 96px;border:1px dashed #c3c4c7;border-radius:8px;background:#f6f7f7 center/contain no-repeat;overflow:hidden;display:flex;align-items:center;justify-content:center;">'
+           . '<img alt="" style="max-width:100%;max-height:100%;' . ($src ? '' : 'display:none;') . '" ' . ($src ? 'src="' . esc_url($src[0]) . '"' : '') . '>'
+           . '<span class="aun-pop-none" style="color:#a7aaad;font-size:12px;' . ($src ? 'display:none;' : '') . '">none</span></div>';
+        echo '<div><strong>' . $label . '</strong>'
+           . ' <span class="aun-pop-dims" style="color:#646970;">' . ($full ? esc_html((int) $full[1] . ' × ' . (int) $full[2] . ' px') : '') . '</span><br>'
+           . '<input type="hidden" name="' . esc_attr($name) . '" value="' . $id . '">'
+           . '<span style="display:flex;align-items:center;gap:12px;margin-top:6px;">'
+           . '<button type="button" class="button aun-pop-choose">Choose image</button>'
+           . '<button type="button" class="button-link aun-pop-remove" style="color:#b32d2e;' . ($id ? '' : 'display:none;') . '">Remove</button>'
+           . '</span>'
+           . '<p class="description" style="margin-top:6px;">' . $desc . '</p></div>';
+        echo '</div>';
+    }
+
+    /** The popup's rows inside the settings form table. */
+    public static function settings_rows($opts) {
+        $n   = function ($k) { return esc_attr(AUN_Campaign_Notice_Bar::OPTION_KEY . '[' . $k . ']'); };
+        $sig = self::signature($opts);
+        $st  = self::stats_for($sig);
+        $has_bn = (int) $opts['popup_image_bn'] || (int) $opts['popup_image_m_bn'];
+        ?>
+        <tr><th colspan="2" style="padding-top:40px;">
+            <h2 style="margin:0;color:#0188fe;">🪧 Campaign Popup Banner</h2>
+            <p style="font-weight:normal;margin-top:5px;color:#555;max-width:820px;">A banner that opens over the page while the
+               <strong>global campaign above is live</strong> &mdash; it uses the same switch and the same start and end time, so
+               there is nothing extra to schedule. It waits for the right moment, appears at most once per visit, and leaves
+               people alone once they have closed it or used it.</p>
+            <?php self::lightbox_warning(); ?>
+        </th></tr>
+
+        <tr>
+            <th scope="row">Popup banner</th>
+            <td>
+                <label><input type="checkbox" name="<?php echo $n('popup_enabled'); ?>" value="1" <?php checked($opts['popup_enabled'], '1'); ?> />
+                    Show the popup while the campaign is live</label>
+                <?php if ($st): ?>
+                    <?php $v = max(1, (int) $st['view']); ?>
+                    <p style="margin:8px 0 0;padding:8px 12px;background:#f0f6fc;border-radius:6px;display:inline-block;">
+                        📊 <strong>This campaign so far:</strong>
+                        <?php echo esc_html(number_format_i18n((int) $st['view'])); ?> shown &middot;
+                        <?php echo esc_html(number_format_i18n((int) $st['click'])); ?> tapped through
+                        (<?php echo esc_html(number_format_i18n(100 * (int) $st['click'] / $v, 1)); ?>%) &middot;
+                        <?php echo esc_html(number_format_i18n((int) $st['copy'])); ?> copied the code &middot;
+                        <?php echo esc_html(number_format_i18n((int) $st['close'])); ?> closed it
+                    </p>
+                <?php endif; ?>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Banner image</th>
+            <td>
+                <?php self::media_field($opts, 'popup_image', 'Main image', 'Square works best, e.g. 1080 &times; 1080. Used on computers, and on phones too unless you add a phone image.'); ?>
+                <?php self::media_field($opts, 'popup_image_m', 'Phone image <span style="font-weight:normal;color:#646970;">(optional)</span>', 'A taller version for phones, e.g. 1080 &times; 1350 (4:5). Leave empty to reuse the main image.'); ?>
+                <details <?php echo $has_bn ? 'open' : ''; ?> style="margin-top:4px;">
+                    <summary style="cursor:pointer;font-weight:600;color:#0f6c2f;">বাংলা images
+                        <span style="font-weight:normal;color:<?php echo $has_bn ? '#0f6c2f' : '#646970'; ?>;"><?php echo $has_bn ? '&#10003; set' : '&mdash; not set, the images above will be reused'; ?></span></summary>
+                    <div style="margin-top:12px;">
+                        <?php self::media_field($opts, 'popup_image_bn', 'Main image (বাংলা)', 'Shown when the visitor reads the site in বাংলা.'); ?>
+                        <?php self::media_field($opts, 'popup_image_m_bn', 'Phone image (বাংলা)', 'Optional.'); ?>
+                    </div>
+                </details>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Tapping it opens</th>
+            <td>
+                <input type="text" class="regular-text" name="<?php echo $n('popup_link'); ?>" value="<?php echo esc_attr($opts['popup_link']); ?>" placeholder="/projector-price/" />
+                <p class="description">A page on your site, e.g. <code>/projector-price/</code>, or a full address. Leave empty and the banner is a picture only.
+                   (The popup never shows on the page it links to.)</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Coupon code</th>
+            <td>
+                <input type="text" class="regular-text" name="<?php echo $n('popup_code'); ?>" value="<?php echo esc_attr($opts['popup_code']); ?>" placeholder="WELCOME5" style="font-weight:700;letter-spacing:.05em;" />
+                <p class="description">Shown under the banner with a one-tap <strong>Copy</strong> button. Leave empty to hide it.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Button</th>
+            <td>
+                <input type="text" name="<?php echo $n('popup_button'); ?>" value="<?php echo esc_attr($opts['popup_button']); ?>" placeholder="Shop now" style="width:200px;" />
+                <span style="margin:0 6px 0 12px;color:#0f6c2f;font-weight:600;">বাংলা</span>
+                <input type="text" name="<?php echo $n('popup_button_bn'); ?>" value="<?php echo esc_attr($opts['popup_button_bn']); ?>" placeholder="এখনই কিনুন" style="width:200px;" />
+                <p class="description">Goes to the link above. Leave the text empty for no button; the banner itself stays tappable.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Countdown</th>
+            <td>
+                <label><input type="checkbox" name="<?php echo $n('popup_countdown'); ?>" value="1" <?php checked($opts['popup_countdown'], '1'); ?> />
+                    Show &ldquo;Offer ends in 2d 04:11:09&rdquo;, counting to the campaign&rsquo;s <strong>End date</strong></label>
+                <p class="description">Hidden automatically when the campaign has no end date. Bangla numerals on the বাংলা site.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">When it opens</th>
+            <td style="line-height:2.3;">
+                After <input type="number" min="0" max="300" class="small-text" name="<?php echo $n('popup_delay'); ?>" value="<?php echo esc_attr((int) $opts['popup_delay']); ?>" /> seconds on the page,<br>
+                or sooner once they scroll <input type="number" min="0" max="100" class="small-text" name="<?php echo $n('popup_scroll'); ?>" value="<?php echo esc_attr((int) $opts['popup_scroll']); ?>" />% of the way down <span style="color:#646970;">(0 = off)</span>,<br>
+                <label><input type="checkbox" name="<?php echo $n('popup_exit'); ?>" value="1" <?php checked($opts['popup_exit'], '1'); ?> />
+                    or when the mouse heads for the tabs to leave <span style="color:#646970;">(computers only)</span></label><br>
+                Starting from their
+                <select name="<?php echo $n('popup_pageview'); ?>">
+                    <?php foreach ([1 => 'first', 2 => 'second', 3 => 'third', 4 => 'fourth', 5 => 'fifth'] as $pv => $word): ?>
+                        <option value="<?php echo (int) $pv; ?>" <?php selected((int) $opts['popup_pageview'], $pv); ?>><?php echo esc_html($word); ?></option>
+                    <?php endforeach; ?>
+                </select> page of a visit.
+                <p class="description" style="line-height:1.5;">Whichever comes first. It also waits politely: never while someone is typing in a form, never on top
+                   of another open window (cart drawer, image zoom, the language prompt, Google sign-in), never in a background tab, and
+                   only once the image has fully loaded &mdash; so it never appears half-drawn.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">How often</th>
+            <td>
+                After they close it, keep it away for
+                <input type="number" min="1" max="90" class="small-text" name="<?php echo $n('popup_snooze'); ?>" value="<?php echo esc_attr((int) $opts['popup_snooze']); ?>" /> days.
+                <ul style="margin:8px 0 0 18px;list-style:disc;color:#646970;">
+                    <li>At most once per visit.</li>
+                    <li>Never again for this campaign once they tap the banner or button, copy the code, or place an order.</li>
+                    <li>Never on the cart, checkout, My Account or order pages &mdash; nothing gets in the way of a purchase.</li>
+                    <li>Change the image, link, code or dates and it counts as a new campaign, so everyone sees the new one.</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Show on</th>
+            <td>
+                <select name="<?php echo $n('popup_devices'); ?>">
+                    <option value="all" <?php selected($opts['popup_devices'], 'all'); ?>>Phones and computers</option>
+                    <option value="desktop" <?php selected($opts['popup_devices'], 'desktop'); ?>>Computers only</option>
+                    <option value="mobile" <?php selected($opts['popup_devices'], 'mobile'); ?>>Phones and tablets only</option>
+                </select>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Width on computers</th>
+            <td>
+                <input type="number" min="320" max="900" class="small-text" name="<?php echo $n('popup_width'); ?>" value="<?php echo esc_attr((int) $opts['popup_width']); ?>" /> px
+                <p class="description">On phones it slides up from the bottom, full width, and can be swiped away. On short screens it shrinks to fit, so the banner is never cut off.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Never on pages containing</th>
+            <td>
+                <textarea name="<?php echo $n('popup_exclude'); ?>" rows="3" class="large-text code" style="max-width:420px;" placeholder="/spare-parts/&#10;/warranty/"><?php echo esc_textarea($opts['popup_exclude']); ?></textarea>
+                <p class="description">One per line. Any page whose address contains it is skipped &mdash; the বাংলা <code>/bn/</code> pages too.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Preview</th>
+            <td>
+                <a class="button" target="_blank" rel="noopener" href="<?php echo esc_url(add_query_arg(self::PREVIEW_ARG, '1', home_url('/'))); ?>">👁 Preview on the site</a>
+                <p class="description">Opens your homepage with the popup showing straight away &mdash; only for you, as a logged-in admin. The
+                   preview ignores the schedule and the &ldquo;once per visit&rdquo; rules. <strong>Save Changes first</strong> to see your latest edits.</p>
+            </td>
+        </tr>
+
+        <script>
+        (function(){
+            /* This runs in the middle of the page, but WordPress loads the media library
+               (wp.media) in the footer, after it. So look for it when the button is
+               pressed, not now — checking now found nothing and left the button dead. */
+            document.querySelectorAll('.aun-pop-media').forEach(function(box){
+                var input = box.querySelector('input[type=hidden]'), img = box.querySelector('img'),
+                    none = box.querySelector('.aun-pop-none'), dims = box.querySelector('.aun-pop-dims'),
+                    choose = box.querySelector('.aun-pop-choose'), remove = box.querySelector('.aun-pop-remove'), frame;
+                choose.addEventListener('click', function(e){
+                    e.preventDefault();
+                    if(!window.wp || !wp.media){ alert('The media library is still loading. Please try again in a moment.'); return; }
+                    if(!frame){
+                        frame = wp.media({ title: 'Choose the popup banner', library: { type: 'image' }, button: { text: 'Use this image' }, multiple: false });
+                        frame.on('select', function(){
+                            var a = frame.state().get('selection').first().toJSON();
+                            var s = (a.sizes && (a.sizes.medium || a.sizes.thumbnail)) || a;
+                            input.value = a.id;
+                            img.src = s.url; img.style.display = ''; none.style.display = 'none';
+                            remove.style.display = '';
+                            dims.textContent = (a.width && a.height) ? a.width + ' × ' + a.height + ' px' : '';
+                        });
+                    }
+                    frame.open();
+                });
+                remove.addEventListener('click', function(e){
+                    e.preventDefault();
+                    input.value = '0';
+                    img.removeAttribute('src'); img.style.display = 'none'; none.style.display = '';
+                    remove.style.display = 'none'; dims.textContent = '';
+                });
+            });
+        })();
+        </script>
+        <?php
+    }
+}
+
 AUN_Campaign_Notice_Bar::init();
+AUN_CB_Popup::init();
 
 /**
  * The boundary timer must not be deferred or delayed: it runs during parse so the
@@ -1815,11 +2949,24 @@ AUN_Campaign_Notice_Bar::init();
  */
 add_filter('rocket_delay_js_exclusions', function ($excluded) {
     $excluded[] = 'aun-cb-top';
+    $excluded[] = 'aun-cb-pop';   // the popup's timer must start with the page, not on first tap
     return $excluded;
 });
 add_filter('rocket_excluded_inline_js_content', function ($excluded) {
     $excluded[] = 'aun-cb-top';
+    $excluded[] = 'aun-cb-pop';
     return $excluded;
+});
+/* Remove Unused CSS would see .is-open / .aun-pop-lock as unused: they only exist once the
+   popup opens. Keep the popup's stylesheet whole. */
+add_filter('rocket_rucss_inline_content_exclusions', function ($excluded) {
+    $excluded[] = '.aun-pop';
+    return (array) $excluded;
+});
+add_filter('rocket_rucss_safelist', function ($safelist) {
+    $safelist[] = '.aun-pop';
+    $safelist[] = '.aun-pop-lock';
+    return (array) $safelist;
 });
 
 register_activation_hook(__FILE__, function () {

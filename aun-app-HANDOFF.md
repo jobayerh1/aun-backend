@@ -23,11 +23,43 @@ backed by the existing WordPress/WooCommerce site + UltimatePOS ERP. **Not a Web
 
 `<workdir>` = `C:\Users\Jobayer Hossain\Downloads\Claude session`
 
-Current versions: **app 2.6.0+142**, **plugin 1.116.0 (DB v24)**, **help centre 2.8.0**,
+Current versions: **app 2.6.0+142**, **plugin 1.116.1 (DB v24; 1.116.0 live)**, **help centre 2.8.0**,
 **spare-parts 0.47.1 (DB v12)**, **warranty 2.9.0**, **projector wizard 3.5.0**.
 
 📋 **Play Store: see `PLAY-STORE-READINESS.md`** — the full pre-flight list, with the Data safety
 answers already worked out and an ordered plan for what to do while D-U-N-S is pending.
+
+## 2026-10-10 — app-api 1.116.1: dust filters + the Rewards audit fixes
+
+⚠️ **1.116.0 is ALREADY LIVE** (the owner uploaded it; Owner Rewards is switched on — /refer/ shows "Buy again, save again"). Later fixes were rebuilt under the same number, so WordPress showed "1.116.0 → 1.116.0". **Lesson: bump the version on EVERY rebuild once a zip may have shipped.** 1.116.1 = the 25 Sep audit fixes (Delivered-status customers, web-order ERP double-earn, ERP returns, code alphabet, counter warnings, lock wording) + the dust-filter fix below. No DB change (still v24).
+
+### Dust filters: the settings never reached a device
+
+Asked to check the dust-filter / vent reminders end to end. **Which** reminders a projector gets is the
+ERP product marker (custom field 1): `MAINT_SMS` → dust-filter reminders at 30/60/90 days, `MAINT_VENT` →
+vent reminders at 180/360 days (sealed U002 family, own guide, no "rinse" step). The ERP sends the SMS
+versions on its own schedule. That part was right. The AUN App → **Dust filters** page was not:
+
+1. ⚠️ `AUN_App_Projectors::normalise_model()` held two literal **BACKSPACE bytes (0x08)** where `\b` was
+   meant (a patch script wrote "\b" through a non-raw Python string, probably back in August). The
+   noise-word pattern never matched, so nothing was ever stripped.
+2. ⚠️ Even fixed, a device's "U002 Pro" never equals the product title the setting is saved under. So
+   EVERY device resolved to `unknown`: the reminder animation never pointed at the right place, and
+   **"No dust filter" never silenced a reminder** (an A32 marked `MAINT_SMS` in the ERP was told to clean
+   a filter it doesn't have).
+3. Fix: `AUN_App_Filters::location_for($device)` — serial → SKU / ERP product id via
+   `product_for_device($device, false)` (new `$by_name` flag: never guess), then the name only when the
+   product title begins with it and picks ONE model ("a005" never takes "a005 pro"). Used by the
+   reminders and both device payloads. `map()` re-keys settings saved under the old spelling — nothing
+   lost. Page text now states the real timing and the two programmes; the choice reads "No dust filter
+   (no filter reminders)" — it never stopped vent reminders or the ERP's SMS.
+
+Test: `wp-local\tests\test-dust-filters.php` (25). Full set 618 checks green. Only other copy of the bad
+bytes: the block-checkout task's worktree (an old copy of the same file) — fixed by merging onto 1.116.0.
+
+**Owner to check in the ERP:** U002 Pro = `MAINT_VENT`; the A32 / A32 Pro (no filter) = `MAINT_VENT` or
+blank, never `MAINT_SMS` — the ERP's SMS ignores the WordPress page. Both programmes are first-year only
+(3 filter reminders, 2 vent reminders), not recurring.
 
 ## 2026-09-25 — AUN Rewards: invite friends + reward owners who buy again (app 2.6.0+142 · app-api 1.116.0 · help centre 2.8.0)
 

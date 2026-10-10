@@ -1,0 +1,19 @@
+/* Palltheme — block editor styles (mirrors front-end typography). */
+body {
+	font-family: var(--pt-font-body, "Inter", system-ui, sans-serif);
+	font-size: 17px;
+	line-height: 1.7;
+	color: #0f1b2d;
+}
+h1, h2, h3, h4, h5, h6, .editor-post-title__input {
+	font-family: var(--pt-font-heading, "Plus Jakarta Sans", system-ui, sans-serif);
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	color: #0b1220;
+}
+a { color: var(--pt-primary, #2567ad); }
+blockquote { border-inline-start: 3px solid var(--pt-accent, #00a8ff); padding-inline-start: 1em; }
+.wp-block { max-width: 820px; }
+.wp-block[data-align="wide"] { max-width: 1240px; }
+.wp-block[data-align="full"] { max-width: none; }

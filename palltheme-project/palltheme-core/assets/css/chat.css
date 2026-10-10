@@ -1,0 +1,20 @@
+/* Palltheme Core — floating chat buttons (theme-independent) */
+.pt-float-chat { position: fixed; z-index: 95; bottom: 20px; inset-inline-end: 20px; display: flex; flex-direction: column; gap: 10px; }
+.pt-float-chat__btn {
+	position: relative; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%;
+	color: #fff; background: #2567ad; box-shadow: 0 12px 28px -10px rgba(0, 0, 0, .45);
+	transition: transform .25s cubic-bezier(.2, .7, .2, 1);
+}
+.pt-float-chat__btn:hover, .pt-float-chat__btn:focus-visible { transform: scale(1.07); color: #fff; }
+.pt-float-chat__btn--whatsapp { background: #1fa855; }
+.pt-float-chat__btn--telegram { background: #229ed9; }
+.pt-float-chat__btn--messenger { background: #0a7cff; }
+.pt-float-chat__btn--phone { background: #0b1220; }
+@media (min-width: 900px) { .pt-float-chat__btn--phone { display: none; } }
+.pt-float-chat__tip {
+	position: absolute; inset-inline-end: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+	padding: 6px 10px; border-radius: 8px; background: #0b1220; color: #fff; font: 600 13px/1.2 system-ui, sans-serif;
+	white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.pt-float-chat__btn:hover .pt-float-chat__tip, .pt-float-chat__btn:focus-visible .pt-float-chat__tip { opacity: 1; }
+@media print { .pt-float-chat { display: none; } }

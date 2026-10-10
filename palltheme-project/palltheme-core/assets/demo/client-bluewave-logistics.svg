@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 334 44" width="334" height="44">
+<defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4338CA"/><stop offset="1" stop-color="#818CF8"/></linearGradient></defs>
+<path d="M4 26c6-10 12-10 18 0s12 10 18 0" fill="none" stroke="url(#c)" stroke-width="6" stroke-linecap="round"/>
+<text x="52" y="30" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="800" letter-spacing="-.5" fill="#334155">BlueWave Logistics</text>
+</svg>

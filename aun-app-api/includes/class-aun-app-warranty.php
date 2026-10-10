@@ -303,7 +303,11 @@ class AUN_App_Warranty {
 			// itself, not only from a notification the customer may have
 			// already dismissed.
 			'filter_location' => class_exists( 'AUN_App_Filters' )
-				? AUN_App_Filters::location( (string) $r->product_model )
+				? AUN_App_Filters::location_for( array(
+					'serial'   => (string) $r->serial,
+					'model'    => (string) $r->product_model,
+					'model_id' => self::wp_product_id_from_serial( $r->serial ) ?: self::resolve_model_id( (string) $r->product_model ),
+				) )
 				: 'unknown',
 			'status'        => (string) $r->status,
 			'purchase_date' => ! empty( $r->purchase_date ) && '0000-00-00' !== $r->purchase_date ? $r->purchase_date : '',
@@ -351,7 +355,11 @@ class AUN_App_Warranty {
 			// itself, not only from a notification the customer may have
 			// already dismissed.
 			'filter_location' => class_exists( 'AUN_App_Filters' )
-				? AUN_App_Filters::location( (string) $a->model )
+				? AUN_App_Filters::location_for( array(
+					'serial'         => (string) $a->serial,
+					'model'          => (string) $a->model,
+					'erp_product_id' => (int) ( $a->erp_product_id ?? 0 ),
+				) )
 				: 'unknown',
 			'status'        => 'direct',
 			'purchase_date' => $start,

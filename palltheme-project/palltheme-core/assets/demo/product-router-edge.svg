@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+<defs>
+<radialGradient id="bg" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9F0F8"/></radialGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B4656"/><stop offset=".5" stop-color="#1F2733"/><stop offset="1" stop-color="#121821"/></linearGradient>
+<linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A3442"/><stop offset="1" stop-color="#161D27"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3F6FA"/><stop offset=".5" stop-color="#C9D3DF"/><stop offset="1" stop-color="#9AA7B6"/></linearGradient>
+<linearGradient id="blue" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2567AD"/><stop offset="1" stop-color="#00A8FF"/></linearGradient>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="18"/><feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="800" height="800" fill="url(#bg)"/>
+<ellipse cx="400" cy="640" rx="290" ry="26" fill="#0B1220" opacity=".08"/>
+<g filter="url(#sh)">
+<path d="M170 340 L630 340 L652 366 L148 366 Z" fill="#4A5566"/>
+<rect x="148" y="366" width="504" height="110" rx="12" fill="url(#metal)"/>
+<rect x="176" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="181" y="395" width="16" height="5" fill="#2B3543"/><circle cx="198" cy="389" r="1.8" fill="#F59E0B"/><rect x="210" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="215" y="395" width="16" height="5" fill="#2B3543"/><circle cx="232" cy="389" r="1.8" fill="#22C55E"/><rect x="244" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="249" y="395" width="16" height="5" fill="#2B3543"/><circle cx="266" cy="389" r="1.8" fill="#22C55E"/><rect x="278" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="283" y="395" width="16" height="5" fill="#2B3543"/><circle cx="300" cy="389" r="1.8" fill="#F59E0B"/><rect x="312" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="317" y="395" width="16" height="5" fill="#2B3543"/><circle cx="334" cy="389" r="1.8" fill="#22C55E"/><rect x="346" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="351" y="395" width="16" height="5" fill="#2B3543"/><circle cx="368" cy="389" r="1.8" fill="#22C55E"/><rect x="380" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="385" y="395" width="16" height="5" fill="#2B3543"/><circle cx="402" cy="389" r="1.8" fill="#F59E0B"/><rect x="414" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="419" y="395" width="16" height="5" fill="#2B3543"/><circle cx="436" cy="389" r="1.8" fill="#22C55E"/><rect x="448" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="453" y="395" width="16" height="5" fill="#2B3543"/><circle cx="470" cy="389" r="1.8" fill="#22C55E"/><rect x="482" y="392" width="26" height="22" rx="2" fill="#0B1220" stroke="#4B5767" stroke-width="1"/><rect x="487" y="395" width="16" height="5" fill="#2B3543"/><circle cx="504" cy="389" r="1.8" fill="#F59E0B"/>
+<rect x="176" y="430" width="140" height="22" rx="3" fill="#121821"/>
+<text x="246" y="446" text-anchor="middle" font-family="Consolas,monospace" font-size="13" fill="#00A8FF">EDGE ROUTER</text>
+<rect x="530" y="390" width="26" height="58" rx="3" fill="#0B1220" stroke="#5B6779"/><rect x="564" y="390" width="26" height="58" rx="3" fill="#0B1220" stroke="#5B6779"/><rect x="598" y="390" width="26" height="58" rx="3" fill="#0B1220" stroke="#5B6779"/>
+<rect x="148" y="470" width="504" height="6" fill="url(#blue)" opacity=".85"/></g>
+<text x="400" y="740" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="600" fill="#7A8AA0" letter-spacing="3">100G EDGE ROUTER</text>
+</svg>

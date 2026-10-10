@@ -1,0 +1,22 @@
+/*
+Theme Name:        Palltheme
+Theme URI:         https://example.com/palltheme
+Author:            Engr. Nazim U Ahmed
+Author URI:        https://example.com
+Description:       Premium technology & eCommerce theme for IT solution providers, server/networking companies, MSPs, system integrators and WooCommerce technology stores. Built for Elementor and WooCommerce, fully dynamic, dark-mode ready. Pair it with the "Palltheme Core" companion plugin for Services, Solutions, Case Studies, Team, Testimonials, Clients, Technologies and the demo importer.
+Version:           1.0.0
+Requires at least: 6.5
+Tested up to:      6.9
+Requires PHP:      8.2
+License:           GPL-2.0-or-later (PHP code) / Proprietary (design, CSS, artwork) - see documentation/LICENSE.md
+License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain:       palltheme
+Domain Path:       /languages
+Tags:              e-commerce, one-column, two-columns, right-sidebar, custom-colors, custom-logo, custom-menu, featured-images, footer-widgets, full-width-template, rtl-language-support, theme-options, threaded-comments, translation-ready, block-styles, wide-blocks
+
+Copyright (c) 2026 Engr. Nazim U Ahmed. All rights reserved.
+The visual design, stylesheets, illustrations and documentation of Palltheme are the property
+of Engr. Nazim U Ahmed. PHP code that integrates with WordPress is distributed under GPLv2+.
+
+All theme styles live in assets/css/. This file only carries the theme header.
+*/

@@ -1,0 +1,2512 @@
+# Copyright (C) 2026 Engr. Nazim U Ahmed
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Palltheme Core (Technology Theme Core) 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/palltheme-core\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-08T00:46:48+06:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: palltheme-core\n"
+
+#. Plugin Name of the plugin
+#: palltheme-core.php
+msgid "Palltheme Core (Technology Theme Core)"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: palltheme-core.php
+msgid "https://example.com/palltheme"
+msgstr ""
+
+#. Description of the plugin
+#: palltheme-core.php
+msgid "Companion plugin for Palltheme. Adds Services, Solutions, Case Studies, Team, Testimonials, Clients, Technologies, Pricing Plans, FAQs and Job Openings, their custom fields, Business Settings (contact, social, statistics), Elementor widgets, shortcodes, AJAX search, WooCommerce product specifications/downloads/quick view/filters, floating chat buttons, maintenance mode and a one-click demo importer. Your content stays safe if you ever change themes."
+msgstr ""
+
+#. Author of the plugin
+#: palltheme-core.php
+msgid "Engr. Nazim U Ahmed"
+msgstr ""
+
+#. Author URI of the plugin
+#: palltheme-core.php
+msgid "https://example.com"
+msgstr ""
+
+#: includes/admin/admin.php:15
+#: includes/elementor/elementor.php:26
+msgid "Palltheme"
+msgstr ""
+
+#: includes/admin/admin.php:16
+msgid "Theme Settings"
+msgstr ""
+
+#: includes/admin/admin.php:23
+msgid "Dashboard"
+msgstr ""
+
+#: includes/admin/admin.php:24
+#: includes/admin/settings.php:223
+msgid "Business Settings"
+msgstr ""
+
+#: includes/admin/admin.php:25
+msgid "Design (Customizer)"
+msgstr ""
+
+#: includes/admin/admin.php:25
+msgid "Design & Colors"
+msgstr ""
+
+#: includes/admin/admin.php:26
+msgid "Import Demo"
+msgstr ""
+
+#: includes/admin/admin.php:35
+msgid "Business details"
+msgstr ""
+
+#: includes/admin/admin.php:35
+msgid "Phone, email, address, hours, social links."
+msgstr ""
+
+#: includes/admin/admin.php:36
+msgid "Colors, fonts & header"
+msgstr ""
+
+#: includes/admin/admin.php:36
+msgid "Brand colors, typography, header and footer."
+msgstr ""
+
+#: includes/admin/admin.php:37
+msgid "Logo & site icon"
+msgstr ""
+
+#: includes/admin/admin.php:37
+msgid "Upload your logo and favicon."
+msgstr ""
+
+#: includes/admin/admin.php:38
+msgid "Menus"
+msgstr ""
+
+#: includes/admin/admin.php:38
+msgid "Header mega menu and footer columns."
+msgstr ""
+
+#: includes/admin/admin.php:39
+#: includes/post-types/post-types.php:33
+msgid "Services"
+msgstr ""
+
+#: includes/admin/admin.php:39
+msgid "Add or edit the services you offer."
+msgstr ""
+
+#: includes/admin/admin.php:40
+#: includes/ajax/rest.php:155
+#: includes/elementor/elementor.php:280
+msgid "Products"
+msgstr ""
+
+#: includes/admin/admin.php:40
+msgid "Your WooCommerce catalog."
+msgstr ""
+
+#: includes/admin/admin.php:41
+msgid "Homepage"
+msgstr ""
+
+#: includes/admin/admin.php:41
+msgid "Edit the homepage with Elementor."
+msgstr ""
+
+#: includes/admin/admin.php:42
+msgid "Import demo"
+msgstr ""
+
+#: includes/admin/admin.php:42
+msgid "Install the complete TechNova demo website."
+msgstr ""
+
+#: includes/admin/admin.php:46
+msgid "Palltheme theme active"
+msgstr ""
+
+#: includes/admin/admin.php:47
+msgid "Elementor active"
+msgstr ""
+
+#: includes/admin/admin.php:48
+msgid "WooCommerce active"
+msgstr ""
+
+#: includes/admin/admin.php:49
+msgid "Pretty permalinks enabled"
+msgstr ""
+
+#: includes/admin/admin.php:50
+msgid "Phone and email set"
+msgstr ""
+
+#: includes/admin/admin.php:51
+msgid "Logo uploaded"
+msgstr ""
+
+#: includes/admin/admin.php:52
+msgid "Site icon (favicon) set"
+msgstr ""
+
+#: includes/admin/admin.php:53
+msgid "SEO plugin active (Rank Math or Yoast)"
+msgstr ""
+
+#: includes/admin/admin.php:57
+msgid "Palltheme Dashboard"
+msgstr ""
+
+#: includes/admin/admin.php:58
+msgid "Manage your whole website from here — no code needed."
+msgstr ""
+
+#: includes/admin/admin.php:60
+msgid "Quick links"
+msgstr ""
+
+#: includes/admin/admin.php:68
+msgid "Setup checklist"
+msgstr ""
+
+#: includes/admin/admin.php:76
+msgid "Shortcodes (for any page or Elementor “Shortcode” widget)"
+msgstr ""
+
+#: includes/admin/admin.php:78
+msgid "Every shortcode is also available as a drag-and-drop widget in Elementor under “Palltheme”."
+msgstr ""
+
+#: includes/admin/admin.php:91
+#: includes/elementor/elementor.php:288
+msgid "Image"
+msgstr ""
+
+#: includes/admin/settings.php:21
+msgid "Company & Contact"
+msgstr ""
+
+#: includes/admin/settings.php:22
+msgid "Social Media"
+msgstr ""
+
+#: includes/admin/settings.php:23
+msgid "Homepage Hero"
+msgstr ""
+
+#: includes/admin/settings.php:24
+msgid "Statistics & CTA"
+msgstr ""
+
+#: includes/admin/settings.php:25
+msgid "Chat Buttons"
+msgstr ""
+
+#: includes/admin/settings.php:26
+msgid "Contact Form"
+msgstr ""
+
+#: includes/admin/settings.php:27
+msgid "Newsletter"
+msgstr ""
+
+#: includes/admin/settings.php:28
+msgid "Maintenance Mode"
+msgstr ""
+
+#: includes/admin/settings.php:29
+msgid "Advanced"
+msgstr ""
+
+#: includes/admin/settings.php:41
+msgid "Company name"
+msgstr ""
+
+#: includes/admin/settings.php:41
+msgid "Leave empty to use the Site Title."
+msgstr ""
+
+#: includes/admin/settings.php:42
+#: includes/frontend/frontend.php:85
+#: includes/frontend/frontend.php:148
+msgid "Phone"
+msgstr ""
+
+#: includes/admin/settings.php:43
+#: includes/frontend/frontend.php:147
+#: includes/render/sections.php:676
+msgid "Email"
+msgstr ""
+
+#: includes/admin/settings.php:44
+msgid "Address"
+msgstr ""
+
+#: includes/admin/settings.php:45
+#: includes/render/sections.php:686
+msgid "Business hours"
+msgstr ""
+
+#: includes/admin/settings.php:45
+msgid "One per line: Day | Hours, e.g. \"Mon – Fri | 9:00 – 18:00\"."
+msgstr ""
+
+#: includes/admin/settings.php:46
+msgid "Short hours (top bar)"
+msgstr ""
+
+#: includes/admin/settings.php:46
+msgid "e.g. \"Mon – Fri 9:00 – 18:00 · 24/7 NOC\""
+msgstr ""
+
+#: includes/admin/settings.php:47
+msgid "Google Maps location"
+msgstr ""
+
+#: includes/admin/settings.php:47
+msgid "An address or place name. The map is loaded only after the visitor clicks it (privacy + speed)."
+msgstr ""
+
+#: includes/admin/settings.php:48
+msgid "WhatsApp number"
+msgstr ""
+
+#: includes/admin/settings.php:48
+msgid "International format, e.g. +8801XXXXXXXXX."
+msgstr ""
+
+#: includes/admin/settings.php:49
+msgid "Telegram username"
+msgstr ""
+
+#: includes/admin/settings.php:49
+msgid "Without @."
+msgstr ""
+
+#: includes/admin/settings.php:50
+msgid "Facebook Messenger page username"
+msgstr ""
+
+#: includes/admin/settings.php:51
+msgid "Careers email"
+msgstr ""
+
+#: includes/admin/settings.php:52
+msgid "“Get a Quote” link"
+msgstr ""
+
+#: includes/admin/settings.php:52
+msgid "Used by call-to-action buttons. Defaults to the Contact page."
+msgstr ""
+
+#: includes/admin/settings.php:63
+msgid "Small label above the heading"
+msgstr ""
+
+#: includes/admin/settings.php:64
+#: includes/admin/settings.php:106
+#: includes/elementor/elementor.php:286
+msgid "Heading"
+msgstr ""
+
+#: includes/admin/settings.php:64
+msgid "Wrap words in *asterisks* to highlight them, e.g. \"Powering the Future with *Intelligent Technology*\"."
+msgstr ""
+
+#: includes/admin/settings.php:65
+#: includes/elementor/elementor.php:258
+msgid "Subheading"
+msgstr ""
+
+#: includes/admin/settings.php:66
+msgid "Primary button text"
+msgstr ""
+
+#: includes/admin/settings.php:67
+#: includes/elementor/elementor.php:260
+msgid "Primary button link"
+msgstr ""
+
+#: includes/admin/settings.php:68
+msgid "Secondary button text"
+msgstr ""
+
+#: includes/admin/settings.php:69
+#: includes/elementor/elementor.php:262
+msgid "Secondary button link"
+msgstr ""
+
+#: includes/admin/settings.php:70
+#: includes/elementor/elementor.php:263
+msgid "Hero image"
+msgstr ""
+
+#: includes/admin/settings.php:71
+msgid "Floating cards"
+msgstr ""
+
+#: includes/admin/settings.php:71
+msgid "Up to 3 lines: Value | Label | icon, e.g. \"24/7 | Monitoring | headset\". Icons: server, cloud, shield, network, speed, headset…"
+msgstr ""
+
+#: includes/admin/settings.php:72
+msgid "Background video (MP4, optional)"
+msgstr ""
+
+#: includes/admin/settings.php:72
+msgid "Desktop only, muted, loaded after the page. Keep it under ~4 MB."
+msgstr ""
+
+#: includes/admin/settings.php:73
+msgid "Background video (WebM, optional)"
+msgstr ""
+
+#: includes/admin/settings.php:74
+msgid "Video poster / mobile background image"
+msgstr ""
+
+#: includes/admin/settings.php:75
+msgid "Lottie animation JSON URL (optional, replaces the hero image)"
+msgstr ""
+
+#: includes/admin/settings.php:78
+msgid "Statistics"
+msgstr ""
+
+#: includes/admin/settings.php:78
+msgid "One per line: Value | Label, e.g. \"500+ | Projects Delivered\". Numbers animate automatically."
+msgstr ""
+
+#: includes/admin/settings.php:79
+msgid "Trust / why-us items"
+msgstr ""
+
+#: includes/admin/settings.php:79
+msgid "One per line: icon | Title | Short text. Used by the \"Features / Trust\" widget when it has no items of its own. Icons: shield, headset, speed, layers, users, check, lock, server, cloud…"
+msgstr ""
+
+#: includes/admin/settings.php:80
+msgid "CTA heading"
+msgstr ""
+
+#: includes/admin/settings.php:81
+msgid "CTA text"
+msgstr ""
+
+#: includes/admin/settings.php:82
+msgid "CTA button text"
+msgstr ""
+
+#: includes/admin/settings.php:85
+msgid "Show WhatsApp button"
+msgstr ""
+
+#: includes/admin/settings.php:86
+msgid "Show Telegram button"
+msgstr ""
+
+#: includes/admin/settings.php:87
+msgid "Show Messenger button"
+msgstr ""
+
+#: includes/admin/settings.php:88
+msgid "Show Call button (mobile)"
+msgstr ""
+
+#: includes/admin/settings.php:89
+msgid "Live chat link (optional)"
+msgstr ""
+
+#: includes/admin/settings.php:89
+msgid "If you use a live-chat plugin (Tawk.to, Crisp…) it adds its own bubble — leave this empty."
+msgstr ""
+
+#: includes/admin/settings.php:90
+msgid "Pre-filled WhatsApp message"
+msgstr ""
+
+#: includes/admin/settings.php:91
+msgid "Button label"
+msgstr ""
+
+#: includes/admin/settings.php:94
+msgid "Form plugin shortcode"
+msgstr ""
+
+#: includes/admin/settings.php:94
+msgid "Paste a Fluent Forms / WPForms / Contact Form 7 shortcode to use it on the contact page. Leave empty to use the built-in lightweight form."
+msgstr ""
+
+#: includes/admin/settings.php:95
+msgid "Built-in form: send to"
+msgstr ""
+
+#: includes/admin/settings.php:95
+msgid "Defaults to the Email above, then the site admin email."
+msgstr ""
+
+#: includes/admin/settings.php:96
+msgid "Built-in form: success message"
+msgstr ""
+
+#: includes/admin/settings.php:97
+msgid "Built-in form: require privacy-policy consent"
+msgstr ""
+
+#: includes/admin/settings.php:100
+msgid "Show newsletter sign-up in the footer"
+msgstr ""
+
+#: includes/admin/settings.php:101
+msgid "Short text above the field"
+msgstr ""
+
+#: includes/admin/settings.php:102
+msgid "Newsletter plugin shortcode (optional)"
+msgstr ""
+
+#: includes/admin/settings.php:102
+msgid "Paste a shortcode from MailPoet, FluentCRM, Mailchimp for WP, etc. Leave empty to use the built-in form: sign-ups are listed under Theme Settings → Subscribers with a CSV export."
+msgstr ""
+
+#: includes/admin/settings.php:105
+msgid "Enable maintenance mode"
+msgstr ""
+
+#: includes/admin/settings.php:105
+msgid "Logged-in administrators still see the site. Visitors get a 503 \"back soon\" page. If you use a dedicated maintenance plugin, leave this off."
+msgstr ""
+
+#: includes/admin/settings.php:107
+msgid "Message"
+msgstr ""
+
+#: includes/admin/settings.php:108
+msgid "Back online at (countdown)"
+msgstr ""
+
+#: includes/admin/settings.php:111
+msgid "Popular searches (comma separated)"
+msgstr ""
+
+#: includes/admin/settings.php:112
+msgid "Live search content types"
+msgstr ""
+
+#: includes/admin/settings.php:112
+msgid "Comma separated: product, pall_service, pall_solution, post, pall_case_study"
+msgstr ""
+
+#: includes/admin/settings.php:113
+msgid "Services archive intro"
+msgstr ""
+
+#: includes/admin/settings.php:114
+msgid "Solutions archive intro"
+msgstr ""
+
+#: includes/admin/settings.php:115
+msgid "Case studies archive intro"
+msgstr ""
+
+#: includes/admin/settings.php:116
+msgid "Team archive intro"
+msgstr ""
+
+#: includes/admin/settings.php:117
+msgid "Default homepage sections (order)"
+msgstr ""
+
+#: includes/admin/settings.php:117
+msgid "Used only when the homepage is not built with Elementor. One per line: hero, clients, services, stats, solutions, products, process, cases, technologies, testimonials, pricing, blog, faq, cta"
+msgstr ""
+
+#: includes/admin/settings.php:128
+msgid "Enterprise IT · Cloud · Security"
+msgstr ""
+
+#: includes/admin/settings.php:129
+msgid "Powering the Future with *Intelligent Technology*"
+msgstr ""
+
+#: includes/admin/settings.php:130
+msgid "Enterprise-grade infrastructure, cloud, networking, cybersecurity and digital solutions designed for modern businesses."
+msgstr ""
+
+#: includes/admin/settings.php:131
+msgid "Explore Solutions"
+msgstr ""
+
+#: includes/admin/settings.php:132
+msgid "Contact Us"
+msgstr ""
+
+#: includes/admin/settings.php:137
+msgid "Monthly insights on infrastructure, cloud and security. No spam."
+msgstr ""
+
+#: includes/admin/settings.php:138
+msgid "Ready to modernize your infrastructure?"
+msgstr ""
+
+#: includes/admin/settings.php:139
+msgid "Talk to our engineers for a free assessment and a tailored proposal."
+msgstr ""
+
+#: includes/admin/settings.php:140
+msgid "Get a Quote"
+msgstr ""
+
+#: includes/admin/settings.php:141
+msgid "Hello! I would like to know more about your services."
+msgstr ""
+
+#: includes/admin/settings.php:142
+msgid "Chat with us"
+msgstr ""
+
+#: includes/admin/settings.php:143
+msgid "Thank you! Your message has been sent. We will reply within one business day."
+msgstr ""
+
+#: includes/admin/settings.php:145
+msgid "We’re upgrading our systems"
+msgstr ""
+
+#: includes/admin/settings.php:146
+msgid "Scheduled maintenance is in progress to make things faster and more secure. We’ll be back shortly."
+msgstr ""
+
+#: includes/admin/settings.php:224
+msgid "Everything here appears automatically across the website — header, footer, contact page, schema and buttons. Colors, fonts and layout are in Appearance → Customize → Palltheme Settings."
+msgstr ""
+
+#: includes/admin/settings.php:264
+#: includes/fields/class-pallcore-meta-boxes.php:138
+msgid "Select image"
+msgstr ""
+
+#: includes/admin/settings.php:265
+#: includes/fields/class-pallcore-meta-boxes.php:139
+msgid "Remove"
+msgstr ""
+
+#. translators: %d: product count.
+#: includes/ajax/rest.php:85
+#, php-format
+msgid "%d product"
+msgid_plural "%d products"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/ajax/rest.php:91
+#: includes/woocommerce/filters.php:287
+msgid "Categories"
+msgstr ""
+
+#: includes/ajax/rest.php:155
+msgid "Articles"
+msgstr ""
+
+#: includes/ajax/rest.php:204
+msgid "Product not found."
+msgstr ""
+
+#: includes/ajax/rest.php:230
+msgid "View full details"
+msgstr ""
+
+#: includes/demo/importer.php:1525
+msgid "Import Demo — TechNova Systems"
+msgstr ""
+
+#: includes/demo/importer.php:1527
+msgid "Result"
+msgstr ""
+
+#: includes/demo/importer.php:1527
+msgid "View site"
+msgstr ""
+
+#: includes/demo/importer.php:1530
+msgid "What will be imported"
+msgstr ""
+
+#: includes/demo/importer.php:1532
+msgid "Home, About, Pricing, FAQ, Contact, Support, Careers, Blog, legal pages and Media Credits — editable with Elementor"
+msgstr ""
+
+#: includes/demo/importer.php:1533
+msgid "12 services, 10 solutions, 6 case studies, 8 team members, 8 testimonials, 10 client logos, 16 technologies, 3 pricing plans, 22 FAQs, 5 jobs"
+msgstr ""
+
+#: includes/demo/importer.php:1534
+msgid "18 blog articles in 12 categories"
+msgstr ""
+
+#: includes/demo/importer.php:1535
+msgid "WooCommerce: 21 categories, 9 filterable attributes, 42 products (simple, variable and virtual) with specifications, galleries, reviews, cross-sells and upsells"
+msgstr ""
+
+#: includes/demo/importer.php:1536
+msgid "Mega menus, 7 footer menus, shop filters, logo, contact details and theme settings"
+msgstr ""
+
+#: includes/demo/importer.php:1538
+msgid "Photo pack found: licensed photos will be imported with credits."
+msgstr ""
+
+#: includes/demo/importer.php:1538
+msgid "No photo pack found: original illustrations will be used for all images (you can add your own photos at any time)."
+msgstr ""
+
+#: includes/demo/importer.php:1539
+msgid "Existing content is never deleted and re-running only adds what is missing. People, clients, testimonials and figures in the demo are fictional."
+msgstr ""
+
+#: includes/demo/importer.php:1542
+msgid "Re-run import (adds missing items)"
+msgstr ""
+
+#: includes/demo/importer.php:1542
+msgid "Import demo website"
+msgstr ""
+
+#: includes/demo/importer.php:1547
+#: includes/demo/importer.php:1551
+msgid "Remove demo content"
+msgstr ""
+
+#: includes/demo/importer.php:1548
+msgid "Deletes only items created by the importer (posts, pages, products, images, demo terms and menus). Content you created yourself is not touched."
+msgstr ""
+
+#: includes/demo/importer.php:1549
+msgid "Permanently delete all demo content?"
+msgstr ""
+
+#: includes/elementor/elementor.php:79
+msgid "Content"
+msgstr ""
+
+#: includes/elementor/elementor.php:86
+msgid "Section heading"
+msgstr ""
+
+#: includes/elementor/elementor.php:87
+#: includes/elementor/elementor.php:256
+msgid "Small label"
+msgstr ""
+
+#: includes/elementor/elementor.php:88
+msgid "Title"
+msgstr ""
+
+#: includes/elementor/elementor.php:88
+msgid "Wrap words in *asterisks* to highlight them."
+msgstr ""
+
+#: includes/elementor/elementor.php:89
+msgid "Intro text"
+msgstr ""
+
+#: includes/elementor/elementor.php:90
+msgid "Alignment"
+msgstr ""
+
+#: includes/elementor/elementor.php:90
+msgid "Left"
+msgstr ""
+
+#: includes/elementor/elementor.php:90
+msgid "Center"
+msgstr ""
+
+#: includes/elementor/elementor.php:91
+msgid "Link text"
+msgstr ""
+
+#: includes/elementor/elementor.php:92
+msgid "Link"
+msgstr ""
+
+#: includes/elementor/elementor.php:95
+msgid "Section layout"
+msgstr ""
+
+#: includes/elementor/elementor.php:99
+msgid "Theme section spacing & width"
+msgstr ""
+
+#: includes/elementor/elementor.php:103
+msgid "Turn off to control spacing and width entirely from the Elementor container."
+msgstr ""
+
+#: includes/elementor/elementor.php:109
+msgid "Background"
+msgstr ""
+
+#: includes/elementor/elementor.php:113
+msgid "Page background"
+msgstr ""
+
+#: includes/elementor/elementor.php:114
+msgid "Light tint"
+msgstr ""
+
+#: includes/elementor/elementor.php:115
+msgid "Dark"
+msgstr ""
+
+#: includes/elementor/elementor.php:122
+msgid "Vertical spacing"
+msgstr ""
+
+#: includes/elementor/elementor.php:126
+msgid "Normal"
+msgstr ""
+
+#: includes/elementor/elementor.php:127
+msgid "Compact"
+msgstr ""
+
+#: includes/elementor/elementor.php:128
+msgid "None"
+msgstr ""
+
+#: includes/elementor/elementor.php:132
+msgid "Section ID (anchor)"
+msgstr ""
+
+#. translators: %s: widget title.
+#: includes/elementor/elementor.php:225
+#, php-format
+msgid "%s: nothing to show yet — add some content in the WordPress admin."
+msgstr ""
+
+#: includes/elementor/elementor.php:243
+msgid "Number of items"
+msgstr ""
+
+#: includes/elementor/elementor.php:244
+msgid "Columns"
+msgstr ""
+
+#: includes/elementor/elementor.php:245
+msgid "Show specific items (IDs, comma separated)"
+msgstr ""
+
+#: includes/elementor/elementor.php:245
+msgid "Optional. Leave empty to show the latest items automatically."
+msgstr ""
+
+#: includes/elementor/elementor.php:246
+msgid "Optional slug(s), comma separated."
+msgstr ""
+
+#: includes/elementor/elementor.php:251
+msgid "Hero"
+msgstr ""
+
+#: includes/elementor/elementor.php:257
+msgid "Heading (*highlight*)"
+msgstr ""
+
+#: includes/elementor/elementor.php:259
+msgid "Primary button"
+msgstr ""
+
+#: includes/elementor/elementor.php:261
+msgid "Secondary button"
+msgstr ""
+
+#: includes/elementor/elementor.php:264
+msgid "Floating cards (Value | Label | icon per line)"
+msgstr ""
+
+#: includes/elementor/elementor.php:265
+msgid "Show statistics row"
+msgstr ""
+
+#: includes/elementor/elementor.php:266
+msgid "Background video MP4 URL (optional)"
+msgstr ""
+
+#: includes/elementor/elementor.php:267
+msgid "Background video WebM URL (optional)"
+msgstr ""
+
+#: includes/elementor/elementor.php:268
+msgid "Background image / video poster"
+msgstr ""
+
+#: includes/elementor/elementor.php:269
+msgid "Lottie JSON URL (optional)"
+msgstr ""
+
+#: includes/elementor/elementor.php:272
+msgid "Services Grid"
+msgstr ""
+
+#: includes/elementor/elementor.php:272
+#: includes/render/sections.php:746
+msgid "What we do"
+msgstr ""
+
+#: includes/elementor/elementor.php:272
+msgid "End-to-end *IT services*"
+msgstr ""
+
+#: includes/elementor/elementor.php:272
+msgid "Service category"
+msgstr ""
+
+#: includes/elementor/elementor.php:273
+msgid "Solutions Grid"
+msgstr ""
+
+#: includes/elementor/elementor.php:273
+#: includes/render/sections.php:748
+msgid "Industry solutions"
+msgstr ""
+
+#: includes/elementor/elementor.php:273
+msgid "Built for *your industry*"
+msgstr ""
+
+#: includes/elementor/elementor.php:273
+#: includes/elementor/elementor.php:274
+#: includes/elementor/elementor.php:277
+#: includes/taxonomies/taxonomies.php:16
+msgid "Industry"
+msgstr ""
+
+#: includes/elementor/elementor.php:274
+#: includes/post-types/post-types.php:35
+msgid "Case Studies"
+msgstr ""
+
+#: includes/elementor/elementor.php:274
+#: includes/render/sections.php:751
+msgid "Case studies"
+msgstr ""
+
+#: includes/elementor/elementor.php:274
+msgid "Results that *speak*"
+msgstr ""
+
+#: includes/elementor/elementor.php:275
+#: includes/helpers/icons.php:40
+#: includes/post-types/post-types.php:36
+msgid "Team"
+msgstr ""
+
+#: includes/elementor/elementor.php:275
+msgid "Our team"
+msgstr ""
+
+#: includes/elementor/elementor.php:275
+msgid "Meet the *engineers*"
+msgstr ""
+
+#: includes/elementor/elementor.php:275
+#: includes/elementor/elementor.php:284
+#: includes/fields/schema.php:165
+#: includes/taxonomies/taxonomies.php:19
+msgid "Department"
+msgstr ""
+
+#: includes/elementor/elementor.php:276
+#: includes/post-types/post-types.php:37
+#: includes/render/sections.php:753
+msgid "Testimonials"
+msgstr ""
+
+#: includes/elementor/elementor.php:276
+#: includes/render/sections.php:753
+msgid "What our *clients* say"
+msgstr ""
+
+#: includes/elementor/elementor.php:276
+#: includes/elementor/elementor.php:277
+msgid "Layout"
+msgstr ""
+
+#: includes/elementor/elementor.php:276
+msgid "Slider"
+msgstr ""
+
+#: includes/elementor/elementor.php:276
+msgid "Grid / cards"
+msgstr ""
+
+#: includes/elementor/elementor.php:276
+msgid "Autoplay (ms, 0 = off)"
+msgstr ""
+
+#: includes/elementor/elementor.php:277
+msgid "Client Logos"
+msgstr ""
+
+#: includes/elementor/elementor.php:277
+#: includes/render/sections.php:745
+msgid "Trusted by industry leaders"
+msgstr ""
+
+#: includes/elementor/elementor.php:277
+msgid "Infinite scroll"
+msgstr ""
+
+#: includes/elementor/elementor.php:277
+msgid "Grid"
+msgstr ""
+
+#: includes/elementor/elementor.php:277
+msgid "Scroll duration (seconds)"
+msgstr ""
+
+#: includes/elementor/elementor.php:278
+msgid "Technology Stack"
+msgstr ""
+
+#: includes/elementor/elementor.php:278
+#: includes/render/sections.php:752
+msgid "Technology stack"
+msgstr ""
+
+#: includes/elementor/elementor.php:278
+msgid "Expertise across *leading platforms*"
+msgstr ""
+
+#: includes/elementor/elementor.php:278
+msgid "Show group filter"
+msgstr ""
+
+#: includes/elementor/elementor.php:278
+msgid "Technology group"
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+msgid "Statistics Counter"
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+msgid "Items (Value | Label per line)"
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+msgid "Leave empty to use Business Settings → Statistics."
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+#: includes/elementor/elementor.php:287
+msgid "Style"
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+msgid "Floating band"
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+#: includes/elementor/elementor.php:287
+msgid "Cards"
+msgstr ""
+
+#: includes/elementor/elementor.php:279
+msgid "Plain"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+#: includes/render/sections.php:749
+msgid "Technology store"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+#: includes/render/sections.php:749
+msgid "Enterprise hardware, *ready to ship*"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+msgid "Show"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+#: includes/elementor/elementor.php:281
+msgid "Latest"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+msgid "Featured"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+msgid "On sale"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+msgid "Best selling"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+msgid "Top rated"
+msgstr ""
+
+#: includes/elementor/elementor.php:280
+msgid "Product category"
+msgstr ""
+
+#: includes/elementor/elementor.php:281
+msgid "Blog Posts"
+msgstr ""
+
+#: includes/elementor/elementor.php:281
+#: includes/render/sections.php:755
+msgid "Insights"
+msgstr ""
+
+#: includes/elementor/elementor.php:281
+#: includes/render/sections.php:755
+msgid "Latest from our *engineers*"
+msgstr ""
+
+#: includes/elementor/elementor.php:281
+#: includes/woocommerce/filters.php:177
+msgid "Category"
+msgstr ""
+
+#: includes/elementor/elementor.php:281
+msgid "Order"
+msgstr ""
+
+#: includes/elementor/elementor.php:281
+msgid "Most discussed (popular)"
+msgstr ""
+
+#: includes/elementor/elementor.php:282
+msgid "Pricing Table"
+msgstr ""
+
+#: includes/elementor/elementor.php:282
+#: includes/render/sections.php:754
+msgid "Pricing"
+msgstr ""
+
+#: includes/elementor/elementor.php:282
+#: includes/render/sections.php:754
+msgid "Simple, *transparent* plans"
+msgstr ""
+
+#: includes/elementor/elementor.php:283
+#: includes/fields/schema.php:49
+#: includes/post-types/post-types.php:41
+#: includes/render/sections.php:756
+msgid "FAQ"
+msgstr ""
+
+#: includes/elementor/elementor.php:283
+#: includes/render/sections.php:756
+msgid "Questions, answered"
+msgstr ""
+
+#: includes/elementor/elementor.php:283
+msgid "FAQ group"
+msgstr ""
+
+#: includes/elementor/elementor.php:284
+msgid "Job Openings"
+msgstr ""
+
+#: includes/elementor/elementor.php:284
+#: includes/post-types/post-types.php:42
+msgid "Careers"
+msgstr ""
+
+#: includes/elementor/elementor.php:284
+msgid "Open *positions*"
+msgstr ""
+
+#: includes/elementor/elementor.php:285
+msgid "Process Steps"
+msgstr ""
+
+#: includes/elementor/elementor.php:285
+#: includes/render/sections.php:750
+msgid "How we work"
+msgstr ""
+
+#: includes/elementor/elementor.php:285
+#: includes/render/sections.php:750
+msgid "A proven delivery *process*"
+msgstr ""
+
+#: includes/elementor/elementor.php:285
+msgid "Steps (Title | Text per line)"
+msgstr ""
+
+#: includes/elementor/elementor.php:286
+msgid "Call to Action"
+msgstr ""
+
+#: includes/elementor/elementor.php:286
+msgid "Text"
+msgstr ""
+
+#: includes/elementor/elementor.php:286
+#: includes/elementor/elementor.php:288
+#: includes/fields/schema.php:153
+msgid "Button text"
+msgstr ""
+
+#: includes/elementor/elementor.php:286
+#: includes/elementor/elementor.php:288
+msgid "Button link"
+msgstr ""
+
+#: includes/elementor/elementor.php:286
+msgid "Show phone button"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Features / Trust Cards"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Why us"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Built on *trust*"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Items (icon | Title | Text | optional link — one per line)"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Leave empty to use Business Settings → Trust items. Icons: server, network, cloud, shield, lock, headset, speed, layers, users, check, code, ai, rack, backup, chart, globe, consult, settings…"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Compact trust strip"
+msgstr ""
+
+#: includes/elementor/elementor.php:287
+msgid "Minimal (no card)"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Image + Text (Split)"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "About us"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Engineers *first*"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Or Lottie JSON URL (replaces the image)"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Text (blank line = new paragraph)"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Bullet points (one per line)"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Second button text"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Second button link"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Floating badge value (e.g. 15+)"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Floating badge label"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "Image on the right"
+msgstr ""
+
+#: includes/elementor/elementor.php:288
+msgid "First section on the page (load the image first)"
+msgstr ""
+
+#: includes/elementor/elementor.php:289
+msgid "Contact Block"
+msgstr ""
+
+#: includes/elementor/elementor.php:289
+msgid "Show contact form"
+msgstr ""
+
+#: includes/elementor/elementor.php:289
+msgid "Show map"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:55
+msgid "Choose image"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:56
+msgid "Choose images"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:57
+msgid "Use"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:114
+msgid "— Choose —"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:155
+msgid "Select images"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:156
+msgid "Clear"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:171
+msgid "+ Add row"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:179
+msgid "Not available (required plugin inactive)."
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:193
+msgid "Filter list…"
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:198
+msgid "Hold Ctrl (Cmd on Mac) to select several."
+msgstr ""
+
+#: includes/fields/class-pallcore-meta-boxes.php:227
+msgid "Remove row"
+msgstr ""
+
+#: includes/fields/schema.php:22
+msgid "Call-to-action heading"
+msgstr ""
+
+#: includes/fields/schema.php:22
+msgid "Optional. Leave empty to use the site-wide CTA from Business Settings."
+msgstr ""
+
+#: includes/fields/schema.php:23
+msgid "Call-to-action text"
+msgstr ""
+
+#: includes/fields/schema.php:24
+msgid "Call-to-action link"
+msgstr ""
+
+#: includes/fields/schema.php:35
+msgid "Icon"
+msgstr ""
+
+#: includes/fields/schema.php:36
+msgid "Or upload your own icon (SVG/PNG)"
+msgstr ""
+
+#: includes/fields/schema.php:42
+msgid "Service details"
+msgstr ""
+
+#: includes/fields/schema.php:45
+msgid "Features / what’s included"
+msgstr ""
+
+#: includes/fields/schema.php:45
+#: includes/fields/schema.php:64
+#: includes/fields/schema.php:150
+msgid "One per line."
+msgstr ""
+
+#: includes/fields/schema.php:46
+msgid "Benefits"
+msgstr ""
+
+#: includes/fields/schema.php:46
+#: includes/fields/schema.php:65
+msgid "Benefit"
+msgstr ""
+
+#: includes/fields/schema.php:46
+#: includes/fields/schema.php:65
+msgid "Short explanation"
+msgstr ""
+
+#: includes/fields/schema.php:47
+#: includes/fields/schema.php:66
+#: includes/post-types/post-types.php:39
+msgid "Technologies"
+msgstr ""
+
+#: includes/fields/schema.php:47
+msgid "One per line, e.g. Cisco, VMware, Kubernetes."
+msgstr ""
+
+#: includes/fields/schema.php:48
+msgid "Gallery"
+msgstr ""
+
+#: includes/fields/schema.php:49
+#: includes/post-types/post-types.php:109
+msgid "Question"
+msgstr ""
+
+#: includes/fields/schema.php:49
+msgid "Answer"
+msgstr ""
+
+#: includes/fields/schema.php:50
+#: includes/fields/schema.php:68
+#: includes/fields/schema.php:178
+msgid "Related services"
+msgstr ""
+
+#: includes/fields/schema.php:51
+#: includes/fields/schema.php:69
+msgid "Related products"
+msgstr ""
+
+#: includes/fields/schema.php:57
+msgid "Solution details"
+msgstr ""
+
+#: includes/fields/schema.php:60
+msgid "The problem"
+msgstr ""
+
+#: includes/fields/schema.php:60
+msgid "The challenge this industry typically faces."
+msgstr ""
+
+#: includes/fields/schema.php:61
+msgid "Our solution"
+msgstr ""
+
+#: includes/fields/schema.php:62
+msgid "Reference architecture"
+msgstr ""
+
+#: includes/fields/schema.php:63
+msgid "Implementation approach"
+msgstr ""
+
+#: includes/fields/schema.php:64
+msgid "Key capabilities"
+msgstr ""
+
+#: includes/fields/schema.php:65
+msgid "Benefits / outcomes"
+msgstr ""
+
+#: includes/fields/schema.php:67
+msgid "Related case studies"
+msgstr ""
+
+#: includes/fields/schema.php:75
+msgid "Case study details"
+msgstr ""
+
+#: includes/fields/schema.php:78
+#: includes/post-types/post-types.php:38
+msgid "Client"
+msgstr ""
+
+#: includes/fields/schema.php:78
+msgid "Client name, or an anonymised description such as “Tier-1 ISP”."
+msgstr ""
+
+#: includes/fields/schema.php:79
+#: includes/fields/schema.php:163
+msgid "Location"
+msgstr ""
+
+#: includes/fields/schema.php:80
+msgid "Project duration"
+msgstr ""
+
+#: includes/fields/schema.php:81
+msgid "Challenge"
+msgstr ""
+
+#: includes/fields/schema.php:82
+#: includes/post-types/post-types.php:34
+msgid "Solution"
+msgstr ""
+
+#: includes/fields/schema.php:83
+msgid "Implementation"
+msgstr ""
+
+#: includes/fields/schema.php:84
+msgid "Results / statistics"
+msgstr ""
+
+#: includes/fields/schema.php:84
+msgid "Value (e.g. 99.99%)"
+msgstr ""
+
+#: includes/fields/schema.php:84
+msgid "Label (e.g. availability)"
+msgstr ""
+
+#: includes/fields/schema.php:85
+msgid "Technologies used"
+msgstr ""
+
+#: includes/fields/schema.php:86
+msgid "Images"
+msgstr ""
+
+#: includes/fields/schema.php:87
+msgid "Video URL (YouTube/Vimeo or .mp4)"
+msgstr ""
+
+#: includes/fields/schema.php:88
+msgid "Client testimonial"
+msgstr ""
+
+#: includes/fields/schema.php:89
+msgid "Testimonial author (name, role)"
+msgstr ""
+
+#: includes/fields/schema.php:90
+msgid "Services delivered"
+msgstr ""
+
+#: includes/fields/schema.php:91
+msgid "Related solutions"
+msgstr ""
+
+#: includes/fields/schema.php:97
+msgid "Team member details"
+msgstr ""
+
+#: includes/fields/schema.php:100
+#: includes/fields/schema.php:115
+msgid "Position"
+msgstr ""
+
+#: includes/fields/schema.php:101
+msgid "Email (optional, shown publicly)"
+msgstr ""
+
+#: includes/fields/schema.php:102
+msgid "Phone (optional, shown publicly)"
+msgstr ""
+
+#: includes/fields/schema.php:103
+msgid "Skills"
+msgstr ""
+
+#: includes/fields/schema.php:103
+msgid "Skill"
+msgstr ""
+
+#: includes/fields/schema.php:103
+msgid "Level 0–100 (optional)"
+msgstr ""
+
+#: includes/fields/schema.php:112
+msgid "Testimonial details"
+msgstr ""
+
+#: includes/fields/schema.php:116
+#: includes/frontend/frontend.php:81
+#: includes/frontend/frontend.php:146
+msgid "Company"
+msgstr ""
+
+#: includes/fields/schema.php:117
+#: includes/woocommerce/filters.php:276
+#: includes/woocommerce/filters.php:292
+msgid "Rating"
+msgstr ""
+
+#: includes/fields/schema.php:117
+msgid "Hide rating"
+msgstr ""
+
+#: includes/fields/schema.php:118
+msgid "Company logo"
+msgstr ""
+
+#: includes/fields/schema.php:124
+msgid "Client details"
+msgstr ""
+
+#: includes/fields/schema.php:127
+msgid "Website"
+msgstr ""
+
+#: includes/fields/schema.php:128
+msgid "Industry (short label)"
+msgstr ""
+
+#: includes/fields/schema.php:134
+msgid "Technology details"
+msgstr ""
+
+#: includes/fields/schema.php:137
+msgid "Short label (shown when no logo, max 4 characters, e.g. K8s)"
+msgstr ""
+
+#: includes/fields/schema.php:138
+msgid "Caption (e.g. Partner, Certified)"
+msgstr ""
+
+#: includes/fields/schema.php:139
+msgid "Link (optional)"
+msgstr ""
+
+#: includes/fields/schema.php:145
+msgid "Plan details"
+msgstr ""
+
+#: includes/fields/schema.php:148
+msgid "Price (as displayed, e.g. $49 or Custom)"
+msgstr ""
+
+#: includes/fields/schema.php:149
+msgid "Period (e.g. /month)"
+msgstr ""
+
+#: includes/fields/schema.php:150
+msgid "Features"
+msgstr ""
+
+#: includes/fields/schema.php:151
+msgid "Highlight this plan"
+msgstr ""
+
+#: includes/fields/schema.php:152
+msgid "Badge text (e.g. Most popular)"
+msgstr ""
+
+#: includes/fields/schema.php:153
+#: includes/render/sections.php:552
+msgid "Get started"
+msgstr ""
+
+#: includes/fields/schema.php:154
+msgid "Button link (a product, checkout or contact page)"
+msgstr ""
+
+#: includes/fields/schema.php:160
+msgid "Job details"
+msgstr ""
+
+#: includes/fields/schema.php:164
+msgid "Job type"
+msgstr ""
+
+#: includes/fields/schema.php:164
+msgid "Full-time"
+msgstr ""
+
+#: includes/fields/schema.php:164
+msgid "Part-time"
+msgstr ""
+
+#: includes/fields/schema.php:164
+msgid "Contract"
+msgstr ""
+
+#: includes/fields/schema.php:164
+msgid "Internship"
+msgstr ""
+
+#: includes/fields/schema.php:164
+msgid "Remote"
+msgstr ""
+
+#: includes/fields/schema.php:166
+msgid "Salary (optional)"
+msgstr ""
+
+#: includes/fields/schema.php:167
+msgid "Apply by (date)"
+msgstr ""
+
+#: includes/fields/schema.php:168
+msgid "Application link (optional)"
+msgstr ""
+
+#: includes/fields/schema.php:169
+msgid "Or application email"
+msgstr ""
+
+#: includes/fields/schema.php:175
+msgid "Related services & products (Palltheme)"
+msgstr ""
+
+#: includes/fields/schema.php:178
+msgid "Shown below the article."
+msgstr ""
+
+#: includes/fields/schema.php:179
+msgid "Recommended products"
+msgstr ""
+
+#: includes/fields/schema.php:185
+msgid "Technical details (Palltheme)"
+msgstr ""
+
+#: includes/fields/schema.php:188
+#: includes/woocommerce/product.php:57
+msgid "Specifications"
+msgstr ""
+
+#: includes/fields/schema.php:188
+msgid "Specification (e.g. CPU)"
+msgstr ""
+
+#: includes/fields/schema.php:188
+msgid "Details (e.g. Intel Xeon Gold 6430)"
+msgstr ""
+
+#: includes/fields/schema.php:188
+msgid "Start a row with \"#\" to make it a group heading, e.g. \"#Networking\". Shown in a Specifications tab."
+msgstr ""
+
+#: includes/fields/schema.php:189
+msgid "Downloads (datasheets, manuals, drivers)"
+msgstr ""
+
+#: includes/fields/schema.php:189
+msgid "Label"
+msgstr ""
+
+#: includes/fields/schema.php:189
+msgid "File URL (upload in Media, paste link)"
+msgstr ""
+
+#: includes/fields/schema.php:190
+msgid "Product video URL (YouTube/Vimeo/.mp4)"
+msgstr ""
+
+#: includes/fields/schema.php:191
+msgid "Warranty (overrides the default text)"
+msgstr ""
+
+#: includes/fields/schema.php:192
+msgid "Shipping info (overrides the default text)"
+msgstr ""
+
+#: includes/frontend/frontend.php:38
+msgid "Sorry, your message could not be sent. Please check the fields and try again, or email us directly."
+msgstr ""
+
+#: includes/frontend/frontend.php:42
+msgid "You have sent several messages in a short time, so this one was not sent. Please try again in an hour, or contact us directly:"
+msgstr ""
+
+#. translators: %s: privacy policy link.
+#: includes/frontend/frontend.php:52
+#, php-format
+msgid "I agree to the %s."
+msgstr ""
+
+#. translators: %s: privacy policy link.
+#: includes/frontend/frontend.php:52
+msgid "privacy policy"
+msgstr ""
+
+#: includes/frontend/frontend.php:53
+msgid "I agree that my details are used to answer my enquiry."
+msgstr ""
+
+#: includes/frontend/frontend.php:65
+msgid "General enquiry"
+msgstr ""
+
+#: includes/frontend/frontend.php:80
+#: includes/post-types/post-types.php:108
+msgid "Full name"
+msgstr ""
+
+#: includes/frontend/frontend.php:84
+msgid "Work email"
+msgstr ""
+
+#: includes/frontend/frontend.php:87
+msgid "I’m interested in"
+msgstr ""
+
+#: includes/frontend/frontend.php:88
+msgid "How can we help?"
+msgstr ""
+
+#: includes/frontend/frontend.php:90
+msgid "Send message"
+msgstr ""
+
+#. translators: 1: site name, 2: sender name.
+#: includes/frontend/frontend.php:141
+#, php-format
+msgid "[%1$s] New enquiry from %2$s"
+msgstr ""
+
+#: includes/frontend/frontend.php:145
+msgid "Name"
+msgstr ""
+
+#: includes/frontend/frontend.php:149
+msgid "Topic"
+msgstr ""
+
+#: includes/frontend/frontend.php:192
+msgid "Call"
+msgstr ""
+
+#: includes/frontend/frontend.php:196
+msgid "Live chat"
+msgstr ""
+
+#: includes/frontend/frontend.php:217
+msgid "Contact options"
+msgstr ""
+
+#: includes/frontend/frontend.php:266
+msgid "Maintenance mode ON"
+msgstr ""
+
+#: includes/frontend/newsletter.php:26
+#: includes/frontend/newsletter.php:28
+#: includes/frontend/newsletter.php:29
+msgid "Subscribers"
+msgstr ""
+
+#: includes/frontend/newsletter.php:27
+msgid "Subscriber"
+msgstr ""
+
+#: includes/frontend/newsletter.php:60
+msgid "Thanks — you are subscribed."
+msgstr ""
+
+#: includes/frontend/newsletter.php:62
+msgid "Please enter a valid email address."
+msgstr ""
+
+#: includes/frontend/newsletter.php:76
+msgid "Email address"
+msgstr ""
+
+#: includes/frontend/newsletter.php:77
+msgid "Your work email"
+msgstr ""
+
+#: includes/frontend/newsletter.php:78
+msgid "Subscribe"
+msgstr ""
+
+#. translators: %s: privacy policy link.
+#: includes/frontend/newsletter.php:81
+#, php-format
+msgid "No spam. Unsubscribe anytime. See our <a href=\"%s\">privacy policy</a>."
+msgstr ""
+
+#: includes/frontend/newsletter.php:82
+msgid "No spam. Unsubscribe anytime."
+msgstr ""
+
+#: includes/frontend/newsletter.php:146
+msgid "Export CSV"
+msgstr ""
+
+#: includes/frontend/newsletter.php:155
+msgid "Not allowed."
+msgstr ""
+
+#. translators: %s: rating.
+#: includes/helpers/functions.php:63
+#, php-format
+msgid "Rated %s out of 5"
+msgstr ""
+
+#: includes/helpers/icons.php:19
+msgid "Server"
+msgstr ""
+
+#: includes/helpers/icons.php:20
+msgid "Network"
+msgstr ""
+
+#: includes/helpers/icons.php:21
+msgid "Cloud"
+msgstr ""
+
+#: includes/helpers/icons.php:22
+msgid "Security"
+msgstr ""
+
+#: includes/helpers/icons.php:23
+msgid "Lock"
+msgstr ""
+
+#: includes/helpers/icons.php:24
+msgid "Processor"
+msgstr ""
+
+#: includes/helpers/icons.php:25
+msgid "Database / Storage"
+msgstr ""
+
+#: includes/helpers/icons.php:26
+msgid "Software"
+msgstr ""
+
+#: includes/helpers/icons.php:27
+msgid "AI"
+msgstr ""
+
+#: includes/helpers/icons.php:28
+msgid "IoT"
+msgstr ""
+
+#: includes/helpers/icons.php:29
+msgid "Support"
+msgstr ""
+
+#: includes/helpers/icons.php:30
+msgid "Backup"
+msgstr ""
+
+#: includes/helpers/icons.php:31
+msgid "Analytics"
+msgstr ""
+
+#: includes/helpers/icons.php:32
+msgid "Globe"
+msgstr ""
+
+#: includes/helpers/icons.php:33
+msgid "Wireless"
+msgstr ""
+
+#: includes/helpers/icons.php:34
+msgid "Router"
+msgstr ""
+
+#: includes/helpers/icons.php:35
+msgid "Data Center"
+msgstr ""
+
+#: includes/helpers/icons.php:36
+msgid "Fiber Optics"
+msgstr ""
+
+#: includes/helpers/icons.php:37
+msgid "Hosting / VPS"
+msgstr ""
+
+#: includes/helpers/icons.php:38
+msgid "Consultancy"
+msgstr ""
+
+#: includes/helpers/icons.php:39
+msgid "Managed Services"
+msgstr ""
+
+#: includes/helpers/icons.php:41
+msgid "Enterprise"
+msgstr ""
+
+#: includes/helpers/icons.php:42
+msgid "Banking"
+msgstr ""
+
+#: includes/helpers/icons.php:43
+msgid "Healthcare"
+msgstr ""
+
+#: includes/helpers/icons.php:44
+msgid "Education"
+msgstr ""
+
+#: includes/helpers/icons.php:45
+msgid "Government"
+msgstr ""
+
+#: includes/helpers/icons.php:46
+msgid "Retail"
+msgstr ""
+
+#: includes/helpers/icons.php:47
+msgid "Manufacturing"
+msgstr ""
+
+#: includes/helpers/icons.php:48
+msgid "Telecom / ISP"
+msgstr ""
+
+#: includes/helpers/icons.php:49
+msgid "Transformation"
+msgstr ""
+
+#: includes/helpers/icons.php:50
+msgid "Layers"
+msgstr ""
+
+#: includes/helpers/icons.php:51
+msgid "Terminal / Linux"
+msgstr ""
+
+#: includes/helpers/icons.php:52
+msgid "Switch"
+msgstr ""
+
+#: includes/helpers/icons.php:53
+msgid "Firewall"
+msgstr ""
+
+#: includes/helpers/icons.php:54
+msgid "License / Software"
+msgstr ""
+
+#: includes/helpers/icons.php:55
+msgid "Power / UPS"
+msgstr ""
+
+#: includes/helpers/icons.php:56
+msgid "Performance"
+msgstr ""
+
+#: includes/helpers/icons.php:57
+msgid "Check"
+msgstr ""
+
+#: includes/post-types/post-types.php:33
+msgid "Service"
+msgstr ""
+
+#: includes/post-types/post-types.php:33
+msgid "What you offer: managed IT, networking, cloud, security… Each service gets its own page."
+msgstr ""
+
+#: includes/post-types/post-types.php:34
+msgid "Solutions"
+msgstr ""
+
+#: includes/post-types/post-types.php:34
+msgid "Industry solutions (ISP, Banking, Healthcare…)."
+msgstr ""
+
+#: includes/post-types/post-types.php:35
+msgid "Case Study"
+msgstr ""
+
+#: includes/post-types/post-types.php:35
+msgid "Projects you delivered: challenge, solution and results."
+msgstr ""
+
+#: includes/post-types/post-types.php:36
+msgid "Team Member"
+msgstr ""
+
+#: includes/post-types/post-types.php:36
+msgid "People shown on the Team page."
+msgstr ""
+
+#: includes/post-types/post-types.php:37
+msgid "Testimonial"
+msgstr ""
+
+#: includes/post-types/post-types.php:37
+msgid "Write the quote in the content box. Featured image = customer photo."
+msgstr ""
+
+#: includes/post-types/post-types.php:38
+msgid "Clients"
+msgstr ""
+
+#: includes/post-types/post-types.php:38
+msgid "Featured image = client logo (transparent PNG/SVG works best)."
+msgstr ""
+
+#: includes/post-types/post-types.php:39
+msgid "Technology"
+msgstr ""
+
+#: includes/post-types/post-types.php:39
+msgid "Technologies / platforms you work with. Use a logo only when its license allows it; otherwise the short label is shown."
+msgstr ""
+
+#: includes/post-types/post-types.php:40
+msgid "Pricing Plan"
+msgstr ""
+
+#: includes/post-types/post-types.php:40
+msgid "Pricing Plans"
+msgstr ""
+
+#: includes/post-types/post-types.php:40
+msgid "Plans shown in the pricing table."
+msgstr ""
+
+#: includes/post-types/post-types.php:41
+msgid "FAQs"
+msgstr ""
+
+#: includes/post-types/post-types.php:41
+msgid "Title = question, content = answer."
+msgstr ""
+
+#: includes/post-types/post-types.php:42
+msgid "Job Opening"
+msgstr ""
+
+#: includes/post-types/post-types.php:42
+msgid "Open positions listed on the Careers page."
+msgstr ""
+
+#. translators: %s: singular name.
+#: includes/post-types/post-types.php:57
+#: includes/taxonomies/taxonomies.php:31
+#, php-format
+msgid "Add New %s"
+msgstr ""
+
+#. translators: %s: singular name.
+#: includes/post-types/post-types.php:59
+#: includes/taxonomies/taxonomies.php:33
+#, php-format
+msgid "Edit %s"
+msgstr ""
+
+#. translators: %s: singular name.
+#: includes/post-types/post-types.php:61
+#, php-format
+msgid "New %s"
+msgstr ""
+
+#. translators: %s: singular name.
+#: includes/post-types/post-types.php:63
+#, php-format
+msgid "View %s"
+msgstr ""
+
+#. translators: %s: plural name.
+#: includes/post-types/post-types.php:65
+#: includes/taxonomies/taxonomies.php:35
+#, php-format
+msgid "Search %s"
+msgstr ""
+
+#. translators: %s: plural name.
+#: includes/post-types/post-types.php:67
+#, php-format
+msgid "No %s yet"
+msgstr ""
+
+#. translators: %s: plural name.
+#: includes/post-types/post-types.php:69
+#: includes/woocommerce/filters.php:172
+#, php-format
+msgid "All %s"
+msgstr ""
+
+#: includes/post-types/post-types.php:70
+msgid "Client logo"
+msgstr ""
+
+#: includes/post-types/post-types.php:70
+msgid "Customer photo"
+msgstr ""
+
+#: includes/post-types/post-types.php:70
+msgid "Logo (optional)"
+msgstr ""
+
+#: includes/post-types/post-types.php:70
+msgid "Featured image"
+msgstr ""
+
+#: includes/post-types/post-types.php:71
+msgid "Set image"
+msgstr ""
+
+#: includes/post-types/post-types.php:105
+msgid "Customer name"
+msgstr ""
+
+#: includes/post-types/post-types.php:106
+msgid "Client name"
+msgstr ""
+
+#: includes/post-types/post-types.php:107
+msgid "Technology name (e.g. Kubernetes)"
+msgstr ""
+
+#: includes/post-types/post-types.php:110
+msgid "Plan name"
+msgstr ""
+
+#: includes/post-types/post-types.php:111
+msgid "Job title"
+msgstr ""
+
+#: includes/render/cards.php:56
+#: includes/render/sections-extra.php:65
+msgid "Learn more"
+msgstr ""
+
+#: includes/render/cards.php:143
+msgid "View role"
+msgstr ""
+
+#. translators: %d: minutes.
+#: includes/render/cards.php:167
+#, php-format
+msgid "%d min read"
+msgstr ""
+
+#: includes/render/sections-extra.php:181
+msgid "All images on this website are original works or owned by the company."
+msgstr ""
+
+#: includes/render/sections-extra.php:192
+msgid "Preview"
+msgstr ""
+
+#: includes/render/sections-extra.php:192
+msgid "Media"
+msgstr ""
+
+#: includes/render/sections-extra.php:192
+msgid "Author"
+msgstr ""
+
+#: includes/render/sections-extra.php:192
+msgid "Source"
+msgstr ""
+
+#: includes/render/sections-extra.php:192
+msgid "License"
+msgstr ""
+
+#: includes/render/sections-extra.php:207
+msgid "Credit: source (e.g. Unsplash)"
+msgstr ""
+
+#: includes/render/sections-extra.php:208
+msgid "Credit: original URL"
+msgstr ""
+
+#: includes/render/sections-extra.php:209
+msgid "Credit: author"
+msgstr ""
+
+#: includes/render/sections-extra.php:210
+msgid "Credit: author URL"
+msgstr ""
+
+#: includes/render/sections-extra.php:211
+msgid "Credit: license"
+msgstr ""
+
+#: includes/render/sections-extra.php:212
+msgid "Credit: license URL"
+msgstr ""
+
+#: includes/render/sections-extra.php:213
+msgid "Credit: used for"
+msgstr ""
+
+#: includes/render/sections-extra.php:225
+msgid "Fill these for third-party images; they appear on the Media Credits page ([pall_media_credits])."
+msgstr ""
+
+#: includes/render/sections.php:332
+msgid "Carousel"
+msgstr ""
+
+#: includes/render/sections.php:332
+msgid "Previous"
+msgstr ""
+
+#: includes/render/sections.php:332
+msgid "Next"
+msgstr ""
+
+#: includes/render/sections.php:405
+msgid "Filter technologies"
+msgstr ""
+
+#: includes/render/sections.php:405
+msgid "All"
+msgstr ""
+
+#: includes/render/sections.php:493
+msgid "Browse the store"
+msgstr ""
+
+#: includes/render/sections.php:585
+msgid "No open positions right now"
+msgstr ""
+
+#: includes/render/sections.php:585
+msgid "We are always happy to meet talented engineers. Send us your CV."
+msgstr ""
+
+#: includes/render/sections.php:603
+msgid "Assess | We audit your infrastructure, security posture and business goals."
+msgstr ""
+
+#: includes/render/sections.php:604
+msgid "Design | Our architects design a vendor-neutral, future-proof solution."
+msgstr ""
+
+#: includes/render/sections.php:605
+msgid "Deploy | Certified engineers implement with zero-downtime migration plans."
+msgstr ""
+
+#: includes/render/sections.php:606
+msgid "Manage | 24/7 monitoring, patching and optimisation keep you ahead."
+msgstr ""
+
+#: includes/render/sections.php:673
+msgid "Call us"
+msgstr ""
+
+#: includes/render/sections.php:679
+msgid "Visit us"
+msgstr ""
+
+#: includes/render/sections.php:700
+msgid "Send us a message"
+msgstr ""
+
+#: includes/render/sections.php:706
+msgid "Show map (loads Google Maps)"
+msgstr ""
+
+#: includes/render/sections.php:746
+msgid "End-to-end *IT services* for modern businesses"
+msgstr ""
+
+#: includes/render/sections.php:746
+msgid "From the network edge to the cloud, our certified engineers design, deploy and run the technology your business depends on."
+msgstr ""
+
+#: includes/render/sections.php:746
+msgid "All services"
+msgstr ""
+
+#: includes/render/sections.php:748
+msgid "Built for the way *your industry* works"
+msgstr ""
+
+#: includes/render/sections.php:748
+msgid "All solutions"
+msgstr ""
+
+#: includes/render/sections.php:751
+msgid "Results that *speak for themselves*"
+msgstr ""
+
+#: includes/render/sections.php:751
+msgid "All case studies"
+msgstr ""
+
+#: includes/render/sections.php:752
+msgid "Vendor-neutral expertise across *leading platforms*"
+msgstr ""
+
+#: includes/render/sections.php:755
+msgid "Read the blog"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:15
+msgid "Service Category"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:15
+msgid "Service Categories"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:16
+msgid "Industries"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:17
+msgid "Technology Group"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:17
+msgid "Technology Groups"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:18
+msgid "FAQ Group"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:18
+msgid "FAQ Groups"
+msgstr ""
+
+#: includes/taxonomies/taxonomies.php:19
+msgid "Departments"
+msgstr ""
+
+#: includes/woocommerce/filters.php:29
+msgid "Palltheme: Product Filters"
+msgstr ""
+
+#: includes/woocommerce/filters.php:31
+msgid "All shop filters in one widget, built automatically from your categories, brands and product attributes."
+msgstr ""
+
+#: includes/woocommerce/filters.php:69
+msgid "Brand"
+msgstr ""
+
+#: includes/woocommerce/filters.php:246
+msgid "Minimum price"
+msgstr ""
+
+#: includes/woocommerce/filters.php:246
+msgid "Min"
+msgstr ""
+
+#: includes/woocommerce/filters.php:247
+msgid "Maximum price"
+msgstr ""
+
+#: includes/woocommerce/filters.php:247
+msgid "Max"
+msgstr ""
+
+#: includes/woocommerce/filters.php:248
+msgid "Go"
+msgstr ""
+
+#: includes/woocommerce/filters.php:249
+msgid "Price"
+msgstr ""
+
+#: includes/woocommerce/filters.php:260
+#: includes/woocommerce/filters.php:291
+msgid "Availability"
+msgstr ""
+
+#: includes/woocommerce/filters.php:260
+msgid "In stock only"
+msgstr ""
+
+#. translators: %d: stars.
+#: includes/woocommerce/filters.php:274
+#, php-format
+msgid "%d stars & up"
+msgstr ""
+
+#: includes/woocommerce/filters.php:288
+msgid "Brands (WooCommerce Brands)"
+msgstr ""
+
+#: includes/woocommerce/filters.php:289
+msgid "Price range"
+msgstr ""
+
+#: includes/woocommerce/filters.php:290
+msgid "Product attributes (Processor, RAM, Storage…)"
+msgstr ""
+
+#: includes/woocommerce/filters.php:304
+msgid "Hide these attributes (slugs, comma separated)"
+msgstr ""
+
+#: includes/woocommerce/filters.php:307
+msgid "Attributes are managed in Products → Attributes."
+msgstr ""
+
+#: includes/woocommerce/product.php:27
+msgid "Specifications (scrolls horizontally on small screens)"
+msgstr ""
+
+#: includes/woocommerce/product.php:60
+msgid "Technical specifications"
+msgstr ""
+
+#: includes/woocommerce/product.php:69
+msgid "Downloads"
+msgstr ""
+
+#: includes/woocommerce/product.php:72
+msgid "Datasheets & downloads"
+msgstr ""
+
+#: includes/woocommerce/product.php:95
+msgid "Video"
+msgstr ""
+
+#: includes/woocommerce/product.php:111
+msgid "Attributes"
+msgstr ""
+
+#: includes/woocommerce/product.php:136
+msgid "Buy now"
+msgstr ""
+
+#. translators: %s: product name.
+#: includes/woocommerce/product.php:174
+#, php-format
+msgid "Quick view: %s"
+msgstr ""
+
+#: includes/woocommerce/product.php:207
+msgid "Recently viewed"
+msgstr ""
+
+#: templates/maintenance.php:57
+msgid "Scheduled maintenance"
+msgstr ""
+
+#: templates/maintenance.php:62
+msgid "Days"
+msgstr ""
+
+#: templates/maintenance.php:63
+msgid "Hours"
+msgstr ""
+
+#: templates/maintenance.php:64
+msgid "Minutes"
+msgstr ""
+
+#: templates/maintenance.php:65
+msgid "Seconds"
+msgstr ""

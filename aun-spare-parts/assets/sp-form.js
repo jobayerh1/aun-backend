@@ -137,6 +137,41 @@
 
 		function msg( el, text, kind ) { el.textContent = text || ''; el.classList.remove( 'is-error', 'is-ok' ); if ( kind ) { el.classList.add( kind ); } }
 
+		// ── When the customer sees "Network error", record WHY in the server log ──
+		// That message covers anything that is not a JSON answer: a dropped mobile
+		// upload, a timeout, the host's "Checking your browser" page, a server error
+		// page. Those happen before WordPress runs, so the server never logged them.
+		// readJSON keeps what actually came back; reportFailure sends one short line
+		// to the log -- best effort, it never blocks or delays the customer.
+		function readJSON( r ) {
+			return r.text().then( function ( txt ) {
+				try { return JSON.parse( txt ); } catch ( e ) {
+					var err = new Error( 'not json' );
+					err.status  = r.status;
+					err.snippet = String( txt ).slice( 0, 200 );
+					throw err;
+				}
+			} );
+		}
+		function reportFailure( step, err, fd, t0 ) {
+			try {
+				var bytes = 0;
+				if ( fd && fd.forEach ) {
+					fd.forEach( function ( v ) { if ( v && typeof v === 'object' && typeof v.size === 'number' ) { bytes += v.size; } } );
+				}
+				var rf = new FormData();
+				rf.append( 'action', 'aun_sp_client_error' );
+				rf.append( 'step', step );
+				rf.append( 'status', ( err && err.status ) ? err.status : 0 );
+				rf.append( 'detail', ( err && err.snippet ) ? err.snippet : ( ( err && err.message ) ? err.message : String( err ) ) );
+				rf.append( 'bytes', bytes );
+				rf.append( 'ms', t0 ? ( Date.now() - t0 ) : 0 );
+				rf.append( 'online', ( navigator.onLine === false ) ? '0' : '1' );
+				if ( navigator.sendBeacon && navigator.sendBeacon( ajax, rf ) ) { return; }
+				fetch( ajax, { method: 'POST', body: rf, keepalive: true } ).catch( function () {} );
+			} catch ( e ) {}
+		}
+
 		// POST helper with one automatic retry on a stale nonce: the page (and its
 		// embedded nonce) can be served from a long-lived cache, so on bad_nonce we
 		// fetch a fresh nonce from admin-ajax and re-send the same request once.
@@ -147,18 +182,18 @@
 			// which language this page was rendered in (it replies in that language).
 			fd.append( 'lang', lang );
 			return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: fd } )
-				.then( function ( r ) { return r.json(); } )
+				.then( readJSON )
 				.then( function ( res ) {
 					if ( res && ! res.success && res.data && res.data.code === 'bad_nonce' ) {
 						var nf = new FormData();
 						nf.append( 'action', 'aun_sp_nonce' );
 						return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: nf } )
-							.then( function ( r ) { return r.json(); } )
+							.then( readJSON )
 							.then( function ( nr ) {
 								if ( ! nr || ! nr.success || ! nr.data || ! nr.data.nonce ) { return res; }
 								nonce = nr.data.nonce;
 								fd.set( '_nonce', nonce );
-								return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: fd } ).then( function ( r ) { return r.json(); } );
+								return fetch( ajax, { method: 'POST', credentials: 'same-origin', body: fd } ).then( readJSON );
 							} );
 					}
 					return res;
@@ -317,6 +352,7 @@
 			var fd = new FormData();
 			fd.append( 'search_by', searchBy );
 			fd.append( 'query', q );
+			var findT0 = Date.now();
 			post( 'aun_sp_find', fd ).then( function ( res ) {
 				findBtn.disabled = false;
 				if ( ! res || ! res.success ) { msg( findMsg, ( res && res.data && res.data.message ) || t( 'not_found' ), 'is-error' ); return; }
@@ -330,7 +366,7 @@
 				resetFork();
 				foundForm.hidden = false;
 				foundForm.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
-			} ).catch( function () { findBtn.disabled = false; msg( findMsg, t( 'net_err' ), 'is-error' ); } );
+			} ).catch( function ( e ) { findBtn.disabled = false; reportFailure( 'find', e, null, findT0 ); msg( findMsg, t( 'net_err' ), 'is-error' ); } );
 		}
 
 		findBtn.addEventListener( 'click', doFind );
@@ -477,6 +513,7 @@
 				fd.append( 'selected_order', m.order_number || '' );
 				if ( confirmed ) { fd.append( 'confirm_duplicate', '1' ); }
 
+				var subT0 = Date.now();
 				post( 'aun_sp_submit', fd ).then( function ( res ) {
 					submitBtn.disabled = false;
 					if ( ! res || ! res.success ) {
@@ -485,6 +522,9 @@
 							msg( submitMsg, '' );
 							showDuplicateDialog( res.data.duplicates, function () { send( true ); } );
 							return;
+						}
+						if ( ! ( res && res.data && res.data.message ) ) {
+							reportFailure( 'submit', { status: 'answer-without-message', snippet: JSON.stringify( res ).slice( 0, 200 ) }, fd, subT0 );
 						}
 						msg( submitMsg, ( res && res.data && res.data.message ) || t( 'net_err' ), 'is-error' );
 						return;
@@ -500,7 +540,7 @@
 					foundForm.hidden = true;
 					doneBox.hidden = false;
 					doneBox.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
-				} ).catch( function () { submitBtn.disabled = false; msg( submitMsg, t( 'net_err' ), 'is-error' ); } );
+				} ).catch( function ( e ) { submitBtn.disabled = false; reportFailure( 'submit', e, fd, subT0 ); msg( submitMsg, t( 'net_err' ), 'is-error' ); } );
 			}
 		} );
 	}

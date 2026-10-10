@@ -1786,14 +1786,22 @@ class AUN_App_Admin {
 		echo '<div class="wrap"><h1>Dust filters</h1>';
 		echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput
 
-		echo '<p style="max-width:760px">Customers are reminded once a month to clean the dust filter, '
-			. 'and the app plays a short animation showing them where it is. '
+		echo '<p style="max-width:760px">Customers are reminded to clean the dust filter <strong>1, 2 and 3 months</strong> '
+			. 'after purchase, and the app plays a short animation showing them where it is. '
 			. 'Some models take the filter out of the <strong>back</strong>, some out of the '
 			. '<strong>underside</strong>, and some have none at all.</p>';
 
-		echo '<p style="max-width:760px"><strong>Choosing “No dust filter” also stops the monthly '
-			. 'reminders for that model.</strong> That is deliberate: telling someone to clean a filter '
-			. 'their projector does not have teaches them to ignore the next message we send.</p>';
+		echo '<p style="max-width:760px"><strong>Which reminders a projector gets is set in the ERP</strong> '
+			. '(the product\'s custom field 1): <code>MAINT_SMS</code> = these dust-filter reminders, '
+			. '<code>MAINT_VENT</code> = <strong>two vent-cleaning reminders a year</strong> (6 and 12 months) for sealed '
+			. 'models like the U002 Pro, with their own picture and no "rinse the filter" step. The ERP sends the SMS '
+			. 'versions of both.</p>';
+
+		echo '<p style="max-width:760px"><strong>Choosing “No dust filter” stops the dust-filter reminders in the app '
+			. 'for that model</strong> — telling someone to clean a filter their projector does not have teaches them '
+			. 'to ignore the next message we send. It does not stop the vent reminders, and it cannot stop the ERP\'s '
+			. 'SMS: a model with no filter should be <code>MAINT_VENT</code> (or blank) in the ERP, never '
+			. '<code>MAINT_SMS</code>.</p>';
 
 		if ( $unset_count > 0 ) {
 			echo '<div class="notice notice-warning inline"><p>'

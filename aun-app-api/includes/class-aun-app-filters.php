@@ -43,7 +43,7 @@ class AUN_App_Filters {
 		'back'            => 'Back panel',
 		'bottom'          => 'Underside — wide tray, pulls out sideways',
 		'bottom_vertical' => 'Underside — tall card, pulls straight out',
-		'none'            => 'No dust filter (no reminders)',
+		'none'            => 'No dust filter (no filter reminders)',
 	);
 
 	/**
@@ -53,7 +53,19 @@ class AUN_App_Filters {
 	 */
 	public static function map() {
 		$stored = get_option( self::OPTION, array() );
-		return is_array( $stored ) ? $stored : array();
+		if ( ! is_array( $stored ) ) {
+			return array();
+		}
+		// Re-keyed on every read: settings saved while the normaliser was
+		// broken are stored under the old spelling, and must keep applying.
+		$out = array();
+		foreach ( $stored as $k => $v ) {
+			$nk = self::key( (string) $k );
+			if ( '' !== $nk && ! isset( $out[ $nk ] ) ) {
+				$out[ $nk ] = $v;
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -105,6 +117,26 @@ class AUN_App_Filters {
 			return $map[ $key ];
 		}
 
+		// The setting is saved under the website title ("u002 pro dustproof tof
+		// laser auto focus 4k support") while a device says "u002 pro". A title
+		// that BEGINS with the device's model counts — but only when it picks out
+		// one model: "a005" must never take "a005 pro"'s setting.
+		$variant = array( 'pro', 'max', 'plus', 'lite', 'mini', 'ultra', 'se', 'air', 'neo' );
+		$found   = array();
+		foreach ( $map as $k => $v ) {
+			if ( 0 !== strpos( $k . ' ', $key . ' ' ) ) {
+				continue;
+			}
+			$next = strtok( trim( substr( $k, strlen( $key ) ) ), ' ' );
+			if ( false !== $next && in_array( $next, $variant, true ) ) {
+				continue; // a different model in the same family
+			}
+			$found[ $v ] = true;
+		}
+		if ( 1 === count( $found ) ) {
+			return (string) key( $found );
+		}
+
 		// Not configured. ⚠️ Deliberately 'unknown' and NOT a guess: the app
 		// draws a projector without pointing at a face and says "check the back
 		// or the underside", which is honest. Defaulting to 'back' would be
@@ -125,5 +157,43 @@ class AUN_App_Filters {
 	 */
 	public static function reminders_enabled( $model ) {
 		return 'none' !== self::location( $model );
+	}
+
+	/**
+	 * Where THIS DEVICE's filter is — found through its website product.
+	 *
+	 * ⚠️ Use this, not location($model), wherever a device is at hand. The
+	 * setting belongs to a website product; a device carries the model as it
+	 * was registered. The device is resolved exactly, the way the planner does
+	 * it — serial → SKU, then the ERP product id — and only then by name.
+	 *
+	 * @param array $device serial, model, model_id, erp_product_id (any of them).
+	 * @return string one of CHOICES, or 'unknown'
+	 */
+	public static function location_for( array $device ) {
+		$map = self::map();
+		if ( empty( $map ) ) {
+			return 'unknown';
+		}
+		if ( class_exists( 'AUN_App_Projectors' ) ) {
+			$pid = (int) AUN_App_Projectors::product_for_device( $device, false );
+			if ( $pid > 0 ) {
+				foreach ( (array) AUN_App_Projectors::catalogue() as $p ) {
+					if ( (int) ( $p['id'] ?? 0 ) === $pid ) {
+						$k = self::key( (string) ( $p['name'] ?? '' ) );
+						if ( isset( $map[ $k ] ) ) {
+							return $map[ $k ];
+						}
+						break;
+					}
+				}
+			}
+		}
+		return self::location( (string) ( $device['model'] ?? '' ) );
+	}
+
+	/** Should THIS DEVICE get dust-filter reminders? See location_for(). */
+	public static function reminders_enabled_for( array $device ) {
+		return 'none' !== self::location_for( $device );
 	}
 }

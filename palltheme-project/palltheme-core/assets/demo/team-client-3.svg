@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D4ED8"/><stop offset="1" stop-color="#60A5FA"/></linearGradient>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#fff" stroke-opacity=".08"/></pattern></defs>
+<rect width="600" height="600" fill="url(#b)"/><rect width="600" height="600" fill="url(#grid)"/>
+<circle cx="470" cy="120" r="140" fill="#fff" opacity=".08"/>
+<path d="M120 600 C 130 470, 210 420, 300 420 C 390 420, 470 470, 480 600 Z" fill="#0B1220"/>
+<path d="M255 420 L300 480 L345 420 Z" fill="#fff" opacity=".9"/>
+<rect x="268" y="360" width="64" height="70" rx="20" fill="#F1C7A5"/>
+<ellipse cx="300" cy="290" rx="92" ry="104" fill="#F1C7A5"/>
+<path d="M208 282 C 200 190, 260 160, 304 166 C 360 160, 404 200, 394 286 C 380 240, 340 226, 300 228 C 258 228, 222 244, 208 282 Z" fill="#1F2937"/>
+</svg>

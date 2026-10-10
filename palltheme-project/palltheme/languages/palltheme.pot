@@ -1,0 +1,1103 @@
+# Copyright (C) 2026 Engr. Nazim U Ahmed
+# This file is distributed under the GPL-2.0-or-later (PHP code) / Proprietary (design, CSS, artwork) - see documentation/LICENSE.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: Palltheme 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/theme/palltheme\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-08T00:46:44+06:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: palltheme\n"
+
+#. Theme Name of the theme
+#: style.css
+msgid "Palltheme"
+msgstr ""
+
+#. Theme URI of the theme
+#: style.css
+msgid "https://example.com/palltheme"
+msgstr ""
+
+#. Description of the theme
+#: style.css
+msgid "Premium technology & eCommerce theme for IT solution providers, server/networking companies, MSPs, system integrators and WooCommerce technology stores. Built for Elementor and WooCommerce, fully dynamic, dark-mode ready. Pair it with the \"Palltheme Core\" companion plugin for Services, Solutions, Case Studies, Team, Testimonials, Clients, Technologies and the demo importer."
+msgstr ""
+
+#. Author of the theme
+#: style.css
+msgid "Engr. Nazim U Ahmed"
+msgstr ""
+
+#. Author URI of the theme
+#: style.css
+msgid "https://example.com"
+msgstr ""
+
+#: 404.php:27
+msgid "Return Home"
+msgstr ""
+
+#: 404.php:29
+msgid "Browse Products"
+msgstr ""
+
+#: 404.php:32
+msgid "Contact Support"
+msgstr ""
+
+#: archive.php:24
+msgid "Category"
+msgstr ""
+
+#: archive.php:24
+msgid "Tag"
+msgstr ""
+
+#: archive.php:26
+msgid "Author"
+msgstr ""
+
+#. translators: %s: comment count.
+#: comments.php:20
+#, php-format
+msgid "%s comment"
+msgid_plural "%s comments"
+msgstr[0] ""
+msgstr[1] ""
+
+#: comments.php:38
+msgid "Comments are closed."
+msgstr ""
+
+#: footer.php:75
+msgid "Contact"
+msgstr ""
+
+#: footer.php:79
+#: inc/customizer.php:126
+msgid "Footer"
+msgstr ""
+
+#: footer.php:113
+msgid "Accepted payment methods"
+msgstr ""
+
+#: footer.php:124
+msgid "Back to top"
+msgstr ""
+
+#: header.php:18
+msgid "Skip to content"
+msgstr ""
+
+#: header.php:30
+#: inc/customizer.php:51
+#: inc/elementor.php:52
+#: inc/elementor.php:77
+msgid "Primary"
+msgstr ""
+
+#: header.php:49
+#: inc/enqueue.php:86
+msgid "Open menu"
+msgstr ""
+
+#: inc/admin.php:71
+msgid "Palltheme setup"
+msgstr ""
+
+#: inc/admin.php:73
+msgid "Required for the complete website:"
+msgstr ""
+
+#: inc/admin.php:76
+msgid "Recommended:"
+msgstr ""
+
+#: inc/admin.php:78
+msgid "Dismiss"
+msgstr ""
+
+#: inc/customizer.php:37
+msgid "Branding & Logos"
+msgstr ""
+
+#: inc/customizer.php:40
+msgid "Light logo (used on dark/transparent headers & footer)"
+msgstr ""
+
+#: inc/customizer.php:41
+msgid "Logo for dark mode"
+msgstr ""
+
+#: inc/customizer.php:42
+msgid "Sticky header logo (optional)"
+msgstr ""
+
+#: inc/customizer.php:43
+msgid "Logo height (px)"
+msgstr ""
+
+#: inc/customizer.php:47
+msgid "Global Colors"
+msgstr ""
+
+#: inc/customizer.php:49
+msgid "These colors are used across the whole site and are synced to Elementor → Site Settings → Global Colors automatically."
+msgstr ""
+
+#: inc/customizer.php:52
+#: inc/elementor.php:53
+#: inc/elementor.php:78
+msgid "Secondary"
+msgstr ""
+
+#: inc/customizer.php:53
+#: inc/elementor.php:55
+#: inc/elementor.php:80
+msgid "Accent"
+msgstr ""
+
+#: inc/customizer.php:54
+#: inc/customizer.php:154
+msgid "Dark"
+msgstr ""
+
+#: inc/customizer.php:55
+#: inc/customizer.php:153
+msgid "Light"
+msgstr ""
+
+#: inc/customizer.php:56
+msgid "White"
+msgstr ""
+
+#: inc/customizer.php:57
+msgid "Success"
+msgstr ""
+
+#: inc/customizer.php:58
+msgid "Warning"
+msgstr ""
+
+#: inc/customizer.php:59
+msgid "Danger"
+msgstr ""
+
+#: inc/customizer.php:63
+msgid "Typography"
+msgstr ""
+
+#: inc/customizer.php:66
+msgid "Heading font"
+msgstr ""
+
+#: inc/customizer.php:67
+msgid "Body font"
+msgstr ""
+
+#: inc/customizer.php:70
+msgid "Font loading"
+msgstr ""
+
+#: inc/customizer.php:72
+msgid "Google Fonts (display=swap)"
+msgstr ""
+
+#: inc/customizer.php:73
+msgid "System fonts only (fastest, no external request)"
+msgstr ""
+
+#: inc/customizer.php:76
+msgid "Base font size (px)"
+msgstr ""
+
+#: inc/customizer.php:80
+msgid "Corners & Buttons"
+msgstr ""
+
+#: inc/customizer.php:83
+msgid "Card corner radius (px)"
+msgstr ""
+
+#: inc/customizer.php:86
+msgid "Button style"
+msgstr ""
+
+#: inc/customizer.php:88
+msgid "Rounded"
+msgstr ""
+
+#: inc/customizer.php:89
+msgid "Pill"
+msgstr ""
+
+#: inc/customizer.php:90
+msgid "Square"
+msgstr ""
+
+#: inc/customizer.php:96
+msgid "Header"
+msgstr ""
+
+#: inc/customizer.php:101
+msgid "Header style"
+msgstr ""
+
+#: inc/customizer.php:103
+msgid "Solid"
+msgstr ""
+
+#: inc/customizer.php:104
+msgid "Transparent over hero (turns solid on scroll)"
+msgstr ""
+
+#: inc/customizer.php:109
+msgid "Transparent header applies to"
+msgstr ""
+
+#: inc/customizer.php:111
+msgid "Homepage only"
+msgstr ""
+
+#: inc/customizer.php:112
+msgid "All pages"
+msgstr ""
+
+#: inc/customizer.php:115
+msgid "Sticky header"
+msgstr ""
+
+#: inc/customizer.php:116
+msgid "Show top bar (contact info + social)"
+msgstr ""
+
+#: inc/customizer.php:117
+msgid "Show search"
+msgstr ""
+
+#: inc/customizer.php:118
+msgid "Show My Account icon"
+msgstr ""
+
+#: inc/customizer.php:119
+msgid "Show cart icon"
+msgstr ""
+
+#: inc/customizer.php:120
+msgid "Show wishlist icon (needs a wishlist plugin)"
+msgstr ""
+
+#: inc/customizer.php:121
+msgid "Header button text (empty = hidden)"
+msgstr ""
+
+#: inc/customizer.php:122
+msgid "Header button link"
+msgstr ""
+
+#: inc/customizer.php:131
+msgid "Footer layout"
+msgstr ""
+
+#: inc/customizer.php:133
+msgid "Enterprise: brand, newsletter & contact + 7 link columns"
+msgstr ""
+
+#: inc/customizer.php:134
+msgid "Brand + 4 columns"
+msgstr ""
+
+#: inc/customizer.php:135
+msgid "Brand + 3 columns"
+msgstr ""
+
+#: inc/customizer.php:138
+msgid "Footer description (empty = site tagline)"
+msgstr ""
+
+#: inc/customizer.php:139
+msgid "Newsletter heading"
+msgstr ""
+
+#: inc/customizer.php:140
+msgid "Accepted payments (comma separated, shown as badges)"
+msgstr ""
+
+#: inc/customizer.php:141
+msgid "Copyright — use {year} and {site}"
+msgstr ""
+
+#: inc/customizer.php:145
+msgid "Dark Mode"
+msgstr ""
+
+#: inc/customizer.php:150
+msgid "Default appearance"
+msgstr ""
+
+#: inc/customizer.php:152
+msgid "System default"
+msgstr ""
+
+#: inc/customizer.php:157
+msgid "Let visitors switch (remembers their choice)"
+msgstr ""
+
+#: inc/customizer.php:161
+#: inc/template-tags.php:128
+#: index.php:16
+msgid "Blog"
+msgstr ""
+
+#: inc/customizer.php:166
+msgid "Archive layout"
+msgstr ""
+
+#: inc/customizer.php:168
+msgid "Grid"
+msgstr ""
+
+#: inc/customizer.php:169
+msgid "List"
+msgstr ""
+
+#: inc/customizer.php:172
+msgid "Show sidebar"
+msgstr ""
+
+#: inc/customizer.php:173
+msgid "Show reading time"
+msgstr ""
+
+#: inc/customizer.php:174
+msgid "Show share buttons"
+msgstr ""
+
+#: inc/customizer.php:175
+msgid "Show author box"
+msgstr ""
+
+#: inc/customizer.php:179
+msgid "Shop"
+msgstr ""
+
+#: inc/customizer.php:182
+msgid "Products per row (desktop)"
+msgstr ""
+
+#: inc/customizer.php:183
+msgid "Products per page"
+msgstr ""
+
+#: inc/customizer.php:186
+msgid "Pagination"
+msgstr ""
+
+#: inc/customizer.php:188
+msgid "Page numbers"
+msgstr ""
+
+#: inc/customizer.php:189
+msgid "Load more button (AJAX)"
+msgstr ""
+
+#: inc/customizer.php:192
+msgid "Show filter sidebar"
+msgstr ""
+
+#: inc/customizer.php:193
+msgid "Default shipping info (product page)"
+msgstr ""
+
+#: inc/customizer.php:194
+msgid "Default warranty info (product page)"
+msgstr ""
+
+#: inc/customizer.php:198
+msgid "404 Page"
+msgstr ""
+
+#: inc/customizer.php:201
+msgid "Heading"
+msgstr ""
+
+#: inc/customizer.php:202
+msgid "Message"
+msgstr ""
+
+#: inc/customizer.php:206
+msgid "Performance"
+msgstr ""
+
+#: inc/customizer.php:208
+msgid "Switch off visual extras to make the site even lighter. Visitors who ask their device for reduced motion always get a static experience."
+msgstr ""
+
+#: inc/customizer.php:210
+msgid "Enable animations (scroll reveal, counters, floating cards)"
+msgstr ""
+
+#: inc/customizer.php:211
+msgid "Enable background videos (desktop only; mobile always gets the poster image)"
+msgstr ""
+
+#: inc/customizer.php:212
+msgid "Native lazy-loading for images and embeds"
+msgstr ""
+
+#: inc/customizer.php:213
+msgid "Preconnect to the font server"
+msgstr ""
+
+#: inc/customizer.php:214
+msgid "Load only the styles of blocks used on each page (instead of the full 140 KB block library)"
+msgstr ""
+
+#: inc/customizer.php:215
+msgid "Remove the WordPress emoji script (browsers show emoji natively)"
+msgstr ""
+
+#: inc/customizer.php:266
+msgid "Palltheme Settings"
+msgstr ""
+
+#: inc/customizer.php:267
+msgid "Design settings. Business details (phone, email, social links, statistics) are under Palltheme → Business Settings in the admin menu."
+msgstr ""
+
+#: inc/elementor.php:54
+#: inc/elementor.php:79
+msgid "Text"
+msgstr ""
+
+#: inc/enqueue.php:58
+msgid "Loading…"
+msgstr ""
+
+#: inc/enqueue.php:59
+#: inc/woocommerce.php:334
+msgid "Load more products"
+msgstr ""
+
+#: inc/enqueue.php:60
+msgid "All products loaded"
+msgstr ""
+
+#: inc/enqueue.php:61
+msgid "Could not load products. Please try again."
+msgstr ""
+
+#: inc/enqueue.php:62
+msgid "Products updated"
+msgstr ""
+
+#: inc/enqueue.php:79
+msgid "Searching…"
+msgstr ""
+
+#: inc/enqueue.php:80
+msgid "No results found"
+msgstr ""
+
+#. translators: %d: number of search results.
+#: inc/enqueue.php:82
+#, php-format
+msgid "View all %d results"
+msgstr ""
+
+#: inc/enqueue.php:83
+msgid "Light mode"
+msgstr ""
+
+#: inc/enqueue.php:84
+msgid "Dark mode"
+msgstr ""
+
+#: inc/enqueue.php:85
+msgid "System theme"
+msgstr ""
+
+#: inc/enqueue.php:87
+#: template-parts/header/offcanvas.php:23
+msgid "Close menu"
+msgstr ""
+
+#: inc/enqueue.php:88
+msgid "Show submenu"
+msgstr ""
+
+#: inc/helpers.php:49
+#: template-parts/single/cta.php:15
+msgid "Get a Quote"
+msgstr ""
+
+#: inc/helpers.php:54
+msgid "© {year} {site}. All Rights Reserved."
+msgstr ""
+
+#: inc/helpers.php:56
+msgid "Stay ahead of the curve"
+msgstr ""
+
+#: inc/helpers.php:78
+msgid "Free shipping on qualifying orders. Same-day dispatch for in-stock items ordered before 2 PM."
+msgstr ""
+
+#: inc/helpers.php:79
+msgid "All products include the manufacturer warranty. Extended warranty and on-site support plans are available."
+msgstr ""
+
+#: inc/helpers.php:81
+msgid "Signal Lost"
+msgstr ""
+
+#: inc/helpers.php:82
+msgid "The requested resource could not be reached. It may have moved, or the link is broken."
+msgstr ""
+
+#. translators: %s: menu item title.
+#: inc/menus.php:32
+#, php-format
+msgid "Show submenu for %s"
+msgstr ""
+
+#: inc/setup.php:42
+msgid "Primary Menu (header)"
+msgstr ""
+
+#: inc/setup.php:43
+msgid "Mobile Menu (falls back to Primary)"
+msgstr ""
+
+#: inc/setup.php:44
+msgid "Top Bar Links"
+msgstr ""
+
+#: inc/setup.php:45
+msgid "Footer: Company"
+msgstr ""
+
+#: inc/setup.php:46
+msgid "Footer: Services"
+msgstr ""
+
+#: inc/setup.php:47
+msgid "Footer: Solutions"
+msgstr ""
+
+#: inc/setup.php:48
+msgid "Footer: Products"
+msgstr ""
+
+#: inc/setup.php:49
+msgid "Footer: Support"
+msgstr ""
+
+#: inc/setup.php:50
+msgid "Footer: Resources"
+msgstr ""
+
+#: inc/setup.php:51
+msgid "Footer: Legal"
+msgstr ""
+
+#: inc/setup.php:76
+msgid "Blog Sidebar"
+msgstr ""
+
+#: inc/setup.php:78
+msgid "Shown beside blog posts and archives."
+msgstr ""
+
+#: inc/setup.php:83
+msgid "Shop Filters"
+msgstr ""
+
+#: inc/setup.php:85
+msgid "Shop sidebar. Add the \"Palltheme: Product Filters\" widget here — filters are generated from your product attributes automatically."
+msgstr ""
+
+#: inc/setup.php:90
+msgid "Footer Newsletter"
+msgstr ""
+
+#: inc/setup.php:92
+msgid "Optional. Place a newsletter form widget/shortcode from your email-marketing plugin (Mailchimp, FluentCRM, MailPoet...). Leave empty to hide."
+msgstr ""
+
+#. translators: %d: column number.
+#: inc/setup.php:99
+#, php-format
+msgid "Footer Column %d"
+msgstr ""
+
+#: inc/setup.php:101
+msgid "Optional. When empty, the matching Footer menu is shown instead."
+msgstr ""
+
+#: inc/template-tags.php:82
+#: inc/template-tags.php:135
+msgid "Breadcrumb"
+msgstr ""
+
+#: inc/template-tags.php:92
+msgid "Home"
+msgstr ""
+
+#. translators: %s: search query.
+#: inc/template-tags.php:124
+#, php-format
+msgid "Search: %s"
+msgstr ""
+
+#: inc/template-tags.php:126
+msgid "Not found"
+msgstr ""
+
+#. translators: %d: minutes.
+#: inc/template-tags.php:215
+#: template-parts/content/card-post.php:31
+#, php-format
+msgid "%d min read"
+msgid_plural "%d min read"
+msgstr[0] ""
+msgstr[1] ""
+
+#: inc/template-tags.php:235
+msgid "Share"
+msgstr ""
+
+#. translators: %s: network name.
+#: inc/template-tags.php:241
+#, php-format
+msgid "Share on %s"
+msgstr ""
+
+#: inc/template-tags.php:248
+msgid "Copy link"
+msgstr ""
+
+#: inc/template-tags.php:267
+msgid "Written by"
+msgstr ""
+
+#: inc/template-tags.php:313
+msgid "Related articles"
+msgstr ""
+
+#: inc/template-tags.php:334
+#: single.php:73
+msgid "Previous"
+msgstr ""
+
+#: inc/template-tags.php:335
+#: single.php:74
+msgid "Next"
+msgstr ""
+
+#: inc/template-tags.php:336
+msgid "Page"
+msgstr ""
+
+#: inc/woocommerce.php:80
+msgid "Store"
+msgstr ""
+
+#: inc/woocommerce.php:85
+msgid "Product filters"
+msgstr ""
+
+#: inc/woocommerce.php:86
+#: inc/woocommerce.php:127
+msgid "Filters"
+msgstr ""
+
+#: inc/woocommerce.php:86
+msgid "Close filters"
+msgstr ""
+
+#: inc/woocommerce.php:131
+msgid "Product view"
+msgstr ""
+
+#: inc/woocommerce.php:132
+msgid "Grid view"
+msgstr ""
+
+#: inc/woocommerce.php:133
+msgid "List view"
+msgstr ""
+
+#. translators: %s: rating.
+#: inc/woocommerce.php:170
+#, php-format
+msgid "Rated %s+"
+msgstr ""
+
+#: inc/woocommerce.php:173
+msgid "In stock"
+msgstr ""
+
+#: inc/woocommerce.php:177
+msgid "Brand"
+msgstr ""
+
+#: inc/woocommerce.php:190
+msgid "Remove filter"
+msgstr ""
+
+#: inc/woocommerce.php:194
+msgid "Clear all"
+msgstr ""
+
+#. translators: %d: discount percent.
+#: inc/woocommerce.php:223
+#, php-format
+msgid "-%d%%"
+msgstr ""
+
+#. translators: %d: discount percent.
+#: inc/woocommerce.php:223
+msgid "Sale"
+msgstr ""
+
+#: inc/woocommerce.php:226
+msgid "Featured"
+msgstr ""
+
+#: inc/woocommerce.php:229
+msgid "Out of stock"
+msgstr ""
+
+#. translators: %s: SKU.
+#: inc/woocommerce.php:280
+#, php-format
+msgid "SKU: %s"
+msgstr ""
+
+#: inc/woocommerce.php:391
+msgid "Your cart"
+msgstr ""
+
+#: inc/woocommerce.php:392
+msgid "Close cart"
+msgstr ""
+
+#: inc/woocommerce.php:421
+msgid "Shipping"
+msgstr ""
+
+#: inc/woocommerce.php:422
+msgid "Warranty"
+msgstr ""
+
+#: inc/woocommerce.php:423
+msgid "Expert advice"
+msgstr ""
+
+#. translators: %s: phone.
+#: inc/woocommerce.php:423
+#, php-format
+msgid "Questions about compatibility? Call %s"
+msgstr ""
+
+#: inc/woocommerce.php:451
+msgid "Frequently bought together"
+msgstr ""
+
+#: inc/woocommerce.php:481
+msgid "Secure checkout — your payment details are encrypted and never stored on this site."
+msgstr ""
+
+#: index.php:13
+msgid "Insights & Articles"
+msgstr ""
+
+#. translators: 1: result count, 2: query.
+#: search.php:15
+#, php-format
+msgid "%1$d result for “%2$s”"
+msgid_plural "%1$d results for “%2$s”"
+msgstr[0] ""
+msgstr[1] ""
+
+#: search.php:17
+#: searchform.php:15
+#: template-parts/header/actions.php:22
+#: template-parts/header/offcanvas.php:28
+#: template-parts/header/offcanvas.php:30
+#: template-parts/header/search-overlay.php:15
+msgid "Search"
+msgstr ""
+
+#: searchform.php:13
+msgid "Search for:"
+msgstr ""
+
+#: searchform.php:14
+msgid "Search…"
+msgstr ""
+
+#: sidebar.php:14
+msgid "Sidebar"
+msgstr ""
+
+#: single-pall_case_study.php:22
+msgid "Case study"
+msgstr ""
+
+#: single-pall_case_study.php:24
+msgid "Client"
+msgstr ""
+
+#: single-pall_case_study.php:25
+msgid "Industry"
+msgstr ""
+
+#: single-pall_case_study.php:26
+#: single-pall_job.php:29
+msgid "Location"
+msgstr ""
+
+#: single-pall_case_study.php:27
+msgid "Duration"
+msgstr ""
+
+#: single-pall_case_study.php:34
+msgid "The challenge"
+msgstr ""
+
+#: single-pall_case_study.php:35
+#: single-pall_solution.php:27
+msgid "Our solution"
+msgstr ""
+
+#: single-pall_case_study.php:36
+#: single-pall_solution.php:29
+msgid "Implementation"
+msgstr ""
+
+#: single-pall_case_study.php:75
+msgid "Technologies used"
+msgstr ""
+
+#: single-pall_case_study.php:100
+msgid "Services delivered"
+msgstr ""
+
+#: single-pall_case_study.php:101
+msgid "Related solutions"
+msgstr ""
+
+#: single-pall_job.php:18
+msgid "Careers"
+msgstr ""
+
+#: single-pall_job.php:28
+msgid "Department"
+msgstr ""
+
+#: single-pall_job.php:30
+msgid "Job type"
+msgstr ""
+
+#: single-pall_job.php:31
+msgid "Salary"
+msgstr ""
+
+#: single-pall_job.php:32
+msgid "Apply by"
+msgstr ""
+
+#: single-pall_job.php:43
+msgid "Apply now"
+msgstr ""
+
+#: single-pall_service.php:18
+msgid "Service"
+msgstr ""
+
+#: single-pall_service.php:30
+msgid "What’s included"
+msgstr ""
+
+#: single-pall_service.php:31
+msgid "Technologies"
+msgstr ""
+
+#: single-pall_service.php:41
+msgid "Related services"
+msgstr ""
+
+#: single-pall_solution.php:21
+msgid "Solution"
+msgstr ""
+
+#: single-pall_solution.php:26
+msgid "The problem"
+msgstr ""
+
+#: single-pall_solution.php:28
+msgid "Reference architecture"
+msgstr ""
+
+#: single-pall_solution.php:53
+msgid "Key capabilities"
+msgstr ""
+
+#: single-pall_solution.php:54
+msgid "Technology"
+msgstr ""
+
+#: single-pall_solution.php:58
+msgid "Outcomes you can expect"
+msgstr ""
+
+#: single-pall_solution.php:60
+msgid "Proven in the field"
+msgstr ""
+
+#: single-pall_solution.php:61
+msgid "Services behind this solution"
+msgstr ""
+
+#: single-pall_team.php:55
+msgid "Expertise"
+msgstr ""
+
+#: single.php:51
+msgid "Pages:"
+msgstr ""
+
+#: single.php:89
+msgid "Services related to this article"
+msgstr ""
+
+#: template-parts/content/card-product.php:20
+msgid "Product"
+msgstr ""
+
+#: template-parts/content/home-fallback.php:17
+msgid "Activate the Palltheme Core plugin and run Palltheme → Import Demo to build the full website."
+msgstr ""
+
+#: template-parts/content/home-fallback.php:18
+msgid "Go to Plugins"
+msgstr ""
+
+#: template-parts/content/none.php:12
+msgid "Nothing found"
+msgstr ""
+
+#: template-parts/content/none.php:14
+msgid "No results matched your search. Try different keywords or browse our categories."
+msgstr ""
+
+#: template-parts/content/none.php:16
+msgid "There is no content here yet."
+msgstr ""
+
+#: template-parts/header/actions.php:31
+msgid "Change color scheme"
+msgstr ""
+
+#: template-parts/header/actions.php:39
+#: template-parts/header/offcanvas.php:53
+msgid "Wishlist"
+msgstr ""
+
+#: template-parts/header/actions.php:46
+#: template-parts/header/offcanvas.php:50
+msgid "My account"
+msgstr ""
+
+#: template-parts/header/actions.php:46
+msgid "Sign in"
+msgstr ""
+
+#: template-parts/header/actions.php:54
+msgid "Cart"
+msgstr ""
+
+#: template-parts/header/offcanvas.php:16
+msgid "Menu"
+msgstr ""
+
+#: template-parts/header/offcanvas.php:29
+msgid "Search products, services…"
+msgstr ""
+
+#: template-parts/header/offcanvas.php:33
+msgid "Mobile"
+msgstr ""
+
+#: template-parts/header/search-overlay.php:20
+msgid "Search the site"
+msgstr ""
+
+#: template-parts/header/search-overlay.php:22
+msgid "Search servers, switches, services, articles…"
+msgstr ""
+
+#: template-parts/header/search-overlay.php:26
+msgid "Close search"
+msgstr ""
+
+#: template-parts/header/search-overlay.php:37
+msgid "Popular searches"
+msgstr ""
+
+#: template-parts/single/benefits.php:17
+msgid "Why it matters"
+msgstr ""
+
+#: template-parts/single/benefits.php:18
+msgid "Business benefits"
+msgstr ""
+
+#: template-parts/single/cta.php:12
+msgid "Ready to modernize your infrastructure?"
+msgstr ""
+
+#: template-parts/single/cta.php:13
+msgid "Talk to our engineers for a free assessment and a tailored proposal."
+msgstr ""
+
+#: template-parts/single/faq.php:16
+msgid "FAQ"
+msgstr ""
+
+#: template-parts/single/faq.php:16
+msgid "Frequently asked questions"
+msgstr ""
+
+#: template-parts/single/hero.php:42
+msgid "Talk to an expert"
+msgstr ""
+
+#: template-parts/single/related-products.php:18
+msgid "Recommended hardware"
+msgstr ""
+
+#: template-parts/single/related-products.php:19
+msgid "Visit the store"
+msgstr ""
+
+#: template-parts/single/related.php:31
+msgid "Related"
+msgstr ""
+
+#. Template Name of the theme
+msgid "Palltheme — Blank Canvas (no header/footer)"
+msgstr ""
+
+#. Template Name of the theme
+msgid "Palltheme — Full Width (header + footer, no title)"
+msgstr ""

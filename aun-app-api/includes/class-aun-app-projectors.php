@@ -401,7 +401,7 @@ class AUN_App_Projectors {
 	 * @param array $device One entry from AUN_App_Warranty::get_devices().
 	 * @return int WooCommerce product id, or 0.
 	 */
-	public static function product_for_device( $device ) {
+	public static function product_for_device( $device, $by_name = true ) {
 		$catalogue = self::catalogue();
 
 		// 1. THE SKU. This is the link the rest of the system already runs on
@@ -438,6 +438,10 @@ class AUN_App_Projectors {
 		}
 
 		// 3. Last resort only, and never reliable — see this method's note.
+		//    Callers that must never guess (the dust-filter setting) skip it.
+		if ( ! $by_name ) {
+			return 0;
+		}
 		return self::match_model( (string) ( $device['model'] ?? '' ) );
 	}
 
@@ -561,7 +565,11 @@ class AUN_App_Projectors {
 		$n = strtolower( trim( (string) $name ) );
 		$n = str_replace( array( '-', '_', '/', '+' ), ' ', $n );
 		// Brand and category noise, never a model distinction.
-		$n = preg_replace( '/(aun|projector|projectors|full\s*hd|fhd|native|smart|android|wifi|wi\s*fi)/', ' ', $n );
+		// ⚠️ \b is a word boundary. This line once held two literal BACKSPACE
+		// bytes instead (a patch script wrote "\b" through a non-raw string), so
+		// the pattern never matched and nothing was ever stripped — which is why
+		// the dust-filter settings never reached a single device.
+		$n = preg_replace( '/\b(aun|projector|projectors|full\s*hd|fhd|native|smart|android|wifi|wi\s*fi)\b/', ' ', $n );
 		$n = preg_replace( '/[^a-z0-9 ]/', '', $n );
 		return trim( preg_replace( '/\s+/', ' ', $n ) );
 	}

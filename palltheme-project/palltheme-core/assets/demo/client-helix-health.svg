@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 244 44" width="244" height="44">
+<defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3730A3"/><stop offset="1" stop-color="#A78BFA"/></linearGradient></defs>
+<path d="M22 6v32M6 22h32" stroke="url(#c)" stroke-width="8" stroke-linecap="round"/>
+<text x="52" y="30" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="800" letter-spacing="-.5" fill="#334155">Helix Health</text>
+</svg>

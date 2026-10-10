@@ -29,6 +29,9 @@ class AUN_SP_Form {
 		// so a long-cached page keeps working instead of erroring "session expired".
 		add_action( 'wp_ajax_aun_sp_nonce',          array( $this, 'ajax_nonce' ) );
 		add_action( 'wp_ajax_nopriv_aun_sp_nonce',   array( $this, 'ajax_nonce' ) );
+		// The browser's own report when a customer sees "Network error" (see ajax_client_error).
+		add_action( 'wp_ajax_aun_sp_client_error',        array( $this, 'ajax_client_error' ) );
+		add_action( 'wp_ajax_nopriv_aun_sp_client_error', array( $this, 'ajax_client_error' ) );
 	}
 
 	public function ajax_nonce() {
@@ -275,6 +278,43 @@ class AUN_SP_Form {
 	}
 
 	/* -------------------------------------------------------------------- Endpoints */
+
+	/**
+	 * A customer's browser saw "Network error — please try again".
+	 *
+	 * Those failures -- a dropped upload on mobile data, a timeout, the host's
+	 * "Checking your browser" page, a server error page -- happen BEFORE WordPress
+	 * runs, so nothing was ever logged and "is this normal?" had no answer. The form
+	 * now reports what it actually got back, as one line in the PHP error log.
+	 *
+	 * Log-only, and unauthenticated by necessity (the nonce may be the very thing
+	 * that failed), so: rate-limited, every field capped, phone numbers masked.
+	 */
+	public function ajax_client_error() {
+		if ( ! $this->rate_ok( 'clienterr', 6 ) ) {
+			wp_send_json_success();
+		}
+		$step = sanitize_key( $_POST['step'] ?? '' );
+		if ( ! in_array( $step, array( 'find', 'submit', 'track', 'reupload', 'revive', 'pay', 'approve' ), true ) ) {
+			wp_send_json_success();
+		}
+		$status = substr( sanitize_text_field( wp_unslash( $_POST['status'] ?? '0' ) ), 0, 24 );
+		$detail = html_entity_decode( wp_strip_all_tags( (string) wp_unslash( $_POST['detail'] ?? '' ) ), ENT_QUOTES, 'UTF-8' );
+		$detail = trim( preg_replace( '/\s+/u', ' ', $detail ) );
+		$detail = function_exists( 'mb_substr' ) ? mb_substr( $detail, 0, 160 ) : substr( $detail, 0, 160 );
+		$detail = preg_replace( '/(?:\+?88)?01\d{9}/', '01*********', $detail ); // never log a phone number
+		$mb     = round( absint( $_POST['bytes'] ?? 0 ) / 1048576, 1 );
+		$ms     = absint( $_POST['ms'] ?? 0 );
+		$secs   = $ms ? round( $ms / 1000, 1 ) . 's' : '?';
+		$online = ( '0' === (string) ( $_POST['online'] ?? '1' ) ) ? 'phone OFFLINE' : 'phone online';
+		$ua     = substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ?? '' ) ), 0, 120 );
+		error_log( sprintf(
+			'AUN SP: customer saw "Network error" at %s — HTTP %s after %s, upload %s MB, %s | got: %s | %s',
+			$step, ( '' === $status || '0' === $status ) ? '0 (no response)' : $status, $secs, $mb, $online,
+			'' === $detail ? '(nothing)' : $detail, $ua
+		) );
+		wp_send_json_success();
+	}
 
 	public function ajax_find() {
 		$this->check_nonce();
