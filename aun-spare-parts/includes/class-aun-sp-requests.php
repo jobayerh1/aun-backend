@@ -271,7 +271,10 @@ class AUN_SP_Requests {
 			'dispatched'  => 'Dispatched to customer (courier)',
 			'delivered'   => 'Delivered to customer',
 			'unavailable' => 'Unavailable (we cannot supply it)',
-			'cancelled'   => 'Not going ahead (declined / expired)',
+			// The customer does not want this part. Set by the system when they decline
+			// or a quote expires, or by you when they tell you so by phone / WhatsApp.
+			// (Unavailable is the opposite side: WE cannot supply it.)
+			'cancelled'   => 'Not going ahead (customer said no)',
 		);
 	}
 
@@ -539,7 +542,7 @@ class AUN_SP_Requests {
 		}
 		echo '</div>';
 		echo '<p style="color:#646970;margin:10px 0 0;"><strong>Unavailable</strong> = we cannot supply that part (it is not charged for). '
-			. '<strong>Not going ahead</strong> = the part was priced but the customer declined the quote, or the quote expired with no reply &mdash; also not charged for.</p>';
+			. '<strong>Not going ahead</strong> = the customer does not want that part &mdash; they declined the quote, it expired with no reply, or they told you so and you set it. Not charged for. When <em>every</em> remaining part is Not going ahead, the whole request becomes <strong>Quote declined</strong>.</p>';
 		echo '</div>';
 	}
 
@@ -633,6 +636,12 @@ class AUN_SP_Requests {
 			);
 			if ( $want !== $r->overall_status ) {
 				$wpdb->update( $t_req, array( 'overall_status' => $want ), array( 'id' => (int) $r->id ) );
+				// A request settled as declined here (its parts were all marked "Not
+				// going ahead" before 0.48 taught the save to do it) must not leave a
+				// payable order behind, exactly as a customer's own decline would not.
+				if ( 'declined' === $want && AUN_SP_Woo::is_active() ) {
+					AUN_SP_Woo::sync_from_request( (int) $r->id, 'declined' );
+				}
 				$r->overall_status = $want; // reflect immediately in this render
 			}
 		}
@@ -667,6 +676,7 @@ class AUN_SP_Requests {
 		$age_yrs  = $this->age_years( $r->purchase_date );
 		$hard_yrs = (int) get_option( 'aun_sp_hard_source_years', 3 );
 
+		echo self::detail_assets();
 		echo '<h1>' . esc_html( $r->ref ) . ' ' . $this->status_badge( $r->overall_status ) . '</h1>';
 		echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=aun-sp' ) ) . '">&larr; All requests</a></p>';
 		echo $notice;
@@ -690,7 +700,7 @@ class AUN_SP_Requests {
 			}
 		}
 		if ( $has_quoted && ! in_array( $r->overall_status, array( 'quote_sent', 'approved', 'declined', 'closed', 'rejected' ), true ) ) {
-			echo '<div class="notice notice-warning inline" style="max-width:820px;"><p><strong>This quote has not been sent.</strong> Parts are marked &ldquo;Quoted&rdquo;, but the customer has no Approve / Decline buttons and has not been texted the price. Click <strong>Send quote for approval</strong> below to send it.</p></div>';
+			echo '<div class="notice notice-warning inline"><p><strong>This quote has not been sent.</strong> Parts are marked &ldquo;Quoted&rdquo;, but the customer has no Approve / Decline buttons and has not been texted the price. Click <strong>Send quote for approval</strong> below to send it.</p></div>';
 		}
 
 		// Hard-to-source flag.
@@ -699,7 +709,7 @@ class AUN_SP_Requests {
 		}
 
 		// Sale summary.
-		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin:12px 0;">';
+		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;margin:12px 0;">';
 		echo '<table class="widefat" style="border:0;"><tbody>';
 		$this->kv( 'Customer', esc_html( $r->customer_name ) );
 		$phone_html = esc_html( $r->phone_current );
@@ -732,7 +742,7 @@ class AUN_SP_Requests {
 		echo '</tbody></table></div>';
 
 		// Per-part status form.
-		echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;">';
+		echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;">';
 		wp_nonce_field( 'aun_sp_update', 'aun_sp_update_nonce' );
 		echo '<h2>Parts</h2>';
 		echo '<p style="color:#646970;margin-top:0;">Update each part&rsquo;s <strong>status</strong> as it moves. Set a <strong>price</strong> on any out-of-warranty part.</p>';
@@ -746,9 +756,20 @@ class AUN_SP_Requests {
 		// The journey in one line, so the two easily-confused steps ("shipped" = the
 		// factory sending it here, "dispatched" = us sending it to the customer) can't
 		// be mixed up. The customer sees a fuller wording of the same stages.
-		echo '<p style="color:#646970;margin-top:0;background:#f6f7f7;border-left:3px solid #c3c4c7;padding:8px 12px;max-width:780px;">'
+		echo '<p style="color:#646970;margin-top:0;background:#f6f7f7;border-left:3px solid #c3c4c7;padding:8px 12px;">'
 			. '<strong>The journey:</strong> Ordered from factory &rarr; At factory (being prepared) &rarr; <strong>Shipped</strong> <em>by the factory, heading to Bangladesh</em> &rarr; Arrived at AUN Dhaka &rarr; <strong>Dispatched</strong> <em>by us to the customer, by courier</em> &rarr; Delivered.</p>';
-		echo '<div style="overflow-x:auto;"><table class="wp-list-table widefat striped" style="min-width:820px;"><thead><tr><th>Part</th><th style="width:64px;">Qty</th><th>Status</th><th>Factory PO <span style="font-weight:400;color:#646970;">(internal)</span></th><th>ETA <span style="font-weight:400;color:#1a7f37;">(customer sees)</span></th><th>Note <span style="font-weight:400;color:#646970;">(internal)</span></th><th>Unit price (৳)</th><th style="width:90px;">Line total</th><th>Courier tracking</th><th>Photo</th></tr></thead><tbody>';
+		// Seven columns that fit the screen instead of ten that needed a sideways
+		// scrollbar: the customer's photos sit under the part name, the line total under
+		// the price, and the two internal-only fields share one column.
+		echo '<div class="aun-sp-parts-wrap"><table class="wp-list-table widefat striped aun-sp-parts"><thead><tr>'
+			. '<th class="c-part">Part</th>'
+			. '<th class="c-qty">Qty</th>'
+			. '<th class="c-status">Status</th>'
+			. '<th class="c-eta">ETA <span class="aun-sp-sees">customer sees</span></th>'
+			. '<th class="c-price">Unit price (৳)</th>'
+			. '<th class="c-track">Courier tracking</th>'
+			. '<th class="c-int">Factory PO &amp; note <span class="aun-sp-internal">only you</span></th>'
+			. '</tr></thead><tbody>';
 		$grand = 0.0;
 		// Once the customer has paid, quantities and prices are frozen: editing them
 		// would silently disagree with the money already taken. Enforced server-side
@@ -758,7 +779,7 @@ class AUN_SP_Requests {
 			$paid_order = AUN_SP_Woo::order_for( (int) $r->id );
 			$locked     = AUN_SP_Woo::has_been_paid( $paid_order );
 		}
-		$lock_attr = $locked ? ' readonly disabled style="background:#f0f0f1;color:#646970;"' : '';
+		$lock_attr = $locked ? ' readonly disabled class="is-locked"' : '';
 		$excluded = 0;
 		foreach ( (array) $items as $it ) {
 			$iqty  = max( 1, (int) ( $it->qty ?? 1 ) );
@@ -772,43 +793,45 @@ class AUN_SP_Requests {
 			} elseif ( $line > 0 ) {
 				$excluded++;
 			}
-			echo '<tr>';
-			echo '<td><strong>' . esc_html( $it->part_label ) . '</strong></td>';
-			echo '<td><input type="number" min="1" step="1" name="item_qty[' . $it->id . ']" value="' . esc_attr( $iqty ) . '" class="small-text" style="width:58px;"' . $lock_attr . '></td>';
-			echo '<td>' . $this->select( 'item_status[' . $it->id . ']', self::item_statuses(), $it->line_status ) . '</td>';
-			echo '<td><input type="text" name="item_po[' . $it->id . ']" value="' . esc_attr( $it->factory_po ) . '" class="small-text"></td>';
-			echo '<td><input type="date" name="item_eta[' . $it->id . ']" value="' . esc_attr( $it->eta ) . '"></td>';
-			echo '<td><input type="text" name="item_note[' . $it->id . ']" value="' . esc_attr( $it->note ) . '" class="regular-text" style="width:120px;"></td>';
-			echo '<td><input type="number" step="0.01" min="0" name="item_price[' . $it->id . ']" value="' . esc_attr( $it->unit_price ) . '" class="small-text" style="width:90px;"' . $lock_attr . '></td>';
-			if ( $line > 0 && ! $bill ) {
-				echo '<td style="white-space:nowrap;color:#646970;"><s>৳' . esc_html( number_format_i18n( $line, 2 ) ) . '</s><br><span style="font-size:11px;">not charged</span></td>';
-			} else {
-				echo '<td style="white-space:nowrap;">' . ( $line > 0 ? '৳' . esc_html( number_format_i18n( $line, 2 ) ) : '<span style="color:#646970;">—</span>' ) . '</td>';
-			}
-			$tno = isset( $it->tracking_no ) ? $it->tracking_no : '';
-			echo '<td><input type="text" name="item_track[' . $it->id . ']" value="' . esc_attr( $tno ) . '" class="small-text" placeholder="DA240626FDJC6N" title="Pathao consignment ID — pasting the whole tracking link works too" style="width:120px;">';
-			// One helper builds this link and the customer's, so the admin can never
-			// see a working chip where the customer sees a dead one (or the reverse).
-			$track_url = self::courier_url( $tno );
-			if ( '' !== $track_url ) {
-				echo ' <a href="' . esc_url( $track_url ) . '" target="_blank" rel="noopener" title="Open Pathao tracking" style="text-decoration:none;">&#8599;</a>';
-			} elseif ( '' !== $tno ) {
-				echo ' <span title="This is not a usable Pathao consignment ID, so no tracking link is shown to the customer." style="color:#b32d2e;cursor:help;">&#9888;</span>';
-			}
-			echo '</td>';
 			$pics = $by_item[ (int) $it->id ] ?? array();
-			echo '<td>';
-			foreach ( $pics as $url ) {
-				echo '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener">view</a> ';
+			echo '<tr>';
+			echo '<td class="c-part"><strong>' . esc_html( $it->part_label ) . '</strong>' . self::thumbs( $pics, $it->part_label ) . '</td>';
+			echo '<td class="c-qty"><input type="number" min="1" step="1" name="item_qty[' . $it->id . ']" value="' . esc_attr( $iqty ) . '"' . $lock_attr . '></td>';
+			echo '<td class="c-status">' . $this->select( 'item_status[' . $it->id . ']', self::item_statuses(), $it->line_status ) . '</td>';
+			echo '<td class="c-eta"><input type="date" name="item_eta[' . $it->id . ']" value="' . esc_attr( $it->eta ) . '"></td>';
+			echo '<td class="c-price"><input type="number" step="1" min="0" inputmode="numeric" name="item_price[' . $it->id . ']" value="' . esc_attr( self::taka_value( $it->unit_price ) ) . '"' . $lock_attr . '>';
+			if ( $line > 0 && ! $bill ) {
+				echo '<div class="aun-sp-line is-off"><s>৳' . esc_html( number_format_i18n( $line ) ) . '</s> not charged</div>';
+			} elseif ( $line > 0 && $iqty > 1 ) {
+				echo '<div class="aun-sp-line">× ' . (int) $iqty . ' = <strong>৳' . esc_html( number_format_i18n( $line ) ) . '</strong></div>';
 			}
 			echo '</td>';
+			$tno = isset( $it->tracking_no ) ? $it->tracking_no : '';
+			// One helper builds this link and the customer's, so the admin can never
+			// see a working link where the customer sees a dead one (or the reverse).
+			$track_url = self::courier_url( $tno );
+			echo '<td class="c-track"><div class="aun-sp-track">'
+				. '<input type="text" name="item_track[' . $it->id . ']" value="' . esc_attr( $tno ) . '" placeholder="DA240626FDJC6N" title="Pathao consignment ID — pasting the whole tracking link works too">';
+			if ( '' !== $track_url ) {
+				echo '<a class="aun-sp-track-go" href="' . esc_url( $track_url ) . '" target="_blank" rel="noopener" title="Track this parcel on Pathao" aria-label="Track this parcel on Pathao">'
+					. '<span class="dashicons dashicons-external" aria-hidden="true"></span></a>';
+			}
+			echo '</div>';
+			if ( '' === $track_url && '' !== $tno ) {
+				echo '<div class="aun-sp-field-warn">Not a Pathao consignment ID &mdash; the customer is shown no tracking link.</div>';
+			}
+			echo '</td>';
+			echo '<td class="c-int">'
+				. '<input type="text" name="item_po[' . $it->id . ']" value="' . esc_attr( $it->factory_po ) . '" placeholder="Factory PO" aria-label="Factory PO (internal)">'
+				. '<input type="text" name="item_note[' . $it->id . ']" value="' . esc_attr( $it->note ) . '" placeholder="Note" aria-label="Note (internal)">'
+				. '</td>';
 			echo '</tr>';
 		}
 		if ( $grand > 0 ) {
-			echo '<tr><td colspan="7" style="text-align:right;font-weight:600;">Quote total (qty × unit price)'
-				. ( $excluded ? '<br><span style="font-weight:400;color:#646970;font-size:12px;">' . (int) $excluded . ' part(s) excluded — unavailable or not going ahead</span>' : '' )
+			echo '<tr class="aun-sp-total"><td colspan="4">Quote total (qty × unit price)'
+				. ( $excluded ? '<br><span>' . (int) $excluded . ' part(s) excluded — unavailable or not going ahead</span>' : '' )
 				. '</td>'
-				. '<td style="font-weight:700;white-space:nowrap;">৳' . esc_html( number_format_i18n( $grand, 2 ) ) . '</td><td colspan="2"></td></tr>';
+				. '<td class="c-price"><strong>৳' . esc_html( number_format_i18n( $grand ) ) . '</strong></td><td colspan="2"></td></tr>';
 		}
 		echo '</tbody></table></div>';
 
@@ -826,7 +849,7 @@ class AUN_SP_Requests {
 		echo '<p><label>Note to the customer (optional)<br><textarea name="quote_note" rows="2" class="large-text" style="max-width:620px;">' . esc_textarea( (string) $r->quote_note ) . '</textarea></label></p>';
 		if ( AUN_SP_Woo::is_active() ) {
 			$dc = isset( $r->delivery_charge ) ? (float) $r->delivery_charge : 0;
-			echo '<p><label>Delivery charge (৳) <input type="number" step="0.01" min="0" name="delivery_charge" value="' . esc_attr( $dc ) . '" class="small-text" style="width:100px;"></label>'
+			echo '<p><label>Delivery charge (৳) <input type="number" step="1" min="0" inputmode="numeric" name="delivery_charge" value="' . esc_attr( self::taka_value( $dc ) ) . '" class="small-text" style="width:100px;"></label>'
 				. ' <span style="color:#646970;">added to the order the customer pays. Leave 0 for free delivery.</span></p>';
 		}
 		// What happened to the quote we sent. This used to read the approval timestamp
@@ -866,7 +889,7 @@ class AUN_SP_Requests {
 				'total' => number_format_i18n( (float) $r->quote_total, 2 ),
 				'track' => AUN_SP_Messages::track_link( $r->ref ),
 			) );
-			echo '<div style="background:#f6f7f7;border-left:3px solid #25D366;border-radius:6px;padding:10px 14px;margin:12px 0;max-width:780px;">';
+			echo '<div style="background:#f6f7f7;border-left:3px solid #25D366;border-radius:6px;padding:10px 14px;margin:12px 0;">';
 			echo '<p style="margin:0 0 6px;"><strong>Chasing this quote:</strong> ';
 			echo 'the customer is texted a reminder on day ' . (int) $rd1 . ' and day ' . (int) $rd2
 				. ( $days > 0 ? ', then the quote expires on day ' . (int) $days . '.' : ' (this quote never expires — see Settings).' );
@@ -900,10 +923,8 @@ class AUN_SP_Requests {
 
 		// Customer-added photos (re-uploads from the tracking page).
 		if ( ! empty( $by_item[0] ) ) {
-			echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;"><h2>Customer-added photos</h2>';
-			foreach ( $by_item[0] as $url ) {
-				echo '<a href="' . esc_url( $url ) . '" target="_blank" rel="noopener" style="margin-right:12px;">view photo</a>';
-			}
+			echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;margin-top:14px;"><h2>Customer-added photos</h2>';
+			echo self::thumbs( $by_item[0], 'Customer-added photo', true );
 			echo '</div>';
 		}
 
@@ -913,7 +934,7 @@ class AUN_SP_Requests {
 		// only fixes a blurry photo; if they photographed the wrong part it just buys
 		// you a sharper photo of the wrong part. So the reason (and optionally WHICH
 		// part it concerns) travels to their screen and into the SMS.
-		echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:16px;">';
+		echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;margin-top:16px;">';
 		wp_nonce_field( 'aun_sp_photo', 'aun_sp_photo_nonce' );
 		echo '<h2>Send the photo back</h2>';
 		echo '<p style="color:#646970;">Sets this request to <strong>Waiting on customer</strong> and texts them a link to re-upload. It flips back to <em>In progress</em> automatically once they send a new photo.</p>';
@@ -962,7 +983,7 @@ class AUN_SP_Requests {
 
 		// Reject panel.
 		$tpls = $this->reject_templates( $r->model, $r->purchase_date, $items, $age_yrs );
-		echo '<form method="post" style="background:#fff;border:1px solid #f0c8c8;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:16px;">';
+		echo '<form method="post" style="background:#fff;border:1px solid #f0c8c8;border-radius:8px;padding:14px 18px;margin-top:16px;">';
 		wp_nonce_field( 'aun_sp_reject', 'aun_sp_reject_nonce' );
 		echo '<h2 style="color:#b32d2e;">Reject this request</h2>';
 		echo '<p><label>Reason template ';
@@ -979,7 +1000,7 @@ class AUN_SP_Requests {
 		echo '<script data-no-optimize="1" data-no-minify="1">document.getElementById("aun-sp-reject-tpl").addEventListener("change",function(){var t=this.options[this.selectedIndex].getAttribute("data-text")||"";if(t){document.getElementById("aun-sp-reject-text").value=t;}});</script>';
 
 		// Activity log.
-		echo '<h2 style="margin-top:20px;">Activity</h2><ul style="max-width:820px;">';
+		echo '<h2 style="margin-top:20px;">Activity</h2><ul>';
 		foreach ( (array) $events as $e ) {
 			echo '<li style="padding:4px 0;border-bottom:1px solid #f0f0f1;"><span style="color:#646970;">' . esc_html( $e->created_at ) . '</span> — ' . esc_html( $e->message ) . ' <em style="color:#646970;">(' . esc_html( $e->by_user ) . ')</em></li>';
 		}
@@ -1002,7 +1023,7 @@ class AUN_SP_Requests {
 		$link  = ' <a href="' . esc_url( $order->get_edit_order_url() ) . '">order #' . esc_html( $order->get_order_number() ) . '</a>';
 
 		if ( ! empty( $r->refunded_at ) ) {
-			echo '<div style="background:#f0f6ff;border:1px solid #2271b1;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+			echo '<div style="background:#f0f6ff;border:1px solid #2271b1;border-left-width:6px;border-radius:6px;padding:12px 16px;margin:12px 0;">'
 				. '<strong style="color:#2271b1;font-size:15px;">↩ REFUNDED ৳' . esc_html( number_format_i18n( (float) $r->refund_amount, 2 ) ) . '</strong> '
 				. '<span style="color:#646970;">on ' . esc_html( substr( (string) $r->refunded_at, 0, 10 ) )
 				. ( $r->refund_ref ? ' · ref ' . esc_html( $r->refund_ref ) : '' ) . ' · ' . $link . '</span></div>';
@@ -1010,7 +1031,7 @@ class AUN_SP_Requests {
 		}
 
 		if ( AUN_SP_Woo::refund_due( (int) $r->id ) ) {
-			echo '<div style="background:#fcf0f1;border:1px solid #b32d2e;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+			echo '<div style="background:#fcf0f1;border:1px solid #b32d2e;border-left-width:6px;border-radius:6px;padding:12px 16px;margin:12px 0;">'
 				. '<strong style="color:#b32d2e;font-size:15px;">⚠ REFUND DUE ' . esc_html( $total ) . '</strong> '
 				. '<span style="color:#646970;">— the customer paid online and this request is now &ldquo;'
 				. esc_html( self::overall_statuses()[ $r->overall_status ] ?? $r->overall_status ) . '&rdquo;.' . $link . '</span>'
@@ -1021,14 +1042,14 @@ class AUN_SP_Requests {
 		// Admin banner: the same historical fact, so a delivered request does not
 		// stop saying PAID and quietly unlock its prices.
 		if ( AUN_SP_Woo::has_been_paid( $order ) ) {
-			echo '<div style="background:#edfaef;border:1px solid #1a7f37;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+			echo '<div style="background:#edfaef;border:1px solid #1a7f37;border-left-width:6px;border-radius:6px;padding:12px 16px;margin:12px 0;">'
 				. '<strong style="color:#1a7f37;font-size:15px;">✓ PAID ONLINE ' . esc_html( $total ) . '</strong> '
 				. '<span style="color:#646970;">' . esc_html( $order->get_payment_method_title() ) . ' · ' . $link
 				. ' · quantities and prices are locked below.</span></div>';
 			return;
 		}
 
-		echo '<div style="background:#fdf6e7;border:1px solid #bf6a02;border-left-width:6px;border-radius:6px;padding:12px 16px;max-width:820px;margin:12px 0;">'
+		echo '<div style="background:#fdf6e7;border:1px solid #bf6a02;border-left-width:6px;border-radius:6px;padding:12px 16px;margin:12px 0;">'
 			. '<strong style="color:#8a5300;font-size:15px;">● ONLINE PAYMENT STARTED, NOT COMPLETED</strong> '
 			. '<span style="color:#646970;">' . esc_html( $total ) . ' · ' . $link
 			. ' — treat as cash on delivery unless it completes.</span></div>';
@@ -1039,7 +1060,7 @@ class AUN_SP_Requests {
 		ob_start();
 		echo '<form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">';
 		wp_nonce_field( 'aun_sp_refund', 'aun_sp_refund_nonce' );
-		echo '<label>Amount refunded ৳ <input type="number" step="0.01" min="0" name="refund_amount" value="' . esc_attr( (float) $order->get_total() ) . '" class="small-text" style="width:100px;"></label>';
+		echo '<label>Amount refunded ৳ <input type="number" step="1" min="0" inputmode="numeric" name="refund_amount" value="' . esc_attr( self::taka_value( (float) $order->get_total() ) ) . '" class="small-text" style="width:100px;"></label>';
 		echo '<label>Reference <input type="text" name="refund_ref" class="regular-text" style="width:180px;" placeholder="bKash TrxID / bank ref"></label>';
 		echo '<button class="button button-primary">Mark as refunded</button>';
 		echo '</form>';
@@ -1066,7 +1087,7 @@ class AUN_SP_Requests {
 			// No payment link for a finished request — the parts are with the customer
 			// and, on cash on delivery, the money came with them.
 			if ( $owed > 0 && ! self::is_cancelled( $r->overall_status ) && 'closed' !== $r->overall_status ) {
-				echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;">';
+				echo '<form method="post" style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;margin-top:14px;">';
 				wp_nonce_field( 'aun_sp_mkorder', 'aun_sp_mkorder_nonce' );
 				echo '<h2 style="margin-top:0;">Payment</h2>';
 				echo '<p style="color:#646970;margin-top:0;">This request is <strong>cash on delivery</strong> &mdash; collect ৳'
@@ -1084,7 +1105,7 @@ class AUN_SP_Requests {
 			? '<span style="color:#1a7f37;font-weight:600;">paid online</span>'
 			: '<span style="color:#8250df;font-weight:600;">started online payment — not completed</span>';
 
-		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;max-width:820px;margin-top:14px;">';
+		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;margin-top:14px;">';
 		echo '<h2 style="margin-top:0;">Payment &mdash; online</h2>';
 		echo '<p style="margin:0 0 6px;">Order <a href="' . esc_url( $order->get_edit_order_url() ) . '"><strong>#' . esc_html( $order->get_order_number() ) . '</strong></a>'
 			. ' · <strong>৳' . esc_html( number_format_i18n( (float) $order->get_total(), 2 ) ) . '</strong>'
@@ -1132,7 +1153,7 @@ class AUN_SP_Requests {
 			}
 		}
 		$class = $open_dupes ? 'notice-warning' : 'notice-info';
-		echo '<div class="notice ' . $class . ' inline" style="max-width:820px;"><p style="margin-bottom:6px;"><strong>Same phone on ' . (int) count( $dupes ) . ' other request' . ( count( $dupes ) > 1 ? 's' : '' ) . '</strong>'
+		echo '<div class="notice ' . $class . ' inline"><p style="margin-bottom:6px;"><strong>Same phone on ' . (int) count( $dupes ) . ' other request' . ( count( $dupes ) > 1 ? 's' : '' ) . '</strong>'
 			. ( $open_dupes ? ' — ' . (int) $open_dupes . ' still open. If this is a duplicate submission, reject it below with the “Duplicate request” reason.' : ' (all completed/closed — likely earlier repairs).' ) . '</p><ul style="margin:0 0 2px 2px;list-style:disc;padding-left:18px;">';
 		foreach ( $dupes as $d ) {
 			$url = admin_url( 'admin.php?page=aun-sp&request=' . (int) $d->id );
@@ -1209,7 +1230,8 @@ class AUN_SP_Requests {
 						'factory_po'  => sanitize_text_field( wp_unslash( $pos[ $iid ] ?? '' ) ),
 						'eta'         => $eta !== '' ? $eta : null,
 						'note'        => sanitize_text_field( wp_unslash( $notes[ $iid ] ?? '' ) ),
-						'unit_price'  => $money_locked ? (float) $cur->unit_price : round( (float) ( $prices[ $iid ] ?? 0 ), 2 ),
+						// Whole Taka: nothing here is priced below ৳1.
+						'unit_price'  => $money_locked ? (float) $cur->unit_price : round( (float) ( $prices[ $iid ] ?? 0 ) ),
 						'tracking_no' => $track,
 						'updated_at'  => current_time( 'mysql' ),
 					),
@@ -1248,7 +1270,7 @@ class AUN_SP_Requests {
 			$quote_note = sanitize_textarea_field( wp_unslash( $_POST['quote_note'] ?? '' ) );
 			$delivery_notice = '';
 			if ( isset( $_POST['delivery_charge'] ) && ! $money_locked ) {
-				$charge = max( 0, round( (float) $_POST['delivery_charge'], 2 ) );
+				$charge = max( 0, round( (float) $_POST['delivery_charge'] ) ); // whole Taka
 				$wpdb->update( $t_req, array( 'delivery_charge' => $charge ), array( 'id' => $id ) );
 				// The order is built at approval, so a later edit has to be pushed onto
 				// it — otherwise the customer keeps paying the old total.
@@ -1305,6 +1327,16 @@ class AUN_SP_Requests {
 			// LCD screen: Delivered to you. Track it: <link>", which reads like there is
 			// more to come and links to a page with nothing left on it.
 			$just_completed = ( 'closed' === $overall && 'closed' !== $current );
+			// Every remaining part set to "Not going ahead": the customer said no, so this
+			// is their decline, recorded by us — same outcome as tapping Decline: the
+			// Approve / Decline buttons go, reminders stop, any unpaid order is cancelled
+			// (sync above), and they are told it is cancelled and how to ask again.
+			$just_declined = ( 'declined' === $overall && 'declined' !== $current );
+			if ( $just_declined ) {
+				$this->log( $id, 0, 'declined', 'Every remaining part set to "Not going ahead", so the request is now Quote declined (recorded by '
+					. ( wp_get_current_user()->display_name ?: 'admin' ) . '). Nothing will be ordered.' );
+				do_action( 'aun_sp_status_changed', $id, 'declined', $current );
+			}
 			// Never text the customer about a request that was ALREADY finished before
 			// this save. Tidying the parts on a declined, rejected, expired or
 			// completed request is bookkeeping — texting "LCD screen: Delivered to you"
@@ -1317,7 +1349,10 @@ class AUN_SP_Requests {
 				$extra = ' This request is already ' . esc_html( self::overall_statuses()[ $current ] ?? $current )
 					. ', so the customer was not texted.';
 			} elseif ( ! empty( $_POST['notify'] ) ) {
-				if ( $just_completed ) {
+				if ( $just_declined ) {
+					// The decline confirmation, not "LCD screen: Not going ahead".
+					$extra = $this->sms_customer( $id, 'declined', 'declined', '' );
+				} elseif ( $just_completed ) {
 					$extra = $this->sms_customer( $id, 'done', $overall, implode( ', ', $changes ) );
 				} elseif ( ! empty( $changes ) ) {
 					// THE PART YOU MOVED IS THE NEWS. The overall status is a coarse
@@ -1343,6 +1378,10 @@ class AUN_SP_Requests {
 					. '</strong> — that didn&rsquo;t look like a Pathao consignment ID. Paste the ID (e.g. <code>DA240626FDJC6N</code>) or the full tracking link.';
 			}
 			$moved = ( $overall !== $current ) ? ' Status is now &ldquo;' . esc_html( self::overall_statuses()[ $overall ] ?? $overall ) . '&rdquo;.' : '';
+			if ( $just_declined ) {
+				$moved .= ' Every remaining part is &ldquo;Not going ahead&rdquo;, so this counts as the customer declining:'
+					. ' their Approve / Decline buttons are gone, no reminders will be sent, and they can still ask for a new quote from their tracking page.';
+			}
 			if ( ! empty( $_POST['notify'] ) && $extra === '' && empty( $changes ) && $overall === $current ) {
 				$extra = ' No status changed, so no SMS was sent.';
 			}
@@ -1355,7 +1394,7 @@ class AUN_SP_Requests {
 			if ( ! AUN_SP_Woo::is_active() ) {
 				return '<div class="notice notice-error is-dismissible"><p>WooCommerce isn&rsquo;t active.</p></div>';
 			}
-			$amount = round( (float) ( $_POST['refund_amount'] ?? 0 ), 2 );
+			$amount = round( (float) ( $_POST['refund_amount'] ?? 0 ) ); // whole Taka
 			$ref    = sanitize_text_field( wp_unslash( $_POST['refund_ref'] ?? '' ) );
 			AUN_SP_Woo::record_refund( $id, $amount, $ref );
 			return '<div class="notice notice-success is-dismissible"><p>Refund of ৳' . esc_html( number_format_i18n( $amount, 2 ) )
@@ -2000,6 +2039,10 @@ class AUN_SP_Requests {
 			$vars['note']   = (string) $r->photo_note;
 			$body           = AUN_SP_Messages::drop_empty_brackets( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_PHOTO ), $vars );
 			$msg            = AUN_SP_Messages::fill( $body, $vars );
+		} elseif ( 'declined' === $type ) {
+			// Same message the customer gets after tapping Decline themselves.
+			$vars['total'] = number_format_i18n( (float) $r->quote_total, 2 );
+			$msg           = AUN_SP_Messages::fill( AUN_SP_Messages::sms( AUN_SP_Messages::OPT_SMS_DECLINED ), $vars );
 		} elseif ( 'done' === $type ) {
 			// Completion. {track} is available if the admin wants it, but the default
 			// deliberately omits it; {phone} is the shop's contact number so the
@@ -2046,7 +2089,7 @@ class AUN_SP_Requests {
 		$labels = array(
 			'rejected' => 'rejection', 'photo' => 'better-photo request', 'quote' => 'quote',
 			'parts' => 'parts update', 'remind' => 'quote reminder', 'remind_final' => 'final quote reminder',
-			'expired' => 'quote expiry', 'done' => 'delivery confirmation',
+			'expired' => 'quote expiry', 'done' => 'delivery confirmation', 'declined' => 'decline confirmation',
 		);
 		$label  = isset( $labels[ $type ] ) ? $labels[ $type ] : 'status update';
 		$res    = AUN_SP_SMS::send_tracked( $id, $r->phone_current, $msg, $label );
@@ -2258,6 +2301,24 @@ class AUN_SP_Requests {
 	public static function compute_overall( array $line_statuses, $current, $has_approved ) {
 		$started_states = array( 'applied', 'at_factory', 'shipped', 'arrived', 'dispatched', 'delivered' );
 
+		// "Not going ahead" on EVERY part still open = the customer said no. That is a
+		// decline, whoever recorded it. Before 0.48 setting it by hand only relabelled
+		// the parts: a request awaiting approval stayed "awaiting approval" (sticky
+		// state below), so the customer still had Approve / Decline buttons, kept
+		// getting quote reminders, and was texted an ordinary progress update. And
+		// with no quote out, it fell through to "Rejected" — which means WE could not
+		// supply it, the opposite of what happened.
+		// Parts already delivered keep it from being a decline (that request is
+		// complete — handled further down); parts we cannot supply don't count either
+		// way. Final states are left alone: declined/expired already are this.
+		if ( $line_statuses
+			&& in_array( 'cancelled', $line_statuses, true )
+			&& ! in_array( 'delivered', $line_statuses, true )
+			&& ! array_diff( $line_statuses, array( 'cancelled', 'unavailable' ) )
+			&& ! in_array( $current, self::TERMINAL_STATES, true ) ) {
+			return 'declined';
+		}
+
 		if ( in_array( $current, array( 'quote_sent', 'waiting_customer', 'declined', 'rejected', 'expired' ), true ) ) {
 			// One exception to "a state waiting on the customer is sticky": once a part
 			// has actually been ordered, the admin has decided to proceed regardless of
@@ -2395,6 +2456,168 @@ class AUN_SP_Requests {
 		echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:14px 18px;min-width:150px;">';
 		echo '<div style="font-size:13px;color:#646970;">' . esc_html( $label ) . '</div>';
 		echo '<div style="font-size:24px;font-weight:600;">' . esc_html( number_format_i18n( $value ) ) . '</div></div>';
+	}
+
+	/** A money input's value in whole Taka ('' stays empty, so a blank price stays blank). */
+	private static function taka_value( $v ) {
+		if ( null === $v || '' === $v ) {
+			return '';
+		}
+		return (string) (int) round( (float) $v );
+	}
+
+	/**
+	 * Clickable thumbnails of the customer's photos. Each one is a real link to the
+	 * full-size file — the lightbox takes over a plain click, while Ctrl/middle-click
+	 * still opens it in a new tab as before.
+	 */
+	private static function thumbs( $urls, $caption, $large = false ) {
+		$urls = array_values( array_filter( (array) $urls ) );
+		if ( ! $urls ) {
+			return '';
+		}
+		$n   = count( $urls );
+		$out = '<div class="aun-sp-thumbs' . ( $large ? ' is-large' : '' ) . '">';
+		foreach ( $urls as $i => $url ) {
+			$cap  = $caption . ( $n > 1 ? ' — photo ' . ( $i + 1 ) . ' of ' . $n : '' );
+			$out .= '<a class="aun-sp-thumb" href="' . esc_url( $url ) . '" target="_blank" rel="noopener" data-caption="' . esc_attr( $cap ) . '" title="' . esc_attr( $cap ) . '">'
+				// A file that has gone missing shows a neat placeholder, not a broken image.
+				. '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $cap ) . '" loading="lazy" decoding="async"'
+				. ' onerror="this.parentNode.classList.add(\'is-missing\');this.parentNode.title=\'This photo file could not be loaded\';"></a>';
+		}
+		return $out . '</div>';
+	}
+
+	/** Styles + photo lightbox for the request page. Admin only, printed once. */
+	private static function detail_assets() {
+		ob_start();
+		?>
+<style id="aun-sp-detail-css" data-no-optimize="1" data-no-minify="1">
+.aun-sp-parts-wrap{overflow-x:auto;margin:0 -2px}
+.aun-sp-parts{table-layout:fixed;width:100%;min-width:1000px}
+.aun-sp-parts th{font-weight:600;vertical-align:bottom;padding:8px 6px}
+.aun-sp-parts td{vertical-align:top;padding:12px 6px}
+.aun-sp-parts th:first-child,.aun-sp-parts td:first-child{padding-left:10px}
+/* proportional, so a wider screen gives every column more room, not just one */
+.aun-sp-parts .c-part{width:18%}.aun-sp-parts .c-qty{width:5.5%}.aun-sp-parts .c-status{width:20%}.aun-sp-parts .c-eta{width:13%}
+.aun-sp-parts .c-price{width:10%}.aun-sp-parts .c-track{width:18.5%}.aun-sp-parts .c-int{width:15%}
+.aun-sp-parts td.c-part strong{display:block;word-wrap:break-word}
+.aun-sp-parts td select{font-size:13px;padding-right:22px}
+.aun-sp-parts td input[type=text],.aun-sp-parts td input[type=number],.aun-sp-parts td input[type=date],.aun-sp-parts td select{width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:0}
+.aun-sp-parts td.c-int input+input{margin-top:6px}
+.aun-sp-parts input.is-locked{background:#f0f0f1;color:#646970}
+.aun-sp-sees,.aun-sp-internal{display:block;font-weight:400;font-size:11px;line-height:1.3}
+.aun-sp-sees{color:#1a7f37}.aun-sp-internal{color:#646970}
+.aun-sp-line{margin-top:5px;font-size:12px;color:#50575e;white-space:nowrap}
+.aun-sp-line.is-off{color:#8c8f94}
+.aun-sp-total td{font-weight:600;text-align:right;border-top:1px solid #dcdcde}
+.aun-sp-total td span{font-weight:400;color:#646970;font-size:12px}
+.aun-sp-total td.c-price{text-align:left;white-space:nowrap}
+.aun-sp-track{display:flex;gap:6px;align-items:stretch}
+.aun-sp-track input{flex:1 1 auto}
+.aun-sp-track-go{flex:0 0 34px;min-height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #2271b1;border-radius:4px;color:#2271b1;background:#f6f7f7;text-decoration:none;box-sizing:border-box;transition:background .12s,color .12s}
+.aun-sp-track-go:hover,.aun-sp-track-go:focus{background:#2271b1;color:#fff}
+.aun-sp-track-go .dashicons{font-size:16px;width:16px;height:16px}
+.aun-sp-field-warn{margin-top:5px;font-size:12px;color:#b32d2e;line-height:1.35}
+.aun-sp-thumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.aun-sp-thumb{position:relative;display:block;width:52px;height:52px;border-radius:6px;overflow:hidden;border:1px solid #dcdcde;background:#f6f7f7;cursor:zoom-in;transition:border-color .12s,box-shadow .12s}
+.aun-sp-thumbs.is-large .aun-sp-thumb{width:110px;height:110px}
+.aun-sp-thumb img{display:block;width:100%;height:100%;object-fit:cover;color:transparent;font-size:0}
+.aun-sp-thumb.is-missing{cursor:help}
+.aun-sp-thumb.is-missing img{visibility:hidden}
+.aun-sp-thumb.is-missing::after{content:"\f128";font-family:dashicons;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:#a7aaad}
+.aun-sp-thumb:hover,.aun-sp-thumb:focus{border-color:#2271b1;box-shadow:0 0 0 1px #2271b1;outline:none}
+.aun-sp-lbx{position:fixed;inset:0;z-index:100100;display:flex;align-items:center;justify-content:center;background:rgba(10,12,16,.88);opacity:0;transition:opacity .18s ease}
+.aun-sp-lbx.is-open{opacity:1}
+.aun-sp-lbx figure{margin:0;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;align-items:center}
+.aun-sp-lbx img{max-width:92vw;max-height:80vh;object-fit:contain;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,.5);opacity:0;transform:scale(.97);transition:opacity .2s ease,transform .2s ease}
+/* hidden until fully loaded: a big phone photo would otherwise paint in half-drawn */
+.aun-sp-lbx.is-open.is-ready img{opacity:1;transform:none}
+.aun-sp-lbx.is-error img{display:none}
+.aun-sp-lbx .err{display:none;color:#f0f0f1;font-size:14px;padding:40px 24px;text-align:center}
+.aun-sp-lbx.is-error .err{display:block}
+.aun-sp-lbx figcaption{margin-top:12px;color:#f0f0f1;font-size:13px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center}
+.aun-sp-lbx figcaption a{color:#72aee6}
+.aun-sp-lbx button{position:absolute;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;transition:background .12s}
+.aun-sp-lbx button:hover,.aun-sp-lbx button:focus{background:rgba(255,255,255,.28);outline:none}
+.aun-sp-lbx button:focus-visible{box-shadow:0 0 0 2px #72aee6}
+.aun-sp-lbx .x{top:18px;right:18px;width:44px;height:44px;font-size:26px;line-height:1}
+.aun-sp-lbx .prev,.aun-sp-lbx .next{top:50%;width:48px;height:48px;margin-top:-24px;font-size:28px}
+.aun-sp-lbx .prev{left:18px}.aun-sp-lbx .next{right:18px}
+.aun-sp-lbx .spin{position:absolute;width:34px;height:34px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:aunSpSpin .8s linear infinite}
+.aun-sp-lbx.is-ready .spin{display:none}
+@keyframes aunSpSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.aun-sp-lbx,.aun-sp-lbx img{transition:none}}
+</style>
+<script data-no-optimize="1" data-no-minify="1">
+(function(){
+	/* The customer's photos open over the page instead of in a new tab: close button,
+	   Esc, a click outside, and arrow keys to step through every photo on the request. */
+	var box = null, list = [], at = 0, back = null;
+	function el(tag, cls, txt){ var e = document.createElement(tag); if(cls){ e.className = cls; } if(txt){ e.textContent = txt; } return e; }
+	function show(i){
+		at = (i + list.length) % list.length;
+		var a = list[at], img = box.querySelector('img'), cap = box.querySelector('.cap'), orig = box.querySelector('.orig');
+		box.classList.remove('is-ready', 'is-error');
+		img.onload = function(){ box.classList.add('is-ready'); };
+		img.onerror = function(){ box.classList.add('is-ready', 'is-error'); };
+		img.src = a.href; img.alt = a.getAttribute('data-caption') || '';
+		cap.textContent = a.getAttribute('data-caption') || '';
+		orig.href = a.href;
+		box.querySelector('.prev').hidden = box.querySelector('.next').hidden = list.length < 2;
+	}
+	function close(){
+		if(!box){ return; }
+		document.removeEventListener('keydown', key, true);
+		var b = box; box = null;
+		b.classList.remove('is-open');
+		setTimeout(function(){ if(b.parentNode){ b.parentNode.removeChild(b); } }, 180);
+		document.documentElement.style.overflow = '';
+		if(back && back.focus){ back.focus(); }
+	}
+	function key(e){
+		if(e.key === 'Escape'){ e.preventDefault(); close(); }
+		else if(e.key === 'ArrowRight' && list.length > 1){ e.preventDefault(); show(at + 1); }
+		else if(e.key === 'ArrowLeft' && list.length > 1){ e.preventDefault(); show(at - 1); }
+		else if(e.key === 'Tab'){ /* keep focus on the lightbox's own buttons */
+			var f = Array.prototype.filter.call(box.querySelectorAll('button,a'), function(n){ return !n.hidden; });
+			var i = f.indexOf(document.activeElement);
+			e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+		}
+	}
+	function open(a){
+		list = Array.prototype.slice.call(document.querySelectorAll('a.aun-sp-thumb'));
+		back = a;
+		box = el('div', 'aun-sp-lbx');
+		box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Customer photo');
+		var x = el('button', 'x', '\u00d7'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
+		var p = el('button', 'prev', '\u2039'); p.type = 'button'; p.setAttribute('aria-label', 'Previous photo');
+		var n = el('button', 'next', '\u203a'); n.type = 'button'; n.setAttribute('aria-label', 'Next photo');
+		var fig = el('figure'), img = el('img'), fc = el('figcaption'), cap = el('span', 'cap'), o = el('a', 'orig', 'Open full size \u2197');
+		o.target = '_blank'; o.rel = 'noopener';
+		fc.appendChild(cap); fc.appendChild(o); fig.appendChild(img); fig.appendChild(el('div', 'err', 'This photo could not be loaded. Try “Open full size”.')); fig.appendChild(fc);
+		box.appendChild(el('span', 'spin')); box.appendChild(fig); box.appendChild(p); box.appendChild(n); box.appendChild(x);
+		box.addEventListener('click', function(e){ if(e.target === box || e.target === fig){ close(); } });
+		x.addEventListener('click', close);
+		p.addEventListener('click', function(){ show(at - 1); });
+		n.addEventListener('click', function(){ show(at + 1); });
+		document.body.appendChild(box);
+		document.documentElement.style.overflow = 'hidden';
+		show(list.indexOf(a));
+		document.addEventListener('keydown', key, true);
+		requestAnimationFrame(function(){ if(box){ box.classList.add('is-open'); } });
+		x.focus();
+	}
+	document.addEventListener('click', function(e){
+		var a = e.target.closest ? e.target.closest('a.aun-sp-thumb') : null;
+		if(!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey){ return; }
+		e.preventDefault();
+		open(a);
+	});
+})();
+</script>
+		<?php
+		return ob_get_clean();
 	}
 
 	private function kv( $k, $v ) {

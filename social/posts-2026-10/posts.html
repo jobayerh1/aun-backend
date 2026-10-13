@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>AUN posts Oct 2026</title>
+<style>
+  :root { --blue: #0188fe; --cyan: #00c6ff; --gold: #ffbc00; --gold2: #ffd34d; --muted: #b9cbe0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1350px; overflow: hidden; background: #050c1a; }
+  body { font-family: 'Nirmala UI', 'Segoe UI', sans-serif; color: #fff; position: relative; }
+  .abs { position: absolute; }
+  .slide { position: absolute; inset: 0; display: none;
+    background: radial-gradient(80% 50% at 50% 30%, #0f2a52 0%, #071328 60%, #050c1a 100%); }
+  .slide.on { display: block; }
+  .dots { inset: 0; opacity: .18; background-image: radial-gradient(rgba(255,255,255,.4) 1.2px, transparent 1.4px); background-size: 30px 30px;
+          -webkit-mask-image: linear-gradient(180deg, #000, transparent 50%); }
+  .logo { top: 54px; left: 60px; height: 58px; }
+  .pager { top: 64px; right: 60px; font-family: 'Segoe UI'; font-weight: 700; font-size: 26px; color: var(--muted);
+           padding: 8px 18px; border: 2px solid rgba(255,255,255,.2); border-radius: 999px; }
+  .foot { bottom: 46px; left: 60px; right: 60px; display: flex; justify-content: space-between; align-items: center;
+          font-size: 26px; color: var(--muted); font-family: 'Segoe UI'; font-weight: 600; }
+  .foot b { color: #fff; }
+  .eyebrow { font-size: 34px; font-weight: 700; color: #4da8ff; }
+  h1 { font-size: 92px; line-height: 1.18; font-weight: 700; }
+  h2 { font-size: 64px; line-height: 1.2; font-weight: 700; }
+  .gold { color: var(--gold2); }
+  .blue { color: #4fb3ff; }
+  .center { left: 60px; right: 60px; text-align: center; }
+
+  /* s1 cover */
+  .wall { left: 140px; right: 140px; top: 470px; height: 420px; border-radius: 18px;
+          background: linear-gradient(160deg, #1d6fd6, #0b3a80 60%, #082a5c);
+          box-shadow: 0 0 0 3px rgba(160,215,255,.5), 0 0 120px rgba(1,136,254,.55); display: grid; place-items: center; }
+  .wall .q { font-size: 210px; font-weight: 700; color: rgba(255,255,255,.95); text-shadow: 0 0 40px rgba(255,255,255,.4); }
+  .measure { left: 140px; right: 140px; top: 925px; height: 40px; border-left: 3px solid var(--gold2); border-right: 3px solid var(--gold2); }
+  .measure::before { content: ''; position: absolute; left: 0; right: 0; top: 19px; border-top: 3px dashed var(--gold2); }
+  .measure span { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); background: #071328; padding: 0 18px;
+                  font-size: 30px; font-weight: 700; color: var(--gold2); white-space: nowrap; }
+  .swipe { font-size: 34px; font-weight: 700; padding: 16px 40px; border-radius: 999px; background: var(--blue); display: inline-block;
+           box-shadow: 0 14px 40px rgba(1,136,254,.5); }
+
+  /* s2 table */
+  .rows { left: 70px; right: 70px; top: 360px; display: flex; flex-direction: column; gap: 14px; }
+  .row { display: grid; grid-template-columns: 230px 1fr 200px; align-items: center; gap: 22px; background: rgba(255,255,255,.06);
+         border: 1.5px solid rgba(255,255,255,.12); border-radius: 18px; padding: 12px 26px; }
+  .row .d { font-size: 40px; font-weight: 700; }
+  .row .d small { font-size: 26px; color: var(--muted); font-weight: 400; display: block; }
+  .row .bar { height: 26px; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--cyan)); box-shadow: 0 0 18px rgba(0,198,255,.45); }
+  .row .s { font-size: 52px; font-weight: 700; color: var(--gold2); text-align: right; font-family: 'Segoe UI'; }
+  .row .s small { font-size: 30px; }
+  .note { left: 70px; right: 70px; top: 1170px; font-size: 27px; color: var(--muted); line-height: 1.5; }
+
+  /* s3 tips */
+  .tips { left: 70px; right: 70px; top: 360px; display: flex; flex-direction: column; gap: 26px; }
+  .tip { display: grid; grid-template-columns: 96px 1fr; gap: 26px; align-items: start; background: rgba(255,255,255,.06);
+         border: 1.5px solid rgba(255,255,255,.12); border-radius: 22px; padding: 28px 30px; }
+  .tip .n { width: 96px; height: 96px; border-radius: 50%; background: rgba(1,136,254,.18); border: 2px solid rgba(79,179,255,.6);
+            display: grid; place-items: center; font-size: 46px; font-weight: 700; color: #4fb3ff; }
+  .tip h3 { font-size: 44px; font-weight: 700; margin-bottom: 6px; }
+  .tip p { font-size: 32px; color: var(--muted); line-height: 1.45; }
+
+  /* s4 cta */
+  .cta-prod { left: 50%; transform: translateX(-50%); top: 470px; width: 560px; filter: drop-shadow(0 40px 50px rgba(0,0,0,.6)); }
+  .btn { font-size: 46px; font-weight: 700; padding: 22px 60px; border-radius: 999px; background: linear-gradient(135deg, var(--blue), var(--cyan));
+         display: inline-block; box-shadow: 0 16px 44px rgba(1,136,254,.55); }
+
+  /* e1 engagement */
+  .screen { left: 90px; right: 90px; top: 250px; height: 560px; border-radius: 22px; overflow: hidden;
+            background: radial-gradient(120% 90% at 50% 25%, #1660bf, #0b3778 45%, #061532);
+            box-shadow: 0 0 0 3px rgba(160,215,255,.5), 0 0 120px rgba(1,136,254,.5); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .beam { left: 0; right: 0; top: 0; bottom: 0; clip-path: polygon(480px 1060px, 600px 1060px, 990px 810px, 90px 810px);
+          background: linear-gradient(to top, rgba(200,230,255,.65), rgba(110,185,255,.08)); filter: blur(8px); mix-blend-mode: screen; }
+  .proj { left: 50%; transform: translateX(-50%); top: 1040px; width: 380px; filter: drop-shadow(0 26px 30px rgba(0,0,0,.7)); }
+  .opts { left: 60px; right: 60px; top: 850px; display: flex; gap: 18px; justify-content: center; }
+  .opt { font-size: 34px; font-weight: 700; padding: 14px 26px; border-radius: 16px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.2); }
+  .opt i { font-style: normal; color: var(--gold2); margin-right: 8px; font-family: 'Segoe UI'; }
+</style>
+</head>
+<body>
+<!-- ============ carousel: what screen size fits your room ============ -->
+<div class="slide" id="s1"><div class="abs dots"></div>
+  <img class="abs logo" src="assets/aun-logo-white.png"><div class="abs pager">১/৪</div>
+  <div class="abs center" style="top:190px"><div class="eyebrow">প্রজেক্টর কেনার আগে</div>
+    <h1 style="margin-top:14px">আপনার রুমে <span class="gold">কত বড়</span> স্ক্রিন হবে?</h1></div>
+  <div class="abs wall"><div class="q">?"</div></div>
+  <div class="abs measure"><span>দেয়াল থেকে প্রজেক্টরের দূরত্ব</span></div>
+  <div class="abs center" style="top:1040px"><div style="font-size:38px;color:var(--muted)">শুধু একটা মাপ লাগবে — বাকিটা দেখুন পরের স্লাইডে</div>
+    <div class="swipe" style="margin-top:34px">সোয়াইপ করুন →</div></div>
+</div>
+
+<div class="slide" id="s2"><div class="abs dots"></div>
+  <img class="abs logo" src="assets/aun-logo-white.png"><div class="abs pager">২/৪</div>
+  <div class="abs center" style="top:170px"><div class="eyebrow">AUN A005 উদাহরণ — শর্ট থ্রো (থ্রো রেশিও ১.১:১)</div>
+    <h2 style="margin-top:12px">দূরত্ব <span class="blue">→</span> স্ক্রিন সাইজ</h2></div>
+  <div class="abs rows" id="rows"></div>
+  <div class="abs note">দূরত্ব = দেয়াল থেকে প্রজেক্টরের লেন্স পর্যন্ত। স্ক্রিন সাইজ = কোনাকুনি মাপ (১৬:৯)। অন্য মডেলের থ্রো রেশিও আলাদা — আপনার মডেলের হিসাব জানতে আমাদের মেসেজ করুন।</div>
+</div>
+
+<div class="slide" id="s3"><div class="abs dots"></div>
+  <img class="abs logo" src="assets/aun-logo-white.png"><div class="abs pager">৩/৪</div>
+  <div class="abs center" style="top:170px"><h2>সেরা ছবির জন্য <span class="gold">৩টি টিপস</span></h2></div>
+  <div class="abs tips">
+    <div class="tip"><div class="n">১</div><div><h3>বসার দূরত্ব হিসাব করুন</h3>
+      <p>আরামে দেখতে স্ক্রিনের চওড়ার প্রায় দেড় গুণ দূরে বসুন — খুব কাছে বসলে চোখে চাপ পড়ে।</p></div></div>
+    <div class="tip"><div class="n">২</div><div><h3>ঘর অন্ধকার রাখুন</h3>
+      <p>প্রজেক্টরের ছবি সবচেয়ে ঝকঝকে লাগে অন্ধকার বা আবছা ঘরে। দিনে দেখলে পর্দা টেনে দিন।</p></div></div>
+    <div class="tip"><div class="n">৩</div><div><h3>সাদা, সমান দেয়াল বা স্ক্রিন</h3>
+      <p>রঙিন বা খসখসে দেয়ালে রং বদলে যায়। সাদা মসৃণ দেয়াল বা প্রজেক্টর স্ক্রিনে ছবি সবচেয়ে ভালো।</p></div></div>
+  </div>
+</div>
+
+<div class="slide" id="s4"><div class="abs dots"></div>
+  <img class="abs logo" src="assets/aun-logo-white.png"><div class="abs pager">৪/৪</div>
+  <div class="abs center" style="top:170px"><h2>আপনার রুমের মাপ <span class="gold">কমেন্টে</span> লিখুন</h2>
+    <div style="font-size:38px;color:var(--muted);margin-top:16px">আমরা বলে দেবো কোন সাইজ আর কোন মডেল আপনার জন্য পারফেক্ট</div></div>
+  <img class="abs cta-prod" src="assets/a005-front.png">
+  <div class="abs center" style="top:930px">
+    <div style="font-size:31px;font-weight:700;white-space:nowrap"><span class="gold">✓</span> অফিসিয়াল ওয়ারেন্টি &nbsp; <span class="gold">✓</span> লোকাল সার্ভিস &nbsp; <span class="gold">✓</span> সারাদেশে ডেলিভারি</div>
+    <div class="btn" style="margin-top:44px">aun-projector.com.bd</div>
+    <div style="font-size:32px;color:var(--muted);margin-top:26px;font-family:'Segoe UI'">09638-078888</div></div>
+</div>
+
+<!-- ============ engagement: weekend movie question ============ -->
+<div class="slide" id="e1"><div class="abs dots"></div>
+  <img class="abs logo" src="assets/aun-logo-white.png">
+  <div class="abs center" style="top:150px"><div class="eyebrow">উইকেন্ড প্ল্যান 🍿</div></div>
+  <div class="abs beam"></div>
+  <div class="abs screen">
+    <div style="font-size:44px;color:#cfe6ff;font-weight:700">এই শুক্রবার বড় পর্দায়</div>
+    <div style="font-size:96px;font-weight:700;line-height:1.2;margin-top:10px">কোন <span class="gold">মুভি</span><br>দেখবেন?</div>
+  </div>
+  <div class="abs opts"><div class="opt"><i>A</i>অ্যাকশন</div><div class="opt"><i>B</i>কমেডি</div><div class="opt"><i>C</i>থ্রিলার</div><div class="opt"><i>D</i>বাংলা নাটক</div></div>
+  <div class="abs center" style="top:950px;font-size:34px;color:var(--muted)">কমেন্টে লিখুন A, B, C নাকি D — আর মুভির নামটাও! 👇</div>
+  <img class="abs proj" src="assets/u002-pro-back.png">
+</div>
+
+<script>
+  const id = new URLSearchParams(location.search).get('s') || 's1';
+  document.getElementById(id).classList.add('on');
+  // distance (ft) → diagonal (in) for the A005's 1.1:1 throw, 16:9: d·0.3048/1.1/0.8716/0.0254
+  const bn = n => String(n).replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+  const rows = [[4, 1.2, 50], [5, 1.5, 63], [6, 1.8, 75], [8, 2.4, 100], [10, 3.0, 125], [12, 3.7, 150]];
+  const R = document.getElementById('rows');
+  rows.forEach(([ft, m, inch]) => {
+    R.insertAdjacentHTML('beforeend', `<div class="row"><div class="d">${bn(ft)} ফুট<small>≈ ${bn(m)} মিটার</small></div>
+      <div><div class="bar" style="width:${Math.round(inch / 150 * 100)}%"></div></div><div class="s">${inch}<small>"</small></div></div>`);
+  });
+</script>
+</body>
+</html>

@@ -15,7 +15,7 @@ function ok( $cond, $label ) {
 	else { $GLOBALS['g_fail']++; echo "  FAIL  $label\n"; }
 }
 if ( ! class_exists( 'AUN_SP_Form' ) ) { echo "spare parts not active\n"; exit( 1 ); }
-ok( '0.47.3' === AUN_SP_VERSION, 'bench runs 0.47.3 (' . AUN_SP_VERSION . ')' );
+ok( version_compare( AUN_SP_VERSION, '0.47.3', '>=' ), 'bench runs 0.47.3 or later (' . AUN_SP_VERSION . ')' );
 ok( has_action( 'wp_ajax_nopriv_aun_sp_client_error' ) && has_action( 'wp_ajax_aun_sp_client_error' ), 'the report endpoint is registered for guests and logged-in customers' );
 
 class CE_Done extends Exception {}
